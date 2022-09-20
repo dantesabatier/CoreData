@@ -1,0 +1,108 @@
+<?php
+
+/**
+ * @author Dante Sabatier <dantesabatier@me.com>
+ * @version 1.0
+ * @package Sabatier\CoreData
+ */
+
+namespace Sabatier\CoreData;
+
+use Sabatier\Foundation\Date;
+use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\KeyedArchiver;
+use Sabatier\Foundation\URL;
+use Sabatier\Foundation\UUID;
+use Sabatier\Foundation\Value;
+use Sabatier\Foundation\ValueTransformer;
+use function Sabatier\Foundation\human_readable_value;
+
+/**
+ * Class AttributeDescription
+ * A description of an attribute of a Core Data entity.
+ * @package Sabatier\CoreData
+ * @property mixed $defaultValue The default value of the attribute.
+ */
+class AttributeDescription extends PropertyDescription
+{
+    /** @var AttributeType The attribute's type. */
+    public AttributeType $type = AttributeType::undefined;
+    protected mixed $defaultValue = null;
+    /** @var class-string|null The name of the class used to represent the attribute. */
+    public ?string $attributeValueClassName = null;
+    /** @var string|null The name of the transformer used to transform the attribute value. The attribute must be of type {@see AttributeType::transformable}. The transformer must output data from {@see ValueTransformer::transformedValue()} and must allow reverse transformations. If this value is nil, Core Data uses a default a transformer to archive and unarchive the attribute value. */
+    public ?string $valueTransformerName = null;
+    /** @var bool A Boolean value that indicates whether the attribute allows external binary storage. */
+    public bool $allowsExternalBinaryDataStorage = false;
+    /** @var bool A Boolean value that indicates whether the attribute records its value in the persistent history transaction for a managed object's deletion. */
+    public bool $preservesValueInHistoryOnDeletion = false;
+
+    public function __construct()
+    {
+        parent::__construct();
+        unset($this->attributeValueClassName);
+    }
+
+    public function __get(string $name)
+    {
+        if ($name == 'attributeValueClassName') {
+            $this->$name = match ($this->type) {
+                AttributeType::date => Date::class,
+                AttributeType::uuid => UUID::class,
+                AttributeType::uri => URL::class,
+                AttributeType::objectID => ManagedObjectID::class,
+                default => null,
+            };
+            return $this->$name;
+        } elseif ($name == 'propertyType') {
+            $this->$name = PropertyDescriptionType::attribute;
+            return $this->$name;
+        } elseif ($name == 'defaultValue') {
+            if ($this->$name !== null) {
+                return ManagedObject::coercedValue($this->$name, $this->type);
+            }
+            return $this->$name;
+        } else {
+            return parent::__get($name);
+        }
+    }
+
+    public function __set(string $name, mixed $value): void
+    {
+        if ($name == 'attributeValueClassName') {
+            $this->$name = $value;
+        } elseif ($name == 'defaultValue') {
+            $this->$name = (new Value($value))->value;
+        } else {
+            parent::__set($name, $value);
+        }
+    }
+
+    /** @internal */
+    public function versionHashInStyle(?string &$out, VersionHashStyle $style): void
+    {
+        parent::versionHashInStyle($data, $style);
+        assert(is_string($data));
+        /** @var Dictionary<mixed> $dictionary */
+        $dictionary = unserialize($data);
+        $dictionary->merge(new Dictionary(['type' => $this->type->value]));
+        /** @noinspection PhpUnhandledExceptionInspection */
+        $out = KeyedArchiver::archivedData($dictionary);
+    }
+
+    public function description(): string
+    {
+        return sprintf('%s type %s', parent::description(), human_readable_value($this->type));
+    }
+    
+    public function jsonSerialize(): Dictionary
+    {
+        /** @var Dictionary<mixed> $dictionary */
+        $dictionary = parent::jsonSerialize();
+        $dictionary['type'] = $this->type->value;
+        if ($this->defaultValue !== null) {
+            $dictionary['defaultValue'] = $this->defaultValue;
+        }
+        return $dictionary;
+    }
+}

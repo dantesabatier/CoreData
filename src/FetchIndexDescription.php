@@ -1,0 +1,109 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: dante
+ * Date: 23/07/20
+ * Time: 09:14
+ */
+
+namespace Sabatier\CoreData;
+
+use InvalidArgumentException;
+use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\ObjectClass;
+use Sabatier\Foundation\Predicate;
+use Sabatier\Foundation\Set;
+
+/**
+ * Class FetchIndexDescription
+ * The description of the index.
+ * @package Sabatier\CoreData
+ * @property ArrayClass<FetchIndexElementDescription> $elements An array of fetch index element descriptions. Setting this property to an invalid value throws an exception, such as when the new value includes both R-tree and non R-tree elements.
+ */
+class FetchIndexDescription extends ObjectClass
+{
+    /** @var ArrayClass<FetchIndexElementDescription> */
+    protected ArrayClass $elements;
+    /** @var EntityDescription The entity description for the fetch index description. */
+    public EntityDescription $entity;
+    /** @var string The name of the fetch index description. */
+    public string $name;
+    #TODO: not implemented
+    /** @var Predicate|null A predicate that selects rows for indexing, if the index is a partial index. */
+    public ?Predicate $partialIndexPredicate = null;
+
+    /**
+     * Creates a fetch index description using the specified name and element descriptions.
+     * @param string $name The name of the fetch index description.
+     * @param ArrayClass<FetchIndexElementDescription>|null $elements An array of fetch index element descriptions.
+     */
+    public function __construct(string $name, ?ArrayClass $elements = null)
+    {
+        $this->name = $name;
+        $this->elements = $elements ?? new ArrayClass();
+    }
+
+    public function __get(string $name)
+    {
+        if ($name == 'elements') {
+            return $this->$name;
+        } else {
+            return $this->valueForUndefinedKey($name);
+        }
+    }
+
+    public function __set(string $name, mixed $value): void
+    {
+        if ($name == 'elements') {
+            if ((new Set($value->map(fn(FetchIndexElementDescription $element): FetchIndexElementType => $element->collationType)))->count() > 1) {
+                throw new InvalidArgumentException("invalid argument: elements must be of the same collation type");
+            }
+            $this->$name = $value;
+            $this->$name->setValueForKey($this, 'indexDescription');
+        } else {
+            $this->setValueForUndefinedKey($value, $name);
+        }
+    }
+
+    public function isEqual(mixed $other): bool
+    {
+        if ($other instanceof FetchIndexDescription) {
+            return $this->name == $other->name;
+        }
+        return false;
+    }
+
+    /** @internal */
+    public function isUnique(): bool
+    {
+        return $this->elements->contains(fn(FetchIndexElementDescription $element): bool => $element->isUnique);
+    }
+
+    /** @internal */
+    public function setUnique(bool $unique): void
+    {
+        $this->elements->setValueForKey($unique, 'isUnique');
+    }
+
+    /** @internal */
+    public function isSpatial(): bool
+    {
+        return $this->elements->contains(fn(FetchIndexElementDescription $element): bool => $element->collationType === FetchIndexElementType::rTree);
+    }
+
+    /** @internal */
+    public function isBinary(): bool
+    {
+        return $this->elements->contains(fn(FetchIndexElementDescription $element): bool => $element->collationType === FetchIndexElementType::binary);
+    }
+
+    public function jsonSerialize(): Dictionary
+    {
+        /** @var Dictionary<mixed> $dictionary */
+        $dictionary = new Dictionary();
+        $dictionary['name'] = $this->name;
+        $dictionary['elements'] = $this->elements->map(fn(FetchIndexElementDescription $element): Dictionary => $element->jsonSerialize());
+        return $dictionary;
+    }
+}

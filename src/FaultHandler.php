@@ -1,0 +1,77 @@
+<?php
+
+namespace Sabatier\CoreData;
+
+use Exception;
+
+/** @internal */
+class FaultHandler
+{
+    public function __construct(private readonly PersistentStore $persistentStore)
+    {
+    }
+
+    public function persistentStore(): PersistentStore
+    {
+        return $this->persistentStore;
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function fulfillFault(ManagedObject $object, ?ManagedObjectContext $context = null): void
+    {
+        $context ??= $object->managedObjectContext;
+        $entity = $object->entity;
+        /** @var IncrementalStoreNode|AtomicStoreCacheNode|null $newValues */
+        $newValues = $this->persistentStore->newValuesForObjectWithID($object->objectID, $context);
+        if ($newValues) {
+            if ($newValues instanceof IncrementalStoreNode) {
+                $newValues = $newValues->values;
+            }
+            $object->isSuppressingKVO = true;
+            $committedValues = $object->committedValuesForKeys(null);
+            foreach ($entity as $property) {
+                $key = $property->name;
+                if ($property instanceof AttributeDescription) {
+                    $value = $newValues->valueForKey($key);
+                    if ($value !== null) {
+                        $object->setValueForKey($value, $key);
+                    }
+                } elseif ($property instanceof RelationshipDescription) {
+                    if ($committedValues[$key]) {
+                        $object->valueForKey($key);
+                    }
+                }
+            }
+            $object->faultingState = 0;
+            $object->isFault = false;
+            $object->isSuppressingKVO = false;
+            $object->awakeFromFetch();
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function turnObjectIntoFault(/** @noinspection PhpUnusedParameterInspection */ ManagedObject $object, ?ManagedObjectContext $context = null): void
+    {
+        $object->isSuppressingKVO = true;
+        $object->willTurnIntoFault();
+        $properties = $object->persistentProperties;
+        foreach ($properties as $property) {
+            $key = $property->name;
+            if ($property instanceof AttributeDescription) {
+                $object->setValueForKey(null, $key);
+            } elseif ($property instanceof FetchedPropertyDescription || $property instanceof RelationshipDescription) {
+                if (($value = $object->primitiveValueForKey($key)) && ($value instanceof FaultingMutableSet || $value instanceof FaultingMutableArray)) {
+                    $value->turnIntoFault();
+                }
+            }
+        }
+        $object->isFault = true;
+        $object->faultingState = NotFound;
+        $object->didTurnIntoFault();
+        $object->isSuppressingKVO = false;
+    }
+}

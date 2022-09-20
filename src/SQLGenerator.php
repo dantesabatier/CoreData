@@ -1,0 +1,1368 @@
+<?php /** @noinspection PhpInternalEntityUsedInspection */
+
+/**
+ * Created by PhpStorm.
+ * User: dante
+ * Date: 21/06/20
+ * Time: 22:13
+ */
+
+namespace Sabatier\CoreData;
+
+use InvalidArgumentException;
+use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\CompareOptions;
+use Sabatier\Foundation\ComparisonPredicate;
+use Sabatier\Foundation\ComparisonPredicateModifier;
+use Sabatier\Foundation\ComparisonResult;
+use Sabatier\Foundation\CompoundPredicate;
+use Sabatier\Foundation\CompoundPredicateLogicalType;
+use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Expression;
+use Sabatier\Foundation\ExpressionOperator;
+use Sabatier\Foundation\ExpressionOperatorType;
+use Sabatier\Foundation\ExpressionType;
+use Sabatier\Foundation\KeyValueOperator;
+use Sabatier\Foundation\ObjectClass;
+use Sabatier\Foundation\Predicate;
+use Sabatier\Foundation\PredicateOperatorType;
+use Sabatier\Foundation\Set;
+use Sabatier\Foundation\SortDescriptor;
+use Sabatier\Foundation\UnknownKeyException;
+use Sabatier\Foundation\Value;
+use function Sabatier\Foundation\human_readable_value;
+use function Sabatier\Foundation\in_string;
+use function Sabatier\Foundation\string_contains;
+use function Sabatier\Foundation\string_has_prefix;
+use function Sabatier\Foundation\string_has_suffix;
+use function Sabatier\Foundation\substring_from_index;
+use function Sabatier\Foundation\typeof;
+
+/** @internal */
+class SQLGenerator extends ObjectClass
+{
+    private string $string = '';
+    private string $selectList = '';
+    private string $joinClause = '';
+    private string $whereClause = '';
+    private string $groupByClause = '';
+    private string $havingClause = '';
+    private string $orderByClause = '';
+    private FetchRequest $request;
+    private SQLEntity $entity;
+    /** @var ArrayClass */
+    private ArrayClass $arguments;
+    private bool $useDistinct = false;
+    private string $keyValueOperator = KeyValueOperator::countKeyValueOperator;
+    public bool $autoDistinct = true;
+    public bool $raisesForNotApplicableKeys = true;
+
+    public function __construct(public readonly SQLStoreRequestContext $requestContext)
+    {
+        $this->arguments = new ArrayClass();
+    }
+
+    public function statement(): ?SQLStatement
+    {
+        if ($this->requestContext instanceof SQLSaveChangesRequestContext) {
+            return $this->newSQLStatementForSaveChangesRequestContext();
+        } elseif ($this->requestContext instanceof SQLBatchUpdateRequestContext) {
+            return $this->newSQLStatementForBatchUpdateRequestContext();
+        } elseif ($this->requestContext instanceof SQLBatchDeleteRequestContext) {
+            return $this->newSQLStatementForBatchDeleteRequestContext();
+        } elseif ($this->requestContext instanceof SQLFetchRequestContext) {
+            return $this->newSQLStatementForFetchRequestContext();
+        }
+        return null;
+    }
+
+    private function newSQLStatementForSaveInsertChanges(SQLEntity $entity, ArrayClass $insertedObjects): SQLStatement
+    {
+        $this->prepareInsertStatement($entity, $insertedObjects);
+        return new SQLStatement($this->string, $this->arguments);
+    }
+
+    private function newSQLStatementForSaveUpdateChanges(SQLEntity $entity, ArrayClass $updatedObjects): SQLStatement
+    {
+        $this->prepareUpdateStatement($entity, $updatedObjects);
+        return new SQLStatement($this->string, $this->arguments);
+    }
+
+    private function newSQLStatementForSaveDeleteChanges(SQLEntity $entity, ArrayClass $deletedObjects): SQLStatement
+    {
+        $this->prepareDeleteStatement($entity, $deletedObjects);
+        return new SQLStatement($this->string, $this->arguments);
+    }
+
+    private function newSQLStatementForSaveChangesRequestContext(): ?SQLStatement
+    {
+        /** @var SQLSaveChangesRequestContext $requestContext */
+        $requestContext = $this->requestContext;
+        /** @var ArrayClass<SQLStatement> $statements */
+        $statements = new ArrayClass();
+        $model = $requestContext->sqlCore->model;
+        if ($insertedObjects = $requestContext->request->insertedObjects) {
+            $dictionary = $this->groupedObjects($insertedObjects);
+            foreach ($dictionary as $key => $value) {
+                if (!$value->isEmpty() && ($entity = $model->entity($key))) {
+                    $statements->append($this->newSQLStatementForSaveInsertChanges($entity, $value));
+                }
+            }
+        }
+        if ($updatedObjects = $requestContext->request->updatedObjects) {
+            $dictionary = $this->groupedObjects($updatedObjects);
+            foreach ($dictionary as $key => $value) {
+                if (!$value->isEmpty() && ($entity = $model->entity($key))) {
+                    $statements->append($this->newSQLStatementForSaveUpdateChanges($entity, $value));
+                }
+            }
+        }
+        if ($deletedObjects = $requestContext->request->deletedObjects) {
+            $dictionary = $this->groupedObjects($deletedObjects);
+            foreach ($dictionary as $key => $value) {
+                if (!$value->isEmpty() && ($entity = $model->entity($key))) {
+                    $statements->append($this->newSQLStatementForSaveDeleteChanges($entity, $entity->entityDescription->isPersistentHistoryEntity ? $value->map(fn(PersistentHistoryTransaction $transaction): int => $transaction->transactionNumber) : $value->map(fn(ManagedObject $object): int|string => $object->objectID->referenceObject)));
+                }
+            }
+        }
+        if (!$statements->isEmpty()) {
+            /** @psalm-suppress RedundantCondition, TypeDoesNotContainType */
+            if (SS_COREDATA_DISABLE_FOREIGN_KEY_CHECKS) : // @phpstan-ignore-line
+                //TODO: implement a save plan
+                if ($statements->contains(fn(SQLStatement $statement): bool => string_has_prefix($statement->string, "INSERT"))) {
+                    $statements->insert(new SQLStatement("/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */"), 0);
+                    $statements->append(new SQLStatement("/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */"));
+                }
+            endif;
+            return SQLStatement::merging($statements);
+        }
+        return null;
+    }
+
+    private function newSQLStatementForBatchUpdateRequestContext(): SQLStatement
+    {
+        /** @var SQLBatchUpdateRequestContext $requestContext */
+        $requestContext = $this->requestContext;
+        $this->request = $requestContext->fetchContext->request;
+        $this->entity = $requestContext->fetchContext->sqlEntityForFetchRequest;
+        $this->startSQL($requestContext->request);
+        return new SQLStatement($this->string, $this->arguments);
+    }
+
+    private function newSQLStatementForBatchDeleteRequestContext(): SQLStatement
+    {
+        /** @var SQLBatchDeleteRequestContext $requestContext */
+        $requestContext = $this->requestContext;
+        $this->request = $requestContext->fetchContext->request;
+        $this->entity = $requestContext->fetchContext->sqlEntityForFetchRequest;
+        $this->startSQL($requestContext->request);
+        return new SQLStatement($this->string, $this->arguments);
+    }
+
+    private function newSQLStatementForFetchRequestContext(): SQLStatement
+    {
+        /** @var SQLFetchRequestContext $requestContext */
+        $requestContext = $this->requestContext;
+        $this->request = $requestContext->request;
+        $this->entity = $requestContext->sqlEntityForFetchRequest;
+        $this->startSQL($requestContext->request);
+        return new SQLStatement($this->string, $this->arguments);
+    }
+
+    private function startSQL(PersistentStoreRequest $request): void
+    {
+        if ($request instanceof FetchRequest) {
+            /** @var ArrayClass<PropertyDescription> $propertiesToGroupBy */
+            $propertiesToGroupBy = $request->propertiesToGroupBy?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $request->entity->propertiesByName[$property]) ?? new ArrayClass();
+            if (!$propertiesToGroupBy->isEmpty() && $request->resultType != FetchRequestResultType::dictionaryResultType) {
+                throw new InvalidArgumentException(sprintf("invalid fetch request: GROUP BY requires %s, %s given", human_readable_value(FetchRequestResultType::dictionaryResultType), human_readable_value($request->resultType)));
+            }
+            $this->useDistinct = $request->returnsDistinctResults;
+            if (!$this->useDistinct && $this->autoDistinct) {
+                /** @psalm-suppress all */
+                $this->useDistinct = ($request->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $request->entity->propertiesByName[$property])?->contains(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription)) || ($request->serialization->contains(fn(mixed $e): bool => $e instanceof Dictionary));
+            }
+            $this->resetSQL();
+            $this->prepareSelectStatementWithFetchRequest($request);
+            $this->prepareJoinStatementsForPredicateAndRelationships();
+            $predicate = $request->predicate;
+            if (!$request->includesSubentities || (!$request->entity->isPersistentHistoryEntity && !$request->entity->isRootEntity && (!$request->entity->subentities->isEmpty() || !$request->entity->superentity?->isRootEntity || $request->entity->superentity?->subentities->count() > 1))) {
+                $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($request->entity->name));
+                if ($predicate) {
+                    $predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory]));
+                } else {
+                    $predicate = $mandatory;
+                }
+            }
+            if ($predicate) {
+                $this->appendWhereClauseToSQL();
+                $this->preparePredicate($predicate, $this->whereClause);
+            }
+            $this->appendFromClauseToSQL();
+            $this->appendSQL($this->selectList);
+            $this->appendSQL($this->joinClause);
+            $this->appendSQL($this->whereClause);
+            if (!$propertiesToGroupBy->isEmpty()) {
+                $this->buildGroupByClause($propertiesToGroupBy);
+                $this->appendSQL($this->groupByClause);
+                if ($havingPredicate = $request->havingPredicate) {
+                    $this->appendHavingClauseToSQL();
+                    $this->preparePredicate($havingPredicate, $this->havingClause);
+                }
+                $this->appendSQL($this->havingClause);
+            }
+            if ($request->resultType != FetchRequestResultType::countResultType) {
+                $this->buildOrderByClause($request->sortDescriptors);
+                $this->appendSQL($this->orderByClause);
+            }
+            if ($request->fetchLimit) {
+                $this->appendLimitClauseToSQL($request->fetchLimit);
+            }
+            if ($request->fetchOffset) {
+                $this->appendOffsetClauseToSQL($request->fetchOffset);
+            }
+            $this->endSQL();
+        } elseif ($request instanceof BatchUpdateRequest) {
+            $this->prepareStatementForBatchUpdateRequest();
+            $this->prepareJoinStatementsForPredicateAndRelationships();
+            $this->appendSQL($this->joinClause);
+            $this->appendSetStatementForBatchUpdateRequest($request);
+            if ($predicate = $request->predicate) {
+                $this->appendWhereClauseToSQL();
+                $this->preparePredicate($predicate, $this->whereClause);
+                $this->appendSQL($this->whereClause);
+            }
+            $this->endSQL();
+        } elseif ($request instanceof BatchDeleteRequest) {
+            $this->prepareStatementForBatchDeleteRequest($request);
+            $this->prepareJoinStatementsForPredicateAndRelationships();
+            $this->appendSQL($this->joinClause);
+            if ($predicate = $request->fetchRequest->predicate) {
+                $this->appendWhereClauseToSQL();
+                $this->preparePredicate($predicate, $this->whereClause);
+                $this->appendSQL($this->whereClause);
+            }
+            $this->endSQL();
+        }
+    }
+
+    private function endSQL(): void
+    {
+        $delimiter = ";";
+        if (string_has_suffix($this->string, $delimiter)) {
+            $this->string = rtrim($this->string, ";");
+        }
+    }
+
+    private function resetSQL(): void
+    {
+        $this->string = '';
+        $this->selectList = '';
+        $this->joinClause = '';
+        $this->whereClause = '';
+        $this->groupByClause = '';
+        $this->havingClause = '';
+        $this->orderByClause = '';
+        $this->arguments = new ArrayClass();
+    }
+
+    private function appendSQL(string $sql): void
+    {
+        $this->string .= $sql;
+    }
+
+    private function appendFromClauseToSQL(): void
+    {
+        $this->selectList .= " FROM ";
+        $this->selectList .= "`{$this->entity->tableName}`";
+    }
+
+    private function appendJoinClauseToSQL(): void
+    {
+        $this->joinClause .= " LEFT JOIN ";
+    }
+
+    private function appendWhereClauseToSQL(): void
+    {
+        $this->whereClause .= " WHERE ";
+    }
+
+    private function appendGroupByClauseToSQL(): void
+    {
+        $this->groupByClause .= " GROUP BY ";
+    }
+
+    private function appendHavingClauseToSQL(): void
+    {
+        $this->havingClause .= " HAVING ";
+    }
+
+    private function appendOrderByClauseToSQL(): void
+    {
+        $this->orderByClause .= " ORDER BY ";
+    }
+
+    private function appendLimitClauseToSQL(int $limit): void
+    {
+        $this->appendSQL(" LIMIT $limit");
+    }
+
+    private function appendOffsetClauseToSQL(int $offset): void
+    {
+        $this->appendSQL(" OFFSET $offset");
+    }
+
+    private function appendSelectListToSQLForRequest(FetchRequest $request): void
+    {
+        $entity = $this->entity;
+        /** @var Set<string> $columnNames */
+        $columnNames = new Set();
+        if ($this->keyValueOperator == KeyValueOperator::countKeyValueOperator) {
+            $columnNames->append("$entity->tableName.{$entity->primaryKey->columnName}");
+        }
+        $appendInferredColumnNames = true;
+        if (($request->resultType == FetchRequestResultType::countResultType && $this->keyValueOperator == KeyValueOperator::countKeyValueOperator) || $request->returnsObjectsAsFaults || !$request->includesPropertyValues) {
+            $appendInferredColumnNames = false;
+        }
+        if ($appendInferredColumnNames) {
+            if (!$entity->entityDescription->isPersistentHistoryEntity) {
+                if ($request->resultType != FetchRequestResultType::countResultType) {
+                    $columnNames->append("$entity->tableName.{$entity->entityKey->columnName}");
+                }
+            }
+            $keys = $request->serialization->keys;
+            /** @var ArrayClass<string|PropertyDescription> $properties */
+            $properties = new ArrayClass();
+            if ($propertiesToFetch = $request->propertiesToFetch) {
+                $properties->appendContentsOf($propertiesToFetch->filter(fn(PropertyDescription|string $property): bool => $property instanceof PropertyDescription ? !$keys->containsElement($property->name) : !$keys->containsElement($property)));
+            }
+            $properties->appendContentsOf($keys->filter(fn(string $key): bool => $request->entity->attributesByName->contains(fn(AttributeDescription $attribute): bool => $attribute->name == $key)));
+            /** @psalm-suppress InvalidArgument */
+            $columnNames->appendContentsOf($properties->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => is_string($property) ? $request->entity->attributesByName[$property] : ($property instanceof AttributeDescription || $property instanceof ExpressionDescription ? $property : null))->map(function (PropertyDescription $property) use ($entity): string {
+                if ($property instanceof AttributeDescription) {
+                    if ($property instanceof DerivedAttributeDescription) {
+                        return "{$this->prepareDerivedAttributeDescription($property)} AS $property->name";
+                    }
+                } elseif ($property instanceof ExpressionDescription) {
+                    $expression = $property->expression ?? throw new InvalidArgumentException();
+                    if ($expression->expressionType == ExpressionType::function) {
+                        return "{$this->prepareFunctionExpression($expression)} AS $property->name";
+                    } elseif ($expression->expressionType == ExpressionType::conditional) {
+                        return "{$this->prepareConditionalExpression($expression)} AS $property->name";
+                    }
+                    throw new InvalidArgumentException("invalid argument: unsupported expression $expression");
+                }
+                return "$entity->tableName.$property->name";
+            }));
+        }
+        $this->selectList .= $columnNames->join(", ");
+    }
+
+    private function prepareSelectStatementWithFetchRequest(FetchRequest $request): void
+    {
+        $this->selectList = "SELECT ";
+        switch ($request->resultType) {
+            case FetchRequestResultType::managedObjectResultType:
+            case FetchRequestResultType::managedObjectIDResultType:
+            case FetchRequestResultType::dictionaryResultType:
+                if ($this->useDistinct) {
+                    $this->selectList .= "DISTINCT ";
+                }
+                $this->appendSelectListToSQLForRequest($request);
+                break;
+            case FetchRequestResultType::countResultType:
+                $this->selectList .= strtoupper($this->keyValueOperator);
+                $this->selectList .= '(';
+                if ($this->useDistinct) {
+                    $this->selectList .= "DISTINCT ";
+                }
+                $this->appendSelectListToSQLForRequest($request);
+                $this->selectList .= ')';
+                break;
+        }
+    }
+
+    private function prepareJoinStatementsForPredicateAndRelationships(): void
+    {
+        $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
+        $this->raisesForNotApplicableKeys = false;
+        $expressions = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate());
+        foreach ($expressions as $expression) {
+            $this->appendJoinsForRelationships($this->relationshipsFromKeyPathExpression($expression));
+        }
+        $this->joinClause = (new Set(explode(' LEFT JOIN ', $this->joinClause)))->join(' LEFT JOIN ');
+        $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
+    }
+
+    private function addJoinForToOneRelationship(SQLToOne $toOne, string $sourcePath = '', string $destinationPath = ''): void
+    {
+        $sourceEntity = $toOne->entity;
+        $inverseRelationship = $toOne->inverseRelationship;
+        $destinationEntity = $toOne->destinationEntity;
+        if ($inverseRelationship instanceof SQLToOne) {
+            $columnName = $inverseRelationship->foreignKey->columnName;
+        } else {
+            $columnName = $destinationEntity->primaryKey->columnName;
+        }
+        if (empty($destinationPath)) {
+            $destinationPath = "{$sourceEntity->tableName}_$toOne->name";
+        }
+        $entityKey = $destinationEntity->entityKey;
+        $this->appendJoinClauseToSQL();
+        $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $destinationPath.$columnName = ";
+        if (!empty($sourcePath)) {
+            if ($inverseRelationship instanceof SQLToOne) {
+                $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
+            } else {
+                $this->joinClause .= "$sourcePath.{$toOne->foreignKey->columnName}";
+            }
+        } else {
+            if ($inverseRelationship instanceof SQLToOne) {
+                $this->joinClause .= "$sourceEntity->tableName.{$sourceEntity->primaryKey->columnName}";
+            } else {
+                $this->joinClause .= "$sourceEntity->tableName.{$toOne->foreignKey->columnName}";
+            }
+        }
+        if (!$sourceEntity->entityDescription->isPersistentHistoryEntity && !$destinationEntity->isRootEntity) {
+            $this->joinClause .= " AND ";
+            if (!$this->request->includesSubentities || $destinationEntity->subentities->isEmpty()) {
+                $this->joinClause .= "$destinationPath.$entityKey->columnName = '$destinationEntity->tableName'";
+            } else {
+                $this->joinClause .= "({$destinationEntity->subentities->map(fn(SQLEntity $subentity): string => "$destinationPath.$entityKey->columnName = '$subentity->tableName'")->join(" OR ")})";
+            }
+        }
+    }
+
+    private function addJoinForToManyRelationship(SQLToMany $toMany, string $sourcePath = '', string $destinationPath = ''): void
+    {
+        $sourceEntity = $toMany->entity;
+        $inverseToOne = $toMany->inverseToOne;
+        $destinationEntity = $toMany->destinationEntity;
+        if (!$destinationEntity->isRootEntity) {
+            /** @var SQLEntity $destinationEntity */
+            $destinationEntity = $destinationEntity->rootEntity;
+        }
+        $entityKey = $destinationEntity->entityKey;
+        if (empty($destinationPath)) {
+            $destinationPath = "{$sourceEntity->tableName}_$toMany->name";
+        }
+        $this->appendJoinClauseToSQL();
+        $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $destinationPath.{$inverseToOne->foreignKey->columnName} = ";
+        if (!empty($sourcePath)) {
+            $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
+        } else {
+            $this->joinClause .= "$sourceEntity->tableName.{$sourceEntity->primaryKey->columnName}";
+        }
+        if (!$sourceEntity->entityDescription->isPersistentHistoryEntity) {
+            $destinationEntity = $toMany->destinationEntity;
+            if (!$destinationEntity->isRootEntity) {
+                $this->joinClause .= " AND ";
+                if (!$this->request->includesSubentities || $destinationEntity->subentities->isEmpty()) {
+                    $this->joinClause .= "$destinationPath.$entityKey->columnName = '$destinationEntity->tableName'";
+                } else {
+                    $this->joinClause .= "({$destinationEntity->subentities->map(fn(SQLEntity $subentity): string => "$destinationPath.$entityKey->columnName = '$subentity->tableName'")->join(" OR ")})";
+                }
+            }
+        }
+    }
+
+    private function addJoinForManyToManyRelationship(SQLManyToMany $manyToMany, string $sourcePath = '', string $destinationPath = ''): void
+    {
+        $correlationTableName = $manyToMany->correlationTableName;
+        $inverseManyToMany = $manyToMany->inverseManyToMany;
+        $sourceEntity = $inverseManyToMany->destinationEntity;
+        if (!$sourcePath) {
+            $sourcePath = $sourceEntity->tableName;
+        }
+        $correlationTableAlias = "{$sourcePath}_$correlationTableName";
+        $destinationEntity = $manyToMany->destinationEntity;
+        $this->appendJoinClauseToSQL();
+        $this->joinClause .= "`$correlationTableName` AS $correlationTableAlias";
+        $this->joinClause .= " ON ";
+        $this->joinClause .= "$correlationTableAlias.$manyToMany->inverseColumnName";
+        $this->joinClause .= " = ";
+        $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
+        if (!$destinationEntity->isRootEntity) {
+            $this->joinClause .= " AND ";
+            if (!$this->request->includesSubentities || $destinationEntity->subentities->isEmpty()) {
+                $this->joinClause .= "$sourcePath.{$sourceEntity->entityKey->columnName} = '$sourceEntity->tableName'";
+            } else {
+                $this->joinClause .= "({$destinationEntity->subentities->map(fn(SQLEntity $subentity): string => "$sourcePath.{$sourceEntity->entityKey->columnName} = '$subentity->tableName'")->join(" OR ")})";
+            }
+        }
+        $this->appendJoinClauseToSQL();
+        $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $correlationTableAlias.$manyToMany->columnName = $destinationPath.{$destinationEntity->primaryKey->columnName}";
+        if (!$destinationEntity->isRootEntity) {
+            $this->joinClause .= " AND ";
+            if (!$this->request->includesSubentities || $destinationEntity->subentities->isEmpty()) {
+                $this->joinClause .= "$destinationPath.{$destinationEntity->entityKey->columnName} = '$destinationEntity->tableName'";
+            } else {
+                $this->joinClause .= "({$destinationEntity->subentities->map(fn(SQLEntity $subentity): string => "$destinationPath.{$destinationEntity->entityKey->columnName} = '$subentity->tableName'")->join(" OR ")})";
+            }
+        }
+    }
+
+    /**
+     * @param ArrayClass<SQLRelationship> $relationships
+     */
+    private function appendJoinsForRelationships(ArrayClass $relationships): void
+    {
+        $source = '';
+        /** @var SQLEntity $entity */
+        $entity = $this->entity;
+        $cursor = $entity->tableName;
+        /** @var FetchRequest $request */
+        $request = $this->request;
+        $resultType = $request->resultType;
+        $serialization = $request->serialization;
+        /** @var SQLRelationship $relationship */
+        foreach ($relationships as $relationship) {
+            $name = $relationship->name;
+            $destination = "{$cursor}_$name";
+            if ($relationship instanceof SQLToOne) {
+                $this->addJoinForToOneRelationship($relationship, $source, $destination);
+            } elseif ($relationship instanceof SQLToMany) {
+                $this->addJoinForToManyRelationship($relationship, $source, $destination);
+            } elseif ($relationship instanceof SQLManyToMany) {
+                $this->addJoinForManyToManyRelationship($relationship, $source, $destination);
+            }
+            $entity = $relationship->destinationEntity;
+            if ($resultType != FetchRequestResultType::countResultType) {
+                $columnNames = $entity->columnsToFetch->map(fn(SQLColumn $column): string => "$destination.$column->columnName AS {$destination}_$column->columnName");
+                /** @var Dictionary<mixed>|null $dictionary */
+                $dictionary = $serialization[$name];
+                if ($dictionary) {
+                    $serialization = clone $dictionary;
+                    $serializationKeys = $serialization->keys;
+                    $serializationKeys->insert($entity->primaryKey->columnName, 0);
+                    if (!$entity->entityDescription->isPersistentHistoryEntity) {
+                        $serializationKeys->insert($entity->entityKey->columnName, 1);
+                    }
+                    /** @var ArrayClass<string> $columnNames */
+                    $columnNames = $serializationKeys->compactMap(function (string $key) use ($entity, $destination): ?string {
+                        $property = $entity->propertiesByName[$key];
+                        if ($property instanceof SQLEntityKey || $property instanceof SQLPrimaryKey) {
+                            return "$destination.$property->columnName AS {$destination}_$property->columnName";
+                        } elseif ($property instanceof SQLAttribute) {
+                            $attributeDescription = $property->attributeDescription;
+                            if ($attributeDescription instanceof DerivedAttributeDescription) {
+                                if ($expression = $attributeDescription->derivationExpression) {
+                                    $propertyName = "{$destination}_$attributeDescription->name";
+                                    $expressionValue = function () use ($entity, $destination, $expression, $propertyName): string {
+                                        $bk = $this->entity;
+                                        $this->entity = $entity;
+                                        $result = str_replace($entity->tableName, $destination, match ($expression->expressionType) {
+                                            ExpressionType::keyPath => $this->prepareKeyPathExpression($expression),
+                                            ExpressionType::function => "{$this->prepareFunctionExpression($expression)} AS $propertyName",
+                                            ExpressionType::conditional => "{$this->prepareConditionalExpression($expression)} AS $propertyName",
+                                            default => $expression->description()
+                                        });
+                                        $this->entity = $bk;
+                                        return $result;
+                                    };
+                                    return $expressionValue();
+                                }
+                                return null;
+                            }
+                            return "$destination.$property->columnName AS {$destination}_$property->columnName";
+                        }
+                        return null;
+                    });
+                }
+                $filtered = $columnNames->filter(fn(string $e): bool => !string_contains($this->selectList, $e));
+                if (!$filtered->isEmpty()) {
+                    $this->selectList .= ", ";
+                    $this->selectList .= $filtered->join(', ');
+                }
+            }
+            $source = $destination;
+            $cursor .= '_';
+            $cursor .= $name;
+        }
+    }
+
+    /**
+     * @param Dictionary|null $serialization
+     * @param string|null $parent
+     * @return Set<Expression>
+     */
+    private function keyPathExpressionsForFetchRequestSerialization(?Dictionary $serialization = null, ?string $parent = null): Set
+    {
+        /** @var Set<Expression> $expressions */
+        $expressions = new Set();
+        if ($parent !== null) {
+            $parent = "$parent.";
+        }
+        /** @var FetchRequest $request */
+        $request = $this->request;
+        $serialization ??= $request->serialization;
+        foreach ($serialization as $key => $value) {
+            if ($value instanceof Dictionary) {
+                /** @psalm-suppress PossiblyNullOperand */
+                $current = $parent . $key;
+                $expressions->append(Expression::expressionForKeyPath($current));
+                $expressions->appendContentsOf($this->keyPathExpressionsForFetchRequestSerialization($value, $current));
+            }
+        }
+        return $expressions;
+    }
+
+    /**
+     * @param Predicate|null $predicate
+     * @return Set<Expression>
+     */
+    private function keyPathExpressionsForFetchRequestPredicate(?Predicate $predicate = null): Set
+    {
+        /** @var Set<Expression> $expressions */
+        $expressions = new Set();
+        $predicate ??= $this->request->predicate;
+        if ($predicate instanceof ComparisonPredicate) {
+            if ($predicate->leftExpression->expressionType == ExpressionType::keyPath) {
+                $expressions->append($predicate->leftExpression);
+            }
+            if ($predicate->rightExpression->expressionType == ExpressionType::keyPath) {
+                $expressions->append($predicate->rightExpression);
+            }
+        } elseif ($predicate instanceof CompoundPredicate) {
+            foreach ($predicate->subpredicates as $subpredicate) {
+                $expressions->appendContentsOf($this->keyPathExpressionsForFetchRequestPredicate($subpredicate));
+            }
+        }
+        return $expressions;
+    }
+
+    /**
+     * @param Expression $expression
+     * @return ArrayClass<SQLProperty>
+     */
+    private function propertiesFromKeyPathExpression(Expression $expression): ArrayClass
+    {
+        /** @var ArrayClass<SQLProperty> $properties */
+        $properties = new ArrayClass();
+        if ($expression->expressionType != ExpressionType::keyPath) {
+            return $properties;
+        }
+        $entity = $this->entity;
+        $keys = explode(".", $expression->description());
+        foreach ($keys as $key) {
+            $property = $entity->propertiesByName[$key];
+            if ($property) {
+                if ($property instanceof SQLRelationship) {
+                    $entity = $property->destinationEntity;
+                }
+                $properties[] = $property;
+                continue;
+            }
+            if ($this->raisesForNotApplicableKeys) {
+                throw new UnknownKeyException(sprintf('%s does not contains a property named "%s"', $entity->tableName, $key));
+            }
+        }
+        return $properties;
+    }
+
+    /**
+     * @psalm-suppress LessSpecificReturnStatement, MoreSpecificReturnType
+     * @param Expression $expression
+     * @return ArrayClass<SQLRelationship>
+     */
+    private function relationshipsFromKeyPathExpression(Expression $expression): ArrayClass
+    {
+        return $this->propertiesFromKeyPathExpression($expression)->filter(fn(SQLProperty $property): bool => $property instanceof SQLRelationship); // @phpstan-ignore-line
+    }
+
+    private function isNullExpression(Expression $expression): bool
+    {
+        if ($expression->expressionType == ExpressionType::constantValue) {
+            return $expression->constantValue() === null;
+        } elseif ($expression->expressionType == ExpressionType::keyPath) {
+            if ((new Value((string)$expression))->isEqual(null)) {
+                throw new InvalidArgumentException("*isNullExpression($expression)*");
+            }
+        }
+        return false;
+    }
+
+    private function isToManyCountKeyPath(Expression $expression): bool
+    {
+        if ($expression->expressionType == ExpressionType::keyPath) {
+            return count(explode('.', (string)$expression)) > 1;
+        }
+        return false;
+    }
+
+    private function prepareKeyPathExpression(Expression $expression): string
+    {
+        $tableName = $this->entity->tableName;
+        $alias = $tableName;
+        $keyPath = $expression->description();
+        $isToManyCountKeyPath = $this->isToManyCountKeyPath($expression);
+        $properties = $this->propertiesFromKeyPathExpression($expression);
+        foreach ($properties as $property) {
+            if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
+                $propertyDescription = $property->propertyDescription;
+                if ($propertyDescription instanceof DerivedAttributeDescription) {
+                    return $this->prepareDerivedAttributeDescription($propertyDescription);
+                }
+                $alias .= ".";
+                $alias .= $property->columnName;
+            }
+            if ($property instanceof SQLRelationship) {
+                $alias .= "_";
+                $alias .= $property->name;
+                if ($property instanceof SQLToOne) {
+                    if (!$isToManyCountKeyPath) {
+                        $alias .= ".";
+                        $alias .= $property->destinationEntity->primaryKey->columnName;
+                    }
+                }
+            }
+        }
+        if ($alias === $tableName) {
+            throw new InvalidArgumentException("failed to generate alias for entity \"$tableName\", invalid key path \"$keyPath\"");
+        }
+        return $alias;
+    }
+
+    private function buildClauseWithSimplePredicate(ComparisonPredicate $predicate, string &$clause): void
+    {
+        switch ($predicate->predicateOperatorType) {
+            case PredicateOperatorType::lessThan:
+                $this->prepareClauseWithSimplePredicate($predicate, $clause, "<");
+                break;
+            case PredicateOperatorType::lessThanOrEqualTo:
+                $this->prepareClauseWithSimplePredicate($predicate, $clause, "<=");
+                break;
+            case PredicateOperatorType::greaterThan:
+                $this->prepareClauseWithSimplePredicate($predicate, $clause, ">");
+                break;
+            case PredicateOperatorType::greaterThanOrEqualTo:
+                $this->prepareClauseWithSimplePredicate($predicate, $clause, ">=");
+                break;
+            case PredicateOperatorType::equalTo:
+                $this->prepareEqual($predicate, $clause);
+                break;
+            case PredicateOperatorType::notEqualTo:
+                $this->prepareNotEqual($predicate, $clause);
+                break;
+            case PredicateOperatorType::like:
+            case PredicateOperatorType::matches:
+                $this->prepareLike($predicate, $clause);
+                break;
+            case PredicateOperatorType::beginsWith:
+                $this->prepareBeginsWith($predicate, $clause);
+                break;
+            case PredicateOperatorType::endsWith:
+                $this->prepareEndsWith($predicate, $clause);
+                break;
+            case PredicateOperatorType::contains:
+                $this->prepareContains($predicate, $clause);
+                break;
+            case PredicateOperatorType::in:
+                $this->prepareIn($predicate, $clause);
+                break;
+            case PredicateOperatorType::between:
+                $this->prepareBetween($predicate, $clause);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private function prepareClauseWithSimplePredicate(ComparisonPredicate $predicate, string &$clause, string $operator, string $prefix = "", string $suffix = ""): void
+    {
+        /** @var ArrayClass<mixed> $arguments */
+        $arguments = new ArrayClass();
+        $leftExpression = $predicate->leftExpression;
+        $left = $leftExpression->description();
+        if ($leftExpression->expressionType == ExpressionType::keyPath) {
+            $left = $this->prepareKeyPathExpression($leftExpression);
+        } elseif ($leftExpression->expressionType == ExpressionType::function) {
+            $left = $this->prepareFunctionExpression($leftExpression);
+        } elseif ($leftExpression->expressionType == ExpressionType::conditional) {
+            $left = $this->prepareConditionalExpression($leftExpression);
+        } elseif ($leftExpression->expressionType == ExpressionType::constantValue) {
+            $left = $leftExpression->constantValue();
+            if (is_string($left)) {
+                $left = str_replace('%', '', $left);
+            }
+            if (is_bool($left)) {
+                $left = (int)$left;
+            }
+            $argument = $left;
+            if (is_string($argument)) {
+                $argument = "$prefix$left$suffix";
+            }
+            $arguments[] = $argument;
+        }
+        $rightExpression = $predicate->rightExpression;
+        $right = $rightExpression->description();
+        if ($rightExpression->expressionType == ExpressionType::keyPath) {
+            $right = $this->prepareKeyPathExpression($rightExpression);
+        } elseif ($rightExpression->expressionType == ExpressionType::function) {
+            $right = $this->prepareFunctionExpression($rightExpression);
+        } elseif ($rightExpression->expressionType == ExpressionType::conditional) {
+            $right = $this->prepareConditionalExpression($rightExpression);
+        } elseif ($rightExpression->expressionType == ExpressionType::constantValue) {
+            $right = $rightExpression->constantValue();
+            if (is_string($right)) {
+                $right = str_replace('%', '', $right);
+            }
+            if (is_bool($right)) {
+                $right = (int)$right;
+            }
+            $argument = $right;
+            if (is_string($argument)) {
+                $argument = "$prefix$right$suffix";
+            }
+            $arguments[] = $argument;
+        }
+        $numberOfArguments = $arguments->count();
+        if ($numberOfArguments == 2) {
+            $clause .= "? $operator ?";
+        } elseif ($numberOfArguments == 1) {
+            $key = $arguments->first();
+            if (is_string($key)) {
+                $key = str_replace([$suffix, $prefix], "", $key);
+            }
+            if ($key === $right) {
+                $clause .= "$left $operator ?";
+            } elseif ($key === $left) {
+                $clause .= "? $operator $right";
+            } else {
+                $clause .= "$left $operator $right";
+            }
+        } else {
+            $clause .= "$left $operator $right";
+        }
+        $this->arguments->appendContentsOf($arguments);
+    }
+
+    private function prepareIn(ComparisonPredicate $predicate, string &$clause): void
+    {
+        $leftExpression = $predicate->leftExpression;
+        $rightExpression = $predicate->rightExpression;
+        $right = $rightExpression->constantValue() ?? $rightExpression->collection();
+        assert($right instanceof ArrayClass && !$right->isEmpty(), sprintf("invalid parameter: the right expression of an IN operator must be an non-empty \"%s\", (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
+        $clause .= "{$this->prepareKeyPathExpression($leftExpression)} IN (" . ArrayClass::repeating('?', $right->count())->join(', ') . ")";
+        $this->arguments->appendContentsOf($right->map(fn(mixed $element): mixed => $element instanceof Expression ? $element->constantValue() : $element));
+    }
+
+    private function prepareBetween(ComparisonPredicate $predicate, string &$clause): void
+    {
+        $leftExpression = $predicate->leftExpression;
+        $rightExpression = $predicate->rightExpression;
+        $right = $rightExpression->constantValue() ?? $rightExpression->collection();
+        assert($right instanceof ArrayClass && $right->count() == 2, sprintf("invalid parameter: the right expression of a BETWEEN operator must be a \"%s\" with exactly two elements, (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
+        $clause .= "({$this->prepareKeyPathExpression($leftExpression)} BETWEEN ? AND ?)";
+        $this->arguments->appendContentsOf($right->map(fn(mixed $element): mixed => $element instanceof Expression ? $element->constantValue() : $element));
+    }
+
+    private function prepareEqual(ComparisonPredicate $predicate, string &$clause): void
+    {
+        $operator = '=';
+        if ($this->isNullExpression($predicate->leftExpression) || $this->isNullExpression($predicate->rightExpression)) {
+            $operator = '<=>';
+        }
+        $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator);
+    }
+
+    private function prepareNotEqual(ComparisonPredicate $predicate, string &$clause): void
+    {
+        $this->prepareClauseWithSimplePredicate($predicate, $clause, '!=');
+    }
+
+    private function prepareLike(ComparisonPredicate $predicate, string &$clause): void
+    {
+        $operator = "LIKE";
+        if (!($predicate->options & CompareOptions::caseInsensitive)) {
+            $operator .= " BINARY";
+        }
+        $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator);
+    }
+
+    private function prepareBeginsWith(ComparisonPredicate $predicate, string &$clause): void
+    {
+        $operator = "LIKE";
+        if (!($predicate->options & CompareOptions::caseInsensitive)) {
+            $operator .= " BINARY";
+        }
+        $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator, "", "%");
+    }
+
+    private function prepareEndsWith(ComparisonPredicate $predicate, string &$clause): void
+    {
+        $operator = "LIKE";
+        if (($predicate->options & CompareOptions::caseInsensitive)) {
+            $operator .= " BINARY";
+        }
+        $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator, "%");
+    }
+
+    private function prepareContains(ComparisonPredicate $predicate, string &$clause): void
+    {
+        $operator = "LIKE";
+        if (!($predicate->options & CompareOptions::caseInsensitive)) {
+            $operator .= " BINARY";
+        }
+        $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator, "%", "%");
+    }
+
+    private function preparePredicate(Predicate $predicate, string &$clause): void
+    {
+        if ($predicate instanceof CompoundPredicate) {
+            $subpredicates = $predicate->subpredicates;
+            $max = $subpredicates->indexBefore($subpredicates->endIndex());
+            $type = $predicate->compoundPredicateType;
+            if ($type == CompoundPredicateLogicalType::not) {
+                $clause .= "NOT ";
+            }
+            if ($max) {
+                $clause .= "(";
+            }
+            foreach ($subpredicates as $idx => $subpredicate) {
+                $this->preparePredicate($subpredicate, $clause);
+                if ($idx < $max) {
+                    if ($type == CompoundPredicateLogicalType::and) {
+                        $clause .= " AND ";
+                    } elseif ($type == CompoundPredicateLogicalType::or) {
+                        $clause .= " OR ";
+                    }
+                }
+            }
+            if ($max) {
+                $clause .= ")";
+            }
+        } elseif ($predicate instanceof ComparisonPredicate) {
+            $this->prepareComparisonPredicate($predicate, $clause);
+        }
+    }
+
+    private function prepareComparisonPredicate(ComparisonPredicate $predicate, string &$clause): void
+    {
+        if ($predicate->comparisonPredicateModifier != ComparisonPredicateModifier::direct) {
+            if ($this->isToManyCountKeyPath($predicate->leftExpression)) {
+                $this->buildClauseWithSelectPredicate($predicate, $clause);
+            }
+            if ($this->isToManyCountKeyPath($predicate->rightExpression)) {
+                $this->buildClauseWithSelectPredicate($predicate, $clause);
+            }
+        } else {
+            $this->buildClauseWithSimplePredicate($predicate, $clause);
+        }
+    }
+
+    private function buildClauseWithSelectPredicate(ComparisonPredicate $predicate, string &$clause): void
+    {
+        $expressions = new ArrayClass([$predicate->leftExpression, $predicate->rightExpression]);
+        if (!($expression = $expressions->first(fn(Expression $expression): bool => $expression->expressionType == ExpressionType::keyPath))) {
+            throw new InvalidArgumentException();
+        }
+        $preparedExpression = $this->prepareKeyPathExpression($expression);
+        [$entityAlias, $columnName] = explode('.', $preparedExpression);
+        $relationship = (function () use ($expression): ?SQLRelationship {
+            $relationship = null;
+            $entity = $this->entity;
+            $keys = explode('.', $expression->keyPath());
+            foreach ($keys as $key) {
+                $property = $entity->propertiesByName[$key];
+                if ($property instanceof SQLRelationship) {
+                    $entity = $property->destinationEntity;
+                    $relationship = $property;
+                }
+            }
+            return $relationship;
+        })() ?? throw new InvalidArgumentException();
+        $destinationEntity = $relationship->destinationEntity;
+        $clause .= "$preparedExpression = ";
+        $clause .= match ($predicate->comparisonPredicateModifier) {
+            ComparisonPredicateModifier::direct => "",
+            ComparisonPredicateModifier::all => "ALL ",
+            ComparisonPredicateModifier::any => "ANY ",
+        };
+        $clause .= "(";
+        $clause .= "SELECT $columnName FROM $destinationEntity->tableName AS $entityAlias WHERE ";
+        $this->buildClauseWithSimplePredicate($predicate, $clause);
+        $clause .= ")";
+    }
+
+    /**
+     * @param string $keyPath
+     * @return string[]
+     */
+    private function componentsForKeyPath(string $keyPath): array
+    {
+        /** @var string[] $keys */
+        $keys = [];
+        $collectionOperator = '';
+        $elements = explode('.', $keyPath);
+        foreach ($elements as $element) {
+            if (string_has_prefix($element, '@')) {
+                $collectionOperator = substring_from_index($element, 1);
+            } else {
+                $keys[] = $element;
+            }
+        }
+        $keypathToCollection = '';
+        $keypathToProperty = '';
+        $numberOfKeys = count($keys);
+        if ($numberOfKeys) {
+            $keypathToCollection = $keys[0];
+            if ($reminders = array_slice($keys, 1, $numberOfKeys)) {
+                $keypathToProperty = $reminders[0];
+            }
+        }
+        return [$keypathToCollection, $collectionOperator, $keypathToProperty];
+    }
+
+    private function prepareDerivedAttributeDescription(DerivedAttributeDescription $derivedAttribute): string
+    {
+        if ($expression = $derivedAttribute->derivationExpression) {
+            switch ($expression->expressionType) {
+                case ExpressionType::keyPath:
+                    $description = $expression->description();
+                    if (in_string($description, "@")) {
+                        $entity = $this->entity;
+                        [$keypathToCollection, $collectionOperator, $keypathToProperty] = $this->componentsForKeyPath($description);
+                        if ($keypathToCollection && $collectionOperator) {
+                            /** @var SQLRelationship|null $relationship */
+                            $relationship = $entity->propertiesByName[$keypathToCollection];
+                            if ($relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany) {
+                                $inverseRelationship = $relationship->inverseRelationship;
+                                $destinationEntity = $relationship->destinationEntity;
+                                if (($collectionOperator === KeyValueOperator::countKeyValueOperator && $keypathToProperty) || ($collectionOperator !== KeyValueOperator::countKeyValueOperator && !$keypathToProperty)) {
+                                    throw new InvalidArgumentException("invalid expression \"$expression\"");
+                                }
+                                /** @var ArrayClass<string|PropertyDescription> $propertiesToFetch */
+                                $propertiesToFetch = new ArrayClass([$inverseRelationship->relationshipDescription]);
+                                if ($collectionOperator !== KeyValueOperator::countKeyValueOperator) {
+                                    $propertiesToFetch->append($keypathToProperty);
+                                }
+                                $requestContext = $this->requestContext;
+                                $managedObjectModel = $requestContext->sqlCore->persistentStoreCoordinator->managedObjectModel;
+                                /** @var EntityDescription $entityForFetchRequest */
+                                $entityForFetchRequest = $managedObjectModel->entitiesByName[$destinationEntity->tableName];
+                                $fetchRequest = new FetchRequest();
+                                $fetchRequest->entity = $entityForFetchRequest;
+                                /** @psalm-suppress InvalidPropertyAssignmentValue */
+                                $fetchRequest->propertiesToFetch = $propertiesToFetch;
+                                $fetchRequest->resultType = FetchRequestResultType::countResultType;
+                                $generator = new SQLGenerator(new SQLFetchRequestContext($fetchRequest, $requestContext->context, $requestContext->sqlCore));
+                                $generator->request = $fetchRequest;
+                                $generator->autoDistinct = false;
+                                $generator->raisesForNotApplicableKeys = false;
+                                $generator->keyValueOperator = $collectionOperator;
+                                $statement = $generator->statement() ?? throw new InvalidArgumentException();
+                                $string = "($statement->string WHERE ";
+                                if ($relationship instanceof SQLToMany) {
+                                    $string .= "{$destinationEntity->tableName}_$inverseRelationship->name.{$entity->primaryKey->columnName} = $entity->tableName";
+                                    if ($destinationEntity->isKindOfSQLEntity($entity)) {
+                                        $string .= ".{$relationship->inverseToOne->foreignKey->columnName}";
+                                    } else {
+                                        $string .= ".{$entity->primaryKey->columnName}";
+                                    }
+                                } else {
+                                    $string .= "{$destinationEntity->tableName}_$relationship->correlationTableName.$relationship->inverseColumnName = $entity->tableName.{$entity->primaryKey->columnName}";
+                                }
+                                $string .= ")";
+                                return $string;
+                            }
+                        }
+                    }
+                    break;
+                case ExpressionType::function:
+                    return $this->prepareFunctionExpression($expression);
+                case ExpressionType::conditional:
+                    return $this->prepareConditionalExpression($expression);
+                default:
+                    break;
+            }
+            throw new InvalidArgumentException("invalid argument: unsupported expression \"$expression\"");
+        }
+        throw new InvalidArgumentException("invalid argument: invalid attribute \"$derivedAttribute\"");
+    }
+
+    private function prepareFunctionExpression(Expression $expression): string
+    {
+        $arguments = $expression->arguments() ?? throw new InvalidArgumentException();
+        $operator = $expression->operand();
+        if ($operator instanceof ExpressionOperator) {
+            switch ($operator->operatorType()) {
+                case ExpressionOperatorType::addTo:
+                case ExpressionOperatorType::fromSubtract:
+                case ExpressionOperatorType::multiplyBy:
+                case ExpressionOperatorType::divideBy:
+                case ExpressionOperatorType::modulusBy:
+                case ExpressionOperatorType::bitwiseAndWith:
+                case ExpressionOperatorType::bitwiseOrWith:
+                case ExpressionOperatorType::bitwiseXorWith:
+                case ExpressionOperatorType::leftshiftBy:
+                case ExpressionOperatorType::rightshiftBy:
+                    return $arguments->map(function (Expression $argument): mixed {
+                        return match ($argument->expressionType) {
+                            ExpressionType::constantValue => (function () use ($argument): mixed {
+                                $value = $argument->constantValue();
+                                if ($value instanceof ArrayClass) {
+                                    return $value->sum();
+                                }
+                                return $value;
+                            })(),
+                            ExpressionType::function => $this->prepareFunctionExpression($argument),
+                            ExpressionType::conditional => $this->prepareConditionalExpression($argument),
+                            ExpressionType::aggregate => $argument->collection()->sum(),
+                            default => $argument->description(),
+                        };
+                    })->join(" {$operator->operatorSymbol()} ");
+                case ExpressionOperatorType::sum:
+                case ExpressionOperatorType::count:
+                case ExpressionOperatorType::min:
+                case ExpressionOperatorType::max:
+                case ExpressionOperatorType::stddev:
+                case ExpressionOperatorType::sqrt:
+                case ExpressionOperatorType::ln:
+                case ExpressionOperatorType::log:
+                case ExpressionOperatorType::exp:
+                case ExpressionOperatorType::ceiling:
+                case ExpressionOperatorType::abs:
+                case ExpressionOperatorType::floor:
+                case ExpressionOperatorType::cast:
+                case ExpressionOperatorType::now:
+                case ExpressionOperatorType::year:
+                case ExpressionOperatorType::month:
+                case ExpressionOperatorType::week:
+                case ExpressionOperatorType::day:
+                case ExpressionOperatorType::hour:
+                case ExpressionOperatorType::minute:
+                case ExpressionOperatorType::second:
+                    $function = $operator->operatorSymbol();
+                    break;
+                case ExpressionOperatorType::average:
+                    $function = 'AVG';
+                    break;
+                case ExpressionOperatorType::raiseToPower:
+                    $function = 'POW';
+                    break;
+                case ExpressionOperatorType::random:
+                    $function = 'RAND';
+                    break;
+                case ExpressionOperatorType::trunc:
+                    $function = 'TRUNCATE';
+                    break;
+                case ExpressionOperatorType::uppercase:
+                    $function = 'UPPER';
+                    break;
+                case ExpressionOperatorType::lowercase:
+                    $function = 'LOWER';
+                    break;
+                case ExpressionOperatorType::concat:
+                    $function = 'CONCAT_WS';
+                    break;
+                default:
+                    throw new InvalidArgumentException("unsupported expression \"$expression\"");
+            }
+            if (empty($function)) {
+                throw new InvalidArgumentException("invalid function");
+            }
+            $column = strtoupper($function);
+            $column .= '(';
+            $column .= $arguments->map(fn(Expression $expression): string => match ($expression->expressionType) {
+                ExpressionType::constantValue => (function () use ($expression): string {
+                    $value = $expression->constantValue();
+                    if ($value instanceof ArrayClass) {
+                        return $value->join(', ');
+                    }
+                    return $expression->description();
+                })(),
+                ExpressionType::keyPath => $this->prepareKeyPathExpression($expression),
+                ExpressionType::function => $this->prepareFunctionExpression($expression),
+                ExpressionType::conditional => $this->prepareConditionalExpression($expression),
+                ExpressionType::aggregate => $expression->collection()->join(', '),
+                default => $expression->description(),
+            })->join(match ($operator->operatorType()) {
+                ExpressionOperatorType::cast => ' AS ',
+                default => ', ',
+            });
+            $column .= ')';
+            return $column;
+        }
+        throw new InvalidArgumentException("invalid argument: unsupported expression $expression");
+    }
+
+    private function prepareConditionalExpression(Expression $expression): string
+    {
+        $predicate = "";
+        $this->preparePredicate($expression->predicate(), $predicate);
+        $true = $expression->true();
+        if ($true->expressionType == ExpressionType::keyPath) {
+            $true = $this->prepareKeyPathExpression($true);
+        } elseif ($true->expressionType == ExpressionType::function) {
+            $true = $this->prepareFunctionExpression($true);
+        }
+        $false = $expression->false();
+        if ($false->expressionType == ExpressionType::keyPath) {
+            $false = $this->prepareKeyPathExpression($false);
+        } elseif ($false->expressionType == ExpressionType::function) {
+            $false = $this->prepareFunctionExpression($false);
+        }
+        return "IF($predicate, $true, $false)";
+    }
+
+    private function buildGroupByClause(ArrayClass $propertiesToGroupBy): void
+    {
+        $this->appendGroupByClauseToSQL();
+        $this->groupByClause .= $propertiesToGroupBy->map(fn(PropertyDescription $property): string => "{$this->entity->tableName}.$property->name")->join(', ');
+    }
+
+    private function buildOrderByClause(?ArrayClass $descriptors): void
+    {
+        /** @psalm-suppress RedundantCondition, TypeDoesNotContainType */
+        if (SS_COREDATA_CAN_SAFELY_USE_SORT_DESCRIPTORS): // @phpstan-ignore-line
+            $descriptors ??= new ArrayClass();
+            $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
+            $this->raisesForNotApplicableKeys = false;
+            $expressions = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate());
+            $descriptors->appendContentsOf($expressions->flatMap(fn(Expression $expression): iterable => $this->relationshipsFromKeyPathExpression($expression)->compactMap(fn(SQLRelationship $relationship): ?SortDescriptor => $relationship instanceof SQLToMany && $relationship->isOrdered ? new SortDescriptor(sprintf("%s.%s", $expression->keyPath(), $relationship->inverseToOne->foreignOrderKey->columnName)) : null)));
+            $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
+            if (!$descriptors->isEmpty()) {
+                $this->appendOrderByClauseToSQL();
+                $this->orderByClause .= $descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->prepareKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? 'ASC' : 'DESC'))->join(', ');
+            }
+        endif;
+    }
+
+    private function coercedValue(ManagedObject|Dictionary $object, AttributeDescription $attribute): mixed
+    {
+        $value = $object->valueForKey($attribute->name);
+        ManagedObject::coerceValue($value, $attribute, true);
+        return $value;
+    }
+
+    /**
+     * @param SQLEntity $entity
+     * @param ArrayClass<ManagedObject> $insertedObjects
+     */
+    private function prepareInsertStatement(SQLEntity $entity, ArrayClass $insertedObjects): void
+    {
+        /** @var ArrayClass<mixed> $arguments */
+        $arguments = new ArrayClass();
+        /** @var Set<string> $columnNames */
+        $columnNames = new Set();
+        $columnNames->appendContentsOf([$entity->primaryKey->columnName, $entity->entityKey->columnName]);
+        foreach ($insertedObjects as $insertedObject) {
+            foreach ($entity->properties as $property) {
+                if ($property instanceof SQLPrimaryKey) {
+                    $arguments->append($insertedObject->objectID->referenceObject);
+                } elseif ($property instanceof SQLEntityKey) {
+                    $arguments->append($insertedObject->entity->name);
+                } elseif ($property instanceof SQLAttribute) {
+                    if ($insertedObject->changedValuesForCurrentEvent()->offsetExists($property->name)) {
+                        $columnNames->append($property->columnName);
+                        $arguments->append($this->coercedValue($insertedObject, $property->attributeDescription));
+                    }
+                } elseif ($property instanceof SQLToOne) {
+                    $value = $insertedObject->primitiveValueForKey($property->name);
+                    if ($value instanceof ManagedObject) {
+                        $value = $value->objectID;
+                    }
+                    if ($value instanceof ManagedObjectID) {
+                        $value = $value->referenceObject;
+                    }
+                    $columnNames->append($property->foreignKey->columnName);
+                    $arguments->append($value);
+                }
+            }
+        }
+        $this->string = "INSERT INTO `$entity->tableName` (" . $columnNames->map(fn(string $columnName): string => "`$columnName`")->join(', ') . ") VALUES " . ArrayClass::repeating("(" . ArrayClass::repeating('?', $columnNames->count())->join(', ') . ")", $insertedObjects->count())->join(', ') . " ON DUPLICATE KEY UPDATE {$columnNames->map(fn(string $columnName): string => "`$columnName` = VALUES(`$columnName`)")->join(', ')}";
+        $this->arguments = $arguments;
+    }
+
+    /**
+     * @param SQLEntity $entity
+     * @param ArrayClass<ManagedObject> $updatedObjects
+     */
+    private function prepareUpdateStatement(SQLEntity $entity, ArrayClass $updatedObjects): void
+    {
+        /** @var ArrayClass<mixed> $arguments */
+        $arguments = new ArrayClass();
+        /** @var Set<string> $columnNames */
+        $columnNames = new Set();
+        foreach ($updatedObjects as $updatedObject) {
+            foreach ($entity->properties as $property) {
+                if ($property instanceof SQLAttribute && !$property->propertyDescription instanceof DerivedAttributeDescription) {
+                    $key = $property->name;
+                    $value = $updatedObject->changedValuesForCurrentEvent()[$key];
+                    if ($value !== null) {
+                        $columnNames->append($key);
+                    }
+                }
+            }
+        }
+        $this->string = "UPDATE `$entity->tableName` SET {$columnNames->map(fn(string $columnName): string => "`$columnName` = (CASE {$updatedObjects->map(function(ManagedObject $object) use ($entity, $columnName, &$arguments): string {
+            /** @var SQLAttribute $attribute */
+            $attribute = $entity->propertiesByName[$columnName];
+            $arguments->appendContentsOf([$object->objectID->referenceObject, $this->coercedValue($object, $attribute->attributeDescription)]);
+            return "WHEN `{$entity->primaryKey->columnName}` = ? THEN ?";
+        })->join(" ")} ELSE `$columnName` END)")->join(", ")} WHERE `{$entity->primaryKey->columnName}` IN (" . ArrayClass::repeating('?', $updatedObjects->count())->join(',') . ")";
+        $arguments->appendContentsOf($updatedObjects->map(fn(ManagedObject $object): string|int => $object->objectID->referenceObject));
+        $this->arguments = $arguments;
+    }
+
+    private function prepareDeleteStatement(SQLEntity $entity, ArrayClass $objects): void
+    {
+        $this->string = "DELETE FROM `$entity->tableName` WHERE `{$entity->primaryKey->columnName}` IN (" . ArrayClass::repeating('?', $objects->count())->join(',') . ")";
+        $this->arguments = $objects;
+    }
+
+    private function prepareStatementForBatchUpdateRequest(): void
+    {
+        $this->string = "UPDATE `{$this->entity->tableName}`";
+    }
+
+    private function appendSetStatementForBatchUpdateRequest(BatchUpdateRequest $request): void
+    {
+        /** @var ArrayClass<mixed> $arguments */
+        $arguments = new ArrayClass();
+        /** @var Dictionary $propertiesToUpdate */
+        $propertiesToUpdate = $request->propertiesToUpdate;
+        $this->string .= " SET {$propertiesToUpdate->map(function (mixed $value, string $key) use (&$arguments): string {
+                if (is_string($value) && $this->entity->attributes->contains(fn(SQLAttribute $attribute): bool => $attribute->name === $value)) {
+                    return "`$key` = $value";
+                }
+                $arguments[] = $value;
+                return "`$key` = ?";
+            })->join(', ')}";
+        $this->arguments = $arguments;
+    }
+
+    private function prepareStatementForBatchDeleteRequest(BatchDeleteRequest $request): void
+    {
+        /** @noinspection SqlWithoutWhere */
+        $this->string = "DELETE `{$request->fetchRequest->entity->name}` FROM `{$request->fetchRequest->entity->name}`";
+    }
+
+    /**
+     * @param Set<mixed> $objects
+     * @return Dictionary<ArrayClass<mixed>>
+     */
+    private function groupedObjects(Set $objects): Dictionary
+    {
+        /** @var Dictionary<ArrayClass<mixed>> $map */
+        $map = new Dictionary();
+        $object = $objects->first();
+        if ($object instanceof PersistentHistoryTransaction) {
+            $map[$object::className()] = new ArrayClass($objects);
+        } else {
+            $objects = $objects->sort(fn(ManagedObject $e0, ManagedObject $e1): int => $e0->entity->relationshipsByName->compactMap(fn(RelationshipDescription $relationship): ?EntityDescription => $e0->isRelationshipForKeyFault($relationship->name) ? $relationship->destinationEntity : null)->containsElement($e1->entity) ? ComparisonResult::orderedDescending->value : ComparisonResult::orderedAscending->value);
+            foreach ($objects as $object) {
+                $entity = $object->entity;
+                $key = $entity->name;
+                /** @var ArrayClass<mixed> $value */
+                $value = $map[$key] ?? new ArrayClass();
+                if (!$value->containsElement($object)) {
+                    $value->append($object);
+                }
+                $map[$key] = $value;
+            }
+        }
+        return $map;
+    }
+}
