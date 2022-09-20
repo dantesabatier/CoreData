@@ -1,32 +1,28 @@
 # Core Data
 
-## What Is Core Data?
+Core Data is an object graph and persistence framework that enables the organization and manipulation of data from an entity-attribute relational model.
 
-Core Data is a framework that you use to manage the model layer objects in your application. It provides generalized and automated solutions to common tasks associated with object life cycle and object graph management, including persistence.
+Core Data provides two abstract types of persistent stores:
 
-Core Data typically decreases by 50 to 70 percent the amount of code you write to support the model layer. This is primarily due to the following built-in features that you do not have to implement, test, or optimize:
+- Atomic, intended to handle data sets that can be expressed in memory, favors simplicity over performance.
+- Incremental, to manage large and/or shared data sets.
 
-- Maintenance of change propagation, including maintaining the consistency of relationships among objects.
-- Lazy loading of objects, partially materialized futures (faulting), and copy-on-write data sharing to reduce overhead.
-- Automatic validation of property values. Managed objects extend the standard key-value coding validation methods to ensure that individual values lie within acceptable ranges, so that combinations of values make sense.
-- Schema migration tools that simplify schema changes and allow you to perform efficient in-place schema migration.
-- Grouping, filtering, and organizing data in memory and in the user interface.
-- Automatic support for storing objects in external data repositories.
-- Sophisticated query compilation. Instead of writing SQL, you can create complex queries by associating a Predicate object with a fetch request.
-- Version tracking and optimistic locking to support automatic multiwriter conflict resolution.
+Core Data also provides the implementation of two specific persistent store types, XML and SQL (each a subclass of atomic and incremental stores, respectively).
 
-## Install
+The SQL persistent store is a (fully managed by the framework) SQL database, this includes:
 
-Via Composer
+- Creating and updating the structure, creation, modification of tables, columns, indexes, unique constraints, integration levels, etc.
+- Query generation, the framework uses expressions and predicates, i.e. mathematical logic (first-order logic) to filter lookups on sets.
+- Data mutation, create, update, delete.
+- Data migration, this includes exporting data of data type from one persistent store to another.
 
-``` bash
-$ composer require sabatier/coredata
-```
+Core Data use a managed object model (ManagedObjectModel), so, to update the structure of the persistent store, all you have to do is to update the model (even for the SQL persistent store) and the framework will do the rest, all unattended and automatic, no typing required a single line of code and without the need to execute any commands.
+
+The XML store is a file.
 
 ## Initializing the Core Data Stack
 
-The Core Data stack is a collection of framework objects that are accessed as part of the initialization of Core Data and that mediate between the objects in your application and external data stores. The Core Data stack handles all the interactions with the external data stores so that your application can focus on its business logic. The stack consists of four primary objects: the managed object context (ManagedObjectContext), the persistent store coordinator (PersistentStoreCoordinator), the managed object model (ManagedObjectModel), and the persistent container (
-PersistentContainer).
+The Core Data stack is a collection of framework objects that are accessed as part of the initialization of Core Data and that mediate between the objects in your application and external data stores. The Core Data stack handles all the interactions with the external data stores so that your application can focus on its business logic. The stack consists of four primary objects: the managed object context (ManagedObjectContext), the persistent store coordinator (PersistentStoreCoordinator), the managed object model (ManagedObjectModel), and the persistent container (PersistentContainer).
 
 You initialize the Core Data stack prior to accessing your application data. The initialization of the stack prepares Core Data for data requests and the creation of data.
 
