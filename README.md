@@ -6,7 +6,7 @@ I created this framework because I wanted to automate the process of dealing wit
 
 ## What is Core Data?
 
-Core Data is an [Object graph](https://en.wikipedia.org/wiki/Object_graph) and [Persistence framework](https://en.wikipedia.org/wiki/Persistence_framework) that enables the organization and manipulation of data from an entity-attribute relational model.
+Core Data is an *[Object graph](https://en.wikipedia.org/wiki/Object_graph)* and *[Persistence framework](https://en.wikipedia.org/wiki/Persistence_framework)* that enables the organization and manipulation of data from an entity-attribute relational model.
 
 Core Data provides two abstract types of persistent stores:
 
@@ -18,7 +18,7 @@ Core Data also provides the implementation of two specific persistent store type
 The SQL persistent store is a (fully managed by the framework) SQL database, this includes:
 
 - Creating and updating the structure, creation, modification of tables, columns, indexes, unique constraints, integration levels, etc.
-- Query generation, the framework uses expressions and predicates, i.e. mathematical logic (first-order logic) to filter lookups on sets.
+- Query generation, the framework uses the (profoundly beautiful) expressions and predicates, which is somewhat similar to using the relational model to filter collections using an code-enriched pseudo language based on mathematical logic, predicate logic or first-order logic to filter lookups on sets.
 - Data mutation, create, update, delete.
 - Data migration, this includes exporting data of data type from one persistent store to another.
 
