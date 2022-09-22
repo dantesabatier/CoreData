@@ -1,6 +1,6 @@
 # Core Data
 
-This is the first (as far as I know) open source implementation of *[Apple's Core Data](https://developer.apple.com/documentation/coredata)*, a wonderful, very complex and beautifully designed framework, responsable of many bundled applications, services and frameworks in macOS and iOS that I created using mostly my intuition and experience developing Cocoa applications.
+This is the first (as far as I know) open source implementation of *[Apple's Core Data](https://developer.apple.com/documentation/coredata)*, a wonderful, very complex and beautifully designed framework, responsable for many bundled applications, services and frameworks in macOS and iOS that I created using mostly my intuition and experience developing Cocoa applications.
 
 I created this framework because I wanted to automate the process of dealing with the complexity of persistent data and is build on top of *[Sabatier's Foundation](https://github.com/dantesabatier/Foundation)*.
 
@@ -18,7 +18,7 @@ Core Data also provides the implementation of two specific persistent store type
 The SQL persistent store is a (fully managed by the framework) SQL database, this includes:
 
 - Creating and updating the structure, creation, modification of tables, columns, indexes, unique constraints, integration levels, etc.
-- Query generation, the framework uses the (profoundly beautiful) expressions and predicates, which is somewhat similar to using the relational model to filter collections using an code-enriched pseudo language based on mathematical logic, predicate logic or first-order logic to filter lookups on sets.
+- Query generation, the framework uses the (profoundly beautiful) expressions and predicates, which is somewhat similar to using the relational model to filter collections using a code-enriched pseudo language based on mathematical logic, predicate logic or first-order logic to filter lookups on sets.
 - Data mutation, create, update, delete.
 - Data migration, this includes exporting data of data type from one persistent store to another.
 
@@ -128,18 +128,8 @@ $fetchRequest->entity = Employee::entity();
 $employees = $context->fetch($fetchRequest);
 ```
 
-### Filtering Results
-
-The real flexibility in fetching objects comes in the complexity of the fetch request. To begin with, you can add a Predicate object to the fetch request to narrow the number of objects being returned. For example, if you only want Employee objects that have a firstName of Trevor, you add the predicate directly to FetchRequest:
-
-```php
-<?php
-
-$fetchRequest->predicate = Predicate::format("%K == %s", new ArrayClass(['firstName', new ArrayClass(['Trevor'])]));
-```
-
 A fetch request can be very complex and specific.
-In a sense, this implementation works like GraphQL but you don't need to declare anything, because everything is already declared in the managed object model. In the next example Core Data will handle everything in order to return a very specific object graph.
+In a sense, works like GraphQL but, you don't need to declare anything, because everything is already declared in the managed object model.
 
 ```php
 <?php
@@ -170,6 +160,50 @@ $serialization = Dictionary::dictionaryWithArray([
 $fetchRequest = new FetchRequest();
 $fetchRequest->entity = Event::entity();
 $fetchRequest->serialization = $serialization;
+```
+
+### Filtering Results
+
+The real flexibility in fetching objects comes in the complexity of the fetch request. To begin with, you can add a Predicate object to the fetch request to narrow the number of objects being returned. For example, if you only want Employee objects that have a firstName of Trevor, you add the predicate directly to FetchRequest:
+
+```php
+<?php
+
+$fetchRequest->predicate = Predicate::format("%K == %s", new ArrayClass(['firstName', new ArrayClass(['Trevor'])]));
+```
+
+You can also use functions expressions.
+
+```php
+<?php
+
+/** @var FetchRequest<User> $fetchRequest */
+$fetchRequest = new FetchRequest();
+$fetchRequest->entity = User::entity();
+$fetchRequest->predicate = Predicate::format("day:(%K) == day:(now:())", new ArrayClass(['birthday']));
+```
+
+Function expressions can also be used to return custom values.
+
+This will return the sum of the cost of all the items matching the given predicate on a column named *computedValue*.
+By the way, the variable *cost* is a derived attribute description with a derivation expression equal to "price - price * discount / 100".
+
+```php
+<?php
+
+$expressionDescription = new ExpressionDescription();
+$expressionDescription->name = 'computedValue';
+$expressionDescription->expression = Expression::expressionWithFormat("sum:(%K)", new ArrayClass(['cost']));
+$expressionDescription->expressionResultType = AttributeType::decimal;
+/** @var FetchRequest<Item> $fetchRequest */
+$fetchRequest = new FetchRequest();
+$fetchRequest->entity = Item::entity();
+$fetchRequest->propertiesToFetch = new ArrayClass(['type', 'price', $expressionDescription]);
+$fetchRequest->propertiesToGroupBy = new ArrayClass(['type']);
+$fetchRequest->havingPredicate = Predicate::format('%K > %s', new ArrayClass(['price', 0]));
+$fetchRequest->sortDescriptors = new ArrayClass([new SortDescriptor('type')]);
+$fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
+$result = $context->fetch($fetchRequest);
 ```
 
 ## Data Migration
@@ -356,11 +390,11 @@ $context->execute($purgeHistoryRequest);
 
 ## Dependencies
 
-The only direct dependency is [Foundation](https://github.com/dantesabatier/Foundation), also uses the great static analyzers [Psalm](https://psalm.dev/) and [PHPStan](https://phpstan.org/) and in the near future I plan to make it available via composer so you'll have a vendor folder.
+The only direct dependency is [Foundation](https://github.com/dantesabatier/Foundation), also uses the great static analyzers [Psalm](https://psalm.dev/) and [PHPStan](https://phpstan.org/) and in the near future I plan to make it available via composer, so you'll have a vendor folder.
 
 ## Prerequisites
 
-The code is well documented (I wrote most of the documentation so I can implement classes and methods) but, it's best if you have some Cocoa development experience.
+The code is well documented (I wrote most of the documentation, so I can implement classes and methods) but, it's best if you have some Cocoa development experience.
 
 ## Contributing
 
