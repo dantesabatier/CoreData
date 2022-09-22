@@ -1,7 +1,5 @@
 # Core Data
 
-## Justification
-
 This is the first (as far as I know) open source implementation of *[Apple's Core Data](https://developer.apple.com/documentation/coredata)*, a wonderful, very complex and beautifully designed framework, responsable of many bundled applications, services and frameworks in macOS and iOS that I created using mostly my intuition and experience developing Cocoa applications.
 
 I created this framework because I wanted to automate the process of dealing with the complexity of persistent data and is build on top of *[Sabatier's Foundation](https://github.com/dantesabatier/Foundation)*.
