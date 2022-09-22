@@ -6,7 +6,7 @@ I created this framework because I wanted to automate the process of dealing wit
 
 ## What is Core Data?
 
-Core Data is an object graph and persistence framework that enables the organization and manipulation of data from an entity-attribute relational model.
+Core Data is an [Object graph](https://en.wikipedia.org/wiki/Object_graph) and [Persistence framework](https://en.wikipedia.org/wiki/Persistence_framework) that enables the organization and manipulation of data from an entity-attribute relational model.
 
 Core Data provides two abstract types of persistent stores:
 
