@@ -1,5 +1,13 @@
 # Core Data
 
+## Justification
+
+This is the first (as far as I know) open source implementation of *[Apple's Core Data](https://developer.apple.com/documentation/coredata)*, a wonderful, very complex and beautifully designed framework, responsable of many bundled applications, services and frameworks in macOS and iOS that I created using mostly my intuition and experience developing Cocoa applications.
+
+I created this framework because I wanted to automate the process of dealing with the complexity of persistent data and is build on top of *[Sabatier's Foundation](https://github.com/dantesabatier/Foundation)*.
+
+## What is Core Data?
+
 Core Data is an object graph and persistence framework that enables the organization and manipulation of data from an entity-attribute relational model.
 
 Core Data provides two abstract types of persistent stores:
@@ -315,6 +323,14 @@ $context = $container->viewContext;
 $purgeHistoryRequest = PersistentHistoryChangeRequest::deleteHistoryBeforeDate(Date::distantPast());
 $context->execute($purgeHistoryRequest);
 ```
+
+## Dependencies
+
+The only direct dependency is [Foundation](https://github.com/dantesabatier/Foundation), also uses the great static analyzers [Psalm](https://psalm.dev/) and [PHPStan](https://phpstan.org/) and in the near future I plan to make it available via composer so you'll have a vendor folder.
+
+## Prerequisites
+
+The code is well documented (I wrote most of the documentation so I can implement classes and methods) but, it's best if you have some Cocoa development experience.
 
 ## Contributing
 
