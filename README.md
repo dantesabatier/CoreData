@@ -140,7 +140,39 @@ The real flexibility in fetching objects comes in the complexity of the fetch re
 $fetchRequest->predicate = Predicate::format("%K == %s", new ArrayClass(['firstName', new ArrayClass(['Trevor'])]));
 ```
 
-In addition to narrowing the objects being returned, you can configure how those objects are returned. For example, you can instruct Core Data to return Dictionary instances instead of fully formed ManagedObject instances. Further, you can configure the FetchRequest so that those Dictionary instances only contain a subset of the properties available on the Employee entity.
+A fetch request can be very complex and specific.
+In a sense, this implementation works like GraphQL but you don't need to declare anything, because everything is already declared in the managed object model. In the next example Core Data will handle everything in order to return a very specific object graph.
+
+```php
+<?php
+
+$serialization = Dictionary::dictionaryWithArray([
+    'title' => AttributeType::string,
+    'calendar' => [
+         'title' => AttributeType::string
+    ],
+    'organizer' => [
+        'name' => AttributeType::string
+    ],
+    'attendees' => [
+        'name' => AttributeType::string
+    ],
+    'recurrenceRules' => [
+        'frequency' => AttributeType::integer32,
+        'interval' => AttributeType::integer32,
+        'recurrenceEnd' => [
+            'occurrenceCount' => AttributeType::integer32
+        ]
+    ],
+    'alarms' => [
+        'type' => AttributeType::integer16
+    ],
+]);
+/** @var FetchRequest<Event> $fetchRequest */
+$fetchRequest = new FetchRequest();
+$fetchRequest->entity = Event::entity();
+$fetchRequest->serialization = $serialization;
+```
 
 ## Data Migration
 
