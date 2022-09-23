@@ -388,23 +388,6 @@ $purgeHistoryRequest = PersistentHistoryChangeRequest::deleteHistoryBeforeDate(D
 $context->execute($purgeHistoryRequest);
 ```
 
-## Dependencies
-
-The only direct dependency is [Foundation](https://github.com/dantesabatier/Foundation), also uses the great static analyzers [Psalm](https://psalm.dev/) and [PHPStan](https://phpstan.org/) and in the near future I plan to make it available via composer, so you'll have a vendor folder.
-
-## Prerequisites
-
-The code is well documented (I wrote most of the documentation, so I can implement classes and methods) but, it's best if you have some Cocoa development experience.
-
-## Contributing
-
-Please see [CONTRIBUTING](https://github.com/dantesabatier/coredata/blob/master/CONTRIBUTING.md) for details.
-
-## Credits
-
-- [Dante Sabatier](https://github.com/dantesabatier)
-- [All Contributors](https://github.com/dantesabatier/coredata/contributors)
-
 ## License
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
