@@ -55,6 +55,11 @@
       "Sabatier\\CoreData\\Test\\": "tests"
     }
   },
+  "extra": {
+    "branch-alias": {
+      "dev-master": "1.0-dev"
+    }
+  },
   "scripts": {
     "psalm": "vendor/bin/psalm --config=psalm.xml"
   }
