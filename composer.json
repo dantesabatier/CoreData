@@ -22,7 +22,7 @@
     "ext-posix": "*",
     "ext-zlib": "*",
     "ext-libxml": "*",
-    "sabatier/foundation": "@dev"
+    "sabatier/foundation": "^1.0-dev"
   },
   "require-dev": {
     "phpunit/phpunit": "^9",
