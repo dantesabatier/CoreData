@@ -56,7 +56,7 @@ class SQLConnection extends ObjectClass
         /** @noinspection PhpUnhandledExceptionInspection */
         return $this->$name = match ($name) {
             'schema' => new SQLSchema(ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_NAME'], ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_HOST'], new SQLCredential(ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_USER'], ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_PASSWORD'])),
-            'sqlCore' => $this->adapter?->sqlCore ?? throw new InvalidArgumentException("invalid argument: adapter cannot be null"),
+            'sqlCore' => $this->adapter?->sqlCore ?? throw new InvalidArgumentException("invalid argument: SQLCore cannot be null"),
             'bundleID' => Bundle::bundleWithURL(FileManager::default()->url(SearchPathDirectory::applicationsDirectory)->appendingPathComponent(ProcessInfo::processInfo()->processName))?->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString,
             default => $this->valueForUndefinedKey($name),
         };
