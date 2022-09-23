@@ -202,10 +202,10 @@ class SQLAdapter extends ObjectClass
         $correlationTableName = $manyToMany->correlationTableName;
         $destinationEntity = $manyToMany->destinationEntity;
         $primaryKey = $destinationEntity->primaryKey;
-        $statements->append(new SQLStatement("ALTER TABLE `$correlationTableName` ADD CONSTRAINT `FK_{$correlationTableName}__{$entity->tableName}_$destinationEntity->tableName` FOREIGN KEY (`$manyToMany->columnName`) REFERENCES `$destinationEntity->tableName` (`$primaryKey->columnName`) ON UPDATE CASCADE ON DELETE CASCADE"));
+        $statements->append(new SQLStatement("ALTER TABLE `$correlationTableName` ADD CONSTRAINT `FK_{$correlationTableName}__{$entity->tableName}_$destinationEntity->tableName` FOREIGN KEY IF NOT EXISTS (`$manyToMany->columnName`) REFERENCES `$destinationEntity->tableName` (`$primaryKey->columnName`) ON UPDATE CASCADE ON DELETE CASCADE"));
         $destinationEntity = $manyToMany->inverseRelationship->destinationEntity;
         $primaryKey = $destinationEntity->primaryKey;
-        $statements->append(new SQLStatement("ALTER TABLE `$correlationTableName` ADD CONSTRAINT `FK_{$correlationTableName}__{$entity->tableName}_$destinationEntity->tableName` FOREIGN KEY (`$manyToMany->inverseColumnName`) REFERENCES `$destinationEntity->tableName` (`$primaryKey->columnName`) ON UPDATE CASCADE ON DELETE CASCADE"));
+        $statements->append(new SQLStatement("ALTER TABLE `$correlationTableName` ADD CONSTRAINT `FK_{$correlationTableName}__{$entity->tableName}_$destinationEntity->tableName` FOREIGN KEY IF NOT EXISTS (`$manyToMany->inverseColumnName`) REFERENCES `$destinationEntity->tableName` (`$primaryKey->columnName`) ON UPDATE CASCADE ON DELETE CASCADE"));
         return SQLStatement::merging($statements);
     }
 

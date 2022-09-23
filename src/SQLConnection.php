@@ -38,7 +38,7 @@ class SQLConnection extends ObjectClass
 {
     public readonly SQLSchema $schema;
     public SQLStoreRequestContext $requestContext;
-    public SQLCore $sqlCore;
+    public ?SQLCore $sqlCore;
     private string $bundleID;
     private ?PDO $pdo = null;
     private bool $open = false;
@@ -56,7 +56,7 @@ class SQLConnection extends ObjectClass
         /** @noinspection PhpUnhandledExceptionInspection */
         return $this->$name = match ($name) {
             'schema' => new SQLSchema(ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_NAME'], ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_HOST'], new SQLCredential(ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_USER'], ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_PASSWORD'])),
-            'sqlCore' => $this->adapter?->sqlCore ?? throw new InvalidArgumentException("invalid argument: SQLCore cannot be null"),
+            'sqlCore' => $this->adapter?->sqlCore,
             'bundleID' => Bundle::bundleWithURL(FileManager::default()->url(SearchPathDirectory::applicationsDirectory)->appendingPathComponent(ProcessInfo::processInfo()->processName))?->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString,
             default => $this->valueForUndefinedKey($name)
         };
@@ -85,7 +85,7 @@ class SQLConnection extends ObjectClass
     {
         if ($this->pdo === null) {
             $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC];
-            if ($timeout = $this->sqlCore->options?->valueForKey(PersistentStoreTimeoutOption)) {
+            if ($timeout = $this->sqlCore?->options?->valueForKey(PersistentStoreTimeoutOption)) {
                 $options[PDO::ATTR_TIMEOUT] = $timeout;
             }
             $this->pdo = new PDO("mysql:host={$this->schema->host};charset={$this->schema->charset}", $this->schema->credential->user, $this->schema->credential->password, $options);
@@ -453,7 +453,7 @@ class SQLConnection extends ObjectClass
     private function createHistoryTrackingTables(): void
     {
         if (!$this->hasPersistentHistoryTables()) {
-            $entities = $this->sqlCore->model->entities->filter(fn(SQLEntity $entity): bool => $entity->entityDescription->isPersistentHistoryEntity);
+            $entities = $this->sqlCore?->model?->entities?->filter(fn(SQLEntity $entity): bool => $entity->entityDescription->isPersistentHistoryEntity) ?? throw new InvalidArgumentException();
             foreach ($entities as $entity) {
                 $this->createTableForEntity($entity);
             }
@@ -469,7 +469,7 @@ class SQLConnection extends ObjectClass
     public function dropHistoryTrackingTables(): void
     {
         if ($this->hasPersistentHistoryTables()) {
-            $entities = $this->sqlCore->model->entities->filter(fn(SQLEntity $entity): bool => $entity->entityDescription->isPersistentHistoryEntity);
+            $entities = $this->sqlCore?->model?->entities?->filter(fn(SQLEntity $entity): bool => $entity->entityDescription->isPersistentHistoryEntity) ?? throw new InvalidArgumentException();
             foreach ($entities as $entity) {
                 if ($statement = $this->adapter?->newDropIndexesStatement($entity)) {
                     $this->execute($statement);
@@ -509,8 +509,7 @@ class SQLConnection extends ObjectClass
      */
     public function fetchMaxPrimaryKey(string $entityName): int
     {
-        /** @var SQLEntity $entity */
-        $entity = $this->sqlCore->model->entitiesByName[$entityName] ?? throw new InvalidArgumentException("invalid argument: entity \"$entityName\" does not exists");
+        $entity = $this->sqlCore?->model?->entitiesByName[$entityName] ?? throw new InvalidArgumentException("invalid argument: entity \"$entityName\" does not exists");
         $execute = $this->execute(new SQLStatement("SELECT MAX({$entity->primaryKey->columnName}) FROM `$entity->tableName`"));
         return (int)$execute->fetchColumn();
     }
@@ -674,8 +673,7 @@ class SQLConnection extends ObjectClass
      */
     private function createManyToManyTablesForEntities(ArrayClass $entities): void
     {
-        /** @var SQLAdapter $adapter */
-        $adapter = $this->adapter;
+        $adapter = $this->adapter ?? throw new InvalidArgumentException();
         /** @var Set<SQLStatement> $statements */
         $statements = (new Set($entities))->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->manyToManyRelationships)->map(fn(SQLManyToMany $manyToMany): SQLStatement => $adapter->newCreateTableStatementForManyToMany($manyToMany));
         if (!$statements->isEmpty()) {
@@ -705,7 +703,7 @@ class SQLConnection extends ObjectClass
     {
         try {
             $time = absolute_time_get_current();
-            $model = $this->sqlCore->model;
+            $model = $this->sqlCore?->model ?? throw new InvalidArgumentException();
             $database = $this->schema->name;
             if (SQLCore::$debugDefault) {
                 error_log("CoreData: annotation: creating database \"$database\"");
