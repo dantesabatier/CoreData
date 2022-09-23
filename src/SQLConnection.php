@@ -49,17 +49,25 @@ class SQLConnection extends ObjectClass
         unset($this->sqlCore);
         unset($this->bundleID);
     }
-
-    /** @psalm-suppress PossiblyNullArgument */
+    
     public function __get(string $name)
     {
-        /** @noinspection PhpUnhandledExceptionInspection */
-        return $this->$name = match ($name) {
-            'schema' => new SQLSchema(ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_NAME'], ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_HOST'], new SQLCredential(ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_USER'], ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_PASSWORD'])),
-            'sqlCore' => $this->adapter?->sqlCore ?? throw new InvalidArgumentException("invalid argument: SQLCore cannot be null"),
-            'bundleID' => Bundle::bundleWithURL(FileManager::default()->url(SearchPathDirectory::applicationsDirectory)->appendingPathComponent(ProcessInfo::processInfo()->processName))?->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString,
-            default => $this->valueForUndefinedKey($name),
-        };
+        if ($name == 'schema') {
+            $environment = ProcessInfo::processInfo()->environment;
+            /** @psalm-suppress PossiblyNullArgument */
+            $this->$name = new SQLSchema($environment['COREDATA_SQL_DATABASE_NAME'], $environment['COREDATA_SQL_DATABASE_HOST'], new SQLCredential($environment['COREDATA_SQL_DATABASE_USER'], $environment['COREDATA_SQL_DATABASE_PASSWORD']));
+            return $this->$name;
+        } elseif ($name == 'sqlCore') {
+            $adapter = $this->adapter ?? throw new InvalidArgumentException("invalid argument: adapter cannot be null");
+            $this->$name = $adapter->sqlCore;
+            return $this->$name;
+        } elseif ($name == 'bundleID') {
+            /** @noinspection PhpUnhandledExceptionInspection */
+            $this->$name = Bundle::bundleWithURL(FileManager::default()->url(SearchPathDirectory::applicationsDirectory)->appendingPathComponent(ProcessInfo::processInfo()->processName))?->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString;
+            return $this->$name;
+        } else {
+            return $this->valueForUndefinedKey($name);
+        }
     }
 
     public function __destruct()
