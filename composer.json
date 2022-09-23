@@ -3,14 +3,16 @@
   "description": "Core Data is an Object graph and Persistence framework that enables the organization and manipulation of data from an entity-attribute relational model.",
   "keywords": [
     "sabatier",
-    "coredata"
+    "coredata",
+    "persistence",
+    "objectgraph"
   ],
   "homepage": "https://github.com/dantesabatier/coredata",
   "license": "MIT",
   "authors": [
     {
       "name": "dantesabatier",
-      "homepage": "https://github.com/dantesabatier"
+      "email": "dantesabatier@me.com"
     }
   ],
   "require": {
