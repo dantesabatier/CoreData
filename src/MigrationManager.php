@@ -1,4 +1,5 @@
-<?php
+<?php /** @noinspection PhpUnused */
+
 /**
  * Created by PhpStorm.
  * User: dante
@@ -105,13 +106,28 @@ class MigrationManager extends ObjectClass
         if (!$this->entityMigrationPolicy->begin($mapping, $this)) {
             return false;
         }
+        if (!($sourceEntityName = $mapping->sourceEntityName)) {
+            return false;
+        }
         $mappingType = $mapping->mappingType;
         if ($mappingType == EntityMappingType::addEntityMappingType ||
             $mappingType == EntityMappingType::removeEntityMappingType) {
             return true;
         }
-        if (!($sourceEntityName = $mapping->sourceEntityName)) {
-            return false;
+        $sourceEntity = $this->sourceEntity($mapping);
+        $destinationEntity = $this->destinationEntity($mapping);
+        if ($this->performedInPlaceMigration) {
+            if ($mappingType == EntityMappingType::copyEntityMappingType) {
+                return true;
+            }
+            if ($mappingType == EntityMappingType::transformEntityMappingType) {
+                if (!($destinationEntityName = $mapping->destinationEntityName)) {
+                    return false;
+                }
+                if ($this->sourceModel->entitiesByName[$destinationEntityName] && ($sourceEntity?->name === $destinationEntity?->name)) {
+                    return true;
+                }
+            }
         }
         $sourceContext = $this->sourceContext;
         /** @var FetchRequest<ManagedObject> $request */
@@ -119,14 +135,14 @@ class MigrationManager extends ObjectClass
         $request->entity = EntityDescription::entity($sourceEntityName, $sourceContext);
         if ($mappingType == EntityMappingType::transformEntityMappingType) {
             /** @var Dictionary<AttributeDescription>|null $destinationAttributes */
-            $destinationAttributes = $this->destinationEntity($mapping)?->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute instanceof DerivedAttributeDescription);
+            $destinationAttributes = $destinationEntity?->attributesByName?->filter(fn(AttributeDescription $attribute): bool => !$attribute instanceof DerivedAttributeDescription);
             if ($destinationAttributes) {
                 /** @var Dictionary<AttributeDescription>|null $sourceAttributes */
-                $sourceAttributes = $this->sourceEntity($mapping)?->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute instanceof DerivedAttributeDescription);
+                $sourceAttributes = $sourceEntity?->attributesByName?->filter(fn(AttributeDescription $attribute): bool => !$attribute instanceof DerivedAttributeDescription && $destinationAttributes->containsElement($attribute));
                 if ($sourceAttributes) {
                     $destinationAttributes->merge($sourceAttributes);
                 }
-                $request->propertiesToFetch = new ArrayClass($destinationAttributes->keys); // @phpstan-ignore-line
+                $request->propertiesToFetch = $destinationAttributes->keys; // @phpstan-ignore-line
             }
         }
         $request->includesSubentities = false;
@@ -343,7 +359,7 @@ class MigrationManager extends ObjectClass
     /**
      * Returns the managed object instances created in the destination store for the named entity mapping for the given array of source instances.
      * @param string $mappingName The name of an entity mapping in use.
-     * @param ArrayClass<ManagedObject>|null $sourceInstances A array of managed objects in the source store.
+     * @param ArrayClass<ManagedObject>|null $sourceInstances An array of managed objects in the source store.
      * @return ArrayClass<ManagedObject> An array containing the managed object instances created in the destination store for the entity mapping named mappingName for sourceInstances.
      * If sourceInstances is nil, all of the destination instances created by the specified property mapping are returned.
      */

@@ -8,6 +8,7 @@
 
 namespace Sabatier\CoreData;
 
+use InvalidArgumentException;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyedArchiver;
@@ -54,14 +55,14 @@ class RelationshipDescription extends PropertyDescription
                 throw new InternalInconsistencyException(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription(), $name));
             }
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-            $this->$name = $this->entity->managedObjectModel->entitiesByName[$this->lazyDestinationEntityName] ?? $this->entity->managedObjectModel->entitiesByName->first(fn(EntityDescription $entity): bool => $entity->renamingIdentifier === $this->lazyDestinationEntityName) ?? throw new InternalInconsistencyException();
+            $this->$name = $this->entity->managedObjectModel->entitiesByName[$this->lazyDestinationEntityName] ?? $this->entity->managedObjectModel->entitiesByName->first(fn(EntityDescription $entity): bool => $entity->renamingIdentifier === $this->lazyDestinationEntityName) ?? throw new InvalidArgumentException(sprintf("%s, destination entity \"%s\" does not exists", $this->name, $this->lazyDestinationEntityName));
             return $this->$name;
         } elseif ($name == 'inverseRelationship') {
             if ($this->entity->isEditable) {
                 throw new InternalInconsistencyException(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription(), $name));
             }
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-            $this->$name = $this->destinationEntity->relationshipsByName[$this->lazyInverseRelationshipName] ?? $this->destinationEntity->relationshipsByName->first(fn(RelationshipDescription $relationship): bool => $relationship->renamingIdentifier === $this->lazyInverseRelationshipName) ?? throw new InternalInconsistencyException();
+            $this->$name = $this->destinationEntity->relationshipsByName[$this->lazyInverseRelationshipName] ?? $this->destinationEntity->relationshipsByName->first(fn(RelationshipDescription $relationship): bool => $relationship->renamingIdentifier === $this->lazyInverseRelationshipName) ?? throw new InvalidArgumentException(sprintf("%s, inverse relationship \"%s\" does not exists", $this->name, $this->lazyInverseRelationshipName));
             return $this->$name;
         } elseif ($name == 'propertyType') {
             $this->$name = PropertyDescriptionType::relationship;
