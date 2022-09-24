@@ -134,7 +134,7 @@ class SQLAdapter extends ObjectClass
         if ($column instanceof SQLForeignKey) {
             return $this->statement($column, $entity);
         }
-        if ($index = $column->entity->indexes->first(fn(SQLIndex $index): bool => $index->indexDescription->elements->contains(fn(FetchIndexElementDescription $element): bool => $element->property->isEqual($column->propertyDescription)))) {
+        if ($index = $entity->indexes->first(fn(SQLIndex $index): bool => $index->indexDescription->elements->contains(fn(FetchIndexElementDescription $element): bool => $element->property->isEqual($column->propertyDescription)))) {
             return SQLStatement::merging($index->createTableStatements);
         }
         return null;
@@ -142,17 +142,27 @@ class SQLAdapter extends ObjectClass
 
     public function newDropColumnStatement(SQLColumn $column): SQLStatement
     {
-        return new SQLStatement("ALTER TABLE `{$column->entity->tableName}` DROP COLUMN IF EXISTS `$column->columnName`");
+        $entity = $column->entity;
+        if (!$entity->isRootEntity) {
+            /** @var SQLEntity $entity */
+            $entity = $entity->rootEntity;
+        }
+        return new SQLStatement("ALTER TABLE `$entity->tableName` DROP COLUMN IF EXISTS `$column->columnName`");
     }
 
     public function newRenameColumnStatement(SQLColumn $new, ?SQLColumn $old = null): ?SQLStatement
     {
+        $entity = $new->entity;
+        if (!$entity->isRootEntity) {
+            /** @var SQLEntity $entity */
+            $entity = $entity->rootEntity;
+        }
         if ($old) {
             /** @noinspection SqlIdentifier */
-            return new SQLStatement("ALTER TABLE `{$new->entity->tableName}` RENAME COLUMN IF EXISTS `$old->columnName` TO `$new->columnName`");
+            return new SQLStatement("ALTER TABLE `$entity->tableName` RENAME COLUMN IF EXISTS `$old->columnName` TO `$new->columnName`");
         }
         if ($string = $this->typeStringForColumn($new)) {
-            return new SQLStatement("ALTER TABLE `{$new->entity->tableName}` MODIFY IF EXISTS $string");
+            return new SQLStatement("ALTER TABLE `$entity->tableName` MODIFY IF EXISTS $string");
         }
         return null;
     }
@@ -160,7 +170,12 @@ class SQLAdapter extends ObjectClass
     public function newCreateColumnStatement(SQLColumn $column, SQLColumn $after): ?SQLStatement
     {
         if ($string = $this->typeStringForColumn($column)) {
-            return new SQLStatement("ALTER TABLE `{$column->entity->tableName}` ADD COLUMN IF NOT EXISTS $string AFTER `$after->columnName`");
+            $entity = $column->entity;
+            if (!$entity->isRootEntity) {
+                /** @var SQLEntity $entity */
+                $entity = $entity->rootEntity;
+            }
+            return new SQLStatement("ALTER TABLE `$entity->tableName` ADD COLUMN IF NOT EXISTS $string AFTER `$after->columnName`");
         }
         return null;
     }
@@ -220,12 +235,9 @@ class SQLAdapter extends ObjectClass
         return null;
     }
 
-    public function newRenameTableStatement(SQLEntity $sourceEntity, SQLEntity $destinationEntity): ?SQLStatement
+    public function newRenameTableStatement(SQLEntity $sourceEntity, SQLEntity $destinationEntity): SQLStatement
     {
-        if ($sourceEntity->tableName !== $destinationEntity->tableName) {
-            return new SQLStatement("ALTER TABLE `$sourceEntity->tableName` RENAME `$destinationEntity->tableName`");
-        }
-        return null;
+        return new SQLStatement("RENAME TABLE IF EXISTS `$sourceEntity->tableName`  TO `$destinationEntity->tableName`");
     }
 
     public function newCreateTableStatementForManyToMany(SQLManyToMany $manyToMany): SQLStatement
@@ -246,6 +258,10 @@ class SQLAdapter extends ObjectClass
      */
     private function statement(SQLForeignKey $foreignKey, SQLEntity $entity): SQLStatement
     {
+        if (!$entity->isRootEntity) {
+            /** @var SQLEntity $entity */
+            $entity = $entity->rootEntity;
+        }
         $toOneRelationship = $foreignKey->toOneRelationship;
         $destinationEntity = $toOneRelationship->destinationEntity;
         $primaryKey = $destinationEntity->primaryKey;
@@ -264,6 +280,10 @@ class SQLAdapter extends ObjectClass
      */
     private function statements(SQLForeignKey $foreignKey, SQLEntity $entity): ArrayClass
     {
+        if (!$entity->isRootEntity) {
+            /** @var SQLEntity $entity */
+            $entity = $entity->rootEntity;
+        }
         /** @var ArrayClass<SQLStatement> $statements */
         $statements = new ArrayClass();
         $toOneRelationship = $foreignKey->toOneRelationship;

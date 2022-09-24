@@ -5,6 +5,7 @@ namespace Sabatier\CoreData;
 use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\InternalInconsistencyException;
+use Sabatier\Foundation\Set;
 use Throwable;
 
 /** @internal */
@@ -13,8 +14,8 @@ class SQLStoreMigrator
     public readonly SQLAdapter $adapter;
     public readonly SQLConnection $connection;
     public readonly SQLModel $sourceModel;
-    /** @var ArrayClass<SQLStatement> */
-    private ArrayClass $dropTableStatements;
+    /** @var ArrayClass<SQLEntity> */
+    private readonly ArrayClass $removedEntities;
 
     /**
      * @throws Exception
@@ -24,6 +25,7 @@ class SQLStoreMigrator
         $this->connection = $this->store->schemaValidationConnection;
         $this->adapter = $this->connection->adapter ?? throw new InternalInconsistencyException();
         $this->sourceModel = new SQLModel($this->connection->fetchCachedModel() ?? throw new InternalInconsistencyException(), $this->store->configurationName);
+        $this->removedEntities = new ArrayClass();
     }
 
     /**
@@ -37,14 +39,14 @@ class SQLStoreMigrator
             $sourceModel = $this->sourceModel;
             $destinationModel = $this->destinationModel;
             $mappingModel = $this->mappingModel;
-            /** @var ArrayClass<EntityMapping> $addedEntityMappings */
-            $addedEntityMappings = new ArrayClass();
-            /** @var ArrayClass<EntityMapping> $removedEntityMappings */
-            $removedEntityMappings = new ArrayClass();
-            /** @var ArrayClass<EntityMapping> $copiedEntityMappings */
-            $copiedEntityMappings = new ArrayClass();
-            /** @var ArrayClass<EntityMapping> $transformedEntityMappings */
-            $transformedEntityMappings = new ArrayClass();
+            /** @var Set<EntityMapping> $addedEntityMappings */
+            $addedEntityMappings = new Set();
+            /** @var Set<EntityMapping> $removedEntityMappings */
+            $removedEntityMappings = new Set();
+            /** @var Set<EntityMapping> $copiedEntityMappings */
+            $copiedEntityMappings = new Set();
+            /** @var Set<EntityMapping> $transformedEntityMappings */
+            $transformedEntityMappings = new Set();
             foreach ($mappingModel->entityMappings as $mapping) {
                 if ($mapping->mappingType == EntityMappingType::addEntityMappingType) {
                     $addedEntityMappings->append($mapping);
@@ -53,12 +55,16 @@ class SQLStoreMigrator
                 } elseif ($mapping->mappingType == EntityMappingType::copyEntityMappingType) {
                     $copiedEntityMappings->append($mapping);
                 } elseif ($mapping->mappingType == EntityMappingType::transformEntityMappingType) {
-                    if (($sourceEntityName = $mapping->sourceEntityName) && ($destinationEntityName = $mapping->destinationEntityName)) {
-                        $transformedEntityMappings->append($mapping);
-                        if ($sourceModel->entitiesByName->valueForKey($sourceEntityName)?->isRootEntity && !$destinationModel->entitiesByName->valueForKey($destinationEntityName)?->isRootEntity) {
-                            $removedEntityMappings->append($mapping);
+                    $transformedEntityMappings->append($mapping);
+                    if (($sourceEntityName = $mapping->sourceEntityName) && ($destinationEntityName = $mapping->destinationEntityName) && ($sourceEntity = $sourceModel->entitiesByName[$sourceEntityName]) && ($destinationEntity = $destinationModel->entitiesByName[$destinationEntityName])) {
+                        if ($sourceEntity->isRootEntity) {
+                            if (!$destinationEntity->isRootEntity) {
+                                $removedEntityMappings->append($mapping);
+                            }
                         } else {
-                            $addedEntityMappings->append($mapping);
+                            if ($destinationEntity->isRootEntity && !$sourceModel->entitiesByName[$destinationEntityName]) {
+                                $addedEntityMappings->append($mapping);
+                            }
                         }
                     }
                 }
@@ -67,9 +73,17 @@ class SQLStoreMigrator
             $createIndexStatements = new ArrayClass();
             foreach ($addedEntityMappings as $mapping) {
                 if ($destinationEntityName = $mapping->destinationEntityName) {
+                    if ($sourceModel->entitiesByName[$destinationEntityName]) {
+                        continue;
+                    }
                     /** @var SQLEntity $destinationEntity */
                     $destinationEntity = $destinationModel->entitiesByName[$destinationEntityName];
-                    $statement = $adapter->newCreateTableStatement($destinationEntity);
+                    $rootEntity = $destinationEntity;
+                    if (!$rootEntity->isRootEntity) {
+                        /** @var SQLEntity $rootEntity */
+                        $rootEntity = $destinationEntity->rootEntity;
+                    }
+                    $statement = $adapter->newCreateTableStatement($rootEntity);
                     $connection->execute($statement);
                     if ($statement = $adapter->newCreateIndexesStatement($destinationEntity)) {
                         $createIndexStatements->append($statement);
@@ -84,21 +98,10 @@ class SQLStoreMigrator
             foreach ($createIndexStatements as $statement) {
                 $connection->execute($statement);
             }
-            /** @var ArrayClass<SQLStatement> $dropTableStatements */
-            $dropTableStatements = new ArrayClass();
+            $this->removedEntities->removeAll();
             foreach ($removedEntityMappings as $mapping) {
-                if ($sourceEntityName = $mapping->sourceEntityName) {
-                    /** @var SQLEntity $sourceEntity */
-                    $sourceEntity = $sourceModel->entitiesByName[$sourceEntityName];
-                    foreach ($sourceEntity->manyToManyRelationships as $manyToManyRelationship) {
-                        $statement = $adapter->newDropIndexesStatementForManyToMany($manyToManyRelationship);
-                        $connection->execute($statement);
-                        $dropTableStatements->append($adapter->newDropTableStatementForManyToMany($manyToManyRelationship));
-                    }
-                    if ($statement = $adapter->newDropIndexesStatement($sourceEntity)) {
-                        $connection->execute($statement);
-                    }
-                    $dropTableStatements->append($adapter->newDropTableStatement($sourceEntity));
+                if (($sourceEntityName = $mapping->sourceEntityName) && ($sourceEntity = $sourceModel->entity($sourceEntityName))) {
+                    $this->removedEntities->append($sourceEntity);
                 }
             }
             foreach ($transformedEntityMappings as $mapping) {
@@ -110,6 +113,10 @@ class SQLStoreMigrator
                 $sourceEntity = $sourceModel->entitiesByName[$sourceEntityName];
                 /** @var SQLEntity $destinationEntity */
                 $destinationEntity = $destinationModel->entitiesByName[$destinationEntityName];
+                if ($sourceEntity->isRootEntity && $destinationEntity->isRootEntity && $sourceEntityName !== $destinationEntityName && !$sourceModel->entitiesByName[$destinationEntityName]) {
+                    $statement = $adapter->newRenameTableStatement($sourceEntity, $destinationEntity);
+                    $connection->execute($statement);
+                }
                 foreach ($sourceEntity->properties as $source) {
                     if ($source instanceof SQLAttribute || $source instanceof SQLForeignKey) {
                         /** @psalm-suppress ArgumentTypeCoercion */
@@ -133,9 +140,6 @@ class SQLStoreMigrator
                         }
                     }
                 }
-                if (!$sourceModel->entitiesByName[$destinationEntityName] && ($statement = $adapter->newRenameTableStatement($sourceEntity, $destinationEntity))) {
-                    $connection->execute($statement);
-                }
                 $properties = $destinationEntity->properties;
                 foreach ($properties as $index => $property) {
                     if ($property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
@@ -152,7 +156,6 @@ class SQLStoreMigrator
                     }
                 }
             }
-            $this->dropTableStatements = $dropTableStatements;
         } catch (Throwable $throwable) {
             throw new Exception($throwable->getMessage());
         }
@@ -163,8 +166,21 @@ class SQLStoreMigrator
      */
     public function disconnect(): void
     {
+        $adapter = $this->adapter;
         $connection = $this->connection;
-        foreach ($this->dropTableStatements as $statement) {
+        foreach ($this->removedEntities as $entity) {
+            foreach ($entity->manyToManyRelationships as $manyToManyRelationship) {
+                $statement = $adapter->newDropIndexesStatementForManyToMany($manyToManyRelationship);
+                $connection->execute($statement);
+                $statement = $adapter->newDropTableStatementForManyToMany($manyToManyRelationship);
+                $connection->execute($statement);
+            }
+            if ($statement = $adapter->newDropIndexesStatement($entity)) {
+                $connection->execute($statement);
+            }
+        }
+        foreach ($this->removedEntities as $entity) {
+            $statement = $adapter->newDropTableStatement($entity);
             $connection->execute($statement);
         }
         $connection->saveCachedModel($this->destinationModel);

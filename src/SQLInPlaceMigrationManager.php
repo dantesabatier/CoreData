@@ -13,7 +13,7 @@ class SQLInPlaceMigrationManager extends MigrationManager
         if ($this->prepare($sourceURL, $sourceType, $sourceOptions, $mappingModel, $destinationURL, $destinationType, $destinationOptions) && $sourceType == $destinationType && $sourceURL->isEqual($destinationURL)) {
             $destinationOptions?->removeValueForKey(MigratePersistentStoresAutomaticallyOption);
             /** @var PersistentStoreCoordinator $persistentStoreCoordinator */
-            $persistentStoreCoordinator = $this->destinationContext->persistentStoreCoordinator;
+            $persistentStoreCoordinator = $this->sourceContext->persistentStoreCoordinator;
             /** @var SQLCore $store */
             $store = $persistentStoreCoordinator->persistentStore($sourceURL);
             $model = new SQLModel($this->destinationModel, $store->configurationName);
