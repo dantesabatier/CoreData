@@ -237,7 +237,7 @@ class SQLAdapter extends ObjectClass
 
     public function newRenameTableStatement(SQLEntity $sourceEntity, SQLEntity $destinationEntity): SQLStatement
     {
-        return new SQLStatement("RENAME TABLE IF EXISTS `$sourceEntity->tableName`  TO `$destinationEntity->tableName`");
+        return new SQLStatement("RENAME TABLE IF EXISTS `$sourceEntity->tableName` TO `$destinationEntity->tableName`");
     }
 
     public function newCreateTableStatementForManyToMany(SQLManyToMany $manyToMany): SQLStatement

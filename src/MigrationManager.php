@@ -116,7 +116,7 @@ class MigrationManager extends ObjectClass
         }
         $sourceEntity = $this->sourceEntity($mapping);
         $destinationEntity = $this->destinationEntity($mapping);
-        if ($this->performedInPlaceMigration && ($mappingType == EntityMappingType::copyEntityMappingType || ($mappingType == EntityMappingType::transformEntityMappingType && !$this->sourceModel->entitiesByName->contains(fn(EntityDescription $entityDescription): bool => $entityDescription->name === $destinationEntity?->name)))) {
+        if ($this->performedInPlaceMigration && ($mappingType == EntityMappingType::copyEntityMappingType || ($mappingType == EntityMappingType::transformEntityMappingType && $sourceEntity && $destinationEntity))) {
             return true;
         }
         $sourceContext = $this->sourceContext;
