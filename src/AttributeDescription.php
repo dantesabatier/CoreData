@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpUnused */
 
 /**
  * @author Dante Sabatier <dantesabatier@me.com>
@@ -94,7 +94,7 @@ class AttributeDescription extends PropertyDescription
     {
         return sprintf('%s type %s', parent::description(), human_readable_value($this->type));
     }
-    
+
     public function jsonSerialize(): Dictionary
     {
         /** @var Dictionary<mixed> $dictionary */

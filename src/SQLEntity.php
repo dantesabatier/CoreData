@@ -132,13 +132,11 @@ class SQLEntity extends StoreMapping
         } elseif ($name == 'primaryKey') {
             $attribute = new AttributeDescription();
             $attribute->entity = $this->entityDescription;
-            if ($this->entityDescription->name == 'PersistentHistoryTransaction') {
-                $attribute->name = 'transactionID';
-            } elseif ($this->entityDescription->name == 'PersistentHistoryChange') {
-                $attribute->name = 'changeID';
-            } else {
-                $attribute->name = 'objectID';
-            }
+            $attribute->name = match ($this->entityDescription->name) {
+                'PersistentHistoryTransaction' => 'transactionID',
+                'PersistentHistoryChange' => 'changeID',
+                default => 'objectID',
+            };
             $attribute->type = AttributeType::integer32;
             $attribute->isOptional = false;
             $this->$name = new SQLPrimaryKey($this, $attribute);

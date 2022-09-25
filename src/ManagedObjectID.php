@@ -16,7 +16,7 @@ use Sabatier\Foundation\URL;
 /**
  * Class ManagedObjectID
  * A compact, universal identifier for a managed object.
- * This identifier forms the basis for uniquing in the Core Data Framework. A managed object ID uniquely identifies the same managed object both between managed object contexts in a single application, and in multiple applications (as in distributed systems). Identifiers contain the information needed to exactly describe an object in a persistent store (like the primary key in the database), although the detailed information is not exposed. The framework completely encapsulates the “external” information and presents a clean object oriented interface.
+ * This identifier forms the basis for uniquing in the Core Data Framework. A managed object ID uniquely identifies the same managed object both between managed object contexts in a single application, and in multiple applications (as in distributed systems). Identifiers contain the information needed to exactly describe an object in a persistent store (like the primary key in the database), although the detailed information is not exposed. The framework completely encapsulates the “external” information and presents a clean object-oriented interface.
  * Object IDs can be transformed into a URI representation which can be archived and recreated later to refer back to a given object (using {@see PersistentStoreCoordinator::managedObjectID()}) (PersistentStoreCoordinator) and {@see ManagedObjectContext::object()} (ManagedObjectContext). For example, the last selected group in an application could be stored in the user defaults through the group object's ID. You can also use object ID URI representations to store “weak” relationships across persistent stores (where no hard join is possible).
  * @package Sabatier\CoreData
  * @psalm-suppress MissingConstructor
@@ -45,11 +45,10 @@ class ManagedObjectID extends ObjectClass implements FetchRequestResult
 
     public function __get(string $name)
     {
-        if ($name == 'isTemporaryID') {
-            return $this->persistentStore === null || is_string($this->referenceObject);
-        } else {
-            return $this->valueForUndefinedKey($name);
-        }
+        return match ($name) {
+            'isTemporaryID' => $this->persistentStore === null || is_string($this->referenceObject),
+            default => $this->valueForUndefinedKey($name)
+        };
     }
 
     #[ArrayShape(['entityName' => "string", 'referenceObject' => "int|string", 'storeIdentifier' => "string"])] public function __serialize(): array

@@ -1,4 +1,5 @@
-<?php
+<?php /** @noinspection PhpUnused */
+
 /**
  * Created by PhpStorm.
  * User: dante
@@ -29,8 +30,6 @@ class PersistentHistoryChangeRequest extends PersistentStoreRequest
     public readonly ?ArrayClass $transactionIDs;
     /** @internal */
     public readonly ?Number $transactionNumber;
-    /** @internal */
-    public bool $useQueryGenerationToken = false;
     /** @internal */
     public readonly bool $isDelete;
     /** @internal */

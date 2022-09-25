@@ -49,7 +49,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     public ?Dictionary $localizationDictionary = null;
     /** @var Dictionary<string> A dictionary of the version hashes for the entities in the model, keyed by entity name. The dictionary of version hash information is used by Core Data to determine schema compatibility. */
     public readonly Dictionary $entityVersionHashesByName;
-    /** @var Set<string> The set of developer-defined version identifiers for the model. Merged models return the combined collection of identifiers. The Core Data framework does not give models a default identifier, nor does it depend this value at runtime. For models created in Xcode, you set this value in the model inspector. This value is meant to be used as a debugging hint to help you determine the models that were combined to create a merged model. */
+    /** @var Set<string> The set of developer-defined version identifiers for the model. Merged models return the combined collection of identifiers. The Core Data framework does not give models a default identifier, nor does it depend on this value at runtime. For models created in Xcode, you set this value in the model inspector. This value is meant to be used as a debugging hint to help you determine the models that were combined to create a merged model. */
     public Set $versionIdentifiers;
     /** @internal */
     public readonly string $versionHash;
@@ -435,7 +435,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     }
 
     /**
-     * Returns a copy of the fetch request template with the variables substituted by values from the substitutions dictionary.
+     * Returns a copy of the fetch request template with the variables substituted by values from the substitutions' dictionary.
      * The variables dictionary must provide values for all the variables.
      * This method provides the usual way to bind an “abstractly” defined fetch request template to a concrete fetch.
      * @param string $name A string containing the name of a fetch request template.

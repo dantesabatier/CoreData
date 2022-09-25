@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpUnused */
 
 /**
  * @var string Key to represent the version hash information for the model used to create the store.
@@ -13,7 +13,7 @@ const StoreModelVersionHashesKey = 'StoreModelVersionHashes';
 const StoreModelVersionIdentifiersKey = 'StoreModelVersionIdentifiers';
 
 /**
- * @var string Key to represent the earliest version of the operation system that the persistent store supports.
+ * @var string Key to represent the earliest version of the operating system that the persistent store supports.
  * The corresponding value is a Number object that takes the form of the constants defined by the availability macros defined in /usr/include/AvailabilityMacros.h; for example 1040 represents OS X version 10.4.0.
  * Backward compatibility may preclude some features.
  */

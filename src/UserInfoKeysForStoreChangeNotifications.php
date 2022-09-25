@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpUnused */
 
 /** @var string Key for the array of stores that were added. */
 const AddedPersistentStoresKey = 'AddedPersistentStores';

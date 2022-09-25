@@ -140,14 +140,12 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->$name = $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property->isTransient);
             return $this->$name;
         } elseif ($name == 'serializationKeys') {
-            if ($this->serializationRule == SerializationRule::attributesOnly) {
-                $this->$name = $this->entity->attributesByName->filter(fn(AttributeDescription $attribute, string $key): bool => !$attribute->isTransient && !$this->isRelationshipForKeyFault($key))->keys;
-            } elseif ($this->serializationRule == SerializationRule::attributesAndRelationships) {
-                /** @psalm-suppress InvalidArgument */
-                $this->$name = $this->entity->attributesByName->filter(fn(AttributeDescription $attribute, string $key): bool => !$attribute->isTransient && !$this->isRelationshipForKeyFault($key))->merging($this->entity->relationshipsByName)->keys;
-            } else {
-                $this->$name = new ArrayClass();
-            }
+            /** @psalm-suppress InvalidArgument */
+            $this->$name = match ($this->serializationRule) {
+                SerializationRule::attributesOnly => $this->entity->attributesByName->filter(fn(AttributeDescription $attribute, string $key): bool => !$attribute->isTransient && !$this->isRelationshipForKeyFault($key))->keys,
+                SerializationRule::attributesAndRelationships => $this->entity->attributesByName->filter(fn(AttributeDescription $attribute, string $key): bool => !$attribute->isTransient && !$this->isRelationshipForKeyFault($key))->merging($this->entity->relationshipsByName)->keys,
+                default => new ArrayClass(),
+            };
             return $this->$name;
         } elseif ($name == 'hasPersistentChangedValues') {
             return !$this->changedValues()->isEmpty();
@@ -751,7 +749,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     }
 
     /**
-     * Returns the object IDs for all of the managed objects that are in the named relationship.
+     * Returns the object IDs for all the managed objects that are in the named relationship.
      * @param string $key The name of the relationship.
      * @return ArrayClass<ManagedObjectID> An array of managed object ids.
      * @throws InternalInconsistencyException If key is not a relationship defined by the model, the method raises an exception.
@@ -962,7 +960,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Determines whether the managed object's current state is valid.
-     * ManagedObject's implementation iterates through all of the receiver's properties validating each in turn. If this results in more than one error, the userInfo dictionary in the Error returned in error contains a key DetailedErrorsKey; the corresponding value is an array containing the individual validation errors. If you pass NULL as the error, validation will abort after the first failure.
+     * ManagedObject's implementation iterates through all the receiver's properties validating each in turn. If this results in more than one error, the userInfo dictionary in the Error returned in error contains a key DetailedErrorsKey; the corresponding value is an array containing the individual validation errors. If you pass NULL as the error, validation will abort after the first failure.
      * @throws Exception If the receiver's current state is invalid, the method raises an exception.
      */
     public function validateForUpdate(): void

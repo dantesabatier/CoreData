@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpUnused */
 
 /**
  * @author Dante Sabatier <dantesabatier@me.com>
@@ -33,7 +33,7 @@ abstract class PropertyDescription extends ObjectClass
     public ?Dictionary $userInfo = null;
     /** @var bool A Boolean value that indicates whether the receiver is optional. The optionality flag specifies whether a property's value can be nil before an object can be saved to a persistent store. */
     public bool $isOptional = true;
-    /** @var bool A Boolean value that indicates whether the receiver is transient. The transient flag specifies whether or not a property's value is ignored when an object is saved to a persistent store. Transient properties are not saved to the persistent store, but are still managed for undo, redo, validation, and so on. */
+    /** @var bool A Boolean value that indicates whether the receiver is transient. The transient flag specifies whether a property's value is ignored when an object is saved to a persistent store. Transient properties are not saved to the persistent store, but are still managed for undo, redo, validation, and so on. */
     public bool $isTransient = false;
     /** @var ArrayClass<Predicate> The validation predicates of the receiver. */
     public readonly ArrayClass $validationPredicates;
@@ -41,7 +41,7 @@ abstract class PropertyDescription extends ObjectClass
     public readonly ArrayClass $validationWarnings;
     /** @var string The version hash for the receiver. The version hash is used to uniquely identify a property based on its configuration. The version hash uses only values which affect the persistence of data and the user-defined {@see versionHashModifier} value. (The values which affect persistence are the name of the property, and the flags for isOptional, isTransient, and isReadOnly.) This value is stored as part of the version information in the metadata for stores, as well as a definition of a property involved in an PropertyMapping object. */
     public readonly string $versionHash;
-    /** @var string|null The version hash modifier for the receiver. This value is included in the version hash for the property. You use it to mark or denote a property as being a different “version” than another even if all of the values which affect persistence are equal. (Such a difference is important in cases where the attributes of a property are unchanged but the format or content of its data are changed.) */
+    /** @var string|null The version hash modifier for the receiver. This value is included in the version hash for the property. You use it to mark or denote a property as being a different “version” than another even if all the values which affect persistence are equal. (Such a difference is important in cases where the attributes of a property are unchanged but the format or content of its data are changed.) */
     public ?string $versionHashModifier = null;
     /** @var string The renaming identifier for the receiver. This is used to resolve naming conflicts between models. When creating an entity mapping between entities in two managed object models, a source entity property and a destination entity property that share the same identifier indicate that a property mapping should be configured to migrate from the source to the destination. If unset, the identifier will return the property's name. */
     public string $renamingIdentifier;

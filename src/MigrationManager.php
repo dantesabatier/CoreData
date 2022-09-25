@@ -68,13 +68,11 @@ class MigrationManager extends ObjectClass
 
     public function __get(string $name)
     {
-        if ($name == 'migrationProgress') {
-            return $this->$name;
-        } elseif ($name == 'currentEntityMapping') {
-            return $this->migrationContext->currentEntityMapping;
-        } else {
-            return $this->valueForUndefinedKey($name);
-        }
+        return match ($name) {
+            'migrationProgress' => $this->$name,
+            'currentEntityMapping' => $this->migrationContext->currentEntityMapping,
+            default => $this->valueForUndefinedKey($name)
+        };
     }
 
     /**
@@ -116,7 +114,7 @@ class MigrationManager extends ObjectClass
         }
         $sourceEntity = $this->sourceEntity($mapping);
         $destinationEntity = $this->destinationEntity($mapping);
-        if ($this->performedInPlaceMigration && ($mappingType == EntityMappingType::copyEntityMappingType || ($mappingType == EntityMappingType::transformEntityMappingType && $sourceEntity && $destinationEntity))) {
+        if ($this->performedInPlaceMigration && ($mappingType == EntityMappingType::copyEntityMappingType || ($mappingType == EntityMappingType::transformEntityMappingType && $sourceEntity && $destinationEntity && $sourceEntity->isKindOf($destinationEntity)))) {
             return true;
         }
         $sourceContext = $this->sourceContext;
@@ -272,7 +270,7 @@ class MigrationManager extends ObjectClass
     }
 
     /**
-     * Migrates the store at a given source URL to the store at a given destination URL, performing all of the mappings specified in a given mapping model.
+     * Migrates the store at a given source URL to the store at a given destination URL, performing all the mappings specified in a given mapping model.
      * This method performs compatibility checks on the source and destination models and the mapping model.
      * @param URL $sourceURL The location of an existing persistent store. A store must exist at this URL.
      * @param PersistentStoreType $sourceType The type of store at sourceURL (see {@see PersistentStoreCoordinator} for possible values).
@@ -351,7 +349,7 @@ class MigrationManager extends ObjectClass
      * @param string $mappingName The name of an entity mapping in use.
      * @param ArrayClass<ManagedObject>|null $sourceInstances An array of managed objects in the source store.
      * @return ArrayClass<ManagedObject> An array containing the managed object instances created in the destination store for the entity mapping named mappingName for sourceInstances.
-     * If sourceInstances is nil, all of the destination instances created by the specified property mapping are returned.
+     * If sourceInstances is nil, all the destination instances created by the specified property mapping are returned.
      */
     public function destinationInstances(string $mappingName, ?ArrayClass $sourceInstances = null): ArrayClass
     {
@@ -382,7 +380,7 @@ class MigrationManager extends ObjectClass
      * @param string $mappingName The name of an entity mapping in use.
      * @param ArrayClass<ManagedObject>|null $destinationInstances An array of managed objects in the destination store.
      * @return ArrayClass<ManagedObject> An array containing the managed object instances in the source store used to create destinationInstances using the entity mapping named mappingName.
-     * If destinationInstances is nil, all of the source instances used to create the destination instance for this property mapping are returned.
+     * If destinationInstances is nil, all the source instances used to create the destination instance for this property mapping are returned.
      */
     public function sourceInstances(string $mappingName, ?ArrayClass $destinationInstances = null): ArrayClass
     {

@@ -43,7 +43,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
             if ($referenceObject = $statement->fetchColumn()) {
                 /** @psalm-suppress InvalidArgument */
                 $fetchRequest->predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($this->sqlCore->newObjectID($destinationEntity->entityDescription, $referenceObject))), new ComparisonPredicate(Expression::expressionForKeyPath($entity->entityKey->columnName), Expression::expressionForConstantValue($destinationEntity->tableName))]));
-                // FIXME: by default a fetch request will ask for all of the attributes in an entity, to avoid problems during data migration we must set the properties to fetch to an empty array, we need to check if this is a solution or a hack
+                // FIXME: by default a fetch request will ask for all the attributes in an entity, to avoid problems during data migration we must set the properties to fetch to an empty array, we need to check if this is a solution or a hack
                 $fetchRequest->propertiesToFetch = new ArrayClass();
                 $this->result = $this->sqlCore->execute($fetchRequest, $this->context)->first();
                 return true;

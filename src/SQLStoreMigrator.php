@@ -72,17 +72,11 @@ class SQLStoreMigrator
             /** @var ArrayClass<SQLStatement> $createIndexStatements */
             $createIndexStatements = new ArrayClass();
             foreach ($addedEntityMappings as $mapping) {
-                if ($destinationEntityName = $mapping->destinationEntityName) {
-                    if ($sourceModel->entitiesByName[$destinationEntityName]) {
-                        continue;
-                    }
+                if (($destinationEntityName = $mapping->destinationEntityName) && !$sourceModel->entitiesByName[$destinationEntityName]) {
                     /** @var SQLEntity $destinationEntity */
                     $destinationEntity = $destinationModel->entitiesByName[$destinationEntityName];
-                    $rootEntity = $destinationEntity;
-                    if (!$rootEntity->isRootEntity) {
-                        /** @var SQLEntity $rootEntity */
-                        $rootEntity = $destinationEntity->rootEntity;
-                    }
+                    /** @var SQLEntity $rootEntity */
+                    $rootEntity = $destinationEntity->isRootEntity ? $destinationEntity : $destinationEntity->rootEntity;
                     $statement = $adapter->newCreateTableStatement($rootEntity);
                     $connection->execute($statement);
                     if ($statement = $adapter->newCreateIndexesStatement($destinationEntity)) {

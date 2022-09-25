@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpUnused */
 
 /**
  * Created by PhpStorm.
@@ -358,7 +358,7 @@ class PersistentStoreCoordinator extends ObjectClass
 
     /**
      * Returns a single persistent history token for the specified persistent stores.
-     * If stores is nil or an empty array, constructs a persistent history token with all of the persistent stores in the coordinator.
+     * If stores is nil or an empty array, constructs a persistent history token with all the persistent stores in the coordinator.
      * @param ArrayClass<PersistentStore>|null $stores
      * @return PersistentHistoryToken|null
      */
