@@ -122,10 +122,8 @@ class MigrationManager extends ObjectClass
         $request = new FetchRequest();
         $request->entity = EntityDescription::entity($sourceEntityName, $sourceContext);
         if ($mappingType == EntityMappingType::transformEntityMappingType) {
-            /** @var Dictionary<AttributeDescription>|null $destinationAttributes */
             $destinationAttributes = $destinationEntity?->attributesByName?->filter(fn(AttributeDescription $attribute): bool => !$attribute instanceof DerivedAttributeDescription);
             if ($destinationAttributes) {
-                /** @var Dictionary<AttributeDescription>|null $sourceAttributes */
                 $sourceAttributes = $sourceEntity?->attributesByName?->filter(fn(AttributeDescription $attribute): bool => !$attribute instanceof DerivedAttributeDescription && $destinationAttributes->containsElement($attribute));
                 if ($sourceAttributes) {
                     $destinationAttributes->merge($sourceAttributes);

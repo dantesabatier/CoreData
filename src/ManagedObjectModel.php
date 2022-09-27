@@ -28,6 +28,8 @@ use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Traversable;
 
+use function Sabatier\Foundation\human_readable_value;
+
 /**
  * Class ManagedObjectModel
  * A programmatic representation of the model file describing your objects.
@@ -512,7 +514,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     {
         /** @var Dictionary<ArrayClass<Dictionary>> $dictionary */
         $dictionary = new Dictionary();
-        $dictionary['entities'] = $this->entitiesByName->filter(fn(EntityDescription $entity): bool => $entity->isRootEntity)->map(fn(EntityDescription $entity): Dictionary => $entity->jsonSerialize());
+        $dictionary['entities'] = $this->entitiesByName->filter(fn(EntityDescription $entity): bool => !$entity->isPersistentHistoryEntity && $entity->isRootEntity)->map(fn(EntityDescription $entity): Dictionary => $entity->jsonSerialize());
         $dictionary['fetchRequests'] = $this->fetchRequestTemplatesByName->mapValues(fn(FetchRequest $fetchRequest, string $templateName): Dictionary => new Dictionary(['name' => $templateName, 'entityName' => $fetchRequest->entityName, 'predicateFormat' => $fetchRequest->predicate?->predicateFormat(), 'resultType' => $fetchRequest->resultType->value]))->values;
         return $dictionary;
     }

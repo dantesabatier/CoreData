@@ -171,6 +171,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         }
     }
 
+    public function __isset(string $name): bool
+    {
+        return isset($this->entity->propertiesByName[$name]);
+    }
+
     public function __call(string $name, array $arguments)
     {
         if ($method = $this->faultingMutableSetMutationMethods?->first(fn(FaultingMutableSetMutationMethod $method): bool => $method->name === $name)) {

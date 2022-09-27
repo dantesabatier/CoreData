@@ -181,7 +181,7 @@ abstract class PropertyDescription extends ObjectClass
         if (!$this->isOptional) {
             $dictionary['isOptional'] = $this->isOptional;
         }
-        if (!$this->isTransient) {
+        if ($this->isTransient) {
             $dictionary['isTransient'] = $this->isTransient;
         }
         //FIXME: should this values be extracted from validation predicates?
