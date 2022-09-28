@@ -173,7 +173,12 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     public function __isset(string $name): bool
     {
-        return isset($this->entity->propertiesByName[$name]);
+        return isset($this->changedValues[$name]);
+    }
+
+    public function __unset(string $name): void
+    {
+        unset($this->changedValues[$name]);
     }
 
     public function __call(string $name, array $arguments)
