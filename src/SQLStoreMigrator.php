@@ -151,7 +151,8 @@ class SQLStoreMigrator
                 }
             }
         } catch (Throwable $throwable) {
-            throw new Exception($throwable->getMessage());
+            $throwableClass = $throwable::class;
+            throw new $throwableClass($throwable->getMessage(), $throwable->getCode());
         }
     }
 

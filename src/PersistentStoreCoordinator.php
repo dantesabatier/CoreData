@@ -24,6 +24,7 @@ use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\OperationQueue;
 use Sabatier\Foundation\URL;
+use Throwable;
 
 /**
  * Class PersistentStoreCoordinator
@@ -222,8 +223,8 @@ class PersistentStoreCoordinator extends ObjectClass
             try {
                 $this->addPersistentStoreWithType(PersistentStoreType::from($description->type), $description->configuration, $description->url, $description->options);
                 $completion($description, null);
-            } catch (Exception $e) {
-                $completion($description, new Error(CocoaErrorDomain, -1, new Dictionary([LocalizedFailureReasonErrorKey => (string)$e])));
+            } catch (Throwable $throwable) {
+                $completion($description, new Error(CocoaErrorDomain, -1, new Dictionary([LocalizedFailureReasonErrorKey => (string)$throwable])));
             }
         };
         if ($description->shouldAddStoreAsynchronously) {

@@ -29,6 +29,7 @@ use Sabatier\Foundation\OperationQueue;
 use Sabatier\Foundation\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
+use Throwable;
 use function Sabatier\Foundation\human_readable_value;
 
 /**
@@ -561,8 +562,9 @@ class ManagedObjectContext extends ObjectClass
                     return null;
                 }));
             }
-        } catch (Exception $exception) {
-            throw new InternalInconsistencyException($exception->getMessage(), (int)$exception->getCode(), $exception);
+        } catch (Throwable $throwable) {
+            $throwableClass = $throwable::class;
+            throw new $throwableClass($throwable->getMessage(), $throwable->getCode());
         }
     }
 

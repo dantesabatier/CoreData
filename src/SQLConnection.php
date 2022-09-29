@@ -178,7 +178,8 @@ class SQLConnection extends ObjectClass
             }
             return $prepare;
         } catch (Throwable $throwable) {
-            throw new Exception($throwable->getMessage());
+            $throwableClass = $throwable::class;
+            throw new $throwableClass($throwable->getMessage(), $throwable->getCode());
         }
     }
 
@@ -724,7 +725,8 @@ class SQLConnection extends ObjectClass
             }
             return true;
         } catch (Throwable $throwable) {
-            throw new Exception($throwable->getMessage());
+            $throwableClass = $throwable::class;
+            throw new $throwableClass($throwable->getMessage(), $throwable->getCode());
         }
     }
 
@@ -739,7 +741,8 @@ class SQLConnection extends ObjectClass
             }
             return false;
         } catch (Throwable $throwable) {
-            throw new Exception($throwable->getMessage());
+            $throwableClass = $throwable::class;
+            throw new $throwableClass($throwable->getMessage(), $throwable->getCode());
         }
     }
 

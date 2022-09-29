@@ -33,9 +33,10 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         /** @var ArrayClass<Dictionary|Number> $values */
         $values = match ($resultType) {
             FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType, FetchRequestResultType::dictionaryResultType => (function () use ($execute): ArrayClass {
-                /** @var Dictionary<Dictionary> $map */
+                /** @var Dictionary<Dictionary<mixed>> $map */
                 $map = new Dictionary();
                 do {
+                    /** @var array<string, mixed> $data */
                     while ($data = $execute->fetch()) {
                         $entityName = $data['entityName'] ?? $this->request->entity->name;
                         /** @var SQLEntity $entity */
@@ -53,11 +54,10 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 $property = $currentEntity->propertiesByName[$key];
                                 if ($property instanceof SQLProperty) {
                                     $propertyDescription = $property->propertyDescription;
-                                    if ($propertyDescription instanceof ExpressionDescription) {
+                                    if ($propertyDescription instanceof AttributeDescription) {
+                                        $value = ManagedObject::coercedValue($value, $propertyDescription->type);
+                                    } elseif ($propertyDescription instanceof ExpressionDescription) {
                                         $value = ManagedObject::coercedValue($value, $propertyDescription->expressionResultType);
-                                    }
-                                    if ($property instanceof SQLAttribute) {
-                                        $value = ManagedObject::coercedValue($value, $property->attributeDescription->type);
                                     }
                                 }
                                 $representation[$key] = $value;
@@ -95,13 +95,12 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                                     }
                                                 }
                                                 $cached = $current;
-                                                $current = &$current[$current->indexBefore($current->endIndex())];
                                                 if ($property instanceof SQLPrimaryKey) {
-                                                    if (!$cached->contains(fn (Dictionary $dictionary): bool => $dictionary[$property->name] === $value)) {
+                                                    if (!$cached->contains(fn(Dictionary $dictionary): bool => $dictionary[$property->name] === $value)) {
                                                         $cached[] = new Dictionary();
                                                     }
-                                                    $current = &$cached[$cached->indexBefore($cached->endIndex())];
                                                 }
+                                                $current = &$cached[$cached->indexBefore($cached->endIndex())];
                                             }
                                         }
                                         if ($current instanceof Dictionary) {

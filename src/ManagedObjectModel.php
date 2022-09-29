@@ -26,9 +26,8 @@ use Sabatier\Foundation\Predicate;
 use Sabatier\Foundation\PropertyListSerialization;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
+use Throwable;
 use Traversable;
-
-use function Sabatier\Foundation\human_readable_value;
 
 /**
  * Class ManagedObjectModel
@@ -485,8 +484,9 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                         $result[$entity->name] = $entity->versionHash;
                         return $result;
                     }) ?? $this->entityVersionHashesByName) === $metadata[StoreModelVersionHashesKey];
-            } catch (Exception $e) {
-                throw new InternalInconsistencyException((string)$e);
+            } catch (Throwable $throwable) {
+                $throwableClass = $throwable::class;
+                throw new $throwableClass($throwable->getMessage(), $throwable->getCode());
             }
         }
         return true;

@@ -24,6 +24,7 @@ use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
 use Sabatier\Foundation\Value;
 use Sabatier\Foundation\ValueTransformer;
+use Throwable;
 use function Sabatier\Foundation\is_serialized;
 use function Sabatier\Foundation\typeof;
 use const Sabatier\Foundation\KeyValueValidationError;
@@ -192,15 +193,15 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     public function responds(string $selector): bool
     {
-        return parent::responds($selector) || $this->faultingMutableSetMutationMethods?->contains(fn(FaultingMutableSetMutationMethod $method): bool => $method->name === $selector) || $this->entity->propertiesByName->contains(fn(PropertyDescription $property): bool => $property->name === $selector);
+        return parent::responds($selector) || isset($this->entity->propertiesByName[$selector]) || $this->faultingMutableSetMutationMethods?->contains(fn(FaultingMutableSetMutationMethod $method): bool => $method->name === $selector);
     }
 
     public function performSelector(string $selector, array $arguments = []): mixed
     {
-        if ($this->faultingMutableSetMutationMethods?->contains(fn(FaultingMutableSetMutationMethod $method): bool => $method->name === $selector)) {
-            return $this->$selector(...$arguments);
-        } elseif ($this->entity->propertiesByName->contains(fn(PropertyDescription $property): bool => $property->name === $selector)) {
+        if (isset($this->entity->propertiesByName[$selector])) {
             return $this->valueForKey($selector);
+        } elseif ($this->faultingMutableSetMutationMethods?->contains(fn(FaultingMutableSetMutationMethod $method): bool => $method->name === $selector)) {
+            return $this->$selector(...$arguments);
         } else {
             return parent::performSelector($selector, $arguments);
         }
@@ -263,7 +264,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     }
 
     /**
-     * Provides an opportunity to add code into the life cycle of the managed object when fufilling it from a fault.
+     * Provides an opportunity to add code into the life cycle of the managed object when fulfilling it from a fault.
      * You typically use this method to compute derived values or to recreate transient relationships from the receiver's persistent properties.
      * The managed object context's change processing is explicitly disabled around this method so that you can use public setters to establish transient values and other caches without dirtying the object or its context.
      * Because of this, however, you should not modify relationships in this method as the inverse will not be set.
@@ -519,7 +520,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             if ($property instanceof DerivedAttributeDescription) {
                 if (!$value && !isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
                     $this->reserved[$key] = true;
-                    $value = $property->derivationExpression?->expressionValue($this);
+                    $value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type);
                     unset($this->reserved[$key]);
                 }
             }
@@ -935,7 +936,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /**
      * @throws Exception
      */
-    private function validateProperties(): void
+    private function validateChangedValues(): void
     {
         foreach ($this->changedValues as $key => $value) {
             /** @var PropertyDescription $property */
@@ -965,7 +966,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function validateForInsert(): void
     {
-        $this->validateProperties();
+        $this->validateChangedValues();
     }
 
     /**
@@ -975,7 +976,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function validateForUpdate(): void
     {
-        $this->validateProperties();
+        $this->validateChangedValues();
     }
 
     /**
@@ -1013,8 +1014,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if ($key === null) {
             try {
                 $this->faultHandler->fulfillFault($this);
-            } catch (Exception $exception) {
-                trigger_error($exception->getMessage(), E_USER_WARNING);
+            } catch (Throwable $throwable) {
+                $throwableClass = $throwable::class;
+                throw new $throwableClass($throwable->getMessage(), $throwable->getCode());
             }
         }
     }
