@@ -1,4 +1,5 @@
-<?php
+<?php /** @noinspection PhpUnused */
+
 /**
  * Created by PhpStorm.
  * User: dante
@@ -18,7 +19,7 @@ use Sabatier\Foundation\ObjectClass;
 /**
  * Class MergePolicy
  * A policy object that you use to resolve conflicts between the persistent store and in-memory versions of managed objects.
- * A conflict is a mismatch between state held at two different layers in the Core Data stack. A conflict can arise when you save a managed object context and you have stale data at another layer.
+ * A conflict is a mismatch between state held at two different layers in the Core Data stack. A conflict can arise when you save a managed object context, and you have stale data at another layer.
  * There are two places in which a conflict may occur:
  * Between the managed object context layer and its in-memory cached state at the persistent store coordinator layer.
  * Between the cached state at the persistent store coordinator and the external store (file, database, and so forth).
@@ -29,8 +30,8 @@ class MergePolicy extends ObjectClass
 {
     /**
      * Returns a merge policy initialized with a given policy type.
-     * If you override this method in a subclass, you should invoke the superclass's implementation with the merge policy that is closest to the behavior you want.
-     * This will make it easier to use the superclass's implementation of {@see resolveConflicts()} and then customize the results.
+     * If you override this method in a subclass, you should invoke the superclass implementation with the merge policy that is closest to the behavior you want.
+     * This will make it easier to use the superclass implementation of {@see resolveConflicts()} and then customize the results.
      * Due to the complexity of merging to-many relationships, this class is designed with the expectation that you call super as the base implementation.
      * @param MergePolicyType $mergeType A merge policy type.
      */
@@ -40,7 +41,7 @@ class MergePolicy extends ObjectClass
 
     /**
      * Resolves the conflicts in a given list.
-     * If you override this method in a subclass, you should typically invoke the superclass's implementation in
+     * If you override this method in a subclass, you should typically invoke the superclass implementation in
      * addition to performing your own operations.
      * @param ArrayClass<MergeConflict> $list An array of merge conflicts (instances of {@see MergeConflict}).
      * @throws Exception
@@ -53,17 +54,8 @@ class MergePolicy extends ObjectClass
             $sourceObject = $mergeConflict->sourceObject;
             $cachedSnapshot = $mergeConflict->cachedSnapshot ?? $mergeConflict->objectSnapshot;
             $persistedSnapshot = $mergeConflict->persistedSnapshot ?? new Dictionary();
-            if ($this->mergeType == MergePolicyType::errorMergePolicyType) {
-                $conflictList->append($mergeConflict);
-            } elseif ($this->mergeType == MergePolicyType::mergeByPropertyStoreTrumpMergePolicyType) {
-                $sourceObject->setValuesForKeys($cachedSnapshot->merging($persistedSnapshot));
-            } elseif ($this->mergeType == MergePolicyType::mergeByPropertyObjectTrumpMergePolicyType) {
-                $sourceObject->setValuesForKeys($persistedSnapshot->merging($cachedSnapshot));
-            } elseif ($this->mergeType == MergePolicyType::overwriteMergePolicyType) {
-                $sourceObject->setValuesForKeys($cachedSnapshot);
-            } elseif ($this->mergeType == MergePolicyType::rollbackMergePolicyType) {
-                $sourceObject->setValuesForKeys($persistedSnapshot);
-            }
+            /** @psalm-suppress InvalidArgument */
+            $this->process($conflictList, $mergeConflict, $sourceObject, $cachedSnapshot, $persistedSnapshot);
         }
         if (!$conflictList->isEmpty()) {
             throw new Exception((new Error(CocoaErrorDomain, 133021, new Dictionary(['conflictList' => $conflictList->join(', ')])))->description());
@@ -83,17 +75,8 @@ class MergePolicy extends ObjectClass
             $object = $constraintConflict->conflictingObjects[0];
             $objectSnapshot = $constraintConflict->conflictingSnapshots[0];
             $databaseSnapshot = $constraintConflict->databaseSnapshot ?? $constraintConflict->conflictingSnapshots[1];
-            if ($this->mergeType == MergePolicyType::errorMergePolicyType) {
-                $conflictList->append($constraintConflict);
-            } elseif ($this->mergeType == MergePolicyType::mergeByPropertyStoreTrumpMergePolicyType) {
-                $object->setValuesForKeys($objectSnapshot->merging($databaseSnapshot));
-            } elseif ($this->mergeType == MergePolicyType::mergeByPropertyObjectTrumpMergePolicyType) {
-                $object->setValuesForKeys($databaseSnapshot->merging($objectSnapshot));
-            } elseif ($this->mergeType == MergePolicyType::overwriteMergePolicyType) {
-                $object->setValuesForKeys($objectSnapshot);
-            } elseif ($this->mergeType == MergePolicyType::rollbackMergePolicyType) {
-                $object->setValuesForKeys($databaseSnapshot);
-            }
+            /** @psalm-suppress InvalidArgument */
+            $this->process($conflictList, $constraintConflict, $object, $objectSnapshot, $databaseSnapshot);
             if ($databaseObject = $constraintConflict->databaseObject) {
                 $object->objectID->referenceObject = $databaseObject->objectID->referenceObject;
                 $object->objectID->persistentStore = $databaseObject->objectID->persistentStore;
@@ -161,5 +144,28 @@ class MergePolicy extends ObjectClass
     public static function rollback(): MergePolicy
     {
         return new MergePolicy(MergePolicyType::rollbackMergePolicyType);
+    }
+
+    /**
+     * @param ArrayClass<MergeConflict|ConstraintConflict> $conflictList
+     * @param MergeConflict|ConstraintConflict $conflict
+     * @param ManagedObject $sourceObject
+     * @param Dictionary $cachedSnapshot
+     * @param Dictionary $persistedSnapshot
+     * @return void
+     */
+    private function process(ArrayClass $conflictList, MergeConflict|ConstraintConflict $conflict, ManagedObject $sourceObject, Dictionary $cachedSnapshot, Dictionary $persistedSnapshot): void
+    {
+        if ($this->mergeType == MergePolicyType::errorMergePolicyType) {
+            $conflictList->append($conflict);
+        } elseif ($this->mergeType == MergePolicyType::mergeByPropertyStoreTrumpMergePolicyType) {
+            $sourceObject->setValuesForKeys($cachedSnapshot->merging($persistedSnapshot));
+        } elseif ($this->mergeType == MergePolicyType::mergeByPropertyObjectTrumpMergePolicyType) {
+            $sourceObject->setValuesForKeys($persistedSnapshot->merging($cachedSnapshot));
+        } elseif ($this->mergeType == MergePolicyType::overwriteMergePolicyType) {
+            $sourceObject->setValuesForKeys($cachedSnapshot);
+        } elseif ($this->mergeType == MergePolicyType::rollbackMergePolicyType) {
+            $sourceObject->setValuesForKeys($persistedSnapshot);
+        }
     }
 }

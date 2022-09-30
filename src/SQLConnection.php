@@ -179,7 +179,7 @@ class SQLConnection extends ObjectClass
             return $prepare;
         } catch (Throwable $throwable) {
             $throwableClass = $throwable::class;
-            throw new $throwableClass($throwable->getMessage(), $throwable->getCode());
+            throw new $throwableClass($throwable->getMessage(), (int)$throwable->getCode());
         }
     }
 
@@ -726,7 +726,7 @@ class SQLConnection extends ObjectClass
             return true;
         } catch (Throwable $throwable) {
             $throwableClass = $throwable::class;
-            throw new $throwableClass($throwable->getMessage(), $throwable->getCode());
+            throw new $throwableClass($throwable->getMessage(), (int)$throwable->getCode());
         }
     }
 
@@ -742,7 +742,7 @@ class SQLConnection extends ObjectClass
             return false;
         } catch (Throwable $throwable) {
             $throwableClass = $throwable::class;
-            throw new $throwableClass($throwable->getMessage(), $throwable->getCode());
+            throw new $throwableClass($throwable->getMessage(), (int)$throwable->getCode());
         }
     }
 

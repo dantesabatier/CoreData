@@ -1016,7 +1016,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $this->faultHandler->fulfillFault($this);
             } catch (Throwable $throwable) {
                 $throwableClass = $throwable::class;
-                throw new $throwableClass($throwable->getMessage(), $throwable->getCode());
+                throw new $throwableClass($throwable->getMessage(), (int)$throwable->getCode());
             }
         }
     }

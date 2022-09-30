@@ -46,9 +46,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         /** @var Dictionary<mixed> $representation */
                         $representation = $map[$referenceObject] ?? new Dictionary();
                         foreach ($data as $key => $value) {
-                            if ($value === null) {
-                                continue;
-                            }
                             $keys = new ArrayClass(explode("_", $key));
                             if ($keys->count() < 3) {
                                 $property = $currentEntity->propertiesByName[$key];

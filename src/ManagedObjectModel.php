@@ -486,7 +486,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                     }) ?? $this->entityVersionHashesByName) === $metadata[StoreModelVersionHashesKey];
             } catch (Throwable $throwable) {
                 $throwableClass = $throwable::class;
-                throw new $throwableClass($throwable->getMessage(), $throwable->getCode());
+                throw new $throwableClass($throwable->getMessage(), (int)$throwable->getCode());
             }
         }
         return true;

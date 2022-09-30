@@ -2,15 +2,15 @@
 
 namespace Sabatier\CoreData;
 
-use BackedEnum;
 use JetBrains\PhpStorm\ExpectedValues;
 use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Formatter;
-use Sabatier\Foundation\Nil;
-use Sabatier\Foundation\Number;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
+use Sabatier\Foundation\Value;
+
 use function Sabatier\Foundation\human_readable_value;
+use function Sabatier\Foundation\typeof;
 
 /** @internal */
 class SQLStatementFormatter extends Formatter
@@ -24,16 +24,19 @@ class SQLStatementFormatter extends Formatter
         if ($object instanceof SQLStatement) {
             $string = $object->string;
             if ($this->style & SQLStatementFormatterStyle::arguments) {
-                $string = sprintf(str_replace(['%', '?'], ['%%', '%s'], $string), ...$object->arguments->map(function (mixed $e): string {
-                    if ($e instanceof Number || $e instanceof Nil || $e instanceof BackedEnum) {
-                        return human_readable_value($e->value);
-                    } elseif ($e instanceof ManagedObjectID) {
-                        return (string)$e->referenceObject;
-                    } elseif (is_string($e) || $e instanceof Date || $e instanceof UUID || $e instanceof URL) {
-                        return "'$e'";
-                    } else {
-                        return human_readable_value($e);
-                    }
+                $string = sprintf(str_replace(['%', '?'], ['%%', '%s'], $string), ...$object->arguments->map(fn(mixed $e): string => match (typeof($e)) {
+                    ManagedObjectID::class => (string)$e->referenceObject,
+                    Date::class, UUID::class, URL::class, 'string' => "'$e'",
+                    default => (function() use ($e): string {
+                        if ($e instanceof Value) {
+                            $e = $e->value;
+                        }
+                        $v = human_readable_value($e);
+                        if (is_bool($e) || is_null($e)) {
+                            $v = strtoupper($v);
+                        }
+                        return $v;
+                    })()
                 })->toArray());
             }
             $style = 0;

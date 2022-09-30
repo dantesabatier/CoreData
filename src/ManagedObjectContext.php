@@ -564,7 +564,7 @@ class ManagedObjectContext extends ObjectClass
             }
         } catch (Throwable $throwable) {
             $throwableClass = $throwable::class;
-            throw new $throwableClass($throwable->getMessage(), $throwable->getCode());
+            throw new $throwableClass($throwable->getMessage(), (int)$throwable->getCode());
         }
     }
 

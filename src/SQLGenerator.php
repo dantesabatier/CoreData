@@ -128,7 +128,6 @@ class SQLGenerator extends ObjectClass
         if (!$statements->isEmpty()) {
             /** @psalm-suppress RedundantCondition, TypeDoesNotContainType */
             if (SS_COREDATA_DISABLE_FOREIGN_KEY_CHECKS) : // @phpstan-ignore-line
-                //TODO: implement a save plan
                 if ($statements->contains(fn(SQLStatement $statement): bool => string_has_prefix($statement->string, "INSERT"))) {
                     $statements->insert(new SQLStatement("/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */"), 0);
                     $statements->append(new SQLStatement("/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */"));
@@ -186,7 +185,7 @@ class SQLGenerator extends ObjectClass
             $this->prepareSelectStatementWithFetchRequest($request);
             $this->prepareJoinStatementsForPredicateAndRelationships();
             $predicate = $request->predicate;
-            if (!$request->includesSubentities || (!$request->entity->isPersistentHistoryEntity && !$request->entity->isRootEntity && (!$request->entity->subentities->isEmpty() || !$request->entity->superentity?->isRootEntity || $request->entity->superentity?->subentities->count() > 1))) {
+            if (!$request->includesSubentities || (!$request->entity->isPersistentHistoryEntity && !$request->entity->isRootEntity && (!$request->entity->subentities->isEmpty() || !$request->entity->superentity?->isRootEntity || $request->entity->superentity?->subentities->count() > 1))) { // @phpstan-ignore-line
                 $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($request->entity->name));
                 if ($predicate) {
                     $predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory]));
@@ -394,6 +393,18 @@ class SQLGenerator extends ObjectClass
         $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
     }
 
+    private function appendIdentityToJoinClause(SQLEntity $destinationEntity, string $destinationPath): void
+    {
+        if (!$destinationEntity->isRootEntity) {
+            $this->joinClause .= " AND ";
+            if (!$this->request->includesSubentities || $destinationEntity->subentities->isEmpty()) {
+                $this->joinClause .= "$destinationPath.{$destinationEntity->entityKey->columnName} = '$destinationEntity->tableName'";
+            } else {
+                $this->joinClause .= "({$destinationEntity->subentities->map(fn(SQLEntity $subentity): string => "$destinationPath.{$destinationEntity->entityKey->columnName} = '$subentity->tableName'")->join(" OR ")})";
+            }
+        }
+    }
+
     private function addJoinForToOneRelationship(SQLToOne $toOne, string $sourcePath = '', string $destinationPath = ''): void
     {
         $sourceEntity = $toOne->entity;
@@ -407,7 +418,6 @@ class SQLGenerator extends ObjectClass
         if (empty($destinationPath)) {
             $destinationPath = "{$sourceEntity->tableName}_$toOne->name";
         }
-        $entityKey = $destinationEntity->entityKey;
         $this->appendJoinClauseToSQL();
         $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $destinationPath.$columnName = ";
         if (!empty($sourcePath)) {
@@ -423,13 +433,8 @@ class SQLGenerator extends ObjectClass
                 $this->joinClause .= "$sourceEntity->tableName.{$toOne->foreignKey->columnName}";
             }
         }
-        if (!$sourceEntity->entityDescription->isPersistentHistoryEntity && !$destinationEntity->isRootEntity) {
-            $this->joinClause .= " AND ";
-            if (!$this->request->includesSubentities || $destinationEntity->subentities->isEmpty()) {
-                $this->joinClause .= "$destinationPath.$entityKey->columnName = '$destinationEntity->tableName'";
-            } else {
-                $this->joinClause .= "({$destinationEntity->subentities->map(fn(SQLEntity $subentity): string => "$destinationPath.$entityKey->columnName = '$subentity->tableName'")->join(" OR ")})";
-            }
+        if (!$sourceEntity->entityDescription->isPersistentHistoryEntity) {
+            $this->appendIdentityToJoinClause($destinationEntity, $destinationPath);
         }
     }
 
@@ -442,7 +447,6 @@ class SQLGenerator extends ObjectClass
             /** @var SQLEntity $destinationEntity */
             $destinationEntity = $destinationEntity->rootEntity;
         }
-        $entityKey = $destinationEntity->entityKey;
         if (empty($destinationPath)) {
             $destinationPath = "{$sourceEntity->tableName}_$toMany->name";
         }
@@ -455,14 +459,7 @@ class SQLGenerator extends ObjectClass
         }
         if (!$sourceEntity->entityDescription->isPersistentHistoryEntity) {
             $destinationEntity = $toMany->destinationEntity;
-            if (!$destinationEntity->isRootEntity) {
-                $this->joinClause .= " AND ";
-                if (!$this->request->includesSubentities || $destinationEntity->subentities->isEmpty()) {
-                    $this->joinClause .= "$destinationPath.$entityKey->columnName = '$destinationEntity->tableName'";
-                } else {
-                    $this->joinClause .= "({$destinationEntity->subentities->map(fn(SQLEntity $subentity): string => "$destinationPath.$entityKey->columnName = '$subentity->tableName'")->join(" OR ")})";
-                }
-            }
+            $this->appendIdentityToJoinClause($destinationEntity, $destinationPath);
         }
     }
 
@@ -482,24 +479,10 @@ class SQLGenerator extends ObjectClass
         $this->joinClause .= "$correlationTableAlias.$manyToMany->inverseColumnName";
         $this->joinClause .= " = ";
         $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
-        if (!$destinationEntity->isRootEntity) {
-            $this->joinClause .= " AND ";
-            if (!$this->request->includesSubentities || $destinationEntity->subentities->isEmpty()) {
-                $this->joinClause .= "$sourcePath.{$sourceEntity->entityKey->columnName} = '$sourceEntity->tableName'";
-            } else {
-                $this->joinClause .= "({$destinationEntity->subentities->map(fn(SQLEntity $subentity): string => "$sourcePath.{$sourceEntity->entityKey->columnName} = '$subentity->tableName'")->join(" OR ")})";
-            }
-        }
+        $this->appendIdentityToJoinClause($destinationEntity, $destinationPath);
         $this->appendJoinClauseToSQL();
         $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $correlationTableAlias.$manyToMany->columnName = $destinationPath.{$destinationEntity->primaryKey->columnName}";
-        if (!$destinationEntity->isRootEntity) {
-            $this->joinClause .= " AND ";
-            if (!$this->request->includesSubentities || $destinationEntity->subentities->isEmpty()) {
-                $this->joinClause .= "$destinationPath.{$destinationEntity->entityKey->columnName} = '$destinationEntity->tableName'";
-            } else {
-                $this->joinClause .= "({$destinationEntity->subentities->map(fn(SQLEntity $subentity): string => "$destinationPath.{$destinationEntity->entityKey->columnName} = '$subentity->tableName'")->join(" OR ")})";
-            }
-        }
+        $this->appendIdentityToJoinClause($destinationEntity, $destinationPath);
     }
 
     /**
@@ -768,58 +751,36 @@ class SQLGenerator extends ObjectClass
         }
     }
 
+    private function prepareComparisonExpression(Expression $expression, ArrayClass &$arguments, string $prefix = "", string $suffix = ""): mixed
+    {
+        if ($expression->expressionType == ExpressionType::keyPath) {
+            return $this->prepareKeyPathExpression($expression);
+        } elseif ($expression->expressionType == ExpressionType::function) {
+            return $this->prepareFunctionExpression($expression);
+        } elseif ($expression->expressionType == ExpressionType::conditional) {
+            return $this->prepareConditionalExpression($expression);
+        } elseif ($expression->expressionType == ExpressionType::constantValue) {
+            $constantValue = $expression->constantValue();
+            if (is_bool($constantValue)) {
+                $constantValue = (int)$constantValue;
+            } elseif (is_string($constantValue)) {
+                $constantValue = sprintf("%s%s%s", $prefix, str_replace('%', '', $constantValue), $suffix);
+            }
+            $arguments[] = $constantValue;
+            return $constantValue;
+        } else {
+            return $expression->description();
+        }
+    }
+
     private function prepareClauseWithSimplePredicate(ComparisonPredicate $predicate, string &$clause, string $operator, string $prefix = "", string $suffix = ""): void
     {
         /** @var ArrayClass<mixed> $arguments */
         $arguments = new ArrayClass();
-        $leftExpression = $predicate->leftExpression;
-        $left = $leftExpression->description();
-        if ($leftExpression->expressionType == ExpressionType::keyPath) {
-            $left = $this->prepareKeyPathExpression($leftExpression);
-        } elseif ($leftExpression->expressionType == ExpressionType::function) {
-            $left = $this->prepareFunctionExpression($leftExpression);
-        } elseif ($leftExpression->expressionType == ExpressionType::conditional) {
-            $left = $this->prepareConditionalExpression($leftExpression);
-        } elseif ($leftExpression->expressionType == ExpressionType::constantValue) {
-            $left = $leftExpression->constantValue();
-            if (is_string($left)) {
-                $left = str_replace('%', '', $left);
-            }
-            if (is_bool($left)) {
-                $left = (int)$left;
-            }
-            $argument = $left;
-            if (is_string($argument)) {
-                $argument = "$prefix$left$suffix";
-            }
-            $arguments[] = $argument;
-        }
-        $rightExpression = $predicate->rightExpression;
-        $right = $rightExpression->description();
-        if ($rightExpression->expressionType == ExpressionType::keyPath) {
-            $right = $this->prepareKeyPathExpression($rightExpression);
-        } elseif ($rightExpression->expressionType == ExpressionType::function) {
-            $right = $this->prepareFunctionExpression($rightExpression);
-        } elseif ($rightExpression->expressionType == ExpressionType::conditional) {
-            $right = $this->prepareConditionalExpression($rightExpression);
-        } elseif ($rightExpression->expressionType == ExpressionType::constantValue) {
-            $right = $rightExpression->constantValue();
-            if (is_string($right)) {
-                $right = str_replace('%', '', $right);
-            }
-            if (is_bool($right)) {
-                $right = (int)$right;
-            }
-            $argument = $right;
-            if (is_string($argument)) {
-                $argument = "$prefix$right$suffix";
-            }
-            $arguments[] = $argument;
-        }
+        $left = $this->prepareComparisonExpression($predicate->leftExpression, $arguments, $prefix, $suffix);
+        $right = $this->prepareComparisonExpression($predicate->rightExpression, $arguments, $prefix, $suffix);
         $numberOfArguments = $arguments->count();
-        if ($numberOfArguments == 2) {
-            $clause .= "? $operator ?";
-        } elseif ($numberOfArguments == 1) {
+        if ($numberOfArguments == 1) {
             $key = $arguments->first();
             if (is_string($key)) {
                 $key = str_replace([$suffix, $prefix], "", $key);
@@ -831,6 +792,8 @@ class SQLGenerator extends ObjectClass
             } else {
                 $clause .= "$left $operator $right";
             }
+        } elseif ($numberOfArguments == 2) {
+            $clause .= "? $operator ?";
         } else {
             $clause .= "$left $operator $right";
         }
