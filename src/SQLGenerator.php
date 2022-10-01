@@ -30,6 +30,8 @@ use Sabatier\Foundation\Set;
 use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\UnknownKeyException;
 use Sabatier\Foundation\Value;
+
+use function Sabatier\Foundation\get_calling_class;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\in_string;
 use function Sabatier\Foundation\string_contains;
@@ -390,7 +392,6 @@ class SQLGenerator extends ObjectClass
             $this->appendJoinsForRelationships($this->relationshipsFromKeyPathExpression($expression));
         }
         $this->joinClause = (new Set(explode(' LEFT JOIN ', $this->joinClause)))->join(' LEFT JOIN ');
-        $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
     }
 
     private function appendIdentityToJoinClause(SQLEntity $destinationEntity, string $destinationPath): void
@@ -530,8 +531,8 @@ class SQLGenerator extends ObjectClass
                             $attributeDescription = $property->attributeDescription;
                             if ($attributeDescription instanceof DerivedAttributeDescription) {
                                 if ($expression = $attributeDescription->derivationExpression) {
-                                    $propertyName = "{$destination}_$attributeDescription->name";
-                                    $expressionValue = function () use ($entity, $destination, $expression, $propertyName): string {
+                                    $propertyName = "{$destination}_$attributeDescription->name"; 
+                                    return (function () use ($entity, $destination, $expression, $propertyName): string {
                                         $bk = $this->entity;
                                         $this->entity = $entity;
                                         $result = str_replace($entity->tableName, $destination, match ($expression->expressionType) {
@@ -542,8 +543,7 @@ class SQLGenerator extends ObjectClass
                                         });
                                         $this->entity = $bk;
                                         return $result;
-                                    };
-                                    return $expressionValue();
+                                    })();
                                 }
                                 return null;
                             }
@@ -552,10 +552,17 @@ class SQLGenerator extends ObjectClass
                         return null;
                     });
                 }
-                $filtered = $columnNames->filter(fn(string $e): bool => !string_contains($this->selectList, $e));
-                if (!$filtered->isEmpty()) {
+                foreach ($columnNames->reversed() as $columnName) {
+                    if (string_contains($this->selectList, $columnName)) {
+                        $columnNames->remove($columnName);
+                        if (string_contains($columnName, '?')) {
+                            $this->arguments->popLast();
+                        }
+                    }
+                }
+                if (!$columnNames->isEmpty()) {
                     $this->selectList .= ", ";
-                    $this->selectList .= $filtered->join(', ');
+                    $this->selectList .= $columnNames->join(', ');
                 }
             }
             $source = $destination;

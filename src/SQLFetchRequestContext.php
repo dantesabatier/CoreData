@@ -86,24 +86,26 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     $currentEntity = $relationship->destinationEntity;
                                 }
                                 if ($property instanceof SQLColumn) {
-                                    if ($relationship instanceof SQLRelationship) {
-                                        if ($relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany) {
-                                            if ($current instanceof Set) {
-                                                if ($current->isEmpty()) {
-                                                    if ($property instanceof SQLPrimaryKey) {
-                                                        $current[] = new Dictionary();
-                                                    }
-                                                }
-                                                $cached = $current;
+                                    if ($relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany) {
+                                        if ($current instanceof Set) {
+                                            if ($current->isEmpty()) {
                                                 if ($property instanceof SQLPrimaryKey) {
-                                                    if (!$cached->contains(fn(Dictionary $dictionary): bool => $dictionary[$property->name] === $value)) {
-                                                        $cached[] = new Dictionary();
-                                                    }
+                                                    $current[] = new Dictionary();
                                                 }
+                                            }
+                                            $cached = $current;
+                                            if ($property instanceof SQLPrimaryKey) {
+                                                if (!$cached->contains(fn(Dictionary $dictionary): bool => $dictionary[$property->name] === $value)) {
+                                                    $cached[] = new Dictionary();
+                                                }
+                                            }
+                                            if (!$cached->isEmpty()) {
                                                 $current = &$cached[$cached->indexBefore($cached->endIndex())];
                                             }
                                         }
-                                        if ($current instanceof Dictionary) {
+                                    }
+                                    if ($current instanceof Dictionary) {
+                                        if ($current[$key] === null) {
                                             $current[$key] = $value;
                                         }
                                     }
