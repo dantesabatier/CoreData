@@ -95,15 +95,9 @@ class PersistentContainer extends ObjectClass
             return $this->$name;
         } elseif ($name == 'managedObjectModel') {
             $filename = $this->name;
-            $fileManager = FileManager::default();
-            /** @noinspection PhpUnhandledExceptionInspection */
-            $bundleUrl = $fileManager->url(SearchPathDirectory::applicationsDirectory)->appendingPathComponent($filename);
-            if (!$fileManager->fileExists($bundleUrl->path)) {
-                throw new InternalInconsistencyException("application \"{$bundleUrl->description()}\" not found");
-            }
-            $bundle = Bundle::bundleWithURL($bundleUrl);
+            $bundle = Bundle::bundleWithURL(FileManager::default()->documentRootDirectory);
             if (!($modelUrl = $bundle?->url($filename, 'plist'))) {
-                throw new InternalInconsistencyException("model \"$bundleUrl->path\" not found");
+                throw new InternalInconsistencyException("model \"$filename\" not found");
             }
             /** @noinspection PhpUnhandledExceptionInspection */
             $this->$name = new ManagedObjectModel($modelUrl);

@@ -50,45 +50,46 @@ class SQLCore extends IncrementalStore
             $entityDescription->name = 'PersistentHistoryTransaction';
             $entityDescription->isPersistentHistoryEntity = true;
             /** @psalm-suppress InvalidPropertyAssignmentValue */
-            $entityDescription->properties = /** @phpstan-ignore-line */ (new ArrayClass($reflectionClass->getProperties()))->compactMap(function (ReflectionProperty $property) use ($entityDescription): ?PropertyDescription {
-                if ($property->isStatic()) {
-                    return null;
-                }
-                $name = $property->name;
-                if ($name == 'token') {
-                    return null;
-                }
-                if ($name == 'transactionNumber') {
-                    $name = 'transactionID';
-                }
-                /** @var ReflectionNamedType $reflectionType */
-                $reflectionType = $property->getType();
-                $type = $reflectionType->getName();
-                if ($type == ArrayClass::class) {
-                    $relationship = new RelationshipDescription();
-                    $relationship->name = $name;
-                    $relationship->entity = $entityDescription;
-                    $relationship->isToMany = true;
-                    $relationship->lazyInverseRelationshipName = "transaction";
-                    $relationship->lazyDestinationEntityName = 'PersistentHistoryChange';
-                    return $relationship;
-                }
-                $attribute = new AttributeDescription();
-                $attribute->name = $name;
-                $attribute->entity = $entityDescription;
-                if ($type == 'string') {
-                    $attribute->type = AttributeType::string;
-                } elseif ($type == 'int') {
-                    $attribute->type = AttributeType::integer64;
-                    $attribute->isOptional = false;
-                } elseif ($type == Date::class) {
-                    $attribute->type = AttributeType::date;
-                    $attribute->isOptional = false;
-                } elseif ($type == PersistentHistoryToken::class) {
-                    $attribute->type = AttributeType::transformable;
-                }
-                return $attribute;
-            });
+            $entityDescription->properties = /** @phpstan-ignore-line */
+                (new ArrayClass($reflectionClass->getProperties()))->compactMap(function (ReflectionProperty $property) use ($entityDescription): ?PropertyDescription {
+                    if ($property->isStatic()) {
+                        return null;
+                    }
+                    $name = $property->name;
+                    if ($name == 'token') {
+                        return null;
+                    }
+                    if ($name == 'transactionNumber') {
+                        $name = 'transactionID';
+                    }
+                    /** @var ReflectionNamedType $reflectionType */
+                    $reflectionType = $property->getType();
+                    $type = $reflectionType->getName();
+                    if ($type == ArrayClass::class) {
+                        $relationship = new RelationshipDescription();
+                        $relationship->name = $name;
+                        $relationship->entity = $entityDescription;
+                        $relationship->isToMany = true;
+                        $relationship->lazyInverseRelationshipName = "transaction";
+                        $relationship->lazyDestinationEntityName = 'PersistentHistoryChange';
+                        return $relationship;
+                    }
+                    $attribute = new AttributeDescription();
+                    $attribute->name = $name;
+                    $attribute->entity = $entityDescription;
+                    if ($type == 'string') {
+                        $attribute->type = AttributeType::string;
+                    } elseif ($type == 'int') {
+                        $attribute->type = AttributeType::integer64;
+                        $attribute->isOptional = false;
+                    } elseif ($type == Date::class) {
+                        $attribute->type = AttributeType::date;
+                        $attribute->isOptional = false;
+                    } elseif ($type == PersistentHistoryToken::class) {
+                        $attribute->type = AttributeType::transformable;
+                    }
+                    return $attribute;
+                });
             $managedObjectModel->addEntity($entityDescription);
             PersistentHistoryTransaction::$entityDescription = $entityDescription;
         }
@@ -98,44 +99,45 @@ class SQLCore extends IncrementalStore
             $entityDescription->name = 'PersistentHistoryChange';
             $entityDescription->isPersistentHistoryEntity = true;
             /** @psalm-suppress InvalidPropertyAssignmentValue */
-            $entityDescription->properties = /** @phpstan-ignore-line */ (new ArrayClass($reflectionClass->getProperties()))->compactMap(function (ReflectionProperty $property) use ($entityDescription): ?PropertyDescription {
-                if ($property->isStatic()) {
-                    return null;
-                }
-                $name = $property->name;
-                /** @var ReflectionNamedType $reflectionType */
-                $reflectionType = $property->getType();
-                $type = $reflectionType->getName();
-                if ($type == PersistentHistoryTransaction::class) {
-                    $relationship = new RelationshipDescription();
-                    $relationship->name = $name;
-                    $relationship->entity = $entityDescription;
-                    $relationship->lazyInverseRelationshipName = "changes";
-                    $relationship->lazyDestinationEntityName = 'PersistentHistoryTransaction';
-                    return $relationship;
-                }
-                $attribute = new AttributeDescription();
-                $attribute->name = $name;
-                $attribute->entity = $entityDescription;
-                if ($type == 'string') {
-                    $attribute->type = AttributeType::string;
-                } elseif ($type == 'int') {
-                    $attribute->type = AttributeType::integer16;
-                    $attribute->isOptional = false;
-                } elseif ($type == Date::class) {
-                    $attribute->type = AttributeType::date;
-                    $attribute->isOptional = false;
-                } elseif ($type == ManagedObjectID::class) {
-                    $attribute->type = AttributeType::objectID;
-                    $attribute->isOptional = false;
-                } elseif ($type == Dictionary::class || $type == Set::class) {
-                    $attribute->type = AttributeType::transformable;
-                } elseif ($type == PersistentHistoryChangeType::class) {
-                    $attribute->type = AttributeType::integer16;
-                    $attribute->isOptional = false;
-                }
-                return $attribute;
-            });
+            $entityDescription->properties = /** @phpstan-ignore-line */
+                (new ArrayClass($reflectionClass->getProperties()))->compactMap(function (ReflectionProperty $property) use ($entityDescription): ?PropertyDescription {
+                    if ($property->isStatic()) {
+                        return null;
+                    }
+                    $name = $property->name;
+                    /** @var ReflectionNamedType $reflectionType */
+                    $reflectionType = $property->getType();
+                    $type = $reflectionType->getName();
+                    if ($type == PersistentHistoryTransaction::class) {
+                        $relationship = new RelationshipDescription();
+                        $relationship->name = $name;
+                        $relationship->entity = $entityDescription;
+                        $relationship->lazyInverseRelationshipName = "changes";
+                        $relationship->lazyDestinationEntityName = 'PersistentHistoryTransaction';
+                        return $relationship;
+                    }
+                    $attribute = new AttributeDescription();
+                    $attribute->name = $name;
+                    $attribute->entity = $entityDescription;
+                    if ($type == 'string') {
+                        $attribute->type = AttributeType::string;
+                    } elseif ($type == 'int') {
+                        $attribute->type = AttributeType::integer16;
+                        $attribute->isOptional = false;
+                    } elseif ($type == Date::class) {
+                        $attribute->type = AttributeType::date;
+                        $attribute->isOptional = false;
+                    } elseif ($type == ManagedObjectID::class) {
+                        $attribute->type = AttributeType::objectID;
+                        $attribute->isOptional = false;
+                    } elseif ($type == Dictionary::class || $type == Set::class) {
+                        $attribute->type = AttributeType::transformable;
+                    } elseif ($type == PersistentHistoryChangeType::class) {
+                        $attribute->type = AttributeType::integer16;
+                        $attribute->isOptional = false;
+                    }
+                    return $attribute;
+                });
             $managedObjectModel->addEntity($entityDescription);
             PersistentHistoryChange::$entityDescription = $entityDescription;
         }
@@ -261,7 +263,7 @@ class SQLCore extends IncrementalStore
                     BatchDeleteRequestResultType::statusOnly => !$result->containsElement(false),
                     BatchDeleteRequestResultType::objectIDs => !$result->isEmpty(),
                     BatchDeleteRequestResultType::count => (bool)$result->sum()
-                    }) {
+                }) {
                     /** @var SQLEntity $entity */
                     $entity = $this->model->entitiesByName[$requestContext->fetchRequestForObjectsToDelete->entity->name];
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass([$entity]));
