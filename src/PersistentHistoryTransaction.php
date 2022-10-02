@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpUnused */
+<?php
 
 /**
  * Created by PhpStorm.
@@ -15,6 +15,7 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Notification;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
+
 use function Sabatier\Foundation\human_readable_value;
 
 /**

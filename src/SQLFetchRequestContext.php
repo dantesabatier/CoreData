@@ -7,6 +7,7 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Set;
+
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\human_readable_time;
 

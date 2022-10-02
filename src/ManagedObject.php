@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpUnused */
+<?php
 
 namespace Sabatier\CoreData;
 
@@ -25,8 +25,10 @@ use Sabatier\Foundation\UUID;
 use Sabatier\Foundation\Value;
 use Sabatier\Foundation\ValueTransformer;
 use Throwable;
+
 use function Sabatier\Foundation\is_serialized;
 use function Sabatier\Foundation\typeof;
+
 use const Sabatier\Foundation\CocoaErrorDomain;
 use const Sabatier\Foundation\KeyValueValidationError;
 use const Sabatier\Foundation\NotFound;
@@ -884,12 +886,14 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         }
                     } else {
                         /** @noinspection PhpConditionAlreadyCheckedInspection */
-                        if (!match ($attributeType) {
+                        if (
+                            !match ($attributeType) {
                             AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => is_numeric($value),
                             AttributeType::string, AttributeType::binaryData, AttributeType::transformable => is_string($value),
                             AttributeType::boolean => is_bool($value) || is_int($value),
                             default => false,
-                        }) {
+                            }
+                        ) {
                             throw new InvalidArgumentException(sprintf("invalid parameter: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeType->name, typeof($value)));
                         }
                     }

@@ -3,6 +3,7 @@
 namespace Sabatier\CoreData;
 
 use Exception;
+
 use const Sabatier\Foundation\NotFound;
 
 /** @internal */

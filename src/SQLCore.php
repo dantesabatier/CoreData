@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpUnused */
+<?php
 
 /**
  * Created by PhpStorm.
@@ -50,7 +50,7 @@ class SQLCore extends IncrementalStore
             $entityDescription->name = 'PersistentHistoryTransaction';
             $entityDescription->isPersistentHistoryEntity = true;
             /** @psalm-suppress InvalidPropertyAssignmentValue */
-            $entityDescription->properties = (new ArrayClass($reflectionClass->getProperties()))->compactMap(function (ReflectionProperty $property) use ($entityDescription): ?PropertyDescription { // @phpstan-ignore-line
+            $entityDescription->properties = /** @phpstan-ignore-line */ (new ArrayClass($reflectionClass->getProperties()))->compactMap(function (ReflectionProperty $property) use ($entityDescription): ?PropertyDescription {
                 if ($property->isStatic()) {
                     return null;
                 }
@@ -98,7 +98,7 @@ class SQLCore extends IncrementalStore
             $entityDescription->name = 'PersistentHistoryChange';
             $entityDescription->isPersistentHistoryEntity = true;
             /** @psalm-suppress InvalidPropertyAssignmentValue */
-            $entityDescription->properties = (new ArrayClass($reflectionClass->getProperties()))->compactMap(function (ReflectionProperty $property) use ($entityDescription): ?PropertyDescription { // @phpstan-ignore-line
+            $entityDescription->properties = /** @phpstan-ignore-line */ (new ArrayClass($reflectionClass->getProperties()))->compactMap(function (ReflectionProperty $property) use ($entityDescription): ?PropertyDescription {
                 if ($property->isStatic()) {
                     return null;
                 }
@@ -261,7 +261,7 @@ class SQLCore extends IncrementalStore
                     BatchDeleteRequestResultType::statusOnly => !$result->containsElement(false),
                     BatchDeleteRequestResultType::objectIDs => !$result->isEmpty(),
                     BatchDeleteRequestResultType::count => (bool)$result->sum()
-                }) {
+                    }) {
                     /** @var SQLEntity $entity */
                     $entity = $this->model->entitiesByName[$requestContext->fetchRequestForObjectsToDelete->entity->name];
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass([$entity]));

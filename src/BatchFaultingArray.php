@@ -4,6 +4,7 @@ namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Range;
+
 use function Sabatier\Foundation\invalid_mutation;
 
 /**
@@ -70,7 +71,7 @@ class BatchFaultingArray extends ArrayClass
 
     private function arrayFromObjectIDs(): ArrayClass
     {
-        // TODO: review for side effects
+        // TODO: check side effects
         $this->context->reset();
         /** @var FetchRequest<ManagedObjectID> $request */
         $request = $this->request;
@@ -113,7 +114,7 @@ class BatchFaultingArray extends ArrayClass
     {
         return $this->count;
     }
-    
+
     /** @psalm-suppress MissingImmutableAnnotation */
     public function offsetExists(mixed $offset): bool
     {

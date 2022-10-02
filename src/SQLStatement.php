@@ -15,6 +15,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\CompareOptions;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\SearchMethod;
+
 use function Sabatier\Foundation\string_ends_with;
 use function Sabatier\Foundation\string_is_equal;
 use function Sabatier\Foundation\string_search;

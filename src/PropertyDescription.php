@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpUnused */
+<?php
 
 /**
  * @author Dante Sabatier <dantesabatier@me.com>
@@ -82,7 +82,7 @@ abstract class PropertyDescription extends ObjectClass
             }
             $regex = $this->regex;
             if ($regex) {
-                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class($regex) {
+                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class ($regex) {
                     public function __construct(public readonly string $regex)
                     {
                     }
@@ -172,7 +172,7 @@ abstract class PropertyDescription extends ObjectClass
     {
         return sprintf("(<%s: %s>), name %s, isOptional %s, isTransient %s, entity %s renamingIdentifier %s validation predicates %s warnings %s", static::class, $this->hash(), $this->name, (int)$this->isOptional, (int)$this->isTransient, $this->entity->name, $this->renamingIdentifier, $this->validationPredicates->description(), $this->validationWarnings->description());
     }
-    
+
     public function jsonSerialize(): Dictionary
     {
         /** @var Dictionary<mixed> $dictionary */

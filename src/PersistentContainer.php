@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpUnused */
+<?php
 
 /**
  * Created by PhpStorm.
@@ -22,6 +22,7 @@ use Sabatier\Foundation\ProcessInfo;
 use Sabatier\Foundation\SearchPathDirectory;
 use Sabatier\Foundation\SearchPathDomainMask;
 use Sabatier\Foundation\URL;
+
 use function Sabatier\Foundation\has_escape_sequences;
 
 /**
@@ -70,7 +71,7 @@ class PersistentContainer extends ObjectClass
             /** @var ArrayClass<PersistentStoreDescription> $persistentStoreDescriptions */
             $persistentStoreDescriptions = new ArrayClass();
             /** @psalm-suppress TypeDoesNotContainType, RedundantCondition */
-            if (SS_COREDATA_DEBUG_XML_STORE): // @phpstan-ignore-line
+            if (SS_COREDATA_DEBUG_XML_STORE) : // @phpstan-ignore-line
                 $fileManager = FileManager::default();
                 /** @noinspection PhpUnhandledExceptionInspection */
                 $directoryUrl = static::defaultDirectoryURL()->appendingPathComponent($this->name);
@@ -82,7 +83,7 @@ class PersistentContainer extends ObjectClass
                 $persistentStoreDescription = new PersistentStoreDescription($fileUrl);
                 $persistentStoreDescription->type = XMLStoreType;
                 $persistentStoreDescription->setOptionForKey(true, ValidateXMLStoreOption);
-            else:
+            else :
                 $persistentStoreDescription = new PersistentStoreDescription(new URL("sql://$this->name"));
                 $persistentStoreDescription->type = SQLStoreType;
             endif;

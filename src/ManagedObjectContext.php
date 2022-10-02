@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpUnused */
+<?php
 
 /**
  * Created by PhpStorm.
@@ -30,6 +30,7 @@ use Sabatier\Foundation\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Throwable;
+
 use function Sabatier\Foundation\human_readable_value;
 
 /**
@@ -179,8 +180,7 @@ class ManagedObjectContext extends ObjectClass
     /**
      * @throws Exception
      */
-    private function executeAsynchronousFetchRequest(AsynchronousFetchRequest $asynchronousFetchRequest
-    ): AsynchronousFetchResult
+    private function executeAsynchronousFetchRequest(AsynchronousFetchRequest $asynchronousFetchRequest): AsynchronousFetchResult
     {
         $this->perform(function () use ($asynchronousFetchRequest) {
             ($asynchronousFetchRequest->completionBlock)(new AsynchronousFetchResult($asynchronousFetchRequest, $this, $this->fetch($asynchronousFetchRequest->fetchRequest)));

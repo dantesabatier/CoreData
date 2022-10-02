@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Created by PhpStorm.
  * User: dante
@@ -246,7 +247,7 @@ class SQLEntity extends StoreMapping
             return $this->valueForUndefinedKey($name);
         }
     }
-    
+
     public function generateInverseRelationshipsAndMore(): void
     {
         //HACK: we cannot use the array access syntax to initialize this property on PHP 8.1.9, because it complains about an indirect modification. Initialize the property first then make changes
@@ -260,7 +261,7 @@ class SQLEntity extends StoreMapping
             $this->properties->append($foreignKeyColumn);
         }
     }
-    
+
     public function doPostModelGenerationCleanup(): void
     {
         $by = fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value;

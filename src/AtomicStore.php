@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpUnused */
+<?php
 
 namespace Sabatier\CoreData;
 
@@ -13,7 +13,9 @@ use Sabatier\Foundation\Number;
 use Sabatier\Foundation\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
+
 use function Sabatier\Foundation\request_concrete_implementation;
+
 use const Sabatier\Foundation\NotFound;
 
 /**

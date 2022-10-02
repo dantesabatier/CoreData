@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpUnused */
+<?php
 
 /**
  * Created by PhpStorm.
@@ -25,6 +25,7 @@ use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\OperationQueue;
 use Sabatier\Foundation\URL;
 use Throwable;
+
 use const Sabatier\Foundation\CocoaErrorDomain;
 use const Sabatier\Foundation\LocalizedFailureReasonErrorKey;
 
@@ -196,8 +197,7 @@ class PersistentStoreCoordinator extends ObjectClass
     public function addPersistentStoreWithType(PersistentStoreType $storeType, ?string $configuration, URL $storeURL, ?Dictionary $options = null): PersistentStore
     {
         /** @var class-string<PersistentStore> $persistentStoreClass */
-        $persistentStoreClass = self::registeredStoreTypes()[$storeType->value] ?? self::registeredStoreTypes()->first(fn(mixed $class, string $type): bool => $type === $class::metadataForPersistentStore($storeURL)[StoreTypeKey]
-        ) ?? throw new InvalidArgumentException();
+        $persistentStoreClass = self::registeredStoreTypes()[$storeType->value] ?? self::registeredStoreTypes()->first(fn(mixed $class, string $type): bool => $type === $class::metadataForPersistentStore($storeURL)[StoreTypeKey]) ?? throw new InvalidArgumentException();
         $persistentStore = new $persistentStoreClass($this, $configuration ?? 'Default', $storeURL, $options);
         if (!$persistentStore->load() || !$persistentStore->loadMetadata()) {
             throw new RuntimeException();

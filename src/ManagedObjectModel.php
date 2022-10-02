@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpUnused */
+<?php
 
 /**
  * @author Dante Sabatier <dantesabatier@me.com>
@@ -28,6 +28,7 @@ use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Throwable;
 use Traversable;
+
 use const Sabatier\Foundation\kCFBundleNameKey;
 
 /**
@@ -484,7 +485,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                 return KeyedArchiver::archivedData($this->entities($configuration)?->reduce(new Dictionary(), function (Dictionary &$result, EntityDescription $entity): Dictionary {
                         $result[$entity->name] = $entity->versionHash;
                         return $result;
-                    }) ?? $this->entityVersionHashesByName) === $metadata[StoreModelVersionHashesKey];
+                }) ?? $this->entityVersionHashesByName) === $metadata[StoreModelVersionHashesKey];
             } catch (Throwable $throwable) {
                 $throwableClass = $throwable::class;
                 throw new $throwableClass($throwable->getMessage(), (int)$throwable->getCode());

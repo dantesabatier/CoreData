@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Created by PhpStorm.
  * User: dante
@@ -13,6 +14,7 @@ use InvalidArgumentException;
 use JetBrains\PhpStorm\Pure;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Expression;
+
 use function Sabatier\Foundation\typeof;
 
 /**

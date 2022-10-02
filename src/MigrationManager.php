@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpUnused */
+<?php
 
 /**
  * Created by PhpStorm.
@@ -17,6 +17,7 @@ use Sabatier\Foundation\Error;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
+
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\human_readable_time;
 use function Sabatier\Foundation\typeof;
@@ -108,8 +109,10 @@ class MigrationManager extends ObjectClass
             return false;
         }
         $mappingType = $mapping->mappingType;
-        if ($mappingType == EntityMappingType::addEntityMappingType ||
-            $mappingType == EntityMappingType::removeEntityMappingType) {
+        if (
+            $mappingType == EntityMappingType::addEntityMappingType ||
+            $mappingType == EntityMappingType::removeEntityMappingType
+        ) {
             return true;
         }
         $sourceEntity = $this->sourceEntity($mapping);

@@ -1,4 +1,6 @@
-<?php /** @noinspection PhpInternalEntityUsedInspection */
+<?php
+
+/** @noinspection PhpInternalEntityUsedInspection */
 
 /**
  * Created by PhpStorm.
@@ -31,7 +33,7 @@ use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\UnknownKeyException;
 use Sabatier\Foundation\Value;
 
-use function Sabatier\Foundation\get_calling_class;
+use function Sabatier\Foundation\equivalent;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\in_string;
 use function Sabatier\Foundation\string_contains;
@@ -552,18 +554,20 @@ class SQLGenerator extends ObjectClass
                         return null;
                     });
                 }
-                $copy = clone $columnNames;
-                foreach ($copy as $columnName) {
-                    if (string_contains($this->selectList, $columnName)) {
-                        $columnNames->remove($columnName);
-                        if (string_contains($columnName, '?')) {
-                            $this->arguments->popFirst();
+                if (!$columnNames->isEmpty()) {
+                    $copy = clone $columnNames;
+                    foreach ($copy as $columnName) {
+                        if (string_contains($this->selectList, $columnName)) {
+                            $columnNames->remove($columnName);
+                            if (string_contains($columnName, '?')) {
+                                $this->arguments->popFirst();
+                            }
                         }
                     }
-                }
-                if (!$columnNames->isEmpty()) {
-                    $this->selectList .= ", ";
-                    $this->selectList .= $columnNames->join(', ');
+                    if (!$columnNames->isEmpty()) {
+                        $this->selectList .= ", ";
+                        $this->selectList .= $columnNames->join(', ');
+                    }
                 }
             }
             $source = $destination;
@@ -793,9 +797,9 @@ class SQLGenerator extends ObjectClass
             if (is_string($key)) {
                 $key = str_replace([$suffix, $prefix], "", $key);
             }
-            if ($key === $right) {
+            if (equivalent($key, $right)) {
                 $clause .= "$left $operator ?";
-            } elseif ($key === $left) {
+            } elseif (equivalent($key, $left)) {
                 $clause .= "? $operator $right";
             } else {
                 $clause .= "$left $operator $right";

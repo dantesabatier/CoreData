@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpUnused */
+<?php
 
 /**
  * @author Dante Sabatier <dantesabatier@me.com>

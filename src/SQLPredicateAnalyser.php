@@ -1,4 +1,6 @@
-<?php /** @noinspection PhpInternalEntityUsedInspection */
+<?php
+
+/** @noinspection PhpInternalEntityUsedInspection */
 
 /**
  * Created by PhpStorm.

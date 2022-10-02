@@ -6,6 +6,7 @@ use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
+
 use function Sabatier\Foundation\request_concrete_implementation;
 
 /** @internal */

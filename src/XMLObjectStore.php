@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpUnused */
+<?php
 
 /**
  * Created by PhpStorm.
@@ -148,10 +148,8 @@ class XMLObjectStore extends AtomicStore
                     throw new UnknownKeyException(sprintf("%s %s() entity \"%s\" does not contains a relationship named \"%s\"", self::class, __FUNCTION__, $entity->name, $key));
                 }
                 $info[$relationship->name] = $relationshipElement->attributes;
-                if (($references = $relationshipElement->getAttribute('references')) &&
-                    ($destination = $relationshipElement->getAttribute('destination')) &&
-                    ($destinationEntity = $this->entitiesForConfiguration[$destination])) {
-                    $managedObjectIDs = (new Set(explode(" ", $references)))->map(fn(string $reference): ManagedObjectID => $this->objectID($destinationEntity, $reference));
+                if (($references = $relationshipElement->getAttribute('references')) && ($destination = $relationshipElement->getAttribute('destination')) && ($destinationEntity = $this->entitiesForConfiguration[$destination])) {
+                    $managedObjectIDs = (new Set(explode(" ", $references)))->map(fn (string $reference): ManagedObjectID => $this->objectID($destinationEntity, $reference));
                     $value = $relationship->isToMany ? $managedObjectIDs : $managedObjectIDs->first();
                     $cacheNode->setValueForKey($value, $key);
                 }
