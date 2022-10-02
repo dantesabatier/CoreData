@@ -1,5 +1,7 @@
 <?php
 
+namespace Sabatier\CoreData;
+
 /**
  * @var string A flag that indicates whether a store is treated as read-only or not.
  * The default value is false.

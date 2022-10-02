@@ -1,5 +1,7 @@
 <?php
 
+namespace Sabatier\CoreData;
+
 //Error Domains
 
 /** @var string Domain for SQL errors. */

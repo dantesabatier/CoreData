@@ -13,6 +13,7 @@ use Sabatier\Foundation\Number;
 use Sabatier\Foundation\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\ValueTransformer;
+use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /** @internal */
 class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext

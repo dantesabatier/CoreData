@@ -531,7 +531,7 @@ class SQLGenerator extends ObjectClass
                             $attributeDescription = $property->attributeDescription;
                             if ($attributeDescription instanceof DerivedAttributeDescription) {
                                 if ($expression = $attributeDescription->derivationExpression) {
-                                    $propertyName = "{$destination}_$attributeDescription->name"; 
+                                    $propertyName = "{$destination}_$attributeDescription->name";
                                     return (function () use ($entity, $destination, $expression, $propertyName): string {
                                         $bk = $this->entity;
                                         $this->entity = $entity;
@@ -552,11 +552,12 @@ class SQLGenerator extends ObjectClass
                         return null;
                     });
                 }
-                foreach ($columnNames->reversed() as $columnName) {
+                $copy = clone $columnNames;
+                foreach ($copy as $columnName) {
                     if (string_contains($this->selectList, $columnName)) {
                         $columnNames->remove($columnName);
                         if (string_contains($columnName, '?')) {
-                            $this->arguments->popLast();
+                            $this->arguments->popFirst();
                         }
                     }
                 }
@@ -572,7 +573,7 @@ class SQLGenerator extends ObjectClass
     }
 
     /**
-     * @param Dictionary|null $serialization
+     * @param Dictionary<mixed>|null $serialization
      * @param string|null $parent
      * @return Set<Expression>
      */

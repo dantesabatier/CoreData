@@ -28,6 +28,7 @@ use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Throwable;
 use Traversable;
+use const Sabatier\Foundation\kCFBundleNameKey;
 
 /**
  * Class ManagedObjectModel

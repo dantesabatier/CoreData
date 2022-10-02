@@ -13,6 +13,7 @@ use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\ValueTransformer;
 use function Sabatier\Foundation\human_readable_value;
+use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /**
  * Class PersistentHistoryChange

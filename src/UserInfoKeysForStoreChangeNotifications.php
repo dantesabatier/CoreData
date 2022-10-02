@@ -1,5 +1,7 @@
 <?php /** @noinspection PhpUnused */
 
+namespace Sabatier\CoreData;
+
 /** @var string Key for the array of stores that were added. */
 const AddedPersistentStoresKey = 'AddedPersistentStores';
 /** @var string Key for the array of stores that were removed. */

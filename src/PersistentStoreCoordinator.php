@@ -25,6 +25,8 @@ use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\OperationQueue;
 use Sabatier\Foundation\URL;
 use Throwable;
+use const Sabatier\Foundation\CocoaErrorDomain;
+use const Sabatier\Foundation\LocalizedFailureReasonErrorKey;
 
 /**
  * Class PersistentStoreCoordinator

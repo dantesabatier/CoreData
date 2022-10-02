@@ -15,6 +15,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Error;
 use Sabatier\Foundation\ObjectClass;
+use const Sabatier\Foundation\CocoaErrorDomain;
 
 /**
  * Class MergePolicy

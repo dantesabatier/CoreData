@@ -14,6 +14,7 @@ use Sabatier\Foundation\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use function Sabatier\Foundation\request_concrete_implementation;
+use const Sabatier\Foundation\NotFound;
 
 /**
  * Class AtomicStore

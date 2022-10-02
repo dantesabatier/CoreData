@@ -69,8 +69,10 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             foreach ($keys as $key) {
                                 $property = $currentEntity->propertiesByName[$key];
                                 if ($property instanceof SQLRelationship) {
-                                    if ($current instanceof Set && !$current->isEmpty()) {
-                                        $current = &$current[$current->indexBefore($current->endIndex())];
+                                    if ($current instanceof Set) {
+                                        if (!$current->isEmpty()) {
+                                            $current = &$current[$current->indexBefore($current->endIndex())];
+                                        }
                                     }
                                     if ($current instanceof Dictionary) {
                                         if ($current[$key] === null) {

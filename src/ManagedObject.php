@@ -27,7 +27,10 @@ use Sabatier\Foundation\ValueTransformer;
 use Throwable;
 use function Sabatier\Foundation\is_serialized;
 use function Sabatier\Foundation\typeof;
+use const Sabatier\Foundation\CocoaErrorDomain;
 use const Sabatier\Foundation\KeyValueValidationError;
+use const Sabatier\Foundation\NotFound;
+use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /**
  * Class ManagedObject

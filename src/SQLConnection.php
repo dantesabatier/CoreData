@@ -32,6 +32,7 @@ use Sabatier\Foundation\ValueTransformer;
 use Throwable;
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\human_readable_time;
+use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /** @internal */
 class SQLConnection extends ObjectClass

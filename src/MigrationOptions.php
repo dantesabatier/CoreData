@@ -1,5 +1,7 @@
 <?php
 
+namespace Sabatier\CoreData;
+
 /**
  * @var string Key to ignore the built-in versioning provided by Core Data.
  * If true, Core Data will not compare the version hashes between the managed object model in the coordinator and the metadata for the loaded store. (It will, however, continue to update the version hash information in the metadata.)

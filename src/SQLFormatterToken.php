@@ -2,6 +2,8 @@
 
 namespace Sabatier\CoreData;
 
+use const Sabatier\Foundation\NotFound;
+
 /** @internal */
 class SQLFormatterToken
 {

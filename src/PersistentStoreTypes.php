@@ -1,5 +1,7 @@
 <?php
 
+namespace Sabatier\CoreData;
+
 /** @var string The SQLite database store type. */
 const SQLStoreType = 'sql';
 
