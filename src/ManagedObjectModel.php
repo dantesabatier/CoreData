@@ -499,7 +499,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
         /** @noinspection PhpUnhandledExceptionInspection */
         return KeyedArchiver::archivedData($this->entitiesByName->compactMapValues(fn(EntityDescription $entity): ?string => $entity->isPersistentHistoryEntity ? null : $entity->versionHashInStyle($style)));
     }
-    
+
     public function count(): int
     {
         return $this->entitiesByName->count();
