@@ -13,7 +13,6 @@ use Countable;
 use Exception;
 use InvalidArgumentException;
 use IteratorAggregate;
-use JetBrains\PhpStorm\Pure;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Bundle;
 use Sabatier\Foundation\Dictionary;
@@ -500,8 +499,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
         /** @noinspection PhpUnhandledExceptionInspection */
         return KeyedArchiver::archivedData($this->entitiesByName->compactMapValues(fn(EntityDescription $entity): ?string => $entity->isPersistentHistoryEntity ? null : $entity->versionHashInStyle($style)));
     }
-
-    #[Pure]
+    
     public function count(): int
     {
         return $this->entitiesByName->count();

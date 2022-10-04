@@ -397,7 +397,7 @@ class SQLGenerator extends ObjectClass
         $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
     }
 
-    private function appendJoinClauseDestinationEntity(SQLEntity $destinationEntity, string $destinationPath): void
+    private function appendJoinDestinationEntity(SQLEntity $destinationEntity, string $destinationPath): void
     {
         if (!$destinationEntity->isRootEntity) {
             $this->joinClause .= " AND ";
@@ -438,7 +438,7 @@ class SQLGenerator extends ObjectClass
             }
         }
         if (!$sourceEntity->entityDescription->isPersistentHistoryEntity) {
-            $this->appendJoinClauseDestinationEntity($destinationEntity, $destinationPath);
+            $this->appendJoinDestinationEntity($destinationEntity, $destinationPath);
         }
     }
 
@@ -463,7 +463,7 @@ class SQLGenerator extends ObjectClass
         }
         if (!$sourceEntity->entityDescription->isPersistentHistoryEntity) {
             $destinationEntity = $toMany->destinationEntity;
-            $this->appendJoinClauseDestinationEntity($destinationEntity, $destinationPath);
+            $this->appendJoinDestinationEntity($destinationEntity, $destinationPath);
         }
     }
 
@@ -483,10 +483,10 @@ class SQLGenerator extends ObjectClass
         $this->joinClause .= "$correlationTableAlias.$manyToMany->inverseColumnName";
         $this->joinClause .= " = ";
         $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
-        $this->appendJoinClauseDestinationEntity($destinationEntity, $destinationPath);
+        $this->appendJoinDestinationEntity($destinationEntity, $destinationPath);
         $this->appendJoinClauseToSQL();
         $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $correlationTableAlias.$manyToMany->columnName = $destinationPath.{$destinationEntity->primaryKey->columnName}";
-        $this->appendJoinClauseDestinationEntity($destinationEntity, $destinationPath);
+        $this->appendJoinDestinationEntity($destinationEntity, $destinationPath);
     }
 
     /**

@@ -96,7 +96,7 @@ class PersistentContainer extends ObjectClass
         } elseif ($name == 'managedObjectModel') {
             $filename = $this->name;
             $bundle = Bundle::bundleWithURL(FileManager::default()->documentRootDirectory);
-            if (!($modelUrl = $bundle?->url($filename, 'plist'))) {
+            if (!($modelUrl = $bundle->url($filename, 'plist'))) {
                 throw new InternalInconsistencyException("model \"$filename\" not found");
             }
             /** @noinspection PhpUnhandledExceptionInspection */

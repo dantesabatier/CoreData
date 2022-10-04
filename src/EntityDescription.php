@@ -11,7 +11,6 @@ namespace Sabatier\CoreData;
 use ArrayIterator;
 use Countable;
 use IteratorAggregate;
-use JetBrains\PhpStorm\Pure;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\InternalInconsistencyException;
@@ -308,8 +307,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     {
         return $this->uniquenessConstraints->map(fn(ArrayClass $constraint): FetchIndexDescription => $this->constraintAsIndex($constraint));
     }
-
-    #[Pure]
+    
     public function count(): int
     {
         return $this->propertiesByName->count();

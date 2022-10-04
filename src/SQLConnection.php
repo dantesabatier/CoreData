@@ -60,7 +60,7 @@ class SQLConnection extends ObjectClass
         return $this->$name = match ($name) {
             'schema' => new SQLSchema(ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_NAME'], ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_HOST'], new SQLCredential(ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_USER'], ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_PASSWORD'])),
             'sqlCore' => $this->adapter?->sqlCore,
-            'bundleID' => Bundle::bundleWithURL(FileManager::default()->url(SearchPathDirectory::applicationsDirectory)->appendingPathComponent(ProcessInfo::processInfo()->processName))?->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString,
+            'bundleID' => Bundle::main()->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString,
             default => $this->valueForUndefinedKey($name)
         };
     }
