@@ -24,25 +24,19 @@ use Sabatier\Foundation\Set;
  */
 class FetchIndexDescription extends ObjectClass
 {
-    /** @var ArrayClass<FetchIndexElementDescription> */
-    protected ArrayClass $elements;
     /** @var EntityDescription The entity description for the fetch index description. */
     public EntityDescription $entity;
-    /** @var string The name of the fetch index description. */
-    public string $name;
-    #TODO: not implemented
+    // FIXME: not implemented
     /** @var Predicate|null A predicate that selects rows for indexing, if the index is a partial index. */
     public ?Predicate $partialIndexPredicate = null;
 
     /**
      * Creates a fetch index description using the specified name and element descriptions.
      * @param string $name The name of the fetch index description.
-     * @param ArrayClass<FetchIndexElementDescription>|null $elements An array of fetch index element descriptions.
+     * @param ArrayClass<FetchIndexElementDescription> $elements An array of fetch index element descriptions.
      */
-    public function __construct(string $name, ?ArrayClass $elements = null)
+    public function __construct(public string $name, protected ArrayClass $elements = new ArrayClass())
     {
-        $this->name = $name;
-        $this->elements = $elements ?? new ArrayClass();
     }
 
     public function __get(string $name)
@@ -70,7 +64,7 @@ class FetchIndexDescription extends ObjectClass
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof FetchIndexDescription) {
-            return $this->name == $other->name;
+            return $this->name === $other->name;
         }
         return false;
     }

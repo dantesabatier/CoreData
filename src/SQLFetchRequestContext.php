@@ -7,7 +7,6 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Set;
-
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\human_readable_time;
 
@@ -70,10 +69,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             foreach ($keys as $key) {
                                 $property = $currentEntity->propertiesByName[$key];
                                 if ($property instanceof SQLRelationship) {
-                                    if ($current instanceof Set) {
-                                        if (!$current->isEmpty()) {
-                                            $current = &$current[$current->indexBefore($current->endIndex())];
-                                        }
+                                    if ($current instanceof Set && !$current->isEmpty()) {
+                                        $current = &$current[$current->indexBefore($current->endIndex())];
                                     }
                                     if ($current instanceof Dictionary) {
                                         if ($current[$key] === null) {
@@ -89,28 +86,20 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     $currentEntity = $relationship->destinationEntity;
                                 }
                                 if ($property instanceof SQLColumn) {
-                                    if ($relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany) {
-                                        if ($current instanceof Set) {
-                                            if ($current->isEmpty()) {
-                                                if ($property instanceof SQLPrimaryKey) {
-                                                    $current[] = new Dictionary();
-                                                }
-                                            }
-                                            $cached = $current;
-                                            if ($property instanceof SQLPrimaryKey) {
-                                                if (!$cached->contains(fn(Dictionary $dictionary): bool => $dictionary[$property->name] === $value)) {
-                                                    $cached[] = new Dictionary();
-                                                }
-                                            }
-                                            if (!$cached->isEmpty()) {
-                                                $current = &$cached[$cached->indexBefore($cached->endIndex())];
-                                            }
+                                    if (($relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany) && $current instanceof Set) {
+                                        if ($current->isEmpty() && $property instanceof SQLPrimaryKey) {
+                                            $current[] = new Dictionary();
+                                        }
+                                        $cached = $current;
+                                        if ($property instanceof SQLPrimaryKey && !$cached->contains(fn(Dictionary $dictionary): bool => $dictionary[$property->name] === $value)) {
+                                            $cached[] = new Dictionary();
+                                        }
+                                        if (!$cached->isEmpty()) {
+                                            $current = &$cached[$cached->indexBefore($cached->endIndex())];
                                         }
                                     }
-                                    if ($current instanceof Dictionary) {
-                                        if ($current[$key] === null) {
-                                            $current[$key] = $value;
-                                        }
+                                    if ($current instanceof Dictionary && $current[$key] === null) {
+                                        $current[$key] = $value;
                                     }
                                     $currentEntity = $entity;
                                 }
@@ -127,18 +116,15 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         $entity = $this->sqlModel->entitiesByName[$this->request->entity->name];
         if ($resultType == FetchRequestResultType::managedObjectResultType || $resultType == FetchRequestResultType::managedObjectIDResultType) {
             /** @return ArrayClass<ManagedObject> */
-            $objects = function () use ($entity, $values): ArrayClass {
-                /** @psalm-suppress InvalidArgument */
-                return $values->map(function (Dictionary $dictionary) use ($entity): ManagedObject {
-                    $object = $this->context->object($this->sqlCore->newObjectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
-                    $object->isSuppressingKVO = true;
-                    $object->isFault = $this->request->returnsObjectsAsFaults;
-                    $object->setValuesForKeys($dictionary);
-                    $object->awakeFromFetch();
-                    $object->isSuppressingKVO = false;
-                    return $object->serialized($this->request->serialization);
-                });
-            };
+            $objects = fn(): ArrayClass => $values->map(function (Dictionary $dictionary) use ($entity): ManagedObject {
+                $object = $this->context->object($this->sqlCore->newObjectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
+                $object->isSuppressingKVO = true;
+                $object->isFault = $this->request->returnsObjectsAsFaults;
+                $object->setValuesForKeys($dictionary);
+                $object->awakeFromFetch();
+                $object->isSuppressingKVO = false;
+                return $object->serialized($this->request->serialization);
+            });
             if ($this->request->includesPropertyValues) {
                 $values = $objects();
                 if ($resultType == FetchRequestResultType::managedObjectIDResultType) {

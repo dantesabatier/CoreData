@@ -66,7 +66,7 @@ final class ManagedObjectSerializer
                 continue;
             }
             $serialization = self::serialization($key, $dictionary);
-            if ($serialization === null) {
+            if (!$serialization instanceof Dictionary) {
                 continue;
             }
             $objs = $value;

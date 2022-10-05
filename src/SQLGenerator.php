@@ -97,7 +97,7 @@ class SQLGenerator extends ObjectClass
         $this->prepareDeleteStatement($entity, $deletedObjects);
         return new SQLStatement($this->string, $this->arguments);
     }
-
+    
     private function newSQLStatementForSaveChangesRequestContext(): ?SQLStatement
     {
         /** @var SQLSaveChangesRequestContext $requestContext */
@@ -328,10 +328,8 @@ class SQLGenerator extends ObjectClass
             $appendInferredColumnNames = false;
         }
         if ($appendInferredColumnNames) {
-            if (!$entity->entityDescription->isPersistentHistoryEntity) {
-                if ($request->resultType != FetchRequestResultType::countResultType) {
-                    $columnNames->append("$entity->tableName.{$entity->entityKey->columnName}");
-                }
+            if (!$entity->entityDescription->isPersistentHistoryEntity && $request->resultType != FetchRequestResultType::countResultType) {
+                $columnNames->append("$entity->tableName.{$entity->entityKey->columnName}");
             }
             $keys = $request->serialization->keys;
             /** @var ArrayClass<string|PropertyDescription> $properties */
@@ -339,7 +337,7 @@ class SQLGenerator extends ObjectClass
             if ($propertiesToFetch = $request->propertiesToFetch) {
                 $properties->appendContentsOf($propertiesToFetch->filter(fn(PropertyDescription|string $property): bool => $property instanceof PropertyDescription ? !$keys->containsElement($property->name) : !$keys->containsElement($property)));
             }
-            $properties->appendContentsOf($keys->filter(fn(string $key): bool => $request->entity->attributesByName->contains(fn(AttributeDescription $attribute): bool => $attribute->name == $key)));
+            $properties->appendContentsOf($keys->filter(fn(string $key): bool => $request->entity->attributesByName->contains(fn(AttributeDescription $attribute): bool => $attribute->name === $key)));
             /** @psalm-suppress InvalidArgument */
             $columnNames->appendContentsOf($properties->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => is_string($property) ? $request->entity->attributesByName[$property] : ($property instanceof AttributeDescription || $property instanceof ExpressionDescription ? $property : null))->map(function (PropertyDescription $property) use ($entity): string {
                 if ($property instanceof AttributeDescription) {
@@ -408,7 +406,7 @@ class SQLGenerator extends ObjectClass
             }
         }
     }
-
+    
     private function addJoinForToOneRelationship(SQLToOne $toOne, string $sourcePath = '', string $destinationPath = ''): void
     {
         $sourceEntity = $toOne->entity;
@@ -419,23 +417,18 @@ class SQLGenerator extends ObjectClass
         } else {
             $columnName = $destinationEntity->primaryKey->columnName;
         }
+        if (empty($sourcePath)) {
+            $sourcePath = $sourceEntity->tableName;
+        }
         if (empty($destinationPath)) {
             $destinationPath = "{$sourceEntity->tableName}_$toOne->name";
         }
         $this->appendJoinClauseToSQL();
         $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $destinationPath.$columnName = ";
-        if (!empty($sourcePath)) {
-            if ($inverseRelationship instanceof SQLToOne) {
-                $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
-            } else {
-                $this->joinClause .= "$sourcePath.{$toOne->foreignKey->columnName}";
-            }
+        if ($inverseRelationship instanceof SQLToOne) {
+            $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
         } else {
-            if ($inverseRelationship instanceof SQLToOne) {
-                $this->joinClause .= "$sourceEntity->tableName.{$sourceEntity->primaryKey->columnName}";
-            } else {
-                $this->joinClause .= "$sourceEntity->tableName.{$toOne->foreignKey->columnName}";
-            }
+            $this->joinClause .= "$sourcePath.{$toOne->foreignKey->columnName}";
         }
         if (!$sourceEntity->entityDescription->isPersistentHistoryEntity) {
             $this->appendJoinDestinationEntity($destinationEntity, $destinationPath);
@@ -451,16 +444,15 @@ class SQLGenerator extends ObjectClass
             /** @var SQLEntity $destinationEntity */
             $destinationEntity = $destinationEntity->rootEntity;
         }
+        if (empty($sourcePath)) {
+            $sourcePath = $sourceEntity->tableName;
+        }
         if (empty($destinationPath)) {
             $destinationPath = "{$sourceEntity->tableName}_$toMany->name";
         }
         $this->appendJoinClauseToSQL();
         $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $destinationPath.{$inverseToOne->foreignKey->columnName} = ";
-        if (!empty($sourcePath)) {
-            $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
-        } else {
-            $this->joinClause .= "$sourceEntity->tableName.{$sourceEntity->primaryKey->columnName}";
-        }
+        $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
         if (!$sourceEntity->entityDescription->isPersistentHistoryEntity) {
             $destinationEntity = $toMany->destinationEntity;
             $this->appendJoinDestinationEntity($destinationEntity, $destinationPath);
@@ -705,11 +697,9 @@ class SQLGenerator extends ObjectClass
             if ($property instanceof SQLRelationship) {
                 $alias .= "_";
                 $alias .= $property->name;
-                if ($property instanceof SQLToOne) {
-                    if (!$isToManyCountKeyPath) {
-                        $alias .= ".";
-                        $alias .= $property->destinationEntity->primaryKey->columnName;
-                    }
+                if ($property instanceof SQLToOne && !$isToManyCountKeyPath) {
+                    $alias .= ".";
+                    $alias .= $property->destinationEntity->primaryKey->columnName;
                 }
             }
         }
@@ -1039,8 +1029,7 @@ class SQLGenerator extends ObjectClass
                                 } else {
                                     $string .= "{$destinationEntity->tableName}_$relationship->correlationTableName.$relationship->inverseColumnName = $entity->tableName.{$entity->primaryKey->columnName}";
                                 }
-                                $string .= ")";
-                                return $string;
+                                return $string . ")";
                             }
                         }
                     }
@@ -1073,20 +1062,18 @@ class SQLGenerator extends ObjectClass
                 case ExpressionOperatorType::bitwiseXorWith:
                 case ExpressionOperatorType::leftshiftBy:
                 case ExpressionOperatorType::rightshiftBy:
-                    return $arguments->map(function (Expression $argument): mixed {
-                        return match ($argument->expressionType) {
-                            ExpressionType::constantValue => (function () use ($argument): mixed {
-                                $value = $argument->constantValue();
-                                if ($value instanceof ArrayClass) {
-                                    return $value->sum();
-                                }
-                                return $value;
-                            })(),
-                            ExpressionType::function => $this->prepareFunctionExpression($argument),
-                            ExpressionType::conditional => $this->prepareConditionalExpression($argument),
-                            ExpressionType::aggregate => $argument->collection()->sum(),
-                            default => $argument->description(),
-                        };
+                    return $arguments->map(fn(Expression $argument): mixed  => match ($argument->expressionType) {
+                        ExpressionType::constantValue => (function () use ($argument): mixed {
+                            $value = $argument->constantValue();
+                            if ($value instanceof ArrayClass) {
+                                return $value->sum();
+                            }
+                            return $value;
+                        })(),
+                        ExpressionType::function => $this->prepareFunctionExpression($argument),
+                        ExpressionType::conditional => $this->prepareConditionalExpression($argument),
+                        ExpressionType::aggregate => $argument->collection()->sum(),
+                        default => $argument->description(),
                     })->join(" {$operator->operatorSymbol()} ");
                 case ExpressionOperatorType::sum:
                 case ExpressionOperatorType::count:
@@ -1157,8 +1144,7 @@ class SQLGenerator extends ObjectClass
                 ExpressionOperatorType::cast => ' AS ',
                 default => ', ',
             });
-            $column .= ')';
-            return $column;
+            return $column . ')';
         }
         throw new InvalidArgumentException("invalid argument: unsupported expression $expression");
     }
@@ -1190,19 +1176,16 @@ class SQLGenerator extends ObjectClass
 
     private function buildOrderByClause(?ArrayClass $descriptors): void
     {
-        /** @psalm-suppress RedundantCondition, TypeDoesNotContainType */
-        if (SS_COREDATA_CAN_SAFELY_USE_SORT_DESCRIPTORS): // @phpstan-ignore-line
-            $descriptors ??= new ArrayClass();
-            $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
-            $this->raisesForNotApplicableKeys = false;
-            $expressions = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate());
-            $descriptors->appendContentsOf($expressions->flatMap(fn(Expression $expression): iterable => $this->relationshipsFromKeyPathExpression($expression)->compactMap(fn(SQLRelationship $relationship): ?SortDescriptor => $relationship instanceof SQLToMany && $relationship->isOrdered ? new SortDescriptor(sprintf("%s.%s", $expression->keyPath(), $relationship->inverseToOne->foreignOrderKey->columnName)) : null)));
-            $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
-            if (!$descriptors->isEmpty()) {
-                $this->appendOrderByClauseToSQL();
-                $this->orderByClause .= $descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->prepareKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? 'ASC' : 'DESC'))->join(', ');
-            }
-        endif;
+        $descriptors ??= new ArrayClass();
+        $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
+        $this->raisesForNotApplicableKeys = false;
+        $expressions = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate());
+        $descriptors->appendContentsOf($expressions->flatMap(fn (Expression $expression): iterable => $this->relationshipsFromKeyPathExpression($expression)->compactMap(fn (SQLRelationship $relationship): ?SortDescriptor => $relationship instanceof SQLToMany && $relationship->isOrdered ? new SortDescriptor(sprintf("%s.%s", $expression->keyPath(), $relationship->inverseToOne->foreignOrderKey->columnName)) : null)));
+        $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
+        if (!$descriptors->isEmpty()) {
+            $this->appendOrderByClauseToSQL();
+            $this->orderByClause .= $descriptors->map(fn (SortDescriptor $descriptor): string => sprintf("%s %s", $this->prepareKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? 'ASC' : 'DESC'))->join(', ');
+        }
     }
 
     private function coercedValue(ManagedObject|Dictionary $object, AttributeDescription $attribute): mixed

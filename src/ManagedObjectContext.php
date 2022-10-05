@@ -43,14 +43,14 @@ use function Sabatier\Foundation\human_readable_value;
 class ManagedObjectContext extends ObjectClass
 {
     private const observationContext = 'observationContext';
-    public const didChangeObjectsNotification = ManagedObjectContextObjectsDidChange;
-    public const willSaveObjectsNotification = ManagedObjectContextWillSave;
-    public const didSaveObjectsNotification = ManagedObjectContextDidSave;
-    public const didSaveObjectIDsNotification = ManagedObjectContextDidSaveObjectIDs;
+    final public const didChangeObjectsNotification = ManagedObjectContextObjectsDidChange;
+    final public const willSaveObjectsNotification = ManagedObjectContextWillSave;
+    final public const didSaveObjectsNotification = ManagedObjectContextDidSave;
+    final public const didSaveObjectIDsNotification = ManagedObjectContextDidSaveObjectIDs;
     /** @var PersistentStoreCoordinator|null The persistent store coordinator of the context.
      * The coordinator provides the managed object model and handles persistency.
      * Note that multiple contexts can share a coordinator. May not be nil. */
-    public ?PersistentStoreCoordinator $persistentStoreCoordinator;
+    public ?PersistentStoreCoordinator $persistentStoreCoordinator = null;
     /** @var ManagedObjectContext|null The parent of the context. */
     public ?ManagedObjectContext $parent = null;
     /** @var string|null The developer-provided name of the context. */
@@ -58,11 +58,11 @@ class ManagedObjectContext extends ObjectClass
     /** @var Dictionary<mixed> The user information for the context. */
     public readonly Dictionary $userInfo;
     /** @var Set<IncrementalStoreNode> */
-    private Set $unprocessedChanges;
+    private readonly Set $unprocessedChanges;
     /** @var Set<IncrementalStoreNode> */
-    private Set $unprocessedDeletes;
+    private readonly Set $unprocessedDeletes;
     /** @var Set<IncrementalStoreNode> */
-    private Set $unprocessedInserts;
+    private readonly Set $unprocessedInserts;
     /** @var Dictionary<ManagedObject> */
     private Dictionary $byHashAssociationTable;
     /** @var bool A Boolean value that indicates whether the context keeps strong references to all registered managed objects. If set to true, the receiver keeps strong references to all registered managed objects. If set to false, then the receiver keeps strong references to registered objects only when they are inserted, updated, deleted, or locked. The default is false. */
@@ -78,7 +78,7 @@ class ManagedObjectContext extends ObjectClass
     /** @var Set<ManagedObject> */
     public readonly Set $lockedObjects;
     /** @var Set<ManagedObject> $refreshedObjects */
-    private Set $refreshedObjects;
+    private readonly Set $refreshedObjects;
     private bool $processingChanges = false;
     private bool $savingInProgress = false;
     /** @var bool A Boolean value that indicates whether the context automatically merges changes saved to its persistent store coordinator or parent context. */
@@ -182,7 +182,7 @@ class ManagedObjectContext extends ObjectClass
      */
     private function executeAsynchronousFetchRequest(AsynchronousFetchRequest $asynchronousFetchRequest): AsynchronousFetchResult
     {
-        $this->perform(function () use ($asynchronousFetchRequest) {
+        $this->performBlock(function () use ($asynchronousFetchRequest) {
             ($asynchronousFetchRequest->completionBlock)(new AsynchronousFetchResult($asynchronousFetchRequest, $this, $this->fetch($asynchronousFetchRequest->fetchRequest)));
         });
         return new AsynchronousFetchResult($asynchronousFetchRequest, $this, new ArrayClass());
@@ -373,7 +373,7 @@ class ManagedObjectContext extends ObjectClass
     public function object(ManagedObjectID $objectID): ManagedObject
     {
         $object = $this->registeredObject($objectID);
-        if ($object === null) {
+        if (!$object instanceof ManagedObject) {
             $object = EntityDescription::insertNewObject($objectID->entityName, $this);
             $this->unregister($object);
             $object->objectID = $objectID;
@@ -394,7 +394,7 @@ class ManagedObjectContext extends ObjectClass
     public function existingObject(ManagedObjectID $objectID): ?ManagedObject
     {
         $object = $this->registeredObject($objectID);
-        if ($object === null) {
+        if (!$object instanceof ManagedObject) {
             /** @var FetchRequest<ManagedObject> $fetchRequest */
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $objectID->entity;
@@ -576,7 +576,7 @@ class ManagedObjectContext extends ObjectClass
         $committedValues = $object->committedValuesForKeys(null);
         /** @psalm-suppress InvalidArgument */
         $this->mergePolicy->resolveConstraintConflicts($committedValues->compactMap(function (mixed $value, string $key) use ($object): ?ConstraintConflict {
-            if ($object->entity->indexes->contains(fn(FetchIndexDescription $index): bool => $index->name == $key && $index->isUnique())) {
+            if ($object->entity->indexes->contains(fn(FetchIndexDescription $index): bool => $index->name === $key && $index->isUnique())) {
                 $attributeKeys = $object->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute instanceof DerivedAttributeDescription)->keys;
                 /** @var FetchRequest<ManagedObject> $fetchRequest */
                 $fetchRequest = new FetchRequest();
@@ -735,20 +735,16 @@ class ManagedObjectContext extends ObjectClass
             foreach ($this->unprocessedInserts as $unprocessedInsert) {
                 $object = $this->object($unprocessedInsert->objectID);
                 foreach ($object->persistentProperties as $persistentProperty) {
-                    if ($value = $unprocessedInsert->valueForProperty($persistentProperty)) {
-                        if ($persistentProperty instanceof RelationshipDescription) {
-                            $this->processPendingInsertions($value, $persistentProperty, $object);
-                        }
+                    if (($value = $unprocessedInsert->valueForProperty($persistentProperty)) && $persistentProperty instanceof RelationshipDescription) {
+                        $this->processPendingInsertions($value, $persistentProperty, $object);
                     }
                 }
             }
             foreach ($this->unprocessedDeletes as $unprocessedDelete) {
                 $object = $this->object($unprocessedDelete->objectID);
                 foreach ($object->persistentProperties as $persistentProperty) {
-                    if ($value = $unprocessedDelete->valueForProperty($persistentProperty)) {
-                        if ($persistentProperty instanceof RelationshipDescription) {
-                            $this->processPendingDeletions($value, $persistentProperty, $object);
-                        }
+                    if (($value = $unprocessedDelete->valueForProperty($persistentProperty)) && $persistentProperty instanceof RelationshipDescription) {
+                        $this->processPendingDeletions($value, $persistentProperty, $object);
                     }
                 }
             }
@@ -962,7 +958,7 @@ class ManagedObjectContext extends ObjectClass
      * Asynchronously performs a given block on the context's queue.
      * @param Closure(): void $block The block to perform.
      */
-    public function perform(Closure $block): void
+    public function performBlock(Closure $block): void
     {
         $this->queue->addOperationWithBlock($block);
     }
@@ -971,7 +967,7 @@ class ManagedObjectContext extends ObjectClass
      * Synchronously performs a given block on the context's queue.
      * @param Closure(): void $block The block to perform.
      */
-    public function performAndWait(Closure $block): void
+    public function performBlockAndWait(Closure $block): void
     {
         $this->queue->addOperationWithBlock($block);
     }

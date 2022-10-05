@@ -201,9 +201,7 @@ class SQLAdapter extends ObjectClass
     {
         /** @var ArrayClass<SQLStatement> $statements */
         $statements = $entity->indexes->flatMap(fn(SQLIndex $index): ArrayClass => $index->dropTableStatements);
-        $statements->appendContentsOf($entity->foreignKeyColumns->flatMap(function (SQLForeignKey $foreignKey) use ($entity): ArrayClass {
-            return $this->statements($foreignKey, $entity);
-        }));
+        $statements->appendContentsOf($entity->foreignKeyColumns->flatMap(fn(SQLForeignKey $foreignKey): ArrayClass => $this->statements($foreignKey, $entity)));
         if (!$statements->isEmpty()) {
             return SQLStatement::merging($statements);
         }

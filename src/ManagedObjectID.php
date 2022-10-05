@@ -27,8 +27,6 @@ class ManagedObjectID extends ObjectClass implements FetchRequestResult
     /** @var PersistentStore|null The persistent store that fetched the object for the object ID. */
     public ?PersistentStore $persistentStore = null;
     /** @internal */
-    public int|string $referenceObject;
-    /** @internal */
     public readonly string $entityName;
     /** @internal */
     public readonly ?string $storeIdentifier;
@@ -37,9 +35,8 @@ class ManagedObjectID extends ObjectClass implements FetchRequestResult
      * @param EntityDescription $entity The entity description associated with the object ID.
      * @param int|string $referenceObject
      */
-    public function __construct(public EntityDescription $entity, int|string $referenceObject)
+    public function __construct(public EntityDescription $entity, /** @internal */ public int|string $referenceObject)
     {
-        $this->referenceObject = $referenceObject;
         $this->entityName = $this->entity->name;
     }
 

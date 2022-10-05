@@ -114,10 +114,8 @@ class MappingModelBuilder
             } else {
                 $mapping->mappingType = EntityMappingType::addEntityMappingType;
             }
-        } else {
-            if ($source) {
-                $mapping->mappingType = EntityMappingType::removeEntityMappingType;
-            }
+        } elseif ($source) {
+            $mapping->mappingType = EntityMappingType::removeEntityMappingType;
         }
         return $mapping;
     }

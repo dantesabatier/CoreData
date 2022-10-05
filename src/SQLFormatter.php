@@ -212,11 +212,7 @@ class SQLFormatter extends Formatter
                 return $tokens;
             }
             $oldStringLen = $currentLength;
-            if ($currentLength >= self::$maxCacheSize) {
-                $cacheKey = substr($string, 0, self::$maxCacheSize);
-            } else {
-                $cacheKey = false;
-            }
+            $cacheKey = $currentLength >= self::$maxCacheSize ? substr($string, 0, self::$maxCacheSize) : false;
             if ($cacheKey && isset(self::$tokenCache[$cacheKey])) {
                 $token = self::$tokenCache[$cacheKey];
                 $tokenLength = strlen((string)$token->value);
@@ -306,11 +302,9 @@ class SQLFormatter extends Formatter
                     $return .= $highlighted . ' ';
                     continue;
                 }
-                if ($token->value === ',') {
-                    if ($inlineCount >= 30) {
-                        $inlineCount = 0;
-                        $newline = true;
-                    }
+                if ($token->value === ',' && $inlineCount >= 30) {
+                    $inlineCount = 0;
+                    $newline = true;
                 }
                 $inlineCount += strlen((string)$token->value);
             }
@@ -389,7 +383,7 @@ class SQLFormatter extends Formatter
             } elseif ($clauseLimit && $token->value !== "," && $token->type != SQLFormatterTokenType::number && $token->type != SQLFormatterTokenType::whitespace) {
                 $clauseLimit = false;
             } elseif ($token->value === ',' && !$inlineParentheses) {
-                if ($clauseLimit === true) {
+                if ($clauseLimit) {
                     $newline = false;
                     $clauseLimit = false;
                 } else {
@@ -403,10 +397,8 @@ class SQLFormatter extends Formatter
                     $highlighted = preg_replace('/\s+/', ' ', $highlighted);
                 }
             } elseif ($token->type == SQLFormatterTokenType::boundary) {
-                if (isset($tokens[$i - 1]) && $tokens[$i - 1]->type == SQLFormatterTokenType::boundary) {
-                    if (isset($originalTokens[$token->index - 1]) && $originalTokens[$token->index - 1]->type != SQLFormatterTokenType::whitespace) {
-                        $return = rtrim($return, ' ');
-                    }
+                if (isset($tokens[$i - 1]) && $tokens[$i - 1]->type == SQLFormatterTokenType::boundary && (isset($originalTokens[$token->index - 1]) && $originalTokens[$token->index - 1]->type != SQLFormatterTokenType::whitespace)) {
+                    $return = rtrim($return, ' ');
                 }
             }
             if ($token->value === '.' || $token->value === ',' || $token->value === ';') {

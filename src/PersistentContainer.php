@@ -157,7 +157,7 @@ class PersistentContainer extends ObjectClass
     public function performBackgroundTask(Closure $task): void
     {
         $backgroundContext = $this->newBackgroundContext();
-        $backgroundContext->perform(function () use ($backgroundContext, $task) {
+        $backgroundContext->performBlock(function () use ($backgroundContext, $task) {
             $task($backgroundContext);
         });
     }

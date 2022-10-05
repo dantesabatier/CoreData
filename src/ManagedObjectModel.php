@@ -212,7 +212,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
         /** @var string $name */
         $name = $dictionary['name'] ?? throw new InvalidArgumentException();
         $entity = $this->entitiesByName[$name];
-        if ($entity === null) {
+        if (!$entity instanceof EntityDescription) {
             $entity = new EntityDescription();
             $entity->name = $name;
             $entity->managedObjectClassName = $dictionary['managedObjectClassName'] ?? ManagedObject::class;

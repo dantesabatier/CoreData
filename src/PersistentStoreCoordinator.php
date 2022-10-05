@@ -42,7 +42,7 @@ class PersistentStoreCoordinator extends ObjectClass
     public readonly ArrayClass $persistentStores;
     /** @var string|null Name of the coordinator. */
     public ?string $name = null;
-    private OperationQueue $queue;
+    private readonly OperationQueue $queue;
 
     /**
      * Initializes the coordinator with a managed object model.
@@ -221,7 +221,7 @@ class PersistentStoreCoordinator extends ObjectClass
      */
     public function addPersistentStoreWithDescription(PersistentStoreDescription $description, Closure $completion): void
     {
-        $add = function () use ($description, $completion): void {
+        $block = function () use ($description, $completion): void {
             try {
                 $this->addPersistentStoreWithType(PersistentStoreType::from($description->type), $description->configuration, $description->url, $description->options);
                 $completion($description, null);
@@ -230,9 +230,9 @@ class PersistentStoreCoordinator extends ObjectClass
             }
         };
         if ($description->shouldAddStoreAsynchronously) {
-            $this->perform($add);
+            $this->performBlock($block);
         } else {
-            $add();
+            $block();
         }
     }
 
@@ -345,7 +345,7 @@ class PersistentStoreCoordinator extends ObjectClass
      * Asynchronously performs the block on the coordinator's queue.
      * @param Closure(): void $block
      */
-    public function perform(Closure $block): void
+    public function performBlock(Closure $block): void
     {
         $this->queue->addOperationWithBlock($block);
     }
@@ -354,7 +354,7 @@ class PersistentStoreCoordinator extends ObjectClass
      * Synchronously performs the block on the coordinator's queue.
      * @param Closure(): void $block
      */
-    public function performAndWait(Closure $block): void
+    public function performBlockAndWait(Closure $block): void
     {
         $this->queue->addOperationWithBlock($block);
     }

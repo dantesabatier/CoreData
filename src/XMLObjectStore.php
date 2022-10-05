@@ -27,7 +27,7 @@ class XMLObjectStore extends AtomicStore
 {
     private ?DOMDocument $document = null;
     /** @var Dictionary<EntityDescription> */
-    private Dictionary $entitiesForConfiguration;
+    private readonly Dictionary $entitiesForConfiguration;
     /** @var Dictionary<mixed> */
     private Dictionary $xmlInfo;
 
@@ -277,6 +277,7 @@ class XMLObjectStore extends AtomicStore
         $element->nodeValue = $value;
     }
 
+    /** @noinspection PhpUnhandledExceptionInspection */
     private function getXMLAttributeValueFromObject(ManagedObject $object, AttributeDescription $attribute): ?string
     {
         $value = $object->primitiveValueForKey($attribute->name);
@@ -288,7 +289,7 @@ class XMLObjectStore extends AtomicStore
             case AttributeType::decimal:
             case AttributeType::double:
             case AttributeType::float:
-                $value = json_encode($value);
+                $value = json_encode($value, JSON_THROW_ON_ERROR);
                 break;
             case AttributeType::uri:
             case AttributeType::uuid:

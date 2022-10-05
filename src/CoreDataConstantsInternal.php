@@ -13,5 +13,3 @@ namespace Sabatier\CoreData;
 const SS_COREDATA_DEBUG_XML_STORE = false;
 /** @var bool Temporarily used to bypass SQL Store foreign key checks, but we need to implement a save plan. */
 const SS_COREDATA_DISABLE_FOREIGN_KEY_CHECKS = true;
-/** @var bool Temporarily used to disable sort descriptors. */
-const SS_COREDATA_CAN_SAFELY_USE_SORT_DESCRIPTORS = true;

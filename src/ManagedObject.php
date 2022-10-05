@@ -54,8 +54,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public readonly EntityDescription $entity;
     /** @var ManagedObjectID The object ID of the managed object. If the receiver is a fault, accessing this property does not cause it to fire. If the receiver has not yet been saved, the object ID is a temporary value that will change when the object is saved. */
     public ManagedObjectID $objectID;
-    /** @var ManagedObjectContext The managed object context with which the managed object is registered. May be nil if the receiver has been deleted from its context. If the receiver is a fault, accessing this property does not cause it to fire. */
-    public readonly ManagedObjectContext $managedObjectContext;
     private Dictionary $changedValues;
     private Dictionary $changedValuesForCurrentEvent;
     /** @var bool A Boolean value that indicates whether the managed object is a fault. Knowing whether an object is a fault is useful in many situations when computations are optional. It can also be used to avoid growing the object graph unnecessarily (which may improve performance as it can avoid time-consuming fetches from data stores). If this property is false, then the receiver's data must be in memory. However, if this property is true, it does not mean that the data is not in memory. The data may be in memory, or it may not, depending on many factors influencing caching. If the receiver is a fault, accessing this property does not cause it to fire. */
@@ -100,7 +98,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * The model associated with context's persistent store coordinator must contain entity.
      * If the receiver is a fault, accessing this property does not cause it to fire.
      */
-    public function __construct(ManagedObjectContext $managedObjectContext, ?EntityDescription $entity = null)
+    public function __construct(public readonly ManagedObjectContext $managedObjectContext, ?EntityDescription $entity = null)
     {
         if ($this->isSubclass(ManagedObject::class)) {
             $entity ??= static::entity();
@@ -115,7 +113,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         unset($this->changedValuesForCurrentEvent);
         unset($this->objectID);
         $this->entity = $entity ?? throw new InvalidArgumentException("invalid argument: entity cannot be null");
-        $this->managedObjectContext = $managedObjectContext;
         $this->managedObjectContext->insert($this);
     }
 
@@ -247,10 +244,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         $value = $this->primitiveValueForKey($key);
         $property = $this->entity->propertiesByName[$key];
         if ($property instanceof AttributeDescription) {
-            if ($property instanceof DerivedAttributeDescription) {
-                return true;
-            }
-            return false;
+            return $property instanceof DerivedAttributeDescription;
         } elseif ($property instanceof FetchedPropertyDescription) {
             if ($value instanceof FaultingMutableArray) {
                 return $value->isFault;
@@ -522,12 +516,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if ($property instanceof DerivedAttributeDescription) {
-                if (!$value && !isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
-                    $this->reserved[$key] = true;
-                    $value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type);
-                    unset($this->reserved[$key]);
-                }
+            if ($property instanceof DerivedAttributeDescription && (!$value && !isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key))) {
+                $this->reserved[$key] = true;
+                $value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type);
+                unset($this->reserved[$key]);
             }
             return $value;
         } elseif ($property instanceof FetchedPropertyDescription) {
@@ -867,36 +859,27 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     $value = $property->defaultValue ?? self::coercedValue($value, $attributeType, $in);
                     $value = self::coercedValue($value, $attributeType, $in);
                 }
-            } else {
-                if ($attributeType == AttributeType::transformable) {
-                    if (($attributeValueClassName = $property->attributeValueClassName) && !is_a($value, $attributeValueClassName, true)) {
-                        if (is_string($value) && !is_serialized($value)) {
-                            $value = self::coercedValue($value, $attributeType, $in);
-                        }
-                    }
-                    $transformerName = $property->valueTransformerName ?? SecureUnarchiveFromDataTransformerName;
-                    if ($transformer = ValueTransformer::valueTransformerForName($transformerName)) {
-                        $value = $in ? $transformer->transformedValue($value) : $transformer->reverseTransformedValue($value);
-                    }
-                } else {
+            } elseif ($attributeType == AttributeType::transformable) {
+                if (($attributeValueClassName = $property->attributeValueClassName) && !is_a($value, $attributeValueClassName, true) && (is_string($value) && !is_serialized($value))) {
                     $value = self::coercedValue($value, $attributeType, $in);
-                    if ($attributeValueClassName = $property->attributeValueClassName) {
-                        if ($value && !is_a($value, $attributeValueClassName, true)) {
-                            throw new InvalidArgumentException(sprintf("invalid parameter: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeValueClassName, typeof($value)));
-                        }
-                    } else {
-                        /** @noinspection PhpConditionAlreadyCheckedInspection */
-                        if (
-                            !match ($attributeType) {
-                            AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => is_numeric($value),
-                            AttributeType::string, AttributeType::binaryData, AttributeType::transformable => is_string($value),
-                            AttributeType::boolean => is_bool($value) || is_int($value),
-                            default => false,
-                            }
-                        ) {
-                            throw new InvalidArgumentException(sprintf("invalid parameter: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeType->name, typeof($value)));
-                        }
+                }
+                $transformerName = $property->valueTransformerName ?? SecureUnarchiveFromDataTransformerName;
+                if ($transformer = ValueTransformer::valueTransformerForName($transformerName)) {
+                    $value = $in ? $transformer->transformedValue($value) : $transformer->reverseTransformedValue($value);
+                }
+            } else {
+                $value = self::coercedValue($value, $attributeType, $in);
+                if ($attributeValueClassName = $property->attributeValueClassName) {
+                    if ($value && !is_a($value, $attributeValueClassName, true)) {
+                        throw new InvalidArgumentException(sprintf("invalid parameter: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeValueClassName, typeof($value)));
                     }
+                } elseif (!match ($attributeType) {
+                AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => is_numeric($value),
+                AttributeType::string, AttributeType::binaryData, AttributeType::transformable => is_string($value),
+                AttributeType::boolean => is_bool($value) || is_int($value),
+                default => false,
+                }) {
+                    throw new InvalidArgumentException(sprintf("invalid parameter: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeType->name, typeof($value)));
                 }
             }
         } elseif ($property instanceof FetchedPropertyDescription) {
@@ -928,11 +911,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             if ($property = $this->entity->propertiesByName[$key]) {
                 return self::coerceValue($value, $property);
             } elseif (property_exists($this, $key)) {
-                if ($key == 'objectID') {
-                    if (is_int($value) || is_string($value)) {
-                        $this->objectID->referenceObject = $value;
-                        return false;
-                    }
+                if ($key == 'objectID' && (is_int($value) || is_string($value))) {
+                    $this->objectID->referenceObject = $value;
+                    return false;
                 }
                 return true;
             }
@@ -1099,10 +1080,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     final public function isEqual(mixed $other): bool
     {
-        if ($other instanceof ManagedObject) {
-            if ($this->entity->isKindOf($other->entity)) {
-                return $this->objectID->isEqual($other->objectID);
-            }
+        if ($other instanceof ManagedObject && $this->entity->isKindOf($other->entity)) {
+            return $this->objectID->isEqual($other->objectID);
         }
         return false;
     }

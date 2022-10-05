@@ -19,12 +19,11 @@ class BatchFaultingArray extends ArrayClass
     /** @var ArrayClass<ManagedObjectID> */
     private ArrayClass $objectIDs;
     /** FetchRequest<ManagedObjectID> */
-    private FetchRequest $request;
-    private FetchRequestResultType $resultType;
-    private ManagedObjectContext $context;
-    private Range $indices;
+    private readonly FetchRequest $request;
+    private readonly FetchRequestResultType $resultType;
+    private readonly Range $indices;
 
-    public function __construct(FetchRequest $fetchRequest, ManagedObjectContext $context)
+    public function __construct(FetchRequest $fetchRequest, private readonly ManagedObjectContext $context)
     {
         parent::__construct();
         $this->request = clone $fetchRequest;
@@ -32,7 +31,6 @@ class BatchFaultingArray extends ArrayClass
         $this->request->resultType = FetchRequestResultType::managedObjectIDResultType;
         $this->resultType = $fetchRequest->resultType;
         $this->fetchLimit = $fetchRequest->fetchBatchSize;
-        $this->context = $context;
         $this->objectIDs = new ArrayClass();
         /** @noinspection PhpUnhandledExceptionInspection */
         $this->count = $context->count($this->request);
@@ -98,7 +96,7 @@ class BatchFaultingArray extends ArrayClass
     {
         parent::next();
         $this->objectIDs->next();
-        if ($this->key() == $this->fetchOffset()) {
+        if ($this->key() === $this->fetchOffset()) {
             $this->objectIDs = $this->arrayFromObjectIDs();
         }
     }

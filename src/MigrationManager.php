@@ -49,7 +49,7 @@ class MigrationManager extends ObjectClass
     /** @internal */
     public bool $performedInPlaceMigration = false;
     private ?Error $migrationCancellationError = null;
-    private MigrationContext $migrationContext;
+    private readonly MigrationContext $migrationContext;
     private EntityMigrationPolicy $entityMigrationPolicy;
     /** @var Dictionary<Dictionary<ArrayClass<ManagedObject>>> */
     private Dictionary $byMappingBySourceRelationshipsAssociationTable;

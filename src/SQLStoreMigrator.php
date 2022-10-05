@@ -61,10 +61,8 @@ class SQLStoreMigrator
                             if (!$destinationEntity->isRootEntity) {
                                 $removedEntityMappings->append($mapping);
                             }
-                        } else {
-                            if ($destinationEntity->isRootEntity && !$sourceModel->entitiesByName[$destinationEntityName]) {
-                                $addedEntityMappings->append($mapping);
-                            }
+                        } elseif ($destinationEntity->isRootEntity && !$sourceModel->entitiesByName[$destinationEntityName]) {
+                            $addedEntityMappings->append($mapping);
                         }
                     }
                 }
@@ -115,15 +113,11 @@ class SQLStoreMigrator
                     if ($source instanceof SQLAttribute || $source instanceof SQLForeignKey) {
                         /** @psalm-suppress ArgumentTypeCoercion */
                         if ($destination = $destinationEntity->properties->first(fn(SQLProperty $destination): bool => $destination->propertyDescription->renamingIdentifier === $source->propertyDescription->renamingIdentifier)) {
-                            if ($destination->name != $source->name) {
-                                if ($statement = $adapter->newRenameColumnStatement($destination, $source)) {
-                                    $connection->execute($statement);
-                                }
+                            if ($destination->name !== $source->name && ($statement = $adapter->newRenameColumnStatement($destination, $source))) {
+                                $connection->execute($statement);
                             }
-                            if ($destination->sqlType != $source->sqlType || $destination->isOptional != $source->isOptional || $destination->propertyDescription->maxValue != $source->propertyDescription->maxValue) {
-                                if ($statement = $adapter->newRenameColumnStatement($destination)) {
-                                    $connection->execute($statement);
-                                }
+                            if (($destination->sqlType != $source->sqlType || $destination->isOptional !== $source->isOptional || $destination->propertyDescription->maxValue != $source->propertyDescription->maxValue) && ($statement = $adapter->newRenameColumnStatement($destination))) {
+                                $connection->execute($statement);
                             }
                         } else {
                             if ($statement = $adapter->newDropIndexStatement($source)) {
@@ -136,15 +130,13 @@ class SQLStoreMigrator
                 }
                 $properties = $destinationEntity->properties;
                 foreach ($properties as $index => $property) {
-                    if ($property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
-                        if (!$property->propertyDescription instanceof DerivedAttributeDescription && !$sourceEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier)) {
-                            /** @var SQLColumn $after */
-                            $after = $index ? $properties[$properties->indexBefore($index)] : $destinationEntity->entityKey;
-                            if ($statement = $adapter->newCreateColumnStatement($property, $after)) {
+                    if (($property instanceof SQLAttribute || $property instanceof SQLForeignKey) && (!$property->propertyDescription instanceof DerivedAttributeDescription && !$sourceEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier))) {
+                        /** @var SQLColumn $after */
+                        $after = $index ? $properties[$properties->indexBefore($index)] : $destinationEntity->entityKey;
+                        if ($statement = $adapter->newCreateColumnStatement($property, $after)) {
+                            $connection->execute($statement);
+                            if ($statement = $adapter->newCreateIndexStatement($property)) {
                                 $connection->execute($statement);
-                                if ($statement = $adapter->newCreateIndexStatement($property)) {
-                                    $connection->execute($statement);
-                                }
                             }
                         }
                     }
