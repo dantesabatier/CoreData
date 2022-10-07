@@ -535,7 +535,7 @@ class SQLConnection extends ObjectClass
         $this->createCachedModelTable();
         $this->execute(new SQLStatement("INSERT INTO `ManagedObjectModel` (`modelID`, `data`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `modelID` = VALUES(`modelID`), `data` = VALUES(`data`)", new ArrayClass([1, $this->compressedDataWithModel($managedObjectModel)])));
         /** @var Dictionary<mixed> $metadata */
-        $metadata = $this->adapter?->sqlCore->metadata ?? new Dictionary([StoreTypeKey => SQLStoreType]);
+        $metadata = $this->adapter?->sqlCore?->metadata ?? new Dictionary([StoreTypeKey => SQLStoreType]);
         $metadata[StoreModelVersionHashesKey] = $managedObjectModel->versionHash;
         $this->saveMetadata($metadata);
     }

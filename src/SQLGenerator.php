@@ -131,7 +131,7 @@ class SQLGenerator extends ObjectClass
         }
         if (!$statements->isEmpty()) {
             /** @psalm-suppress RedundantCondition, TypeDoesNotContainType */
-            if (SS_COREDATA_DISABLE_FOREIGN_KEY_CHECKS) : // @phpstan-ignore-line
+            if (/** @phpstan-ignore-line */ SS_COREDATA_DISABLE_FOREIGN_KEY_CHECKS) :
                 if ($statements->contains(fn(SQLStatement $statement): bool => string_has_prefix($statement->string, "INSERT"))) {
                     $statements->insert(new SQLStatement("/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */"), 0);
                     $statements->append(new SQLStatement("/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */"));
@@ -189,7 +189,7 @@ class SQLGenerator extends ObjectClass
             $this->prepareSelectStatementWithFetchRequest($request);
             $this->prepareJoinStatementsForPredicateAndRelationships();
             $predicate = $request->predicate;
-            if (!$request->includesSubentities || (!$request->entity->isPersistentHistoryEntity && !$request->entity->isRootEntity && (!$request->entity->subentities->isEmpty() || !$request->entity->superentity?->isRootEntity || $request->entity->superentity?->subentities->count() > 1))) { // @phpstan-ignore-line
+            if (/** @phpstan-ignore-line */ !$request->includesSubentities || (!$request->entity->isPersistentHistoryEntity && !$request->entity->isRootEntity && (!$request->entity->subentities->isEmpty() || !$request->entity->superentity?->isRootEntity || $request->entity->superentity?->subentities->count() > 1))) {
                 $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($request->entity->name));
                 if ($predicate) {
                     $predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory]));
@@ -764,12 +764,16 @@ class SQLGenerator extends ObjectClass
             return $this->prepareConditionalExpression($expression);
         } elseif ($expression->expressionType == ExpressionType::constantValue) {
             $constantValue = $expression->constantValue();
-            if (is_bool($constantValue)) {
+            if (is_string($constantValue)) {
+                $constantValue = str_replace('%', '', $constantValue);
+            } elseif (is_bool($constantValue)) {
                 $constantValue = (int)$constantValue;
-            } elseif (is_string($constantValue)) {
-                $constantValue = sprintf("%s%s%s", $prefix, str_replace('%', '', $constantValue), $suffix);
             }
-            $arguments[] = $constantValue;
+            $argument = $constantValue;
+            if (is_string($argument)) {
+                $argument = "$prefix$constantValue$suffix";
+            }
+            $arguments[] = $argument;
             return $constantValue;
         } else {
             return $expression->description();

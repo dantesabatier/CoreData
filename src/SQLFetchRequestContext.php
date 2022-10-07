@@ -115,7 +115,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         /** @var SQLEntity $entity */
         $entity = $this->sqlModel->entitiesByName[$this->request->entity->name];
         if ($resultType == FetchRequestResultType::managedObjectResultType || $resultType == FetchRequestResultType::managedObjectIDResultType) {
-            /** @return ArrayClass<ManagedObject> */
+            /** @psalm-suppress InvalidArgument */
             $objects = fn(): ArrayClass => $values->map(function (Dictionary $dictionary) use ($entity): ManagedObject {
                 $object = $this->context->object($this->sqlCore->newObjectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
                 $object->isSuppressingKVO = true;

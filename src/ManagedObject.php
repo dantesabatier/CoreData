@@ -198,14 +198,14 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         return parent::responds($selector) || isset($this->entity->propertiesByName[$selector]) || $this->faultingMutableSetMutationMethods?->contains(fn(FaultingMutableSetMutationMethod $method): bool => $method->name === $selector);
     }
 
-    public function performSelector(string $selector, array $arguments = []): mixed
+    public function perform(string $selector, array $arguments = []): mixed
     {
         if (isset($this->entity->propertiesByName[$selector])) {
             return $this->valueForKey($selector);
         } elseif ($this->faultingMutableSetMutationMethods?->contains(fn(FaultingMutableSetMutationMethod $method): bool => $method->name === $selector)) {
             return $this->$selector(...$arguments);
         } else {
-            return parent::performSelector($selector, $arguments);
+            return parent::perform($selector, $arguments);
         }
     }
 
@@ -216,7 +216,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public static function entity(): EntityDescription
     {
-        return static::staticAssociatedValueForKey(__FUNCTION__);
+        return static::staticAssociatedValueForKey(__FUNCTION__) ?? throw new InvalidArgumentException("Unable to load managed object entity");
     }
 
     /**

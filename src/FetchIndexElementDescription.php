@@ -44,7 +44,7 @@ class FetchIndexElementDescription extends ObjectClass
 
     public function __get(string $name)
     {
-        /** @psalm-suppress PossiblyNullArrayOffset */
+        /** @psalm-suppress PossiblyNullArrayOffset, PossiblyNullArgument */
         return $this->$name = match ($name) {
             'property' => $this->indexDescription->entity->propertiesByName[$this->propertyName],
             default => $this->valueForUndefinedKey($name)

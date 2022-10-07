@@ -57,6 +57,10 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     public readonly string $versionHash;
     /** @internal */
     public bool $isEditable = true;
+    /** @internal */
+    public bool $isInUse = false;
+    /** @internal */
+    public readonly bool $isImmutable;
 
     /**
      * Initializes the managed object model using the model file at the specified URL.
@@ -68,21 +72,23 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
         unset($this->versionHash);
         unset($this->configurations);
         unset($this->versionIdentifiers);
-        $this->entitiesByName = new Dictionary();
-        $this->entitiesByConfigurationName = new Dictionary();
-        $this->fetchRequestTemplatesByName = new Dictionary();
-        $this->entityVersionHashesByName = new Dictionary();
+        unset($this->entitiesByName);
+        unset($this->entitiesByConfigurationName);
+        unset($this->fetchRequestTemplatesByName);
+        unset($this->entityVersionHashesByName);
+        unset($this->isImmutable);
         if ($url) {
             $propertyList = PropertyListSerialization::propertyListWithURL($url);
             if ($propertyList instanceof Dictionary) {
-                $this->generateEntities($propertyList);
+                $this->recreate($propertyList);
             }
         }
     }
 
     public function __get(string $name)
     {
-        if ($name == 'entitiesByName' || $name == 'fetchRequestTemplatesByName') {
+        if ($name == 'entitiesByName' || $name == 'entitiesByConfigurationName' || $name == 'fetchRequestTemplatesByName' || $name == 'entityVersionHashesByName') {
+            $this->$name = new Dictionary();
             return $this->$name;
         } elseif ($name == 'versionHash') {
             /** @noinspection PhpUnhandledExceptionInspection */
@@ -96,6 +102,9 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             return $this->$name;
         } elseif ($name == 'entities') {
             return $this->entitiesByName->values;
+        } elseif ($name == 'isImmutable') {
+            $this->$name = false;
+            return $this->$name;
         } else {
             return $this->valueForUndefinedKey($name);
         }
@@ -103,7 +112,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == 'versionHash') {
+        if ($name == 'entitiesByName' || $name == 'entitiesByConfigurationName' || $name == 'fetchRequestTemplatesByName' || $name == 'entityVersionHashesByName' || $name == 'versionHash' || $name == 'isImmutable') {
             $this->$name = $value;
         } elseif ($name == 'entities') {
             $this->throwIfNotEditable();
@@ -120,94 +129,8 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
 
     /**
      * @throws Exception
-     * @internal
      */
-    public static function newModel(string $data): ?ManagedObjectModel
-    {
-        /** @var Dictionary<string> $dictionary */
-        $dictionary = KeyedUnarchiver::unarchiveTopLevelObjectWithData($data);
-        $model = new ManagedObjectModel();
-        $model->generateEntities($dictionary);
-        return $model;
-    }
-
-    private function generateEntities(Dictionary $dictionary): void
-    {
-        /** @var ArrayClass<Dictionary>|null $entities */
-        $entities = $dictionary['entities'];
-        if ($entities) {
-            $this->entities = $entities->map(fn(Dictionary $dictionary): EntityDescription => $this->newEntityDescriptionWithDictionary($dictionary));
-        }
-        /** @var ArrayClass<Dictionary>|null $fetchRequestTemplates */
-        $fetchRequestTemplates = $dictionary['fetchRequests'];
-        if ($fetchRequestTemplates) {
-            foreach ($fetchRequestTemplates as $fetchRequestTemplate) {
-                /** @var string|null $name */
-                $name = $fetchRequestTemplate['name'];
-                if ($name) {
-                    $fetchRequest = $this->newFetchRequestWithDictionary($fetchRequestTemplate);
-                    if ($fetchRequest) {
-                        $this->setFetchRequestTemplate($fetchRequest, $name);
-                    }
-                }
-            }
-        }
-        /** @var ArrayClass<Dictionary>|null $configurations */
-        $configurations = $dictionary['configurations'];
-        if ($configurations) {
-            foreach ($configurations as $configuration) {
-                /** @var string|null $configurationName */
-                $configurationName = $configuration['name'];
-                /** @var ArrayClass<string>|null $entityNames */
-                $entityNames = $configuration['entities'];
-                if ($configurationName && $entityNames) {
-                    /** @psalm-suppress InvalidArgument */
-                    $this->setEntities($entityNames->compactMap(fn(string $entityName): ?EntityDescription => $this->entitiesByName[$entityName]), $configurationName);
-                }
-            }
-        }
-    }
-
-    /**
-     * Returns a merged model from a specified array for the version information in provided metadata.
-     * @param ArrayClass<Bundle> $bundles An array of bundles.
-     * @param Dictionary $metadata A dictionary containing version information from the metadata for a persistent store.
-     * @return ManagedObjectModel|null The managed object model used to create the store for the metadata.
-     * If a model cannot be created to match the version information specified by metadata, returns nil.
-     */
-    public static function mergedModel(ArrayClass $bundles, Dictionary $metadata): ?ManagedObjectModel
-    {
-        /** @psalm-suppress InvalidArgument */
-        return static::merging($bundles->compactMap(fn(Bundle $bundle): ?ManagedObjectModel => (($name = $bundle->object(kCFBundleNameKey)) && ($url = $bundle->url($name, 'plist'))) ? new ManagedObjectModel($url) : null), $metadata);
-    }
-
-    /**
-     * Returns, for the version information in given metadata, a model merged from a given array of models.
-     * This is the companion method to {@see mergedModel()}.
-     * @param ArrayClass<ManagedObjectModel> $models An array of instances of ManagedObjectModel.
-     * @param Dictionary $metadata A dictionary containing version information from the metadata for a persistent store.
-     * @return ManagedObjectModel|null A merged model from models for the version information in metadata. If a model cannot be created to match the version information in metadata, returns nil.
-     */
-    public static function merging(/** @noinspection PhpUnusedParameterInspection */ ArrayClass $models, Dictionary $metadata): ?ManagedObjectModel
-    {
-        if ($models->isEmpty()) {
-            return null;
-        }
-        /** @var ArrayClass<EntityDescription> $entities */
-        $entities = new ArrayClass();
-        /** @var ManagedObjectModel $model */
-        foreach ($models as $model) {
-            $entities->appendContentsOf($model->entities);
-        }
-        $managedObjectModel = new ManagedObjectModel();
-        $managedObjectModel->entities = $entities;
-        return $managedObjectModel;
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function newEntityDescriptionWithDictionary(Dictionary $dictionary): EntityDescription
+    private function newEntity(Dictionary $dictionary): EntityDescription
     {
         /** @var string $name */
         $name = $dictionary['name'] ?? throw new InvalidArgumentException();
@@ -294,13 +217,13 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             /** @var Dictionary|null $superentity */
             $superentity = $dictionary['superentity'];
             if ($superentity) {
-                $entity->superentity = $this->newEntityDescriptionWithDictionary($superentity);
+                $entity->superentity = $this->newEntity($superentity);
             }
             /** @var ArrayClass<Dictionary>|null $subentities */
             $subentities = $dictionary['subentities'];
             if ($subentities) {
                 $entity->subentities = $subentities->map(function (Dictionary $description) use ($entity): EntityDescription {
-                    $subentity = $this->newEntityDescriptionWithDictionary($description);
+                    $subentity = $this->newEntity($description);
                     $subentity->superentity = $entity;
                     return $subentity;
                 });
@@ -326,13 +249,12 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                 return $index;
             });
             $entity->userInfo = $dictionary['userInfo'];
-            /** @noinspection PhpSecondWriteToReadonlyPropertyInspection */
-            $this->entitiesByName[$name] = $entity; //@phpstan-ignore-line
+            $this->entitiesByName->setValueForKey($entity, $name);
         }
         return $entity;
     }
 
-    private function newFetchRequestWithDictionary(Dictionary $dictionary): ?FetchRequest
+    private function newFetchRequest(Dictionary $dictionary): ?FetchRequest
     {
         /** @var string|null $entityName */
         $entityName = $dictionary['entityName'];
@@ -352,6 +274,93 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             return $fetchRequest;
         }
         return null;
+    }
+
+    private function recreate(Dictionary $dictionary): void
+    {
+        /** @var ArrayClass<Dictionary>|null $entities */
+        $entities = $dictionary['entities'];
+        if ($entities) {
+            $this->entities = $entities->map(fn (Dictionary $dictionary): EntityDescription => $this->newEntity($dictionary));
+        }
+        /** @var ArrayClass<Dictionary>|null $fetchRequestTemplates */
+        $fetchRequestTemplates = $dictionary['fetchRequests'];
+        if ($fetchRequestTemplates) {
+            foreach ($fetchRequestTemplates as $fetchRequestTemplate) {
+                /** @var string|null $name */
+                $name = $fetchRequestTemplate['name'];
+                if ($name) {
+                    $fetchRequest = $this->newFetchRequest($fetchRequestTemplate);
+                    if ($fetchRequest) {
+                        $this->setFetchRequestTemplate($fetchRequest, $name);
+                    }
+                }
+            }
+        }
+        /** @var ArrayClass<Dictionary>|null $configurations */
+        $configurations = $dictionary['configurations'];
+        if ($configurations) {
+            foreach ($configurations as $configuration) {
+                /** @var string|null $configurationName */
+                $configurationName = $configuration['name'];
+                /** @var ArrayClass<string>|null $entityNames */
+                $entityNames = $configuration['entities'];
+                if ($configurationName && $entityNames) {
+                    /** @psalm-suppress InvalidArgument */
+                    $this->setEntities($entityNames->compactMap(fn (string $entityName): ?EntityDescription => $this->entitiesByName[$entityName]), $configurationName);
+                }
+            }
+        }
+    }
+
+    /**
+     * @throws Exception
+     * @internal
+     */
+    public static function newModel(string $data): ?ManagedObjectModel
+    {
+        /** @var Dictionary<string> $dictionary */
+        $dictionary = KeyedUnarchiver::unarchiveTopLevelObjectWithData($data);
+        $model = new ManagedObjectModel();
+        $model->isImmutable = true;
+        $model->recreate($dictionary);
+        return $model;
+    }
+
+    /**
+     * Returns a merged model from a specified array for the version information in provided metadata.
+     * @param ArrayClass<Bundle> $bundles An array of bundles.
+     * @param Dictionary $metadata A dictionary containing version information from the metadata for a persistent store.
+     * @return ManagedObjectModel|null The managed object model used to create the store for the metadata.
+     * If a model cannot be created to match the version information specified by metadata, returns nil.
+     */
+    public static function mergedModel(ArrayClass $bundles, Dictionary $metadata): ?ManagedObjectModel
+    {
+        /** @psalm-suppress InvalidArgument */
+        return static::merging($bundles->compactMap(fn(Bundle $bundle): ?ManagedObjectModel => (($name = $bundle->object(kCFBundleNameKey)) && ($url = $bundle->url($name, 'plist'))) ? new ManagedObjectModel($url) : null), $metadata);
+    }
+
+    /**
+     * Returns, for the version information in given metadata, a model merged from a given array of models.
+     * This is the companion method to {@see mergedModel()}.
+     * @param ArrayClass<ManagedObjectModel> $models An array of instances of ManagedObjectModel.
+     * @param Dictionary $metadata A dictionary containing version information from the metadata for a persistent store.
+     * @return ManagedObjectModel|null A merged model from models for the version information in metadata. If a model cannot be created to match the version information in metadata, returns nil.
+     */
+    public static function merging(/** @noinspection PhpUnusedParameterInspection */ ArrayClass $models, Dictionary $metadata): ?ManagedObjectModel
+    {
+        if ($models->isEmpty()) {
+            return null;
+        }
+        /** @var ArrayClass<EntityDescription> $entities */
+        $entities = new ArrayClass();
+        /** @var ManagedObjectModel $model */
+        foreach ($models as $model) {
+            $entities->appendContentsOf($model->entities);
+        }
+        $managedObjectModel = new ManagedObjectModel();
+        $managedObjectModel->entities = $entities;
+        return $managedObjectModel;
     }
 
     private function throwIfNotEditable(): void
@@ -381,11 +390,9 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     {
         if (!$this->entitiesByName[$entity->name]) {
             if (!$entity->isPersistentHistoryEntity) {
-                /** @noinspection PhpSecondWriteToReadonlyPropertyInspection */
-                $this->entityVersionHashesByName[$entity->name] = $entity->versionHash;
+                $this->entityVersionHashesByName->setValueForKey($entity->versionHash, $entity->name);
             }
-            /** @noinspection PhpSecondWriteToReadonlyPropertyInspection */
-            $this->entitiesByName[$entity->name] = $entity;
+            $this->entitiesByName->setValueForKey($entity, $entity->name);
             $entity->managedObjectModel = $this;
             $entity->flattenProperties();
         }
@@ -423,7 +430,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     public function setEntities(ArrayClass $entities, string $configuration): void
     {
         $this->throwIfNotEditable();
-        $this->entitiesByConfigurationName[$configuration] = $entities;
+        $this->entitiesByConfigurationName->setValueForKey($entities, $configuration);
     }
 
     /**
@@ -465,8 +472,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     public function setFetchRequestTemplate(FetchRequest $fetchRequest, string $name): void
     {
         $this->throwIfNotEditable();
-        /** @noinspection PhpSecondWriteToReadonlyPropertyInspection */
-        $this->fetchRequestTemplatesByName[$name] = $fetchRequest; //@phpstan-ignore-line
+        $this->fetchRequestTemplatesByName->setValueForKey($fetchRequest, $name);
     }
 
     /**
