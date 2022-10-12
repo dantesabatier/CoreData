@@ -283,8 +283,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function awakeFromInsert(): void
     {
-        $isSuppressingKVO = $this->isSuppressingKVO;
-        $this->isSuppressingKVO = true;
         /** @var Dictionary<mixed> $dictionary */
         $dictionary = new Dictionary();
         /** @var PropertyDescription $property */
@@ -311,18 +309,14 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                             break;
                     }
                 }
-            } elseif ($property instanceof FetchedPropertyDescription) {
-                $value = new FaultingMutableArray($this, $property);
             } elseif ($property instanceof RelationshipDescription) {
                 if ($property->isToMany) {
-                    $value = new FaultingMutableSet($this, $property);
                     $this->createMutationMethods($key);
                 }
             }
             $dictionary[$key] = $value;
         }
         $this->setValuesForKeys($dictionary);
-        $this->isSuppressingKVO = $isSuppressingKVO;
     }
 
     /**
@@ -873,11 +867,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     if ($value && !is_a($value, $attributeValueClassName, true)) {
                         throw new InvalidArgumentException(sprintf("invalid parameter: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeValueClassName, typeof($value)));
                     }
-                } elseif (!match ($attributeType) {
-                AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => is_numeric($value),
-                AttributeType::string, AttributeType::binaryData, AttributeType::transformable => is_string($value),
-                AttributeType::boolean => is_bool($value) || is_int($value),
-                default => false,
+                } /** @noinspection PhpConditionAlreadyCheckedInspection */ elseif (!match ($attributeType) {
+                    AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => is_numeric($value),
+                    AttributeType::string, AttributeType::binaryData, AttributeType::transformable => is_string($value),
+                    AttributeType::boolean => is_bool($value) || is_int($value),
+                    default => false,
                 }) {
                     throw new InvalidArgumentException(sprintf("invalid parameter: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeType->name, typeof($value)));
                 }

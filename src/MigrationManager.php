@@ -109,10 +109,8 @@ class MigrationManager extends ObjectClass
             return false;
         }
         $mappingType = $mapping->mappingType;
-        if (
-            $mappingType == EntityMappingType::addEntityMappingType ||
-            $mappingType == EntityMappingType::removeEntityMappingType
-        ) {
+        if ($mappingType == EntityMappingType::addEntityMappingType ||
+            $mappingType == EntityMappingType::removeEntityMappingType) {
             return true;
         }
         $sourceEntity = $this->sourceEntity($mapping);

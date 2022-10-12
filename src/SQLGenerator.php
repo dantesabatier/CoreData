@@ -1036,6 +1036,8 @@ class SQLGenerator extends ObjectClass
                                 return $string . ")";
                             }
                         }
+                    } else {
+                        return $this->prepareKeyPathExpression($expression);
                     }
                     break;
                 case ExpressionType::function:
@@ -1100,6 +1102,10 @@ class SQLGenerator extends ObjectClass
                 case ExpressionOperatorType::hour:
                 case ExpressionOperatorType::minute:
                 case ExpressionOperatorType::second:
+                case ExpressionOperatorType::uuid:
+                case ExpressionOperatorType::isNull:
+                case ExpressionOperatorType::ifNull:
+                case ExpressionOperatorType::nullIf:
                     $function = $operator->operatorSymbol();
                     break;
                 case ExpressionOperatorType::average:

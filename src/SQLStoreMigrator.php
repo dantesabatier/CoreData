@@ -87,10 +87,6 @@ class SQLStoreMigrator
                     }
                 }
             }
-            foreach ($createIndexStatements as $statement) {
-                $connection->execute($statement);
-            }
-            $this->removedEntities->removeAll();
             foreach ($removedEntityMappings as $mapping) {
                 if (($sourceEntityName = $mapping->sourceEntityName) && ($sourceEntity = $sourceModel->entity($sourceEntityName))) {
                     $this->removedEntities->append($sourceEntity);
@@ -110,22 +106,39 @@ class SQLStoreMigrator
                     $connection->execute($statement);
                 }
                 foreach ($sourceEntity->properties as $source) {
-                    if ($source instanceof SQLAttribute || $source instanceof SQLForeignKey) {
-                        /** @psalm-suppress ArgumentTypeCoercion */
-                        if ($destination = $destinationEntity->properties->first(fn(SQLProperty $destination): bool => $destination->propertyDescription->renamingIdentifier === $source->propertyDescription->renamingIdentifier)) {
+                    if ($destination = $destinationEntity->properties->first(fn(SQLProperty $destination): bool => $destination->propertyDescription->renamingIdentifier === $source->propertyDescription->renamingIdentifier)) {
+                        if (($source instanceof SQLAttribute || $source instanceof SQLForeignKey) && ($destination instanceof SQLAttribute || $destination instanceof SQLForeignKey)) {
+                            /** @psalm-suppress ArgumentTypeCoercion */
                             if ($destination->name !== $source->name && ($statement = $adapter->newRenameColumnStatement($destination, $source))) {
                                 $connection->execute($statement);
                             }
                             if (($destination->sqlType != $source->sqlType || $destination->isOptional !== $source->isOptional || $destination->propertyDescription->maxValue != $source->propertyDescription->maxValue) && ($statement = $adapter->newRenameColumnStatement($destination))) {
                                 $connection->execute($statement);
                             }
-                        } else {
-                            if ($statement = $adapter->newDropIndexStatement($source)) {
+                            if ($statement = $adapter->newCreateIndexStatement($destination)) {
                                 $connection->execute($statement);
                             }
-                            $statement = $adapter->newDropColumnStatement($source);
+                        } elseif ($source instanceof SQLRelationship && $destination instanceof SQLRelationship) {
+                            if (!$source instanceof $destination) {
+                                if ($source instanceof SQLManyToMany) {
+                                    $statement = $adapter->newDropIndexesStatementForManyToMany($source);
+                                    $connection->execute($statement);
+                                    $statement = $adapter->newDropTableStatementForManyToMany($source);
+                                    $connection->execute($statement);
+                                }
+                                if ($destination instanceof SQLManyToMany) {
+                                    $statement = $adapter->newCreateTableStatementForManyToMany($destination);
+                                    $connection->execute($statement);
+                                    $createIndexStatements->append($adapter->newCreateIndexesStatementForManyToMany($destination));
+                                }
+                            }
+                        }
+                    } elseif ($source instanceof SQLAttribute || $source instanceof SQLForeignKey) {
+                        if ($statement = $adapter->newDropIndexStatement($source)) {
                             $connection->execute($statement);
                         }
+                        $statement = $adapter->newDropColumnStatement($source);
+                        $connection->execute($statement);
                     }
                 }
                 $properties = $destinationEntity->properties;
@@ -141,6 +154,9 @@ class SQLStoreMigrator
                         }
                     }
                 }
+            }
+            foreach ($createIndexStatements as $statement) {
+                $connection->execute($statement);
             }
         } catch (Throwable $throwable) {
             $throwableClass = $throwable::class;

@@ -7,7 +7,6 @@ use Rector\CodeQuality\Rector\If_\ExplicitBoolCompareRector;
 use Rector\Config\RectorConfig;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessParamTagRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessReturnTagRector;
-use Rector\Php71\Rector\FuncCall\CountOnNullRector;
 use Rector\Php80\Rector\Class_\ClassPropertyAssignToConstructorPromotionRector;
 use Rector\Php80\Rector\FunctionLike\MixedTypeRector;
 use Rector\Php80\Rector\FunctionLike\UnionTypesRector;
@@ -33,7 +32,6 @@ return static function (RectorConfig $rectorConfig): void {
         ],
         ExplicitBoolCompareRector::class,
         ReturnNeverTypeRector::class,
-        CountOnNullRector::class,
         NullToStrictStringFuncCallArgRector::class,
         UnionTypesRector::class,
         MixedTypeRector::class,
@@ -41,6 +39,6 @@ return static function (RectorConfig $rectorConfig): void {
         RemoveUselessReturnTagRector::class
     ]);
     $rectorConfig->rule(InlineConstructorDefaultToPropertyRector::class);
-    //$rectorConfig->parallel(360, 2, 5);
+    $rectorConfig->parallel(360, 8, 10);
     $rectorConfig->disableParallel();
 };

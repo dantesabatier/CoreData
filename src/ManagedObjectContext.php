@@ -692,6 +692,14 @@ class ManagedObjectContext extends ObjectClass
                         $set = $deletion->mutableSetValueForKey($inverseRelationship->name);
                         $set->remove($object->objectID);
                     }
+                    $store = $object->objectID->persistentStore;
+                    if ($store instanceof SQLCore) {
+                        /** @var SQLEntity $entity */
+                        $entity = $store->model->entitiesByName[$object->entity->name];
+                        if ($manyToMany = $entity->manyToManyRelationships->first(fn(SQLManyToMany $manyToMany): bool => $manyToMany->relationshipDescription->isEqual($relationship))) {
+                            (new SQLCorrelationTableUpdateTracker($manyToMany))->track($object->objectID, deletes: $deletions);
+                        }
+                    }
                 } else {
                     $object->setPrimitiveValueForKey(null, $relationship->name);
                     $this->updatedObjects->append($object);
@@ -801,17 +809,20 @@ class ManagedObjectContext extends ObjectClass
             $node = new IncrementalStoreNode($object->objectID, new Dictionary([$property->name => $value]));
             if ($change->kind == KeyValueChange::insertion) {
                 if ($member = $this->unprocessedInserts->member($node)) {
-                    $node->updateWithValues($member->values);
+                    $member->updateWithValues($node->values);
+                    $node = $member;
                 }
                 $this->unprocessedInserts->update($node);
             } elseif ($change->kind == KeyValueChange::removal) {
                 if ($member = $this->unprocessedDeletes->member($node)) {
-                    $node->updateWithValues($member->values);
+                    $member->updateWithValues($node->values);
+                    $node = $member;
                 }
                 $this->unprocessedDeletes->update($node);
             } elseif ($change->kind == KeyValueChange::replacement) {
                 if ($member = $this->unprocessedChanges->member($node)) {
-                    $node->updateWithValues($member->values);
+                    $member->updateWithValues($node->values);
+                    $node = $member;
                 }
                 $this->unprocessedChanges->update($node);
             }
