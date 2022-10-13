@@ -15,7 +15,7 @@ class SQLPrimaryKey extends SQLColumn
     public function __construct(SQLEntity $entity, PropertyDescription $propertyDescription)
     {
         parent::__construct($entity, $propertyDescription);
-        $this->propertyType = PropertyDescriptionType::unknown;
+        $this->propertyType = PropertyDescriptionType::private;
         $this->sqlType = SQLType::int;
         $this->columnName = $this->name;
     }

@@ -30,23 +30,13 @@ class SQLAdapter extends ObjectClass
         };
     }
 
-    public function newCorrelationInsertStatementForRelationship(SQLManyToMany $manyToMany, ArrayClass $values): SQLStatement
+    private function root(SQLEntity $entity): SQLEntity
     {
-        $object = $values->popFirst();
-        $columnNames = new ArrayClass([$manyToMany->columnName, $manyToMany->inverseColumnName]);
-        return SQLStatement::merging($values->map(fn(ManagedObject $e): SQLStatement => new SQLStatement("INSERT INTO `$manyToMany->correlationTableName` ({$columnNames->map(fn(string $columnName): string => "`$columnName`")->join(", ")}) VALUES (?, ?) ON DUPLICATE KEY UPDATE {$columnNames->map(fn(string $columnName): string => "`$columnName` = VALUES(`$columnName`)")->join(", ")}", new ArrayClass([$e->objectID, $object->objectID]))));
-    }
-
-    public function newCorrelationDeleteStatementForRelationship(SQLManyToMany $manyToMany, ArrayClass $values): SQLStatement
-    {
-        $object = $values->popFirst();
-        $columnNames = new ArrayClass([$manyToMany->columnName, $manyToMany->inverseColumnName]);
-        return SQLStatement::merging($values->map(fn(ManagedObject $e): SQLStatement => new SQLStatement("DELETE FROM `$manyToMany->correlationTableName` WHERE {$columnNames->map(fn(string $columnName): string => "`$columnName` = ?")->join(" AND ")}", new ArrayClass([$e->objectID, $object->objectID]))));
-    }
-
-    public function newCorrelationReorderStatementForRelationship(SQLManyToMany $manyToMany, ArrayClass $values): SQLStatement
-    {
-        return $this->newCorrelationInsertStatementForRelationship($manyToMany, $values);
+        if (!$entity->isRootEntity) {
+            /** @var SQLEntity $entity */
+            $entity = $entity->rootEntity;
+        }
+        return $entity;
     }
 
     private function typeStringForColumn(SQLColumn $column): ?string
@@ -117,13 +107,70 @@ class SQLAdapter extends ObjectClass
         return null;
     }
 
+    public function newCorrelationInsertStatementForRelationship(SQLManyToMany $manyToMany, ArrayClass $values): SQLStatement
+    {
+        $object = $values->popFirst();
+        $columnNames = new ArrayClass([$manyToMany->columnName, $manyToMany->inverseColumnName]);
+        return SQLStatement::merging($values->map(fn(ManagedObject $e): SQLStatement => new SQLStatement("INSERT INTO `$manyToMany->correlationTableName` ({$columnNames->map(fn(string $columnName): string => "`$columnName`")->join(", ")}) VALUES (?, ?) ON DUPLICATE KEY UPDATE {$columnNames->map(fn(string $columnName): string => "`$columnName` = VALUES(`$columnName`)")->join(", ")}", new ArrayClass([$e->objectID, $object->objectID]))));
+    }
+
+    public function newCorrelationDeleteStatementForRelationship(SQLManyToMany $manyToMany, ArrayClass $values): SQLStatement
+    {
+        $object = $values->popFirst();
+        $columnNames = new ArrayClass([$manyToMany->columnName, $manyToMany->inverseColumnName]);
+        return SQLStatement::merging($values->map(fn(ManagedObject $e): SQLStatement => new SQLStatement("DELETE FROM `$manyToMany->correlationTableName` WHERE {$columnNames->map(fn(string $columnName): string => "`$columnName` = ?")->join(" AND ")}", new ArrayClass([$e->objectID, $object->objectID]))));
+    }
+
+    public function newCorrelationReorderStatementForRelationship(SQLManyToMany $manyToMany, ArrayClass $values): SQLStatement
+    {
+        return $this->newCorrelationInsertStatementForRelationship($manyToMany, $values);
+    }
+
+    /**
+     * @param SQLForeignKey $foreignKey
+     * @param SQLEntity|null $entity
+     * @return ArrayClass<SQLStatement>
+     */
+    public function newDropIndexStatementsForForeignKey(SQLForeignKey $foreignKey, ?SQLEntity $entity = null): ArrayClass
+    {
+        $entity = $this->root($entity ?? $foreignKey->entity);
+        /** @var ArrayClass<SQLStatement> $statements */
+        $statements = new ArrayClass();
+        $toOneRelationship = $foreignKey->toOneRelationship;
+        $destinationEntity = $toOneRelationship->destinationEntity;
+        $statements->append($this->newDropIndexStatementForForeignKey($foreignKey, $entity));
+        if ($toOneRelationship->inverseRelationship instanceof SQLToOne) {
+            $statements->append(new SQLStatement("ALTER TABLE IF EXISTS `$destinationEntity->tableName` DROP FOREIGN KEY IF EXISTS FK_{$destinationEntity->tableName}_$entity->tableName"));
+        }
+        return $statements;
+    }
+
+    public function newDropIndexStatementForForeignKey(SQLForeignKey $foreignKey, ?SQLEntity $entity = null): SQLStatement
+    {
+        $entity = $this->root($entity ?? $foreignKey->entity);
+        return new SQLStatement("ALTER TABLE IF EXISTS `$entity->tableName` DROP FOREIGN KEY IF EXISTS FK_{$entity->tableName}_{$foreignKey->toOneRelationship->foreignEntityKey->name}");
+    }
+
+    public function newCreateIndexStatementForForeignKey(SQLForeignKey $foreignKey, ?SQLEntity $entity = null): SQLStatement
+    {
+        $entity = $this->root($entity ?? $foreignKey->entity);
+        $toOneRelationship = $foreignKey->toOneRelationship;
+        $destinationEntity = $toOneRelationship->destinationEntity;
+        $primaryKey = $destinationEntity->primaryKey;
+        return new SQLStatement("ALTER TABLE `$entity->tableName` ADD CONSTRAINT FK_{$entity->tableName}_{$toOneRelationship->foreignEntityKey->name} FOREIGN KEY IF NOT EXISTS (`$foreignKey->columnName`) REFERENCES `$destinationEntity->tableName` (`$primaryKey->columnName`) ON UPDATE CASCADE ON DELETE " . match ($foreignKey->relationshipDescription->inverseRelationship->deleteRule) {
+                DeleteRule::noActionDeleteRule => 'NO ACTION',
+                DeleteRule::nullifyDeleteRule => 'SET NULL',
+                DeleteRule::cascadeDeleteRule => 'CASCADE',
+                DeleteRule::denyDeleteRule => 'RESTRICT'
+            });
+    }
+
     public function newDropIndexStatement(SQLColumn $column): ?SQLStatement
     {
-        $entity = $column->entity;
         if ($column instanceof SQLForeignKey) {
-            return SQLStatement::merging($this->statements($column, $entity));
+            return SQLStatement::merging($this->newDropIndexStatementsForForeignKey($column));
         }
-        if ($index = $entity->indexes->first(fn(SQLIndex $index): bool => $index->indexDescription->elements->contains(fn(FetchIndexElementDescription $element): bool => $element->property->isEqual($column->propertyDescription)))) {
+        if ($index = $column->entity->indexes->first(fn(SQLIndex $index): bool => $index->indexDescription->elements->contains(fn(FetchIndexElementDescription $element): bool => $element->property->isEqual($column->propertyDescription)))) {
             return SQLStatement::merging($index->dropTableStatements);
         }
         return null;
@@ -131,11 +178,10 @@ class SQLAdapter extends ObjectClass
 
     public function newCreateIndexStatement(SQLColumn $column): ?SQLStatement
     {
-        $entity = $column->entity;
         if ($column instanceof SQLForeignKey) {
-            return $this->statement($column, $entity);
+            return $this->newCreateIndexStatementForForeignKey($column);
         }
-        if ($index = $entity->indexes->first(fn(SQLIndex $index): bool => $index->indexDescription->elements->contains(fn(FetchIndexElementDescription $element): bool => $element->property->isEqual($column->propertyDescription)))) {
+        if ($index = $column->entity->indexes->first(fn(SQLIndex $index): bool => $index->indexDescription->elements->contains(fn(FetchIndexElementDescription $element): bool => $element->property->isEqual($column->propertyDescription)))) {
             return SQLStatement::merging($index->createTableStatements);
         }
         return null;
@@ -143,21 +189,13 @@ class SQLAdapter extends ObjectClass
 
     public function newDropColumnStatement(SQLColumn $column): SQLStatement
     {
-        $entity = $column->entity;
-        if (!$entity->isRootEntity) {
-            /** @var SQLEntity $entity */
-            $entity = $entity->rootEntity;
-        }
+        $entity = $this->root($column->entity);
         return new SQLStatement("ALTER TABLE `$entity->tableName` DROP COLUMN IF EXISTS `$column->columnName`");
     }
 
     public function newRenameColumnStatement(SQLColumn $new, ?SQLColumn $old = null): ?SQLStatement
     {
-        $entity = $new->entity;
-        if (!$entity->isRootEntity) {
-            /** @var SQLEntity $entity */
-            $entity = $entity->rootEntity;
-        }
+        $entity = $this->root($new->entity);
         if ($old) {
             /** @noinspection SqlIdentifier */
             return new SQLStatement("ALTER TABLE `$entity->tableName` RENAME COLUMN IF EXISTS `$old->columnName` TO `$new->columnName`");
@@ -171,11 +209,7 @@ class SQLAdapter extends ObjectClass
     public function newCreateColumnStatement(SQLColumn $column, SQLColumn $after): ?SQLStatement
     {
         if ($string = $this->typeStringForColumn($column)) {
-            $entity = $column->entity;
-            if (!$entity->isRootEntity) {
-                /** @var SQLEntity $entity */
-                $entity = $entity->rootEntity;
-            }
+            $entity = $this->root($column->entity);
             return new SQLStatement("ALTER TABLE `$entity->tableName` ADD COLUMN IF NOT EXISTS $string AFTER `$after->columnName`");
         }
         return null;
@@ -201,7 +235,7 @@ class SQLAdapter extends ObjectClass
     {
         /** @var ArrayClass<SQLStatement> $statements */
         $statements = $entity->indexes->flatMap(fn(SQLIndex $index): ArrayClass => $index->dropTableStatements);
-        $statements->appendContentsOf($entity->foreignKeyColumns->flatMap(fn(SQLForeignKey $foreignKey): ArrayClass => $this->statements($foreignKey, $entity)));
+        $statements->appendContentsOf($entity->foreignKeyColumns->flatMap(fn(SQLForeignKey $foreignKey): ArrayClass => $this->newDropIndexStatementsForForeignKey($foreignKey, $entity)));
         if (!$statements->isEmpty()) {
             return SQLStatement::merging($statements);
         }
@@ -227,7 +261,7 @@ class SQLAdapter extends ObjectClass
     {
         /** @var ArrayClass<SQLStatement> $statements */
         $statements = $entity->indexes->flatMap(fn(SQLIndex $index): ArrayClass => $index->createTableStatements);
-        $statements->appendContentsOf($entity->foreignKeyColumns->map(fn(SQLForeignKey $foreignKey): SQLStatement => $this->statement($foreignKey, $entity)));
+        $statements->appendContentsOf($entity->foreignKeyColumns->map(fn(SQLForeignKey $foreignKey): SQLStatement => $this->newCreateIndexStatementForForeignKey($foreignKey, $entity)));
         if (!$statements->isEmpty()) {
             return SQLStatement::merging($statements);
         }
@@ -248,49 +282,5 @@ class SQLAdapter extends ObjectClass
     public function newCreateTableStatement(SQLEntity $entity): SQLStatement
     {
         return new SQLStatement("CREATE TABLE IF NOT EXISTS `$entity->tableName` ({$entity->columnsToCreate->compactMap(fn(SQLColumn $column): ?string => $this->typeStringForColumn($column))->join(", ")}, CONSTRAINT PK_{$entity->primaryKey->columnName} PRIMARY KEY (`{$entity->primaryKey->columnName}`) USING BTREE) ENGINE={$this->sqlCore->schemaValidationConnection->schema->engine} DEFAULT CHARSET={$this->sqlCore->schemaValidationConnection->schema->charset} COLLATE={$this->sqlCore->schemaValidationConnection->schema->collation}");
-    }
-
-    /**
-     * @param SQLForeignKey $foreignKey
-     * @param SQLEntity $entity
-     * @return SQLStatement
-     */
-    private function statement(SQLForeignKey $foreignKey, SQLEntity $entity): SQLStatement
-    {
-        if (!$entity->isRootEntity) {
-            /** @var SQLEntity $entity */
-            $entity = $entity->rootEntity;
-        }
-        $toOneRelationship = $foreignKey->toOneRelationship;
-        $destinationEntity = $toOneRelationship->destinationEntity;
-        $primaryKey = $destinationEntity->primaryKey;
-        return new SQLStatement("ALTER TABLE `$entity->tableName` ADD CONSTRAINT FK_{$entity->tableName}_{$toOneRelationship->foreignEntityKey->name} FOREIGN KEY IF NOT EXISTS (`$foreignKey->columnName`) REFERENCES `$destinationEntity->tableName` (`$primaryKey->columnName`) ON UPDATE CASCADE ON DELETE " . match ($foreignKey->relationshipDescription->inverseRelationship->deleteRule) {
-                DeleteRule::noActionDeleteRule => 'NO ACTION',
-                DeleteRule::nullifyDeleteRule => 'SET NULL',
-                DeleteRule::cascadeDeleteRule => 'CASCADE',
-                DeleteRule::denyDeleteRule => 'RESTRICT'
-            });
-    }
-
-    /**
-     * @param SQLForeignKey $foreignKey
-     * @param SQLEntity $entity
-     * @return ArrayClass<SQLStatement>
-     */
-    private function statements(SQLForeignKey $foreignKey, SQLEntity $entity): ArrayClass
-    {
-        if (!$entity->isRootEntity) {
-            /** @var SQLEntity $entity */
-            $entity = $entity->rootEntity;
-        }
-        /** @var ArrayClass<SQLStatement> $statements */
-        $statements = new ArrayClass();
-        $toOneRelationship = $foreignKey->toOneRelationship;
-        $destinationEntity = $toOneRelationship->destinationEntity;
-        $statements->append(new SQLStatement("ALTER TABLE IF EXISTS `$entity->tableName` DROP FOREIGN KEY IF EXISTS FK_{$entity->tableName}_{$foreignKey->toOneRelationship->foreignEntityKey->name}"));
-        if ($toOneRelationship->inverseRelationship instanceof SQLToOne) {
-            $statements->append(new SQLStatement("ALTER TABLE IF EXISTS `$destinationEntity->tableName` DROP FOREIGN KEY IF EXISTS FK_{$destinationEntity->tableName}_$entity->tableName"));
-        }
-        return $statements;
     }
 }

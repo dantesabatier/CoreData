@@ -107,7 +107,7 @@ abstract class PropertyDescription extends ObjectClass
             $this->$name = $this->name;
             return $this->$name;
         } elseif ($name == 'propertyType') {
-            $this->$name = PropertyDescriptionType::unknown;
+            $this->$name = PropertyDescriptionType::private;
             return $this->$name;
         } else {
             return $this->valueForUndefinedKey($name);

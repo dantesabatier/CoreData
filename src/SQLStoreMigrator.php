@@ -16,6 +16,8 @@ class SQLStoreMigrator
     public readonly SQLModel $sourceModel;
     /** @var ArrayClass<SQLEntity> */
     private readonly ArrayClass $removedEntities;
+    /** @var ArrayClass<SQLManyToMany> */
+    private readonly ArrayClass $removedManyToMany;
 
     /**
      * @throws Exception
@@ -26,6 +28,7 @@ class SQLStoreMigrator
         $this->adapter = $this->connection->adapter ?? throw new InternalInconsistencyException();
         $this->sourceModel = new SQLModel($this->connection->fetchCachedModel() ?? throw new InternalInconsistencyException(), $this->store->configurationName);
         $this->removedEntities = new ArrayClass();
+        $this->removedManyToMany = new ArrayClass();
     }
 
     /**
@@ -105,26 +108,52 @@ class SQLStoreMigrator
                     $statement = $adapter->newRenameTableStatement($sourceEntity, $destinationEntity);
                     $connection->execute($statement);
                 }
-                foreach ($sourceEntity->properties as $source) {
+                $properties = $sourceEntity->properties;
+                foreach ($properties as $index => $source) {
                     if ($destination = $destinationEntity->properties->first(fn(SQLProperty $destination): bool => $destination->propertyDescription->renamingIdentifier === $source->propertyDescription->renamingIdentifier)) {
-                        if (($source instanceof SQLAttribute || $source instanceof SQLForeignKey) && ($destination instanceof SQLAttribute || $destination instanceof SQLForeignKey)) {
-                            /** @psalm-suppress ArgumentTypeCoercion */
+                        if ($source instanceof SQLAttribute && $destination instanceof SQLAttribute) {
                             if ($destination->name !== $source->name && ($statement = $adapter->newRenameColumnStatement($destination, $source))) {
                                 $connection->execute($statement);
                             }
-                            if (($destination->sqlType != $source->sqlType || $destination->isOptional !== $source->isOptional || $destination->propertyDescription->maxValue != $source->propertyDescription->maxValue) && ($statement = $adapter->newRenameColumnStatement($destination))) {
+                            if (($destination->sqlType != $source->sqlType || $destination->isOptional !== $source->isOptional || $destination->propertyDescription->maxValue != $source->propertyDescription->maxValue || $destination->attributeDescription->defaultValue !== $source->attributeDescription->defaultValue) && ($statement = $adapter->newRenameColumnStatement($destination))) {
                                 $connection->execute($statement);
                             }
-                            if ($statement = $adapter->newCreateIndexStatement($destination)) {
+                            if (!$source->attributeDescription instanceof DerivedAttributeDescription && $destination->attributeDescription instanceof DerivedAttributeDescription) {
+                                if ($statement = $adapter->newDropIndexStatement($destination)) {
+                                    $connection->execute($statement);
+                                }
+                                $statement = $adapter->newDropColumnStatement($destination);
+                                $connection->execute($statement);
+                            } elseif ($source->attributeDescription instanceof DerivedAttributeDescription && !$destination->attributeDescription instanceof DerivedAttributeDescription) {
+                                /** @var SQLColumn $after */
+                                $after = $index ? $properties[$properties->indexBefore($index)] : $sourceEntity->entityKey;
+                                if ($statement = $adapter->newCreateColumnStatement($destination, $after)) {
+                                    $connection->execute($statement);
+                                    if ($statement = $adapter->newCreateIndexStatement($destination)) {
+                                        $connection->execute($statement);
+                                    }
+                                }
+                            }
+                        } elseif ($source instanceof SQLForeignKey && $destination instanceof SQLForeignKey) {
+                            if ($source->toOneRelationship->relationshipDescription->deleteRule != $destination->toOneRelationship->relationshipDescription->deleteRule) {
+                                $statement = $adapter->newDropIndexStatementForForeignKey($source);
+                                $connection->execute($statement);
+                                $statement = $adapter->newCreateIndexStatementForForeignKey($destination);
                                 $connection->execute($statement);
                             }
                         } elseif ($source instanceof SQLRelationship && $destination instanceof SQLRelationship) {
-                            if (!$source instanceof $destination) {
+                            if ($source instanceof $destination) {
+                                if ($source instanceof SQLToMany && $destination instanceof SQLToMany && $source->relationshipDescription->deleteRule != $destination->relationshipDescription->deleteRule) {
+                                    $statement = $adapter->newDropIndexStatementForForeignKey($source->inverseToOne->foreignKey);
+                                    $connection->execute($statement);
+                                    $statement = $adapter->newCreateIndexStatementForForeignKey($destination->inverseToOne->foreignKey);
+                                    $connection->execute($statement);
+                                }
+                            } else {
                                 if ($source instanceof SQLManyToMany) {
                                     $statement = $adapter->newDropIndexesStatementForManyToMany($source);
                                     $connection->execute($statement);
-                                    $statement = $adapter->newDropTableStatementForManyToMany($source);
-                                    $connection->execute($statement);
+                                    $this->removedManyToMany->append($source);
                                 }
                                 if ($destination instanceof SQLManyToMany) {
                                     $statement = $adapter->newCreateTableStatementForManyToMany($destination);
@@ -171,6 +200,10 @@ class SQLStoreMigrator
     {
         $adapter = $this->adapter;
         $connection = $this->connection;
+        foreach ($this->removedManyToMany as $manyToMany) {
+            $statement = $adapter->newDropTableStatementForManyToMany($manyToMany);
+            $connection->execute($statement);
+        }
         foreach ($this->removedEntities as $entity) {
             foreach ($entity->manyToManyRelationships as $manyToManyRelationship) {
                 $statement = $adapter->newDropIndexesStatementForManyToMany($manyToManyRelationship);

@@ -283,6 +283,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function awakeFromInsert(): void
     {
+        $isSuppressingKVO = $this->isSuppressingKVO;
+        $this->isSuppressingKVO = true;
         /** @var Dictionary<mixed> $dictionary */
         $dictionary = new Dictionary();
         /** @var PropertyDescription $property */
@@ -290,7 +292,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $value = null;
             $key = $property->name;
             if ($property instanceof AttributeDescription) {
-                /** @var scalar|null $value */
                 $value = $property->defaultValue;
                 if (($value === null) && !$property->isOptional) {
                     $attributeType = $property->type;
@@ -317,6 +318,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $dictionary[$key] = $value;
         }
         $this->setValuesForKeys($dictionary);
+        $this->isSuppressingKVO = $isSuppressingKVO;
     }
 
     /**
