@@ -273,7 +273,6 @@ class SQLConnection extends ObjectClass
             }
             $insertedObjects->append($insertedObject);
         }
-        /** @psalm-suppress InvalidArgument */
         return $this->insertArray($insertedObjects, $entity, $includeOnConflict);
     }
 
@@ -382,7 +381,6 @@ class SQLConnection extends ObjectClass
             /** @var SQLEntity $entity */
             $entity = $requestContext->sqlCore->model->entitiesByName[$requestContext->request->entity->name];
             if ($objectsToInsert = $requestContext->request->objectsToInsert) {
-                /** @psalm-suppress InvalidArgument */
                 return $this->insertArray($objectsToInsert, $entity);
             } elseif ($dictionaryHandler = $requestContext->request->dictionaryHandler) {
                 return $this->insertDictionaryBlock($dictionaryHandler, $entity);

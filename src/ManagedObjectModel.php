@@ -281,7 +281,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
         /** @var ArrayClass<Dictionary>|null $entities */
         $entities = $dictionary['entities'];
         if ($entities) {
-            $this->entities = $entities->map(fn (Dictionary $dictionary): EntityDescription => $this->newEntity($dictionary));
+            $this->entities = $entities->map(fn(Dictionary $dictionary): EntityDescription => $this->newEntity($dictionary));
         }
         /** @var ArrayClass<Dictionary>|null $fetchRequestTemplates */
         $fetchRequestTemplates = $dictionary['fetchRequests'];
@@ -307,7 +307,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                 $entityNames = $configuration['entities'];
                 if ($configurationName && $entityNames) {
                     /** @psalm-suppress InvalidArgument */
-                    $this->setEntities($entityNames->compactMap(fn (string $entityName): ?EntityDescription => $this->entitiesByName[$entityName]), $configurationName);
+                    $this->setEntities($entityNames->compactMap(fn(string $entityName): ?EntityDescription => $this->entitiesByName[$entityName]), $configurationName);
                 }
             }
         }
@@ -490,7 +490,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                 return KeyedArchiver::archivedData($this->entities($configuration)?->reduce(new Dictionary(), function (Dictionary &$result, EntityDescription $entity): Dictionary {
                         $result[$entity->name] = $entity->versionHash;
                         return $result;
-                }) ?? $this->entityVersionHashesByName) === $metadata[StoreModelVersionHashesKey];
+                    }) ?? $this->entityVersionHashesByName) === $metadata[StoreModelVersionHashesKey];
             } catch (Throwable $throwable) {
                 $throwableClass = $throwable::class;
                 throw new $throwableClass($throwable->getMessage(), (int)$throwable->getCode());
@@ -499,10 +499,12 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
         return true;
     }
 
-    /** @internal */
+    /**
+     * @throws Exception
+     * @internal
+     */
     public function entityVersionHashesByNameInStyle(VersionHashStyle $style): string
     {
-        /** @noinspection PhpUnhandledExceptionInspection */
         return KeyedArchiver::archivedData($this->entitiesByName->compactMapValues(fn(EntityDescription $entity): ?string => $entity->isPersistentHistoryEntity ? null : $entity->versionHashInStyle($style)));
     }
 
@@ -521,7 +523,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
         /** @var Dictionary<ArrayClass<Dictionary>> $dictionary */
         $dictionary = new Dictionary();
         $dictionary['entities'] = $this->entitiesByName->filter(fn(EntityDescription $entity): bool => !$entity->isPersistentHistoryEntity && $entity->isRootEntity)->map(fn(EntityDescription $entity): Dictionary => $entity->jsonSerialize());
-        $dictionary['fetchRequests'] = $this->fetchRequestTemplatesByName->mapValues(fn(FetchRequest $fetchRequest, string $templateName): Dictionary => new Dictionary(['name' => $templateName, 'entityName' => $fetchRequest->entityName, 'predicateFormat' => $fetchRequest->predicate?->predicateFormat(), 'resultType' => $fetchRequest->resultType->value]))->values;
+        $dictionary['fetchRequests'] = $this->fetchRequestTemplatesByName->mapValues(fn(FetchRequest $fetchRequest, string $templateName): Dictionary => new Dictionary(['name' => $templateName, 'entityName' => $fetchRequest->entityName, 'predicateFormat' => $fetchRequest->predicate?->predicateFormat(), 'resultType' => $fetchRequest->resultType != FetchRequestResultType::managedObjectResultType ? $fetchRequest->resultType->value : null]))->values;
         return $dictionary;
     }
 }

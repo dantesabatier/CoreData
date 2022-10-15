@@ -13,6 +13,7 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyedArchiver;
 
+use Sabatier\Foundation\KeyedUnarchiver;
 use function Sabatier\Foundation\human_readable_value;
 
 /**
@@ -82,15 +83,17 @@ class RelationshipDescription extends PropertyDescription
         }
     }
 
-    /** @internal */
     public function versionHashInStyle(?string &$out, VersionHashStyle $style): void
     {
         parent::versionHashInStyle($data, $style);
         assert(is_string($data));
         /** @var Dictionary<mixed> $dictionary */
-        $dictionary = unserialize($data);
-        $dictionary->merge(new Dictionary(['inverseRelationshipName' => $this->lazyInverseRelationshipName, 'destinationEntityName' => $this->lazyDestinationEntityName, 'deleteRule' => $this->deleteRule->value]));
-        /** @noinspection PhpUnhandledExceptionInspection */
+        $dictionary = KeyedUnarchiver::unarchiveTopLevelObjectWithData($data);
+        if ($this->deleteRule != DeleteRule::nullifyDeleteRule) {
+            $dictionary['deleteRule'] = $this->deleteRule->value;
+        }
+        $dictionary['lazyDestinationEntityName'] = $this->lazyDestinationEntityName;
+        $dictionary['lazyInverseRelationshipName'] = $this->lazyInverseRelationshipName;
         $out = KeyedArchiver::archivedData($dictionary);
     }
 

@@ -11,6 +11,7 @@ namespace Sabatier\CoreData;
 use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\KeyedArchiver;
+use Sabatier\Foundation\KeyedUnarchiver;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
 use Sabatier\Foundation\Value;
@@ -79,15 +80,15 @@ class AttributeDescription extends PropertyDescription
         }
     }
 
-    /** @internal */
     public function versionHashInStyle(?string &$out, VersionHashStyle $style): void
     {
         parent::versionHashInStyle($data, $style);
         assert(is_string($data));
         /** @var Dictionary<mixed> $dictionary */
-        $dictionary = unserialize($data);
-        $dictionary->merge(new Dictionary(['type' => $this->type->value]));
-        /** @noinspection PhpUnhandledExceptionInspection */
+        $dictionary = KeyedUnarchiver::unarchiveTopLevelObjectWithData($data);
+        if ($this->type != AttributeType::undefined) {
+            $dictionary['type'] = $this->type->value;
+        }
         $out = KeyedArchiver::archivedData($dictionary);
     }
 
@@ -100,7 +101,9 @@ class AttributeDescription extends PropertyDescription
     {
         /** @var Dictionary<mixed> $dictionary */
         $dictionary = parent::jsonSerialize();
-        $dictionary['type'] = $this->type->value;
+        if ($this->type != AttributeType::undefined) {
+            $dictionary['type'] = $this->type->value;
+        }
         if ($this->defaultValue !== null) {
             $dictionary['defaultValue'] = $this->defaultValue;
         }

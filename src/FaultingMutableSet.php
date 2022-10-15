@@ -97,8 +97,7 @@ class FaultingMutableSet extends Set
         parent::setSet($set->map(fn(ManagedObject|ManagedObjectID $e): ManagedObjectID => $e instanceof ManagedObject ? $e->objectID : $e));
         $this->isFault = false;//$this->isEmpty();
     }
-
-    /** @psalm-suppress MissingImmutableAnnotation */
+    
     public function current(): ManagedObject
     {
         $current = parent::current();

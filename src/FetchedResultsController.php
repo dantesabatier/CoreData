@@ -57,7 +57,6 @@ class FetchedResultsController extends ObjectClass
      */
     public function object(mixed $indexPath)
     {
-        /** @psalm-suppress PossiblyNullArrayAccess */
         return $this->fetchedObjects?->elementAt($indexPath->row);
     }
 

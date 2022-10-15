@@ -69,7 +69,6 @@ class BatchFaultingArray extends ArrayClass
 
     private function arrayFromObjectIDs(): ArrayClass
     {
-        // TODO: check side effects
         $this->context->reset();
         /** @var FetchRequest<ManagedObjectID> $request */
         $request = $this->request;
@@ -80,8 +79,7 @@ class BatchFaultingArray extends ArrayClass
         $this->cursor += 1;
         return $result;
     }
-
-    /** @psalm-suppress MissingImmutableAnnotation */
+    
     public function current(): ManagedObjectID|ManagedObject
     {
         $objectID = $this->objectIDs->current();

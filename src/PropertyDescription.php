@@ -8,6 +8,7 @@
 
 namespace Sabatier\CoreData;
 
+use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\ComparisonPredicate;
 use Sabatier\Foundation\Dictionary;
@@ -99,6 +100,7 @@ abstract class PropertyDescription extends ObjectClass
             $this->$name = $this->validationPredicates->map(fn(Predicate $predicate): string => $predicate->predicateFormat());
             return $this->$name;
         } elseif ($name == 'versionHash') {
+            /** @noinspection PhpUnhandledExceptionInspection */
             $this->versionHashInStyle($hash, VersionHashStyle::default);
             assert(is_string($hash));
             $this->$name = $hash;
@@ -144,20 +146,13 @@ abstract class PropertyDescription extends ObjectClass
         $this->validationWarnings = $validationWarnings ?? new ArrayClass();
     }
 
-    /** @internal */
+    /**
+     * @throws Exception
+     * @internal
+     */
     public function versionHashInStyle(?string &$out, VersionHashStyle $style): void
     {
-        /** @var Dictionary<mixed> $dictionary */
-        $dictionary = new Dictionary();
-        $dictionary['name'] = $this->name;
-        if (!$this->isOptional) {
-            $dictionary['isOptional'] = $this->isOptional;
-        }
-        if ($this->isTransient) {
-            $dictionary['isTransient'] = $this->isTransient;
-        }
-        /** @noinspection PhpUnhandledExceptionInspection */
-        $out = KeyedArchiver::archivedData($dictionary);
+        $out = KeyedArchiver::archivedData($this->jsonSerialize());
     }
 
     public function isEqual(mixed $other): bool
@@ -184,7 +179,6 @@ abstract class PropertyDescription extends ObjectClass
         if ($this->isTransient) {
             $dictionary['isTransient'] = $this->isTransient;
         }
-        //FIXME: should this values be extracted from validation predicates?
         /** @var Dictionary<mixed> $validation */
         $validation = new Dictionary();
         $validation['min'] = $this->minValue;

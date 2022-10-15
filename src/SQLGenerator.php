@@ -189,7 +189,8 @@ class SQLGenerator extends ObjectClass
             $this->prepareSelectStatementWithFetchRequest($request);
             $this->prepareJoinStatementsForPredicateAndRelationships();
             $predicate = $request->predicate;
-            if (/** @phpstan-ignore-line */ !$request->includesSubentities || (!$request->entity->isPersistentHistoryEntity && !$request->entity->isRootEntity && (!$request->entity->subentities->isEmpty() || !$request->entity->superentity?->isRootEntity || $request->entity->superentity?->subentities->count() > 1))) {
+            /** @phpstan-ignore-next-line */
+            if (!$request->includesSubentities ||(!$request->entity->isPersistentHistoryEntity && !$request->entity->isRootEntity && ($request->entity->subentities->isEmpty() || !$request->entity->superentity?->isRootEntity || $request->entity->superentity?->subentities->count() > 1))) {
                 $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($request->entity->name));
                 if ($predicate) {
                     $predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory]));
@@ -1013,7 +1014,6 @@ class SQLGenerator extends ObjectClass
                                 $entityForFetchRequest = $managedObjectModel->entitiesByName[$destinationEntity->tableName];
                                 $fetchRequest = new FetchRequest();
                                 $fetchRequest->entity = $entityForFetchRequest;
-                                /** @psalm-suppress InvalidPropertyAssignmentValue */
                                 $fetchRequest->propertiesToFetch = $propertiesToFetch;
                                 $fetchRequest->resultType = FetchRequestResultType::countResultType;
                                 $generator = new SQLGenerator(new SQLFetchRequestContext($fetchRequest, $requestContext->context, $requestContext->sqlCore));

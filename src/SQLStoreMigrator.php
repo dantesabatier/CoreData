@@ -33,6 +33,7 @@ class SQLStoreMigrator
 
     /**
      * @throws Exception
+     * @psalm-suppress RedundantCondition
      */
     public function perform(): void
     {
@@ -112,13 +113,14 @@ class SQLStoreMigrator
                 foreach ($properties as $index => $source) {
                     if ($destination = $destinationEntity->properties->first(fn(SQLProperty $destination): bool => $destination->propertyDescription->renamingIdentifier === $source->propertyDescription->renamingIdentifier)) {
                         if ($source instanceof SQLAttribute && $destination instanceof SQLAttribute) {
-                            if ($destination->name !== $source->name && ($statement = $adapter->newRenameColumnStatement($destination, $source))) {
-                                $connection->execute($statement);
-                            }
-                            if (($destination->sqlType != $source->sqlType || $destination->isOptional !== $source->isOptional || $destination->propertyDescription->maxValue != $source->propertyDescription->maxValue || $destination->attributeDescription->defaultValue !== $source->attributeDescription->defaultValue) && ($statement = $adapter->newRenameColumnStatement($destination))) {
-                                $connection->execute($statement);
-                            }
-                            if (!$source->attributeDescription instanceof DerivedAttributeDescription && $destination->attributeDescription instanceof DerivedAttributeDescription) {
+                            if (!$source->attributeDescription instanceof DerivedAttributeDescription && !$destination->attributeDescription instanceof DerivedAttributeDescription) {
+                                if ($destination->name !== $source->name && ($statement = $adapter->newRenameColumnStatement($destination, $source))) {
+                                    $connection->execute($statement);
+                                }
+                                if (($destination->sqlType != $source->sqlType || $destination->isOptional !== $source->isOptional || $destination->propertyDescription->maxValue !== $source->propertyDescription->maxValue || $destination->attributeDescription->defaultValue !== $source->attributeDescription->defaultValue) && ($statement = $adapter->newRenameColumnStatement($destination))) {
+                                    $connection->execute($statement);
+                                }
+                            } elseif (!$source->attributeDescription instanceof DerivedAttributeDescription && $destination->attributeDescription instanceof DerivedAttributeDescription) {
                                 if ($statement = $adapter->newDropIndexStatement($destination)) {
                                     $connection->execute($statement);
                                 }
