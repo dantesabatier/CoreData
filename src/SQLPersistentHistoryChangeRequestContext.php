@@ -155,11 +155,11 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
         }
         $context = $this->fetchRequestContextForChanges();
         $context->executeRequestUsingConnection($this->connection);
-        if ($request->resultType == PersistentHistoryResultType::statusOnly) {
+        if ($request->resultType === PersistentHistoryResultType::statusOnly) {
             $this->result = new ArrayClass([new Number((bool)$context->result->sum())]);
             return true;
         }
-        if ($request->resultType == PersistentHistoryResultType::count) {
+        if ($request->resultType === PersistentHistoryResultType::count) {
             $this->result = $context->result;
             return true;
         }

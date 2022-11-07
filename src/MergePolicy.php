@@ -158,15 +158,15 @@ class MergePolicy extends ObjectClass
      */
     private function process(ArrayClass $conflictList, MergeConflict|ConstraintConflict $conflict, ManagedObject $sourceObject, Dictionary $cachedSnapshot, Dictionary $persistedSnapshot): void
     {
-        if ($this->mergeType == MergePolicyType::errorMergePolicyType) {
+        if ($this->mergeType === MergePolicyType::errorMergePolicyType) {
             $conflictList->append($conflict);
-        } elseif ($this->mergeType == MergePolicyType::mergeByPropertyStoreTrumpMergePolicyType) {
+        } elseif ($this->mergeType === MergePolicyType::mergeByPropertyStoreTrumpMergePolicyType) {
             $sourceObject->setValuesForKeys($cachedSnapshot->merging($persistedSnapshot));
-        } elseif ($this->mergeType == MergePolicyType::mergeByPropertyObjectTrumpMergePolicyType) {
+        } elseif ($this->mergeType === MergePolicyType::mergeByPropertyObjectTrumpMergePolicyType) {
             $sourceObject->setValuesForKeys($persistedSnapshot->merging($cachedSnapshot));
-        } elseif ($this->mergeType == MergePolicyType::overwriteMergePolicyType) {
+        } elseif ($this->mergeType === MergePolicyType::overwriteMergePolicyType) {
             $sourceObject->setValuesForKeys($cachedSnapshot);
-        } elseif ($this->mergeType == MergePolicyType::rollbackMergePolicyType) {
+        } elseif ($this->mergeType === MergePolicyType::rollbackMergePolicyType) {
             $sourceObject->setValuesForKeys($persistedSnapshot);
         }
     }

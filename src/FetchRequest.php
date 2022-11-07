@@ -15,6 +15,7 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\OperationQueue;
 use Sabatier\Foundation\Predicate;
 use Sabatier\Foundation\SortDescriptor;
+use function Sabatier\Foundation\string_contains;
 
 /**
  * Class FetchRequest
@@ -44,7 +45,7 @@ class FetchRequest extends PersistentStoreRequest
      */
     public bool $includesPropertyValues = true;
     /** @var bool A Boolean value that indicates whether the property values of fetched objects will be updated with the current values in the persistent store. This value is true if the property values of fetched objects will be updated with the current values in the persistent store; otherwise, it is false. By default, when you fetch objects, they maintain their current property values, even if the values in the persistent store have changed. Invoking this method with the parameter true means that when the fetch is executed, the property values of fetched objects are updated with the current values in the persistent store. This is a more convenient way to ensure that managed object property values are consistent with the store than by using {@see ManagedObjectContext::refresh()} for multiple objects in turn. */
-    public bool $shouldRefreshRefetchedObjects = false; //TODO: not implemented
+    public bool $shouldRefreshRefetchedObjects = false;
     /** @var bool A Boolean value that indicates whether the objects resulting from a fetch request are faults. This value is true if the objects resulting from a fetch using the FetchRequest are faults; otherwise, it is false. The default value is true. This setting is not used if the result type (see {@see resultType}) is {@see FetchRequestResultType::objectID}, as object IDs do not have property values. You can set {@see returnsObjectsAsFaults} to false to gain a performance benefit if you know you will need to access the property values from the returned objects. When you execute a fetch, by default returnsObjectsAsFaults is true; Core Data fetches the object data for the matching records, fills the row cache with the information, and returns managed object as faults. These faults are managed objects, but all of their property data resides in the row cache until the fault is fired. When the fault is fired, Core Data retrieves the data from the row cache. Although the overhead for this operation is small, for large datasets it may not be trivial. If you need to access the property values from the returned objects (for example, if you iterate over all the objects to calculate the average value of a particular attribute), then it is more efficient to set {@see returnsObjectsAsFaults} to false to avoid the additional overhead.
      */
     public bool $returnsObjectsAsFaults = false;
@@ -92,7 +93,7 @@ class FetchRequest extends PersistentStoreRequest
             return $this->$name;
         } elseif ($name == 'serialization') {
             /** @psalm-suppress all */
-            $this->$name = ($this->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $this->entity->propertiesByName[$property]) ?? $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient && !$attribute instanceof DerivedAttributeDescription)->values)->reduce(new Dictionary(), function (Dictionary $result, PropertyDescription $propertyDescription): Dictionary {
+            $this->$name = ($this->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $this->entity->propertiesByName[$property]) ?? $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient && (!$attribute instanceof DerivedAttributeDescription || !string_contains($attribute->derivationExpression, "@")))->values)->reduce(new Dictionary(), function (Dictionary $result, PropertyDescription $propertyDescription): Dictionary {
                 if ($propertyDescription instanceof AttributeDescription) {
                     $result[$propertyDescription->name] = $propertyDescription->type;
                 } elseif (/** @phpstan-ignore-line */ $propertyDescription instanceof RelationshipDescription) {

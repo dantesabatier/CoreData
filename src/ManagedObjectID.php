@@ -43,7 +43,7 @@ class ManagedObjectID extends ObjectClass implements FetchRequestResult
     public function __get(string $name)
     {
         return match ($name) {
-            'isTemporaryID' => $this->persistentStore === null || is_string($this->referenceObject),
+            'isTemporaryID' => $this->persistentStore === null || !is_int($this->referenceObject),
             default => $this->valueForUndefinedKey($name)
         };
     }

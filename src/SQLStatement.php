@@ -48,7 +48,7 @@ class SQLStatement extends ObjectClass
         if ($statements->isEmpty()) {
             throw new InvalidArgumentException("invalid sql statement: statements cannot be empty");
         }
-        if ($statements->count() == 1) {
+        if ($statements->count() === 1) {
             return $statements[0];
         }
         return new SQLStatement($statements->map(fn(SQLStatement $statement): string => $statement->string)->join(";\n"), $statements->flatMap(fn(SQLStatement $statement): ArrayClass => $statement->arguments));

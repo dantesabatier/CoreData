@@ -60,9 +60,6 @@ class AttributeDescription extends PropertyDescription
             $this->$name = PropertyDescriptionType::attribute;
             return $this->$name;
         } elseif ($name == 'defaultValue') {
-            if ($this->$name !== null) {
-                return ManagedObject::coercedValue($this->$name, $this->type);
-            }
             return $this->$name;
         } else {
             return parent::__get($name);
@@ -74,7 +71,7 @@ class AttributeDescription extends PropertyDescription
         if ($name == 'attributeValueClassName') {
             $this->$name = $value;
         } elseif ($name == 'defaultValue') {
-            $this->$name = (new Value($value))->value;
+            $this->$name = ManagedObject::coercedValue((new Value($value))->value, $this->type);
         } else {
             parent::__set($name, $value);
         }
@@ -86,7 +83,7 @@ class AttributeDescription extends PropertyDescription
         assert(is_string($data));
         /** @var Dictionary<mixed> $dictionary */
         $dictionary = KeyedUnarchiver::unarchiveTopLevelObjectWithData($data);
-        if ($this->type != AttributeType::undefined) {
+        if ($this->type !== AttributeType::undefined) {
             $dictionary['type'] = $this->type->value;
         }
         $out = KeyedArchiver::archivedData($dictionary);
@@ -101,7 +98,7 @@ class AttributeDescription extends PropertyDescription
     {
         /** @var Dictionary<mixed> $dictionary */
         $dictionary = parent::jsonSerialize();
-        if ($this->type != AttributeType::undefined) {
+        if ($this->type !== AttributeType::undefined) {
             $dictionary['type'] = $this->type->value;
         }
         if ($this->defaultValue !== null) {

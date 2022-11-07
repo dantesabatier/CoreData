@@ -114,9 +114,11 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         };
         /** @var SQLEntity $entity */
         $entity = $this->sqlModel->entitiesByName[$this->request->entity->name];
-        if ($resultType == FetchRequestResultType::managedObjectResultType || $resultType == FetchRequestResultType::managedObjectIDResultType) {
+        if ($resultType === FetchRequestResultType::managedObjectResultType || $resultType === FetchRequestResultType::managedObjectIDResultType) {
             /** @psalm-suppress InvalidArgument */
             $objects = fn(): ArrayClass => $values->map(function (Dictionary $dictionary) use ($entity): ManagedObject {
+                /** @var SQLEntity $entity */
+                $entity = $this->sqlModel->entitiesByName[$dictionary[$entity->entityKey->name]];
                 $object = $this->context->object($this->sqlCore->newObjectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
                 $object->isSuppressingKVO = true;
                 $object->isFault = $this->request->returnsObjectsAsFaults;
@@ -127,12 +129,12 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
             });
             if ($this->request->includesPropertyValues) {
                 $values = $objects();
-                if ($resultType == FetchRequestResultType::managedObjectIDResultType) {
+                if ($resultType === FetchRequestResultType::managedObjectIDResultType) {
                     $values = $values->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID);
                 }
             } else {
                 /** @psalm-suppress InvalidArgument */
-                $values = $resultType == FetchRequestResultType::managedObjectResultType ? $objects() : $values->map(fn(Dictionary $dictionary): ManagedObjectID => $this->sqlCore->newObjectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
+                $values = $resultType === FetchRequestResultType::managedObjectResultType ? $objects() : $values->map(fn(Dictionary $dictionary): ManagedObjectID => $this->sqlCore->newObjectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
             }
         }
         $this->result = $values;

@@ -17,7 +17,6 @@ use Sabatier\Foundation\Error;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
-
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\human_readable_time;
 use function Sabatier\Foundation\typeof;
@@ -98,7 +97,7 @@ class MigrationManager extends ObjectClass
     private function doFirstPassForMapping(EntityMapping $mapping): bool
     {
         $entityMigrationPolicyClass = EntityMigrationPolicy::class;
-        if ($mapping->mappingType == EntityMappingType::customEntityMappingType) {
+        if ($mapping->mappingType === EntityMappingType::customEntityMappingType) {
             $entityMigrationPolicyClass = $mapping->entityMigrationPolicyClassName ?? throw new InvalidArgumentException();
         }
         $this->entityMigrationPolicy = new $entityMigrationPolicyClass();
@@ -109,20 +108,20 @@ class MigrationManager extends ObjectClass
             return false;
         }
         $mappingType = $mapping->mappingType;
-        if ($mappingType == EntityMappingType::addEntityMappingType ||
-            $mappingType == EntityMappingType::removeEntityMappingType) {
+        if ($mappingType === EntityMappingType::addEntityMappingType ||
+            $mappingType === EntityMappingType::removeEntityMappingType) {
             return true;
         }
         $sourceEntity = $this->sourceEntity($mapping);
         $destinationEntity = $this->destinationEntity($mapping);
-        if ($this->performedInPlaceMigration && ($mappingType == EntityMappingType::copyEntityMappingType || ($mappingType == EntityMappingType::transformEntityMappingType && $sourceEntity && $destinationEntity && $sourceEntity->isKindOf($destinationEntity)))) {
+        if ($this->performedInPlaceMigration && ($mappingType === EntityMappingType::copyEntityMappingType || ($mappingType === EntityMappingType::transformEntityMappingType && $sourceEntity && $destinationEntity && $sourceEntity->isKindOf($destinationEntity)))) {
             return true;
         }
         $sourceContext = $this->sourceContext;
         /** @var FetchRequest<ManagedObject> $request */
         $request = new FetchRequest();
         $request->entity = EntityDescription::entity($sourceEntityName, $sourceContext);
-        if ($mappingType == EntityMappingType::transformEntityMappingType) {
+        if ($mappingType === EntityMappingType::transformEntityMappingType) {
             $destinationAttributes = $destinationEntity?->attributesByName?->filter(fn(AttributeDescription $attribute): bool => !$attribute instanceof DerivedAttributeDescription);
             if ($destinationAttributes) {
                 $sourceAttributes = $sourceEntity?->attributesByName?->filter(fn(AttributeDescription $attribute): bool => !$attribute instanceof DerivedAttributeDescription && $destinationAttributes->containsElement($attribute));

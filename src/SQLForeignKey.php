@@ -16,7 +16,7 @@ class SQLForeignKey extends SQLColumn
     {
         parent::__construct($entity, $this->relationshipDescription);
         $this->columnName = "{$this->relationshipDescription->name}ID";
-        $this->propertyType = PropertyDescriptionType::attribute;
+        $this->propertyType = PropertyDescriptionType::relationship;
         $this->sqlType = SQLType::int;
     }
 }

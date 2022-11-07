@@ -83,7 +83,7 @@ class BatchFaultingArray extends ArrayClass
     public function current(): ManagedObjectID|ManagedObject
     {
         $objectID = $this->objectIDs->current();
-        if ($this->resultType == FetchRequestResultType::managedObjectIDResultType) {
+        if ($this->resultType === FetchRequestResultType::managedObjectIDResultType) {
             return $objectID;
         }
         /** @noinspection PhpUnhandledExceptionInspection */
@@ -111,7 +111,6 @@ class BatchFaultingArray extends ArrayClass
         return $this->count;
     }
 
-    /** @psalm-suppress MissingImmutableAnnotation */
     public function offsetExists(mixed $offset): bool
     {
         return $this->indices->contains($offset);
@@ -120,7 +119,7 @@ class BatchFaultingArray extends ArrayClass
     public function offsetGet(mixed $offset): ManagedObjectID|ManagedObject
     {
         $objectID = $this->objectIDs->offsetGet($offset);
-        if ($this->resultType == FetchRequestResultType::managedObjectIDResultType) {
+        if ($this->resultType === FetchRequestResultType::managedObjectIDResultType) {
             return $objectID;
         }
         /** @noinspection PhpUnhandledExceptionInspection */

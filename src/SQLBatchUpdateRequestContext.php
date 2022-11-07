@@ -66,7 +66,7 @@ class SQLBatchUpdateRequestContext extends SQLStoreRequestContext
         };
         if ($this->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey)) {
             /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
-            $this->affectedObjectIDs = $this->request->resultType == BatchUpdateRequestResultType::objectIDs ? $this->result : $objectIDs();
+            $this->affectedObjectIDs = $this->request->resultType === BatchUpdateRequestResultType::objectIDs ? $this->result : $objectIDs();
         } else {
             $this->affectedObjectIDs = new ArrayClass();
         }

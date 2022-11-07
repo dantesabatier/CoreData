@@ -33,7 +33,7 @@ class SQLToMany extends SQLRelationship
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == 'inverseToOne') {
+        if ($name === 'inverseToOne') {
             $this->$name = $value;
         } else {
             parent::__set($name, $value);

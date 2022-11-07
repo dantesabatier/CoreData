@@ -28,10 +28,8 @@ use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\ValueTransformer;
 use Throwable;
-
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\human_readable_time;
-
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /** @internal */
@@ -52,10 +50,9 @@ class SQLConnection extends ObjectClass
         unset($this->bundleID);
     }
 
-    /** @psalm-suppress PossiblyNullArgument */
     public function __get(string $name)
     {
-        /** @noinspection PhpUnhandledExceptionInspection */
+        /** @psalm-suppress PossiblyNullArgument */
         return $this->$name = match ($name) {
             'schema' => new SQLSchema(ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_NAME'], ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_HOST'], new SQLCredential(ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_USER'], ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_PASSWORD'])),
             'sqlCore' => $this->adapter?->sqlCore,
@@ -251,8 +248,8 @@ class SQLConnection extends ObjectClass
         $statement = SQLStatement::merging(new ArrayClass($changedObjectIDs->map(function (ManagedObjectID $changedObjectID) use ($type, $transactionID, $context): SQLStatement {
             $valueTransformer = ValueTransformer::valueTransformerForName(SecureUnarchiveFromDataTransformerName);
             $managedObject = $context->object($changedObjectID);
-            $tombstone = $type == PersistentHistoryChangeType::delete ? $managedObject->changedValues()->filter(fn(mixed $value, string $key): bool => $managedObject->entity->attributesByName->contains(fn(AttributeDescription $attribute): bool => $attribute->name === $key && $attribute->preservesValueInHistoryOnDeletion)) : null;
-            $updatedProperties = $type == PersistentHistoryChangeType::update ? new Set($managedObject->changedValuesForCurrentEvent()->compactMap(fn(mixed $value, string $key): ?string => $managedObject->entity->propertiesByName->valueForKey($key)?->name)) : null;
+            $tombstone = $type === PersistentHistoryChangeType::delete ? $managedObject->changedValues()->filter(fn(mixed $value, string $key): bool => $managedObject->entity->attributesByName->contains(fn(AttributeDescription $attribute): bool => $attribute->name === $key && $attribute->preservesValueInHistoryOnDeletion)) : null;
+            $updatedProperties = $type === PersistentHistoryChangeType::update ? new Set($managedObject->changedValuesForCurrentEvent()->compactMap(fn(mixed $value, string $key): ?string => $managedObject->entity->propertiesByName->valueForKey($key)?->name)) : null;
             return new SQLStatement("INSERT INTO `PersistentHistoryChange` (`changedObjectID`, `changeType`, `tombstone`, `updatedProperties`, `transactionID`) VALUES (?, ?, ?, ?, ?)", new ArrayClass([$valueTransformer?->transformedValue($changedObjectID), $type, $valueTransformer?->transformedValue($tombstone), $valueTransformer?->transformedValue($updatedProperties), $transactionID]));
         })));
         $this->execute($statement);
@@ -338,7 +335,7 @@ class SQLConnection extends ObjectClass
             $this->createHistoryTrackingTables();
             $transactionID = $this->fetchMaxPrimaryKey('PersistentHistoryTransaction') + 1;
             $insertedObjectIDs = $requestContext->result;
-            if ($requestContext->request->resultType != BatchInsertRequestResultType::objectIDs) {
+            if ($requestContext->request->resultType !== BatchInsertRequestResultType::objectIDs) {
                 $insertedObjectIDs = $objectIDs();
             }
             $this->insertBatchInserts($insertedObjectIDs, $transactionID);

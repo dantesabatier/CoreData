@@ -6,16 +6,18 @@ use Exception;
 use InvalidArgumentException;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\ComparisonPredicate;
+use Sabatier\Foundation\CompoundPredicate;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Expression;
+use Sabatier\Foundation\ExpressionType;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Number;
+use Sabatier\Foundation\Predicate;
 use Sabatier\Foundation\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
-
+use function Sabatier\Foundation\in_string;
 use function Sabatier\Foundation\request_concrete_implementation;
-
 use const Sabatier\Foundation\NotFound;
 
 /**
@@ -57,10 +59,12 @@ abstract class AtomicStore extends PersistentStore
     {
         $cacheNode = $this->cacheNode($object->objectID) ?? throw new InvalidArgumentException("invalid argument: object \"$object\" does not exists ");
         foreach ($object->entity as $property) {
-            $key = $property->name;
-            $value = $cacheNode->valueForKey($key);
-            if ($value !== null) {
-                $object->setValueForKey($value, $key);
+            if (!$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription) {
+                $key = $property->name;
+                $value = $cacheNode->valueForKey($key);
+                if ($value !== null) {
+                    $object->setValueForKey($value, $key);
+                }
             }
         }
         $this->updateCacheNode($cacheNode, $object);
@@ -77,6 +81,9 @@ abstract class AtomicStore extends PersistentStore
     private function storeNextReferenceInMetadata(): void
     {
         $metadata = $this->metadata;
+        if ($this->nextReference === NotFound || $this->nextReference === (int)$metadata['StoreNextReference']) {
+            return;
+        }
         $metadata['StoreNextReference'] = $this->nextReference;
         static::setMetadata($metadata, $this->url);
     }
@@ -102,7 +109,6 @@ abstract class AtomicStore extends PersistentStore
 
     private function executeFetchRequest(FetchRequest $request, ManagedObjectContext $context): ArrayClass
     {
-        $entity = $request->entity;
         /** @var Set<ManagedObject> $result */
         $result = new Set();
         /** @var AtomicStoreCacheNode $cacheNode */
@@ -110,27 +116,41 @@ abstract class AtomicStore extends PersistentStore
             $object = $context->object($cacheNode->objectID);
             $this->updateObject($object);
             if ($request->includesSubentities) {
-                if ($cacheNode->objectID->entity->isKindOf($entity)) {
+                if ($cacheNode->objectID->entity->isKindOf($request->entity)) {
                     $result->append($object);
                 }
-            } elseif ($cacheNode->objectID->entity->isEqual($entity)) {
+            } elseif ($cacheNode->objectID->entity->isEqual($request->entity)) {
                 $result->append($object);
             }
         }
         if ($predicate = $request->predicate) {
-            $result = $result->filtered($predicate);
+            $transform = function (Predicate $predicate) use ($request, &$transform): Predicate {
+                if (in_string((string)$predicate, 'objectID')) {
+                    if ($predicate instanceof ComparisonPredicate) {
+                        if ($predicate->leftExpression->expressionType === ExpressionType::keyPath && $predicate->leftExpression->keyPath() === 'objectID' && $predicate->rightExpression->expressionType === ExpressionType::constantValue && is_int($predicate->rightExpression->constantValue())) {
+                            return new ComparisonPredicate($predicate->leftExpression, Expression::expressionForConstantValue($this->objectID($request->entity, $predicate->rightExpression->constantValue())));
+                        } elseif ($predicate->rightExpression->expressionType === ExpressionType::keyPath && $predicate->rightExpression->keyPath() === 'objectID' && $predicate->leftExpression->expressionType === ExpressionType::constantValue && is_int($predicate->leftExpression->constantValue())) {
+                            return new ComparisonPredicate($predicate->rightExpression, Expression::expressionForConstantValue($this->objectID($request->entity, $predicate->leftExpression->constantValue())));
+                        }
+                    } elseif ($predicate instanceof CompoundPredicate) {
+                        return new CompoundPredicate($predicate->compoundPredicateType, $predicate->subpredicates->map(fn(Predicate $subpredicate): Predicate => $transform($subpredicate)));
+                    }
+                }
+                return $predicate;
+            };
+            $result = $result->filtered($transform($predicate));
         }
         $resultType = $request->resultType;
-        if ($resultType == FetchRequestResultType::managedObjectResultType) {
+        if ($resultType === FetchRequestResultType::managedObjectResultType) {
             $result = $result->map(fn(ManagedObject $object): ManagedObject => $object->serialized($request->serialization));
             if ($descriptors = $request->sortDescriptors) {
                 $result = $result->sorted($descriptors);
             }
-        } elseif ($resultType == FetchRequestResultType::managedObjectIDResultType) {
+        } elseif ($resultType === FetchRequestResultType::managedObjectIDResultType) {
             $result = $result->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID);
-        } elseif ($resultType == FetchRequestResultType::dictionaryResultType) {
-            $result = $result->compactMap(fn(ManagedObject $object): ?Dictionary => $this->cacheNode($object->objectID)?->propertyCache?->reduce(new Dictionary(), function (Dictionary $result, mixed $value, string $key) use ($entity, $object): Dictionary {
-                $property = $entity->propertiesByName[$key];
+        } elseif ($resultType === FetchRequestResultType::dictionaryResultType) {
+            $result = $result->compactMap(fn(ManagedObject $object): ?Dictionary => $this->cacheNode($object->objectID)?->propertyCache?->reduce(new Dictionary(), function (Dictionary $result, mixed $value, string $key) use ($request, $object): Dictionary {
+                $property = $request->entity->propertiesByName[$key];
                 if ($property instanceof DerivedAttributeDescription) {
                     $value = $property->derivationExpression?->expressionValue($object) ?? $value;
                 }
@@ -178,7 +198,7 @@ abstract class AtomicStore extends PersistentStore
         }
         if ($updatedObjects = $request->updatedObjects) {
             foreach ($updatedObjects as $updatedObject) {
-                $this->updateCacheNode($this->cacheNode($updatedObject->objectID) ?? throw new InternalInconsistencyException(), $updatedObject);
+                $this->updateCacheNode($this->cacheNode($updatedObject->objectID) ?? throw new InvalidArgumentException("Unable to update an uncached object $updatedObject"), $updatedObject);
             }
         }
         $this->save();

@@ -523,7 +523,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
         /** @var Dictionary<ArrayClass<Dictionary>> $dictionary */
         $dictionary = new Dictionary();
         $dictionary['entities'] = $this->entitiesByName->filter(fn(EntityDescription $entity): bool => !$entity->isPersistentHistoryEntity && $entity->isRootEntity)->map(fn(EntityDescription $entity): Dictionary => $entity->jsonSerialize());
-        $dictionary['fetchRequests'] = $this->fetchRequestTemplatesByName->mapValues(fn(FetchRequest $fetchRequest, string $templateName): Dictionary => new Dictionary(['name' => $templateName, 'entityName' => $fetchRequest->entityName, 'predicateFormat' => $fetchRequest->predicate?->predicateFormat(), 'resultType' => $fetchRequest->resultType != FetchRequestResultType::managedObjectResultType ? $fetchRequest->resultType->value : null]))->values;
+        $dictionary['fetchRequests'] = $this->fetchRequestTemplatesByName->mapValues(fn(FetchRequest $fetchRequest, string $templateName): Dictionary => new Dictionary(['name' => $templateName, 'entityName' => $fetchRequest->entityName, 'predicateFormat' => $fetchRequest->predicate?->predicateFormat(), 'resultType' => $fetchRequest->resultType !== FetchRequestResultType::managedObjectResultType ? $fetchRequest->resultType->value : null]))->values;
         return $dictionary;
     }
 }

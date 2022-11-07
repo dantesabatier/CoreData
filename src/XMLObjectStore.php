@@ -12,6 +12,7 @@ namespace Sabatier\CoreData;
 use DOMDocument;
 use DOMElement;
 use DOMNode;
+use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\FileManager;
@@ -45,22 +46,28 @@ class XMLObjectStore extends AtomicStore
         $this->xmlInfo = new Dictionary();
     }
 
+    private static function loadMetadataFromDocument(DOMDocument $document): Dictionary
+    {
+        $model = $document->getElementsByTagName('model')->item(0);
+        assert($model instanceof DOMElement);
+        $metadataXML = $model->getElementsByTagName('metadata')->item(0);
+        assert($metadataXML instanceof DOMElement);
+        /** @var Dictionary<string> $metadata */
+        $metadata = new Dictionary();
+        foreach ($metadataXML->childNodes as $element) {
+            if ($key = $element->localName) {
+                $metadata[$key] = $element->nodeValue;
+            }
+        }
+        return $metadata;
+    }
+
     public static function metadataForPersistentStore(URL $url): Dictionary
     {
         $document = new DOMDocument('1.0', 'UTF-8');
         $document->preserveWhiteSpace = false;
         $document->formatOutput = true;
-        $model = $document->getElementsByTagName('model')->item(0);
-        assert($model instanceof DOMElement);
-        $metadataXML = $model->getElementsByTagName('metadata')->item(0);
-        assert($metadataXML instanceof DOMElement);
-        /** @var Dictionary<mixed> $metadata */
-        $metadata = new Dictionary();
-        /** @var DOMElement $element */
-        foreach ($metadataXML->childNodes as $element) {
-            $metadata[$element->localName] = $element->nodeValue;
-        }
-        return $metadata;
+        return self::loadMetadataFromDocument($document);
     }
 
     public static function setMetadata(?Dictionary $metadata, URL $url): bool
@@ -91,22 +98,6 @@ class XMLObjectStore extends AtomicStore
             }
         }
         return false;
-    }
-
-    private function loadMetadataFromDocument(DOMDocument $document): void
-    {
-        $model = $document->getElementsByTagName('model')->item(0);
-        assert($model instanceof DOMElement);
-        $metadataXML = $model->getElementsByTagName('metadata')->item(0);
-        assert($metadataXML instanceof DOMElement);
-        /** @var Dictionary<mixed> $metadata */
-        $metadata = new Dictionary();
-        /** @var DOMElement $element */
-        foreach ($metadataXML->childNodes as $element) {
-            $metadata[$element->localName] = $element->nodeValue;
-        }
-        $this->metadata = $metadata;
-        $this->identifier = $metadata[StoreUUIDKey];
     }
 
     private function loadFromDocument(DOMDocument $document): void
@@ -149,7 +140,7 @@ class XMLObjectStore extends AtomicStore
                 }
                 $info[$relationship->name] = $relationshipElement->attributes;
                 if (($references = $relationshipElement->getAttribute('references')) && ($destination = $relationshipElement->getAttribute('destination')) && ($destinationEntity = $this->entitiesForConfiguration[$destination])) {
-                    $managedObjectIDs = (new Set(explode(" ", $references)))->map(fn (string $reference): ManagedObjectID => $this->objectID($destinationEntity, $reference));
+                    $managedObjectIDs = (new Set(explode(" ", $references)))->map(fn(string $reference): ManagedObjectID => $this->objectID($destinationEntity, (int)$reference));
                     $value = $relationship->isToMany ? $managedObjectIDs : $managedObjectIDs->first();
                     $cacheNode->setValueForKey($value, $key);
                 }
@@ -166,11 +157,13 @@ class XMLObjectStore extends AtomicStore
         /** @var EntityDescription $entity */
         $entity = $this->entitiesForConfiguration[$entityName];
         $referenceObject = $element->getAttribute('id');
-        $objectID = $this->objectID($entity, $referenceObject);
+        $objectID = $this->objectID($entity, (int)$referenceObject);
         return new XMLObjectStoreCacheNode($element, $objectID);
     }
 
-    /** @noinspection PhpUnhandledExceptionInspection */
+    /**
+     * @throws Exception
+     */
     public function newCacheNode(ManagedObject $object): AtomicStoreCacheNode
     {
         $document = $this->document();
@@ -185,22 +178,20 @@ class XMLObjectStore extends AtomicStore
         return $node;
     }
 
+    /**
+     * @throws Exception
+     */
     private function updateXMLNode(DOMNode $node, ManagedObject $object): void
     {
-        $entity = $object->entity;
-        $attributes = $entity->attributesByName;
-        foreach ($attributes as $attribute) {
-            if (!$attribute->isTransient) {
+        foreach ($object->entity->attributesByName as $attribute) {
+            if (!$attribute->isTransient && !$attribute instanceof DerivedAttributeDescription) {
                 $value = $this->getXMLAttributeValueFromObject($object, $attribute);
-                if ($attribute instanceof DerivedAttributeDescription) {
-                    $value = $attribute->derivationExpression?->expressionValue($object) ?? $value;
-                }
                 if ($value !== null) {
                     $this->createAttributeChildOnNode($node, $attribute, $value);
                 }
             }
         }
-        foreach ($entity->relationshipsByName as $key => $relationship) {
+        foreach ($object->entity->relationshipsByName as $key => $relationship) {
             $value = $object->primitiveValueForKey($key);
             $relationshipNode = $this->createRelationshipChildOnNode($node, $relationship);
             $destinationNode = $relationshipNode->getAttributeNode('destination');
@@ -277,7 +268,9 @@ class XMLObjectStore extends AtomicStore
         $element->nodeValue = $value;
     }
 
-    /** @noinspection PhpUnhandledExceptionInspection */
+    /**
+     * @throws Exception
+     */
     private function getXMLAttributeValueFromObject(ManagedObject $object, AttributeDescription $attribute): ?string
     {
         $value = $object->primitiveValueForKey($attribute->name);
@@ -309,7 +302,9 @@ class XMLObjectStore extends AtomicStore
         return $value;
     }
 
-    /** @noinspection PhpUnhandledExceptionInspection */
+    /**
+     * @throws Exception
+     */
     private function createDocument(): DOMDocument
     {
         $document = new DOMDocument('1.0', 'UTF-8');
@@ -350,6 +345,9 @@ class XMLObjectStore extends AtomicStore
         return $this->xmlInfo->valueForKey($attribute->entity->name)?->valueForKey($attribute->name);
     }
 
+    /**
+     * @throws Exception
+     */
     public function updateCacheNode(AtomicStoreCacheNode $node, ManagedObject $object): void
     {
         $entity = $object->entity;
@@ -393,7 +391,7 @@ class XMLObjectStore extends AtomicStore
                         $name = $relationshipElement->getAttribute('name');
                         $relationship = $entity->relationshipsByName[$name] ?? throw new InternalInconsistencyException();
                         /** @psalm-suppress PossiblyNullPropertyFetch */
-                        if ($relationship->deleteRule == DeleteRule::cascadeDeleteRule) {
+                        if ($relationship->deleteRule === DeleteRule::cascadeDeleteRule) {
                             /** @var string $destination */
                             $destination = $relationshipElement->getAttribute('destination');
                             $references = new Set(explode(' ', $relationshipElement->getAttribute('references')));
@@ -445,7 +443,9 @@ class XMLObjectStore extends AtomicStore
     public function load(): bool
     {
         $document = $this->document();
-        $this->loadMetadataFromDocument($document);
+        $metadata = self::loadMetadataFromDocument($document);
+        $this->metadata = $metadata;
+        $this->identifier = $metadata[StoreUUIDKey];
         $this->loadFromDocument($document);
         return true;
     }

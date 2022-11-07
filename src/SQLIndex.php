@@ -33,4 +33,12 @@ class SQLIndex extends ObjectClass
         $this->updateTableStatements->appendContentsOf($this->createTableStatements);
         $this->updateTableStatements->appendContentsOf($this->dropTableStatements);
     }
+
+    public function isEqual(mixed $other): bool
+    {
+        if ($other instanceof SQLIndex) {
+            return $this->indexDescription->isEqual($other->indexDescription);
+        }
+        return false;
+    }
 }

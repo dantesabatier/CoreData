@@ -40,7 +40,7 @@ class DerivedAttributeDescription extends AttributeDescription
         /** @var Dictionary<mixed> $dictionary */
         $dictionary = parent::jsonSerialize();
         if ($derivationExpression = $this->derivationExpression) {
-            $dictionary['derivationExpressionFormat'] = $derivationExpression->description();
+            $dictionary['derivationExpressionFormat'] = (string)$derivationExpression;
         }
         return $dictionary;
     }

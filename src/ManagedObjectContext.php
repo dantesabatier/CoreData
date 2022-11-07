@@ -30,8 +30,8 @@ use Sabatier\Foundation\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Throwable;
-
 use function Sabatier\Foundation\human_readable_value;
+use function Sabatier\Foundation\typeof;
 
 /**
  * Class ManagedObjectContext
@@ -91,6 +91,14 @@ class ManagedObjectContext extends ObjectClass
     public ?string $transactionAuthor = null;
     /** @var bool A Boolean value that indicates whether the context has uncommitted changes. */
     public bool $hasChanges = false;
+    /** @var bool A Boolean value that indicates whether the context propagates deletes at the end of the event in which a change was made.
+     * true if the receiver propagates deletes at the end of the event in which a change was made, false if it propagates deletes only during a save operation. The default is true. */
+    public bool $propagatesDeletesAtEndOfEvent = true;
+    /** @var float The maximum length of time that may have elapsed since the store previously fetched data before fulfilling a fault issues a new fetch. The staleness interval controls whether fulfilling a fault uses data previously fetched by the application, or issues a new fetch (see also {@see refresh()}). The staleness interval does not affect objects currently in use (that is, it is not used to automatically update property values from a persistent store after a certain period of time).
+     * The expiration value is applied on a per object basis. It is the relative time until cached data (snapshots) should be considered stale. For example, a value of 300.0 informs the context to utilize cached information for no more than 5 minutes after an object was originally fetched.
+     * Note that the staleness interval is a hint and may not be supported by all persistent store types. It is not used by XML and binary stores, because these stores maintain all current values in memory.
+     * The default is a negative value, which represents infinite staleness allowed. 0.0 represents "no staleness acceptable". */
+    public float $stalenessInterval = -1.0;
     private OperationQueue $queue;
 
     /**
@@ -104,15 +112,15 @@ class ManagedObjectContext extends ObjectClass
         unset($this->queue);
         unset($this->mergePolicy);
         unset($this->userInfo);
-        $this->byHashAssociationTable = new Dictionary();
-        $this->unprocessedChanges = new Set();
-        $this->unprocessedDeletes = new Set();
-        $this->unprocessedInserts = new Set();
-        $this->insertedObjects = new Set();
-        $this->updatedObjects = new Set();
-        $this->deletedObjects = new Set();
-        $this->lockedObjects = new Set();
-        $this->refreshedObjects = new Set();
+        unset($this->byHashAssociationTable);
+        unset($this->unprocessedChanges);
+        unset($this->unprocessedDeletes);
+        unset($this->unprocessedInserts);
+        unset($this->insertedObjects);
+        unset($this->updatedObjects);
+        unset($this->deletedObjects);
+        unset($this->lockedObjects);
+        unset($this->refreshedObjects);
     }
 
     public function __get(string $name)
@@ -120,7 +128,7 @@ class ManagedObjectContext extends ObjectClass
         if ($name == 'persistentStoreCoordinator') {
             $this->$name = null;
             return $this->$name;
-        } elseif ($name == 'userInfo') {
+        } elseif ($name == 'userInfo' || $name == 'byHashAssociationTable') {
             $this->$name = new Dictionary();
             return $this->$name;
         } elseif ($name == 'queue') {
@@ -136,6 +144,9 @@ class ManagedObjectContext extends ObjectClass
             return $this->$name;
         } elseif ($name == 'registeredObjects') {
             return new Set($this->byHashAssociationTable->values);
+        } elseif ($name == 'unprocessedChanges' || $name == 'unprocessedDeletes' || $name == 'unprocessedInserts' || $name == 'insertedObjects' || $name == 'updatedObjects' || $name == 'deletedObjects' || $name == 'lockedObjects' || $name == 'refreshedObjects') {
+            $this->$name = new Set();
+            return $this->$name;
         } else {
             return $this->valueForUndefinedKey($name);
         }
@@ -145,6 +156,7 @@ class ManagedObjectContext extends ObjectClass
     {
         if ($name == 'persistentStoreCoordinator') {
             $this->$name = $value;
+            NotificationCenter::default()->removeObserver($this, PersistentStoreCoordinatorWillRemoveStore);
             NotificationCenter::default()->addObserverForName(PersistentStoreCoordinatorWillRemoveStore, $value, function (Notification $notification): void {
                 /** @var Dictionary $userInfo */
                 $userInfo = $notification->userInfo;
@@ -157,11 +169,14 @@ class ManagedObjectContext extends ObjectClass
                             $this->insertedObjects->remove($registeredObject);
                             $this->updatedObjects->remove($registeredObject);
                             $this->deletedObjects->remove($registeredObject);
+                            $registeredObject->isPendingInsertion = false;
+                            $registeredObject->isPendingUpdate = false;
+                            $registeredObject->isPendingDeletion = false;
                         }
                     }
                 }
             });
-        } elseif ($name == 'queue' || $name == 'mergePolicy' || $name == 'queryGenerationToken' || $name == 'userInfo') {
+        } elseif ($name == 'queue' || $name == 'mergePolicy' || $name == 'queryGenerationToken' || $name == 'userInfo' || $name == 'byHashAssociationTable' || $name == 'unprocessedChanges' || $name == 'unprocessedDeletes' || $name == 'unprocessedInserts' || $name == 'insertedObjects' || $name == 'updatedObjects' || $name == 'deletedObjects' || $name == 'lockedObjects' || $name == 'refreshedObjects') {
             $this->$name = $value;
         } else {
             $this->setValueForUndefinedKey($value, $name);
@@ -470,6 +485,7 @@ class ManagedObjectContext extends ObjectClass
         if (!$this->processingChanges) {
             $this->hasChanges = true;
             $this->insertedObjects->append($object);
+            $object->isPendingInsertion = true;
         }
         $this->register($object);
     }
@@ -480,15 +496,16 @@ class ManagedObjectContext extends ObjectClass
      */
     public function delete(ManagedObject $object): void
     {
-        if (!$this->deletedObjects->containsElement($object)) {
-            $this->hasChanges = true;
-            $this->deletedObjects->append($object);
-            $this->insertedObjects->remove($object);
-            $this->updatedObjects->remove($object);
-            $object->prepareForDeletion();
-            $this->unregister($object);
-            $this->refault($object);
-        }
+        $this->hasChanges = true;
+        $this->deletedObjects->append($object);
+        $this->insertedObjects->remove($object);
+        $this->updatedObjects->remove($object);
+        $object->prepareForDeletion();
+        $object->isPendingDeletion = true;
+        $object->isPendingInsertion = false;
+        $object->isPendingUpdate = false;
+        $this->unregister($object);
+        $this->refault($object);
     }
 
     /**
@@ -671,6 +688,7 @@ class ManagedObjectContext extends ObjectClass
                 }
             }
             $this->updatedObjects->append($object);
+            $object->isPendingUpdate = true;
         }
         $this->insertedObjects->formUnion($insertions);
     }
@@ -702,18 +720,31 @@ class ManagedObjectContext extends ObjectClass
                     }
                 } else {
                     $object->setPrimitiveValueForKey(null, $relationship->name);
+                    $this->deletedObjects->remove($object);
+                    $this->insertedObjects->remove($object);
                     $this->updatedObjects->append($object);
+                    $object->isPendingUpdate = true;
+                    $object->isPendingDeletion = false;
+                    $object->isPendingInsertion = false;
                     foreach ($deletions as $deletion) {
                         $deletion->setPrimitiveValueForKey(null, $inverseRelationship->name);
                         $this->deletedObjects->remove($deletion);
                         $this->insertedObjects->remove($deletion);
+                        $this->updatedObjects->append($deletion);
+                        $deletion->isPendingDeletion = false;
+                        $deletion->isPendingInsertion = false;
+                        $deletion->isPendingUpdate = true;
                     }
                 }
             } else {
                 $object->setPrimitiveValueForKey(null, $relationship->name);
+                error_log($object->primitiveValueForKey($relationship->name));
                 $this->deletedObjects->remove($object);
                 $this->insertedObjects->remove($object);
                 $this->updatedObjects->append($object);
+                $object->isPendingUpdate = true;
+                $object->isPendingDeletion = false;
+                $object->isPendingInsertion = false;
             }
         } elseif ($deleteRule == DeleteRule::cascadeDeleteRule) {
             foreach ($deletions as $deletion) {
@@ -770,6 +801,7 @@ class ManagedObjectContext extends ObjectClass
                 }
                 if ($attributesChanged && !$object->isInserted) {
                     $this->updatedObjects->append($object);
+                    $object->isPendingUpdate = true;
                 }
             }
             $this->resetAllChanges();
@@ -790,6 +822,7 @@ class ManagedObjectContext extends ObjectClass
             if ($property instanceof AttributeDescription) {
                 $change->kind = KeyValueChange::replacement;
             } elseif ($property instanceof RelationshipDescription) {
+                assert($value instanceof Set || $value instanceof ManagedObject || $value instanceof ManagedObjectID, sprintf("invalid argument: %s(%s) expecting \"%s|%s|%s\", \"%s\" given", $object->entity->name, $keyPath, Set::class, ManagedObject::class, ManagedObjectID::class, typeof($value)));
                 if (!$value instanceof Set) {
                     if ($value instanceof ManagedObjectID) {
                         $value = $this->object($value);
@@ -799,8 +832,8 @@ class ManagedObjectContext extends ObjectClass
                 if ($value->isEmpty()) {
                     return;
                 }
-                /** @var ManagedObject $managedObject */
                 foreach ($value as $managedObject) {
+                    assert($managedObject instanceof ManagedObject, sprintf("invalid argument: expecting \"%s\", \"%s\" given", ManagedObject::class, typeof($managedObject)));
                     $this->obtainPermanentID($managedObject);
                 }
             }
@@ -809,20 +842,17 @@ class ManagedObjectContext extends ObjectClass
             $node = new IncrementalStoreNode($object->objectID, new Dictionary([$property->name => $value]));
             if ($change->kind == KeyValueChange::insertion) {
                 if ($member = $this->unprocessedInserts->member($node)) {
-                    $member->updateWithValues($node->values);
-                    $node = $member;
+                    $node->updateWithValues($member->values);
                 }
                 $this->unprocessedInserts->update($node);
             } elseif ($change->kind == KeyValueChange::removal) {
                 if ($member = $this->unprocessedDeletes->member($node)) {
-                    $member->updateWithValues($node->values);
-                    $node = $member;
+                    $node->updateWithValues($member->values);
                 }
                 $this->unprocessedDeletes->update($node);
             } elseif ($change->kind == KeyValueChange::replacement) {
                 if ($member = $this->unprocessedChanges->member($node)) {
-                    $member->updateWithValues($node->values);
-                    $node = $member;
+                    $node->updateWithValues($member->values);
                 }
                 $this->unprocessedChanges->update($node);
             }
@@ -834,11 +864,20 @@ class ManagedObjectContext extends ObjectClass
     /**
      * Handles changes from other processes or from a serialized state.
      * This method more efficiently merges changes into multiple contexts as well as nested contexts. The dictionary keys should be one or more from an {@see ManagedObjectContextObjectsDidChange}: {@see InsertedObjectsKey}, {@see UpdatedObjectsKey}, {@see DeletedObjectsKey}. The values should be a {@see ArrayClass} of either {@see ManagedObjectID} or {@see URL} objects conforming to valid results from {@see ManagedObjectID::uriRepresentation()}.
-     * @param Dictionary<ArrayClass<ManagedObjectID|URL>> $changeNotificationData
+     * @param Dictionary<ArrayClass<ManagedObjectID|ManagedObject|URL>> $changeNotificationData
      * @param ArrayClass<ManagedObjectContext> $contexts
      */
     public static function mergeChangesFromRemoteContextSave(Dictionary $changeNotificationData, ArrayClass $contexts): void
     {
+        if ($insertedObjects = $changeNotificationData[InsertedObjectsKey]) {
+            foreach ($insertedObjects as $insertedObject) {
+                foreach ($contexts as $context) {
+                    if ($insertedObject instanceof ManagedObject && $insertedObject->managedObjectContext !== $context) {
+                        $context->insert($insertedObject);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -875,8 +914,10 @@ class ManagedObjectContext extends ObjectClass
             $fetchRequest->affectedStores = new ArrayClass([$persistentStore]);
             if ($this->count($fetchRequest)) {
                 $this->insertedObjects->remove($insertedObject);
+                $insertedObject->isPendingInsertion = true;
                 if (!$insertedObject->changedValuesForCurrentEvent()->isEmpty()) {
                     $this->updatedObjects->append($insertedObject);
+                    $insertedObject->isPendingUpdate = true;
                 }
                 continue;
             }
@@ -887,6 +928,7 @@ class ManagedObjectContext extends ObjectClass
         foreach ($updatedObjects as $updatedObject) {
             if ($updatedObject->changedValuesForCurrentEvent()->isEmpty()) {
                 $this->updatedObjects->remove($updatedObject);
+                $updatedObject->isPendingUpdate = false;
                 continue;
             }
             $updatedObject->validateForUpdate();

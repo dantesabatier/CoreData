@@ -32,14 +32,13 @@ use Sabatier\Foundation\Set;
 use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\UnknownKeyException;
 use Sabatier\Foundation\Value;
-
 use function Sabatier\Foundation\equivalent;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\in_string;
+use function Sabatier\Foundation\kvc_components;
 use function Sabatier\Foundation\string_contains;
 use function Sabatier\Foundation\string_has_prefix;
 use function Sabatier\Foundation\string_has_suffix;
-use function Sabatier\Foundation\substring_from_index;
 use function Sabatier\Foundation\typeof;
 
 /** @internal */
@@ -55,7 +54,7 @@ class SQLGenerator extends ObjectClass
     private FetchRequest $request;
     private SQLEntity $entity;
     /** @var ArrayClass */
-    private ArrayClass $arguments;
+    public ArrayClass $arguments;
     private bool $useDistinct = false;
     private string $keyValueOperator = KeyValueOperator::countKeyValueOperator;
     public bool $autoDistinct = true;
@@ -63,21 +62,45 @@ class SQLGenerator extends ObjectClass
 
     public function __construct(public readonly SQLStoreRequestContext $requestContext)
     {
-        $this->arguments = new ArrayClass();
+        unset($this->request);
+        unset($this->entity);
+        unset($this->arguments);
+    }
+
+    public function __get(string $name)
+    {
+        if ($name == 'request') {
+            if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext) {
+                $this->$name = $this->requestContext->fetchContext->request;
+            } elseif ($this->requestContext instanceof SQLFetchRequestContext) {
+                $this->$name = $this->requestContext->request;
+            }
+            return $this->$name;
+        } elseif ($name == 'entity') {
+            if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext) {
+                $this->$name = $this->requestContext->fetchContext->sqlEntityForFetchRequest;
+            } elseif ($this->requestContext instanceof SQLFetchRequestContext) {
+                $this->$name = $this->requestContext->sqlEntityForFetchRequest;
+            }
+            return $this->$name;
+        } elseif ($name == 'arguments') {
+            $this->$name = new ArrayClass();
+            return $this->$name;
+        } else {
+            return $this->valueForUndefinedKey($name);
+        }
     }
 
     public function statement(): ?SQLStatement
     {
-        if ($this->requestContext instanceof SQLSaveChangesRequestContext) {
+        if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext || $this->requestContext instanceof SQLFetchRequestContext) {
+            $this->startSQL($this->requestContext->persistentStoreRequest);
+            return new SQLStatement($this->string, $this->arguments);
+        } elseif ($this->requestContext instanceof SQLSaveChangesRequestContext) {
             return $this->newSQLStatementForSaveChangesRequestContext();
-        } elseif ($this->requestContext instanceof SQLBatchUpdateRequestContext) {
-            return $this->newSQLStatementForBatchUpdateRequestContext();
-        } elseif ($this->requestContext instanceof SQLBatchDeleteRequestContext) {
-            return $this->newSQLStatementForBatchDeleteRequestContext();
-        } elseif ($this->requestContext instanceof SQLFetchRequestContext) {
-            return $this->newSQLStatementForFetchRequestContext();
+        } else {
+            return null;
         }
-        return null;
     }
 
     private function newSQLStatementForSaveInsertChanges(SQLEntity $entity, ArrayClass $insertedObjects): SQLStatement
@@ -97,7 +120,7 @@ class SQLGenerator extends ObjectClass
         $this->prepareDeleteStatement($entity, $deletedObjects);
         return new SQLStatement($this->string, $this->arguments);
     }
-    
+
     private function newSQLStatementForSaveChangesRequestContext(): ?SQLStatement
     {
         /** @var SQLSaveChangesRequestContext $requestContext */
@@ -142,42 +165,12 @@ class SQLGenerator extends ObjectClass
         return null;
     }
 
-    private function newSQLStatementForBatchUpdateRequestContext(): SQLStatement
-    {
-        /** @var SQLBatchUpdateRequestContext $requestContext */
-        $requestContext = $this->requestContext;
-        $this->request = $requestContext->fetchContext->request;
-        $this->entity = $requestContext->fetchContext->sqlEntityForFetchRequest;
-        $this->startSQL($requestContext->request);
-        return new SQLStatement($this->string, $this->arguments);
-    }
-
-    private function newSQLStatementForBatchDeleteRequestContext(): SQLStatement
-    {
-        /** @var SQLBatchDeleteRequestContext $requestContext */
-        $requestContext = $this->requestContext;
-        $this->request = $requestContext->fetchContext->request;
-        $this->entity = $requestContext->fetchContext->sqlEntityForFetchRequest;
-        $this->startSQL($requestContext->request);
-        return new SQLStatement($this->string, $this->arguments);
-    }
-
-    private function newSQLStatementForFetchRequestContext(): SQLStatement
-    {
-        /** @var SQLFetchRequestContext $requestContext */
-        $requestContext = $this->requestContext;
-        $this->request = $requestContext->request;
-        $this->entity = $requestContext->sqlEntityForFetchRequest;
-        $this->startSQL($requestContext->request);
-        return new SQLStatement($this->string, $this->arguments);
-    }
-
     private function startSQL(PersistentStoreRequest $request): void
     {
         if ($request instanceof FetchRequest) {
             /** @var ArrayClass<PropertyDescription> $propertiesToGroupBy */
             $propertiesToGroupBy = $request->propertiesToGroupBy?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $request->entity->propertiesByName[$property]) ?? new ArrayClass();
-            if (!$propertiesToGroupBy->isEmpty() && $request->resultType != FetchRequestResultType::dictionaryResultType) {
+            if (!$propertiesToGroupBy->isEmpty() && $request->resultType !== FetchRequestResultType::dictionaryResultType) {
                 throw new InvalidArgumentException(sprintf("invalid fetch request: GROUP BY requires %s, %s given", human_readable_value(FetchRequestResultType::dictionaryResultType), human_readable_value($request->resultType)));
             }
             $this->useDistinct = $request->returnsDistinctResults;
@@ -190,7 +183,7 @@ class SQLGenerator extends ObjectClass
             $this->prepareJoinStatementsForPredicateAndRelationships();
             $predicate = $request->predicate;
             /** @phpstan-ignore-next-line */
-            if (!$request->includesSubentities ||(!$request->entity->isPersistentHistoryEntity && !$request->entity->isRootEntity && ($request->entity->subentities->isEmpty() || !$request->entity->superentity?->isRootEntity || $request->entity->superentity?->subentities->count() > 1))) {
+            if (!$request->includesSubentities || (!$request->entity->isPersistentHistoryEntity && !$request->entity->isRootEntity && ($request->entity->subentities->isEmpty() || !$request->entity->superentity?->isRootEntity || $request->entity->superentity?->subentities->count() > 1))) {
                 $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($request->entity->name));
                 if ($predicate) {
                     $predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory]));
@@ -215,7 +208,7 @@ class SQLGenerator extends ObjectClass
                 }
                 $this->appendSQL($this->havingClause);
             }
-            if ($request->resultType != FetchRequestResultType::countResultType) {
+            if ($request->resultType !== FetchRequestResultType::countResultType) {
                 $this->buildOrderByClause($request->sortDescriptors);
                 $this->appendSQL($this->orderByClause);
             }
@@ -267,7 +260,7 @@ class SQLGenerator extends ObjectClass
         $this->groupByClause = '';
         $this->havingClause = '';
         $this->orderByClause = '';
-        $this->arguments = new ArrayClass();
+        $this->arguments->removeAll();
     }
 
     private function appendSQL(string $sql): void
@@ -321,15 +314,15 @@ class SQLGenerator extends ObjectClass
         $entity = $this->entity;
         /** @var Set<string> $columnNames */
         $columnNames = new Set();
-        if ($this->keyValueOperator == KeyValueOperator::countKeyValueOperator) {
+        if ($this->keyValueOperator === KeyValueOperator::countKeyValueOperator) {
             $columnNames->append("$entity->tableName.{$entity->primaryKey->columnName}");
         }
         $appendInferredColumnNames = true;
-        if (($request->resultType == FetchRequestResultType::countResultType && $this->keyValueOperator == KeyValueOperator::countKeyValueOperator) || $request->returnsObjectsAsFaults || !$request->includesPropertyValues) {
+        if (($request->resultType === FetchRequestResultType::countResultType && $this->keyValueOperator === KeyValueOperator::countKeyValueOperator) || $request->returnsObjectsAsFaults || !$request->includesPropertyValues) {
             $appendInferredColumnNames = false;
         }
         if ($appendInferredColumnNames) {
-            if (!$entity->entityDescription->isPersistentHistoryEntity && $request->resultType != FetchRequestResultType::countResultType) {
+            if (!$entity->entityDescription->isPersistentHistoryEntity && $request->resultType !== FetchRequestResultType::countResultType) {
                 $columnNames->append("$entity->tableName.{$entity->entityKey->columnName}");
             }
             $keys = $request->serialization->keys;
@@ -342,15 +335,15 @@ class SQLGenerator extends ObjectClass
             /** @psalm-suppress InvalidArgument */
             $columnNames->appendContentsOf($properties->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => is_string($property) ? $request->entity->attributesByName[$property] : ($property instanceof AttributeDescription || $property instanceof ExpressionDescription ? $property : null))->map(function (PropertyDescription $property) use ($entity): string {
                 if ($property instanceof AttributeDescription) {
-                    if ($property instanceof DerivedAttributeDescription) {
-                        return "{$this->prepareDerivedAttributeDescription($property)} AS $property->name";
+                    if ($property instanceof DerivedAttributeDescription && string_contains((string)$property->derivationExpression, "@")) {
+                        return "{$this->buildDerivedAttributeDescription($property)} AS $property->name";
                     }
                 } elseif ($property instanceof ExpressionDescription) {
                     $expression = $property->expression ?? throw new InvalidArgumentException();
                     if ($expression->expressionType == ExpressionType::function) {
-                        return "{$this->prepareFunctionExpression($expression)} AS $property->name";
+                        return "{$this->buildFunctionExpression($expression)} AS $property->name";
                     } elseif ($expression->expressionType == ExpressionType::conditional) {
-                        return "{$this->prepareConditionalExpression($expression)} AS $property->name";
+                        return "{$this->buildConditionalExpression($expression)} AS $property->name";
                     }
                     throw new InvalidArgumentException("invalid argument: unsupported expression $expression");
                 }
@@ -407,7 +400,7 @@ class SQLGenerator extends ObjectClass
             }
         }
     }
-    
+
     private function addJoinForToOneRelationship(SQLToOne $toOne, string $sourcePath = '', string $destinationPath = ''): void
     {
         $sourceEntity = $toOne->entity;
@@ -507,7 +500,7 @@ class SQLGenerator extends ObjectClass
                 $this->addJoinForManyToManyRelationship($relationship, $source, $destination);
             }
             $entity = $relationship->destinationEntity;
-            if ($resultType != FetchRequestResultType::countResultType) {
+            if ($resultType !== FetchRequestResultType::countResultType) {
                 $columnNames = $entity->columnsToFetch->map(fn(SQLColumn $column): string => "$destination.$column->columnName AS {$destination}_$column->columnName");
                 /** @var Dictionary<mixed>|null $dictionary */
                 $dictionary = $serialization[$name];
@@ -525,23 +518,15 @@ class SQLGenerator extends ObjectClass
                             return "$destination.$property->columnName AS {$destination}_$property->columnName";
                         } elseif ($property instanceof SQLAttribute) {
                             $attributeDescription = $property->attributeDescription;
-                            if ($attributeDescription instanceof DerivedAttributeDescription) {
-                                if ($expression = $attributeDescription->derivationExpression) {
-                                    $propertyName = "{$destination}_$attributeDescription->name";
-                                    return (function () use ($entity, $destination, $expression, $propertyName): string {
-                                        $bk = $this->entity;
-                                        $this->entity = $entity;
-                                        $result = str_replace($entity->tableName, $destination, match ($expression->expressionType) {
-                                            ExpressionType::keyPath => $this->prepareKeyPathExpression($expression),
-                                            ExpressionType::function => "{$this->prepareFunctionExpression($expression)} AS $propertyName",
-                                            ExpressionType::conditional => "{$this->prepareConditionalExpression($expression)} AS $propertyName",
-                                            default => $expression->description()
-                                        });
-                                        $this->entity = $bk;
-                                        return $result;
-                                    })();
-                                }
-                                return null;
+                            if ($attributeDescription instanceof DerivedAttributeDescription && string_contains((string)$attributeDescription->derivationExpression, "@")) {
+                                $propertyName = "{$destination}_$attributeDescription->name";
+                                return (function () use ($entity, $propertyName, $attributeDescription): string {
+                                    $bk = $this->entity;
+                                    $this->entity = $entity;
+                                    $result = $this->buildDerivedAttributeDescription($attributeDescription);
+                                    $this->entity = $bk;
+                                    return "$result AS $propertyName";
+                                })();
                             }
                             return "$destination.$property->columnName AS {$destination}_$property->columnName";
                         }
@@ -628,7 +613,7 @@ class SQLGenerator extends ObjectClass
     {
         /** @var ArrayClass<SQLProperty> $properties */
         $properties = new ArrayClass();
-        if ($expression->expressionType != ExpressionType::keyPath) {
+        if ($expression->expressionType !== ExpressionType::keyPath) {
             return $properties;
         }
         $entity = $this->entity;
@@ -673,13 +658,10 @@ class SQLGenerator extends ObjectClass
 
     private function isToManyCountKeyPath(Expression $expression): bool
     {
-        if ($expression->expressionType == ExpressionType::keyPath) {
-            return count(explode('.', (string)$expression)) > 1;
-        }
-        return false;
+        return ($expression->expressionType === ExpressionType::keyPath) && count(explode('.', (string)$expression)) > 1;
     }
 
-    private function prepareKeyPathExpression(Expression $expression): string
+    private function buildKeyPathExpression(Expression $expression): string
     {
         $tableName = $this->entity->tableName;
         $alias = $tableName;
@@ -689,8 +671,8 @@ class SQLGenerator extends ObjectClass
         foreach ($properties as $property) {
             if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
                 $propertyDescription = $property->propertyDescription;
-                if ($propertyDescription instanceof DerivedAttributeDescription) {
-                    return $this->prepareDerivedAttributeDescription($propertyDescription);
+                if ($propertyDescription instanceof DerivedAttributeDescription && string_contains((string)$propertyDescription->derivationExpression, "@")) {
+                    return $this->buildDerivedAttributeDescription($propertyDescription);
                 }
                 $alias .= ".";
                 $alias .= $property->columnName;
@@ -755,14 +737,14 @@ class SQLGenerator extends ObjectClass
         }
     }
 
-    private function prepareComparisonExpression(Expression $expression, ArrayClass &$arguments, string $prefix = "", string $suffix = ""): mixed
+    private function buildComparisonExpression(Expression $expression, ArrayClass &$arguments, string $prefix = "", string $suffix = ""): mixed
     {
         if ($expression->expressionType == ExpressionType::keyPath) {
-            return $this->prepareKeyPathExpression($expression);
+            return $this->buildKeyPathExpression($expression);
         } elseif ($expression->expressionType == ExpressionType::function) {
-            return $this->prepareFunctionExpression($expression);
+            return $this->buildFunctionExpression($expression);
         } elseif ($expression->expressionType == ExpressionType::conditional) {
-            return $this->prepareConditionalExpression($expression);
+            return $this->buildConditionalExpression($expression);
         } elseif ($expression->expressionType == ExpressionType::constantValue) {
             $constantValue = $expression->constantValue();
             if (is_string($constantValue)) {
@@ -785,10 +767,10 @@ class SQLGenerator extends ObjectClass
     {
         /** @var ArrayClass<mixed> $arguments */
         $arguments = new ArrayClass();
-        $left = $this->prepareComparisonExpression($predicate->leftExpression, $arguments, $prefix, $suffix);
-        $right = $this->prepareComparisonExpression($predicate->rightExpression, $arguments, $prefix, $suffix);
+        $left = $this->buildComparisonExpression($predicate->leftExpression, $arguments, $prefix, $suffix);
+        $right = $this->buildComparisonExpression($predicate->rightExpression, $arguments, $prefix, $suffix);
         $numberOfArguments = $arguments->count();
-        if ($numberOfArguments == 1) {
+        if ($numberOfArguments === 1) {
             $key = $arguments->first();
             if (is_string($key)) {
                 $key = str_replace([$suffix, $prefix], "", $key);
@@ -800,7 +782,7 @@ class SQLGenerator extends ObjectClass
             } else {
                 $clause .= "$left $operator $right";
             }
-        } elseif ($numberOfArguments == 2) {
+        } elseif ($numberOfArguments === 2) {
             $clause .= "? $operator ?";
         } else {
             $clause .= "$left $operator $right";
@@ -813,8 +795,8 @@ class SQLGenerator extends ObjectClass
         $leftExpression = $predicate->leftExpression;
         $rightExpression = $predicate->rightExpression;
         $right = $rightExpression->constantValue() ?? $rightExpression->collection();
-        assert($right instanceof ArrayClass && !$right->isEmpty(), sprintf("invalid parameter: the right expression of an IN operator must be an non-empty \"%s\", (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
-        $clause .= "{$this->prepareKeyPathExpression($leftExpression)} IN (" . ArrayClass::repeating('?', $right->count())->join(', ') . ")";
+        assert($right instanceof ArrayClass && !$right->isEmpty(), sprintf("invalid argument: the right expression of an IN operator must be an non-empty \"%s\", (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
+        $clause .= "{$this->buildKeyPathExpression($leftExpression)} IN (" . ArrayClass::repeating('?', $right->count())->join(', ') . ")";
         $this->arguments->appendContentsOf($right->map(fn(mixed $element): mixed => $element instanceof Expression ? $element->constantValue() : $element));
     }
 
@@ -823,8 +805,8 @@ class SQLGenerator extends ObjectClass
         $leftExpression = $predicate->leftExpression;
         $rightExpression = $predicate->rightExpression;
         $right = $rightExpression->constantValue() ?? $rightExpression->collection();
-        assert($right instanceof ArrayClass && $right->count() == 2, sprintf("invalid parameter: the right expression of a BETWEEN operator must be a \"%s\" with exactly two elements, (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
-        $clause .= "({$this->prepareKeyPathExpression($leftExpression)} BETWEEN ? AND ?)";
+        assert($right instanceof ArrayClass && $right->count() == 2, sprintf("invalid argument: the right expression of a BETWEEN operator must be a \"%s\" with exactly two elements, (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
+        $clause .= "({$this->buildKeyPathExpression($leftExpression)} BETWEEN ? AND ?)";
         $this->arguments->appendContentsOf($right->map(fn(mixed $element): mixed => $element instanceof Expression ? $element->constantValue() : $element));
     }
 
@@ -910,7 +892,7 @@ class SQLGenerator extends ObjectClass
 
     private function prepareComparisonPredicate(ComparisonPredicate $predicate, string &$clause): void
     {
-        if ($predicate->comparisonPredicateModifier != ComparisonPredicateModifier::direct) {
+        if ($predicate->comparisonPredicateModifier !== ComparisonPredicateModifier::direct) {
             if ($this->isToManyCountKeyPath($predicate->leftExpression)) {
                 $this->buildClauseWithSelectPredicate($predicate, $clause);
             }
@@ -928,7 +910,7 @@ class SQLGenerator extends ObjectClass
         if (!($expression = $expressions->first(fn(Expression $expression): bool => $expression->expressionType == ExpressionType::keyPath))) {
             throw new InvalidArgumentException();
         }
-        $preparedExpression = $this->prepareKeyPathExpression($expression);
+        $preparedExpression = $this->buildKeyPathExpression($expression);
         [$entityAlias, $columnName] = explode('.', $preparedExpression);
         $relationship = (function () use ($expression): ?SQLRelationship {
             $relationship = null;
@@ -956,57 +938,28 @@ class SQLGenerator extends ObjectClass
         $clause .= ")";
     }
 
-    /**
-     * @param string $keyPath
-     * @return string[]
-     */
-    private function componentsForKeyPath(string $keyPath): array
+    public function buildDerivedAttributeDescription(DerivedAttributeDescription $description): string
     {
-        /** @var string[] $keys */
-        $keys = [];
-        $collectionOperator = '';
-        $elements = explode('.', $keyPath);
-        foreach ($elements as $element) {
-            if (string_has_prefix($element, '@')) {
-                $collectionOperator = substring_from_index($element, 1);
-            } else {
-                $keys[] = $element;
-            }
-        }
-        $keypathToCollection = '';
-        $keypathToProperty = '';
-        $numberOfKeys = count($keys);
-        if ($numberOfKeys) {
-            $keypathToCollection = $keys[0];
-            if ($reminders = array_slice($keys, 1, $numberOfKeys)) {
-                $keypathToProperty = $reminders[0];
-            }
-        }
-        return [$keypathToCollection, $collectionOperator, $keypathToProperty];
-    }
-
-    private function prepareDerivedAttributeDescription(DerivedAttributeDescription $derivedAttribute): string
-    {
-        if ($expression = $derivedAttribute->derivationExpression) {
+        if ($expression = $description->derivationExpression) {
             switch ($expression->expressionType) {
                 case ExpressionType::keyPath:
-                    $description = $expression->description();
-                    if (in_string($description, "@")) {
+                    $keyPath = (string)$expression;
+                    if (in_string($keyPath, "@")) {
                         $entity = $this->entity;
-                        [$keypathToCollection, $collectionOperator, $keypathToProperty] = $this->componentsForKeyPath($description);
-                        if ($keypathToCollection && $collectionOperator) {
+                        [$keyPathToCollection, $collectionOperator, $keyPathToProperty] = kvc_components($keyPath);
+                        if ($keyPathToCollection && $collectionOperator) {
                             /** @var SQLRelationship|null $relationship */
-                            $relationship = $entity->propertiesByName[$keypathToCollection];
+                            $relationship = $entity->propertiesByName[$keyPathToCollection];
                             if ($relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany) {
                                 $inverseRelationship = $relationship->inverseRelationship;
                                 $destinationEntity = $relationship->destinationEntity;
-                                if (($collectionOperator === KeyValueOperator::countKeyValueOperator && $keypathToProperty) || ($collectionOperator !== KeyValueOperator::countKeyValueOperator && !$keypathToProperty)) {
+                                if (($collectionOperator === KeyValueOperator::countKeyValueOperator && $keyPathToProperty) || ($collectionOperator !== KeyValueOperator::countKeyValueOperator && !$keyPathToProperty)) {
                                     throw new InvalidArgumentException("invalid expression \"$expression\"");
                                 }
                                 /** @var ArrayClass<string|PropertyDescription> $propertiesToFetch */
                                 $propertiesToFetch = new ArrayClass([$inverseRelationship->relationshipDescription]);
                                 if ($collectionOperator !== KeyValueOperator::countKeyValueOperator) {
-                                    $propertiesToFetch->append($keypathToProperty);
+                                    $propertiesToFetch->append($keyPathToProperty);
                                 }
                                 $requestContext = $this->requestContext;
                                 $managedObjectModel = $requestContext->sqlCore->persistentStoreCoordinator->managedObjectModel;
@@ -1036,23 +989,21 @@ class SQLGenerator extends ObjectClass
                                 return $string . ")";
                             }
                         }
-                    } else {
-                        return $this->prepareKeyPathExpression($expression);
+                        throw new InvalidArgumentException("invalid argument: unsupported expression \"$expression\"");
                     }
-                    break;
+                    return $this->buildKeyPathExpression($expression);
                 case ExpressionType::function:
-                    return $this->prepareFunctionExpression($expression);
+                    return $this->buildFunctionExpression($expression);
                 case ExpressionType::conditional:
-                    return $this->prepareConditionalExpression($expression);
+                    return $this->buildConditionalExpression($expression);
                 default:
-                    break;
+                    throw new InvalidArgumentException("invalid argument: unsupported expression \"$expression\"");
             }
-            throw new InvalidArgumentException("invalid argument: unsupported expression \"$expression\"");
         }
-        throw new InvalidArgumentException("invalid argument: invalid attribute \"$derivedAttribute\"");
+        throw new InvalidArgumentException("invalid argument: invalid attribute \"$description\"");
     }
 
-    private function prepareFunctionExpression(Expression $expression): string
+    private function buildFunctionExpression(Expression $expression): string
     {
         $arguments = $expression->arguments() ?? throw new InvalidArgumentException();
         $operator = $expression->operand();
@@ -1068,7 +1019,7 @@ class SQLGenerator extends ObjectClass
                 case ExpressionOperatorType::bitwiseXorWith:
                 case ExpressionOperatorType::leftshiftBy:
                 case ExpressionOperatorType::rightshiftBy:
-                    return $arguments->map(fn(Expression $argument): mixed  => match ($argument->expressionType) {
+                    return $arguments->map(fn(Expression $argument): mixed => match ($argument->expressionType) {
                         ExpressionType::constantValue => (function () use ($argument): mixed {
                             $value = $argument->constantValue();
                             if ($value instanceof ArrayClass) {
@@ -1076,8 +1027,8 @@ class SQLGenerator extends ObjectClass
                             }
                             return $value;
                         })(),
-                        ExpressionType::function => $this->prepareFunctionExpression($argument),
-                        ExpressionType::conditional => $this->prepareConditionalExpression($argument),
+                        ExpressionType::function => $this->buildFunctionExpression($argument),
+                        ExpressionType::conditional => $this->buildConditionalExpression($argument),
                         ExpressionType::aggregate => $argument->collection()->sum(),
                         default => $argument->description(),
                     })->join(" {$operator->operatorSymbol()} ");
@@ -1145,9 +1096,9 @@ class SQLGenerator extends ObjectClass
                     }
                     return $expression->description();
                 })(),
-                ExpressionType::keyPath => $this->prepareKeyPathExpression($expression),
-                ExpressionType::function => $this->prepareFunctionExpression($expression),
-                ExpressionType::conditional => $this->prepareConditionalExpression($expression),
+                ExpressionType::keyPath => $this->buildKeyPathExpression($expression),
+                ExpressionType::function => $this->buildFunctionExpression($expression),
+                ExpressionType::conditional => $this->buildConditionalExpression($expression),
                 ExpressionType::aggregate => $expression->collection()->join(', '),
                 default => $expression->description(),
             })->join(match ($operator->operatorType()) {
@@ -1159,21 +1110,21 @@ class SQLGenerator extends ObjectClass
         throw new InvalidArgumentException("invalid argument: unsupported expression $expression");
     }
 
-    private function prepareConditionalExpression(Expression $expression): string
+    private function buildConditionalExpression(Expression $expression): string
     {
         $predicate = "";
         $this->preparePredicate($expression->predicate(), $predicate);
         $true = $expression->true();
         if ($true->expressionType == ExpressionType::keyPath) {
-            $true = $this->prepareKeyPathExpression($true);
+            $true = $this->buildKeyPathExpression($true);
         } elseif ($true->expressionType == ExpressionType::function) {
-            $true = $this->prepareFunctionExpression($true);
+            $true = $this->buildFunctionExpression($true);
         }
         $false = $expression->false();
         if ($false->expressionType == ExpressionType::keyPath) {
-            $false = $this->prepareKeyPathExpression($false);
+            $false = $this->buildKeyPathExpression($false);
         } elseif ($false->expressionType == ExpressionType::function) {
-            $false = $this->prepareFunctionExpression($false);
+            $false = $this->buildFunctionExpression($false);
         }
         return "IF($predicate, $true, $false)";
     }
@@ -1190,11 +1141,11 @@ class SQLGenerator extends ObjectClass
         $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
         $this->raisesForNotApplicableKeys = false;
         $expressions = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate());
-        $descriptors->appendContentsOf($expressions->flatMap(fn (Expression $expression): iterable => $this->relationshipsFromKeyPathExpression($expression)->compactMap(fn (SQLRelationship $relationship): ?SortDescriptor => $relationship instanceof SQLToMany && $relationship->isOrdered ? new SortDescriptor(sprintf("%s.%s", $expression->keyPath(), $relationship->inverseToOne->foreignOrderKey->columnName)) : null)));
+        $descriptors->appendContentsOf($expressions->flatMap(fn(Expression $expression): iterable => $this->relationshipsFromKeyPathExpression($expression)->compactMap(fn(SQLRelationship $relationship): ?SortDescriptor => $relationship instanceof SQLToMany && $relationship->isOrdered ? new SortDescriptor(sprintf("%s.%s", $expression->keyPath(), $relationship->inverseToOne->foreignOrderKey->columnName)) : null)));
         $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
         if (!$descriptors->isEmpty()) {
             $this->appendOrderByClauseToSQL();
-            $this->orderByClause .= $descriptors->map(fn (SortDescriptor $descriptor): string => sprintf("%s %s", $this->prepareKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? 'ASC' : 'DESC'))->join(', ');
+            $this->orderByClause .= $descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? 'ASC' : 'DESC'))->join(', ');
         }
     }
 
@@ -1256,19 +1207,27 @@ class SQLGenerator extends ObjectClass
         $columnNames = new Set();
         foreach ($updatedObjects as $updatedObject) {
             foreach ($entity->properties as $property) {
-                if ($property instanceof SQLAttribute && !$property->propertyDescription instanceof DerivedAttributeDescription) {
+                if ($property instanceof SQLAttribute || $property instanceof SQLToOne) {
                     $key = $property->name;
                     $value = $updatedObject->changedValuesForCurrentEvent()[$key];
                     if ($value !== null) {
+                        if ($property instanceof SQLToOne) {
+                            $key = $property->foreignKey->columnName;
+                        }
                         $columnNames->append($key);
                     }
                 }
             }
         }
         $this->string = "UPDATE `$entity->tableName` SET {$columnNames->map(fn(string $columnName): string => "`$columnName` = (CASE {$updatedObjects->map(function(ManagedObject $object) use ($entity, $columnName, &$arguments): string {
-            /** @var SQLAttribute $attribute */
-            $attribute = $entity->propertiesByName[$columnName];
-            $arguments->appendContentsOf([$object->objectID->referenceObject, $this->coercedValue($object, $attribute->attributeDescription)]);
+            /** @var SQLAttribute|SQLForeignKey $property */
+            $property = $entity->propertiesByName[$columnName];
+            if ($property instanceof SQLAttribute) {
+                $value = $this->coercedValue($object, $property->attributeDescription);
+            } else {
+                $value = $object->valueForKeyPath("$property->name.{$entity->primaryKey->name}");
+            }
+            $arguments->appendContentsOf([$object->objectID->referenceObject, $value]);
             return "WHEN `{$entity->primaryKey->columnName}` = ? THEN ?";
         })->join(" ")} ELSE `$columnName` END)")->join(", ")} WHERE `{$entity->primaryKey->columnName}` IN (" . ArrayClass::repeating('?', $updatedObjects->count())->join(',') . ")";
         $arguments->appendContentsOf($updatedObjects->map(fn(ManagedObject $object): string|int => $object->objectID->referenceObject));

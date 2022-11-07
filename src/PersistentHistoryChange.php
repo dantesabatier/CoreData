@@ -13,9 +13,7 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\ValueTransformer;
-
 use function Sabatier\Foundation\human_readable_value;
-
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /**
@@ -49,11 +47,11 @@ class PersistentHistoryChange extends ObjectClass
         /** @var ValueTransformer $valueTransformer */
         $valueTransformer = ValueTransformer::valueTransformerForName(SecureUnarchiveFromDataTransformerName);
         foreach ($dictionary as $key => $value) {
-            if ($key == 'changeType') {
+            if ($key === 'changeType') {
                 $value = PersistentHistoryChangeType::from($value);
-            } elseif ($key == 'tombstone') {
+            } elseif ($key === 'tombstone') {
                 $value = $valueTransformer->reverseTransformedValue($value);
-            } elseif ($key == 'updatedProperties') {
+            } elseif ($key === 'updatedProperties') {
                 /** @var Set<string>|null $updatedProperties */
                 $updatedProperties = $valueTransformer->reverseTransformedValue($value);
                 if ($updatedProperties) {
@@ -74,7 +72,7 @@ class PersistentHistoryChange extends ObjectClass
 
     /**
      * A fetch request that has the persistent history change as the entity.
-     * @return FetchRequest|null
+     * @return FetchRequest<static>|null
      */
     public static function fetchRequest(): ?FetchRequest
     {

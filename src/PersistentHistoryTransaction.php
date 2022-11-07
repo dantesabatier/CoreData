@@ -15,7 +15,6 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Notification;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
-
 use function Sabatier\Foundation\human_readable_value;
 
 /**
@@ -58,9 +57,9 @@ class PersistentHistoryTransaction extends ObjectClass
         unset($this->token);
         unset($this->transactionNumber);
         foreach ($dictionary as $key => $value) {
-            if ($key == 'transactionID') {
+            if ($key === 'transactionID') {
                 $key = 'transactionNumber';
-            } elseif ($key == 'timestamp') {
+            } elseif ($key === 'timestamp') {
                 $value = new Date(strtotime($value));
             }
             $this->$key = $value;
@@ -89,11 +88,11 @@ class PersistentHistoryTransaction extends ObjectClass
             /** @var ArrayClass<ManagedObjectID> $deletedObjectIDs */
             $deletedObjectIDs = new ArrayClass();
             foreach ($changes as $change) {
-                if ($change->changeType == PersistentHistoryChangeType::insert) {
+                if ($change->changeType === PersistentHistoryChangeType::insert) {
                     $insertedObjectIDs->append($change->changedObjectID);
-                } elseif ($change->changeType == PersistentHistoryChangeType::update) {
+                } elseif ($change->changeType === PersistentHistoryChangeType::update) {
                     $updatedObjectIDs->append($change->changedObjectID);
-                } elseif ($change->changeType == PersistentHistoryChangeType::delete) {
+                } elseif ($change->changeType === PersistentHistoryChangeType::delete) {
                     $deletedObjectIDs->append($change->changedObjectID);
                 }
             }
@@ -114,7 +113,7 @@ class PersistentHistoryTransaction extends ObjectClass
 
     /**
      * A fetch request that has the persistent history transaction as the entity.
-     * @return FetchRequest|null
+     * @return FetchRequest<static>|null
      */
     public static function fetchRequest(): ?FetchRequest
     {

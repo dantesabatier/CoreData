@@ -16,14 +16,10 @@ use Sabatier\Foundation\Bundle;
 use Sabatier\Foundation\Error;
 use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\InternalInconsistencyException;
-use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
-use Sabatier\Foundation\ProcessInfo;
 use Sabatier\Foundation\SearchPathDirectory;
 use Sabatier\Foundation\SearchPathDomainMask;
 use Sabatier\Foundation\URL;
-
-use function Sabatier\Foundation\has_escape_sequences;
 
 /**
  * Class PersistentContainer
@@ -54,29 +50,19 @@ class PersistentContainer extends ObjectClass
         unset($this->persistentStoreCoordinator);
         unset($this->persistentStoreDescriptions);
         unset($this->viewContext);
-        $environment = ProcessInfo::processInfo()->environment;
-        /** @psalm-suppress PossiblyNullArgument */
-        SQLCore::$debugDefault = (new Number($environment['COREDATA_SQL_DEBUG_LEVEL'] ?? 0))->intValue;
-        /** @psalm-suppress PossiblyNullArgument */
-        SQLCore::$coloredLoggingDefault = (new Number($environment['COREDATA_SQL_COLORED_LOGGING_DEFAULT'] ?? false))->boolValue && has_escape_sequences();
-        /** @psalm-suppress PossiblyNullArgument */
-        MigrationManager::$migrationDebugLevel = (new Number($environment['COREDATA_MIGRATION_MANAGER_DEBUG_LEVEL'] ?? 0))->intValue;
-        MappingModel::$migrationDebugLevel = MigrationManager::$migrationDebugLevel;
-        MappingModelBuilder::$migrationDebugLevel = MappingModel::$migrationDebugLevel;
     }
 
+    /**
+     * @throws Exception
+     */
     public function __get(string $name)
     {
         if ($name == 'persistentStoreDescriptions') {
-            /** @var ArrayClass<PersistentStoreDescription> $persistentStoreDescriptions */
-            $persistentStoreDescriptions = new ArrayClass();
             /** @psalm-suppress TypeDoesNotContainType, RedundantCondition */
             if (SS_COREDATA_DEBUG_XML_STORE) : // @phpstan-ignore-line
                 $fileManager = FileManager::default();
-                /** @noinspection PhpUnhandledExceptionInspection */
                 $directoryUrl = static::defaultDirectoryURL()->appendingPathComponent($this->name);
                 if (!$fileManager->fileExists($directoryUrl->path)) {
-                    /** @noinspection PhpUnhandledExceptionInspection */
                     $fileManager->createDirectory($directoryUrl, true);
                 }
                 $fileUrl = $directoryUrl->appendingPathComponent($this->name)->appendingPathExtension('xml');
@@ -90,17 +76,10 @@ class PersistentContainer extends ObjectClass
             $persistentStoreDescription->configuration = $this->name;
             $persistentStoreDescription->shouldInferMappingModelAutomatically = true;
             $persistentStoreDescription->shouldMigrateStoreAutomatically = true;
-            $persistentStoreDescriptions->append($persistentStoreDescription);
-            $this->$name = $persistentStoreDescriptions;
+            $this->$name = new ArrayClass([$persistentStoreDescription]);
             return $this->$name;
         } elseif ($name == 'managedObjectModel') {
-            $filename = $this->name;
-            $bundle = Bundle::bundleWithURL(FileManager::default()->documentRootDirectory);
-            if (!($modelUrl = $bundle->url($filename, 'plist'))) {
-                throw new InternalInconsistencyException("model \"$filename\" not found");
-            }
-            /** @noinspection PhpUnhandledExceptionInspection */
-            $this->$name = new ManagedObjectModel($modelUrl);
+            $this->$name = new ManagedObjectModel(Bundle::main()->url($this->name, 'plist'));
             return $this->$name;
         } elseif ($name == 'persistentStoreCoordinator') {
             $this->$name = new PersistentStoreCoordinator($this->managedObjectModel);
@@ -108,7 +87,6 @@ class PersistentContainer extends ObjectClass
         } elseif ($name == 'viewContext') {
             $managedObjectContext = new ManagedObjectContext();
             $managedObjectContext->persistentStoreCoordinator = $this->persistentStoreCoordinator;
-            $managedObjectContext->name = $this->name;
             $this->$name = $managedObjectContext;
             return $this->$name;
         } else {

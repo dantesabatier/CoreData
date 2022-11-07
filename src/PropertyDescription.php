@@ -160,7 +160,7 @@ abstract class PropertyDescription extends ObjectClass
         if ($other instanceof PropertyDescription) {
             return $this->entity->isEqual($other->entity) && $this->renamingIdentifier === $other->renamingIdentifier;
         }
-        return parent::isEqual($other);
+        return false;
     }
 
     public function description(): string

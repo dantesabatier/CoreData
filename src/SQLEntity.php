@@ -11,6 +11,7 @@ namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
+use function Sabatier\Foundation\string_contains;
 
 /** @internal */
 class SQLEntity extends StoreMapping
@@ -231,11 +232,11 @@ class SQLEntity extends StoreMapping
             return $this->$name;
         } elseif ($name == 'columnsToFetch') {
             /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute ? !$property->attributeDescription instanceof DerivedAttributeDescription : !$property instanceof SQLRelationship && !$property instanceof SQLForeignKey); // @phpstan-ignore-line
+            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute ? ($property->attributeDescription instanceof DerivedAttributeDescription && !string_contains((string)$property->attributeDescription->derivationExpression, '@') || !$property->attributeDescription instanceof DerivedAttributeDescription) : !$property instanceof SQLRelationship && !$property instanceof SQLForeignKey); // @phpstan-ignore-line
             return $this->$name;
         } elseif ($name == 'columnsToCreate') {
             /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute ? !$property->attributeDescription instanceof DerivedAttributeDescription : !$property instanceof SQLRelationship); // @phpstan-ignore-line
+            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute ? ($property->attributeDescription instanceof DerivedAttributeDescription && !string_contains((string)$property->attributeDescription->derivationExpression, '@') || !$property->attributeDescription instanceof DerivedAttributeDescription) : !$property instanceof SQLRelationship); // @phpstan-ignore-line
             return $this->$name;
         } elseif ($name == 'entityID') {
             $this->$name = 0;
@@ -267,6 +268,19 @@ class SQLEntity extends StoreMapping
         $by = fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value;
         $this->propertiesByName->sort($by);
         $this->properties->sort($by);
+    }
+
+    public function columnAfter(int $index): SQLColumn
+    {
+        $i = $index;
+        while ($i) {
+            $this->properties->formIndexBefore($i);
+            $property = $this->properties[$i];
+            if ($property instanceof SQLAttribute) {
+                return $property;
+            }
+        }
+        return $this->entityKey;
     }
 
     public function isKindOfSQLEntity(SQLEntity $entity): bool

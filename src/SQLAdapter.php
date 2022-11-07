@@ -11,6 +11,7 @@ namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\ObjectClass;
+use function Sabatier\Foundation\string_contains;
 
 /** @internal */
 class SQLAdapter extends ObjectClass
@@ -39,6 +40,19 @@ class SQLAdapter extends ObjectClass
         return $entity;
     }
 
+    private function generatedAlwaysColumnExpression(SQLAttribute $attribute): ?string
+    {
+        $description = $attribute->attributeDescription;
+        if ($description instanceof DerivedAttributeDescription && !string_contains((string)$description->derivationExpression, "@")) {
+            $request = new FetchRequest();
+            $request->entity = $attribute->entity->entityDescription;
+            $generator = new SQLGenerator(new SQLFetchRequestContext($request, new ManagedObjectContext(), $this->sqlCore));
+            $expression = $generator->buildDerivedAttributeDescription($description);
+            return (new SQLStatement($expression, $generator->arguments))->description();
+        }
+        return null;
+    }
+
     private function typeStringForColumn(SQLColumn $column): ?string
     {
         $sqlType = $column->sqlType;
@@ -58,15 +72,18 @@ class SQLAdapter extends ObjectClass
             $attributeDescription = $column->attributeDescription;
             $string = "`$column->name` $dataType";
             if ($length && ($length = match ($attributeDescription->type) {
-                    AttributeType::string => $attributeDescription->maxValue ?? "255",
-                    AttributeType::uri => "2048",
-                    AttributeType::transformable, AttributeType::objectID => "9999",
+                    AttributeType::string => $attributeDescription->maxValue ?? 255,
+                    AttributeType::uri => 600,
+                    AttributeType::transformable, AttributeType::objectID => 9999,
                     default => $length,
                 })) {
                 $string .= "($length)";
             }
+            if ($expression = $this->generatedAlwaysColumnExpression($column)) {
+                return "$string GENERATED ALWAYS AS ($expression) VIRTUAL";
+            }
             if ($column->isOptional) {
-                if ($sqlType == SQLType::timestamp) {
+                if ($sqlType === SQLType::timestamp) {
                     $string .= " NULL DEFAULT NULL";
                 }
             } else {

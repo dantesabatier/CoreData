@@ -89,7 +89,7 @@ class RelationshipDescription extends PropertyDescription
         assert(is_string($data));
         /** @var Dictionary<mixed> $dictionary */
         $dictionary = KeyedUnarchiver::unarchiveTopLevelObjectWithData($data);
-        if ($this->deleteRule != DeleteRule::nullifyDeleteRule) {
+        if ($this->deleteRule !== DeleteRule::nullifyDeleteRule) {
             $dictionary['deleteRule'] = $this->deleteRule->value;
         }
         $dictionary['lazyDestinationEntityName'] = $this->lazyDestinationEntityName;
@@ -112,7 +112,7 @@ class RelationshipDescription extends PropertyDescription
         if ($this->isOrdered) {
             $dictionary['isOrdered'] = $this->isOrdered;
         }
-        if ($this->deleteRule != DeleteRule::nullifyDeleteRule) {
+        if ($this->deleteRule !== DeleteRule::nullifyDeleteRule) {
             $dictionary['deleteRule'] = $this->deleteRule->value;
         }
         if ($this->maxCount) {

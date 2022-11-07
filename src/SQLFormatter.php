@@ -256,7 +256,7 @@ class SQLFormatter extends Formatter
         $originalTokens = $this->tokens($string);
         $tokens = [];
         foreach ($originalTokens as $i => $token) {
-            if ($token->type != SQLFormatterTokenType::whitespace) {
+            if ($token->type !== SQLFormatterTokenType::whitespace) {
                 $token->index = $i;
                 $tokens[] = $token;
             }
@@ -280,8 +280,8 @@ class SQLFormatter extends Formatter
             } else {
                 $added_newline = false;
             }
-            if ($token->type == SQLFormatterTokenType::comment || $token->type == SQLFormatterTokenType::blockComment) {
-                if ($token->type == SQLFormatterTokenType::blockComment) {
+            if ($token->type === SQLFormatterTokenType::comment || $token->type === SQLFormatterTokenType::blockComment) {
+                if ($token->type === SQLFormatterTokenType::blockComment) {
                     $indent = str_repeat($tab, $indentLevel);
                     $return .= "\n$indent";
                     $highlighted = str_replace("\n", "\n$indent", $highlighted);
@@ -324,7 +324,7 @@ class SQLFormatter extends Formatter
                     if ($next->value === ';' || $next->value === '(') {
                         break;
                     }
-                    if ($next->type == SQLFormatterTokenType::reservedToplevel || $next->type == SQLFormatterTokenType::reservedNewline || $next->type == SQLFormatterTokenType::comment || $next->type == SQLFormatterTokenType::blockComment) {
+                    if ($next->type === SQLFormatterTokenType::reservedToplevel || $next->type === SQLFormatterTokenType::reservedNewline || $next->type === SQLFormatterTokenType::comment || $next->type === SQLFormatterTokenType::blockComment) {
                         break;
                     }
                     $length += strlen((string)$next->value);
@@ -361,7 +361,7 @@ class SQLFormatter extends Formatter
                 if (!$added_newline) {
                     $return .= "\n" . str_repeat($tab, $indentLevel);
                 }
-            } elseif ($token->type == SQLFormatterTokenType::reservedToplevel) {
+            } elseif ($token->type === SQLFormatterTokenType::reservedToplevel) {
                 $increaseSpecialIndent = true;
                 reset($indentTypes);
                 if (current($indentTypes) === 'special') {
@@ -380,7 +380,7 @@ class SQLFormatter extends Formatter
                 if ($token->value === 'LIMIT' && !$inlineParentheses) {
                     $clauseLimit = true;
                 }
-            } elseif ($clauseLimit && $token->value !== "," && $token->type != SQLFormatterTokenType::number && $token->type != SQLFormatterTokenType::whitespace) {
+            } elseif ($clauseLimit && $token->value !== "," && $token->type !== SQLFormatterTokenType::number && $token->type !== SQLFormatterTokenType::whitespace) {
                 $clauseLimit = false;
             } elseif ($token->value === ',' && !$inlineParentheses) {
                 if ($clauseLimit) {
@@ -389,15 +389,15 @@ class SQLFormatter extends Formatter
                 } else {
                     $newline = true;
                 }
-            } elseif ($token->type == SQLFormatterTokenType::reservedNewline) {
+            } elseif ($token->type === SQLFormatterTokenType::reservedNewline) {
                 if (!$added_newline) {
                     $return .= "\n" . str_repeat($tab, $indentLevel);
                 }
                 if (str_contains((string)$token->value, ' ') || str_contains((string)$token->value, "\n") || str_contains((string)$token->value, "\t")) {
                     $highlighted = preg_replace('/\s+/', ' ', $highlighted);
                 }
-            } elseif ($token->type == SQLFormatterTokenType::boundary) {
-                if (isset($tokens[$i - 1]) && $tokens[$i - 1]->type == SQLFormatterTokenType::boundary && (isset($originalTokens[$token->index - 1]) && $originalTokens[$token->index - 1]->type != SQLFormatterTokenType::whitespace)) {
+            } elseif ($token->type === SQLFormatterTokenType::boundary) {
+                if (isset($tokens[$i - 1]) && $tokens[$i - 1]->type === SQLFormatterTokenType::boundary && (isset($originalTokens[$token->index - 1]) && $originalTokens[$token->index - 1]->type !== SQLFormatterTokenType::whitespace)) {
                     $return = rtrim($return, ' ');
                 }
             }
@@ -410,7 +410,7 @@ class SQLFormatter extends Formatter
             }
             if ($token->value === '-' && isset($tokens[$i + 1]) && $tokens[$i + 1]->type === SQLFormatterTokenType::number && isset($tokens[$i - 1])) {
                 $prev = $tokens[$i - 1]->type;
-                if ($prev != SQLFormatterTokenType::quote && $prev != SQLFormatterTokenType::backtickQuote && $prev != SQLFormatterTokenType::word && $prev != SQLFormatterTokenType::number) {
+                if ($prev !== SQLFormatterTokenType::quote && $prev !== SQLFormatterTokenType::backtickQuote && $prev !== SQLFormatterTokenType::word && $prev !== SQLFormatterTokenType::number) {
                     $return = rtrim($return, ' ');
                 }
             }

@@ -360,23 +360,23 @@ class SQLCore extends IncrementalStore
     {
         $context = new ManagedObjectContext();
         $context->persistentStoreCoordinator = $this->persistentStoreCoordinator;
-        $context = new SQLObjectIDSetFetchRequestContext($request, $context, $this, $sourceObjectIDs, $orderColumnName);
-        $context->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
-        return $context->result;
+        $requestContext = new SQLObjectIDSetFetchRequestContext($request, $context, $this, $sourceObjectIDs, $orderColumnName);
+        $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
+        return $requestContext->result;
     }
 
     public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): mixed
     {
-        $context = new SQLRelationshipFaultRequestContext($objectID, $relationship, $this);
-        $context->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
-        return $context->result;
+        $requestContext = new SQLRelationshipFaultRequestContext($objectID, $relationship, $context, $this);
+        $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
+        return $requestContext->result;
     }
 
     public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): ?IncrementalStoreNode
     {
-        $context = new SQLObjectFaultRequestContext($objectID, $context, $this);
-        $context->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
-        $values = $context->result;
+        $requestContext = new SQLObjectFaultRequestContext($objectID, $context, $this);
+        $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
+        $values = $requestContext->result;
         if (!$values instanceof Dictionary) {
             return null;
         }
@@ -404,5 +404,9 @@ class SQLCore extends IncrementalStore
     public function load(): bool
     {
         return true;
+    }
+
+    public function ensureDatabaseMatchesModel(): void
+    {
     }
 }
