@@ -356,10 +356,8 @@ class SQLCore extends IncrementalStore
     /**
      * @throws Exception
      */
-    public function newObjectIDSetsForToManyPrefetchingRequest(FetchRequest $request, ArrayClass $sourceObjectIDs, string $orderColumnName): mixed
+    public function newObjectIDSetsForToManyPrefetchingRequest(FetchRequest $request, ArrayClass $sourceObjectIDs, string $orderColumnName, ManagedObjectContext $context): mixed
     {
-        $context = new ManagedObjectContext();
-        $context->persistentStoreCoordinator = $this->persistentStoreCoordinator;
         $requestContext = new SQLObjectIDSetFetchRequestContext($request, $context, $this, $sourceObjectIDs, $orderColumnName);
         $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
         return $requestContext->result;

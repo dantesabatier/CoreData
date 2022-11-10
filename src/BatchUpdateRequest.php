@@ -11,7 +11,6 @@ namespace Sabatier\CoreData;
 
 use JetBrains\PhpStorm\Pure;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\Expression;
 use Sabatier\Foundation\Predicate;
 
 /**
