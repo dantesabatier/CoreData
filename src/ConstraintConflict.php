@@ -9,11 +9,10 @@ use Sabatier\Foundation\ObjectClass;
 use function Sabatier\Foundation\human_readable_value;
 
 /**
- * Class ConstraintConflict
  * An encapsulation of conflicts that occur during an attempt to save a managed object.
+ *
  * A constraint conflict occurs when your data model is using unique constraints and one or more managed objects are violating that constraint.
  * When this error occurs, the error instance can be interrogated to determine which instance of {@see ManagedObject} is violating the constraint and which property on the {@see ManagedObject} instance is in violation.
- * @package Sabatier\CoreData
  */
 class ConstraintConflict extends ObjectClass
 {

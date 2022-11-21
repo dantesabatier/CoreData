@@ -112,7 +112,6 @@ class SQLEntity extends StoreMapping
             $this->$name = $this->superentity === null;
             return $this->$name;
         } elseif ($name == 'rootEntity') {
-            /** @var SQLEntity|null $superentity */
             $superentity = $this->superentity;
             $rootEntity = $superentity;
             while ($superentity) {
@@ -163,7 +162,6 @@ class SQLEntity extends StoreMapping
             };
             /** @var Dictionary<SQLProperty> $propertiesByName */
             $propertiesByName = $this->entityDescription->propertiesByName->compactMapValues($transform);
-            /** @var EntityDescription $subentity */
             foreach ($this->entityDescription->subentities as $subentity) {
                 /** @psalm-suppress InvalidArgument */
                 $propertiesByName->merge($subentity->propertiesByName->compactMapValues($transform));
@@ -251,15 +249,15 @@ class SQLEntity extends StoreMapping
 
     public function generateInverseRelationshipsAndMore(): void
     {
-        //HACK: we cannot use the array access syntax to initialize this property on PHP 8.1.9, because it complains about an indirect modification. Initialize the property first then make changes
-        $this->propertiesByName->setValueForKey($this->primaryKey, $this->primaryKey->columnName);
+        $propertiesByName = $this->propertiesByName;
+        $propertiesByName[$this->primaryKey->columnName] = $this->primaryKey;
         if (!$this->entityDescription->isPersistentHistoryEntity) {
-            $this->propertiesByName[$this->entityKey->columnName] = $this->entityKey;
+            $propertiesByName[$this->entityKey->columnName] = $this->entityKey;
         }
-        /** @var SQLForeignKey $foreignKeyColumn */
+        $properties = $this->properties;
         foreach ($this->foreignKeyColumns as $foreignKeyColumn) {
-            $this->propertiesByName[$foreignKeyColumn->columnName] = $foreignKeyColumn;
-            $this->properties->append($foreignKeyColumn);
+            $propertiesByName[$foreignKeyColumn->columnName] = $foreignKeyColumn;
+            $properties->append($foreignKeyColumn);
         }
     }
 
@@ -272,10 +270,11 @@ class SQLEntity extends StoreMapping
 
     public function columnAfter(int $index): SQLColumn
     {
+        $properties = $this->properties;
         $i = $index;
         while ($i) {
-            $this->properties->formIndexBefore($i);
-            $property = $this->properties[$i];
+            $properties->formIndexBefore($i);
+            $property = $properties[$i];
             if ($property instanceof SQLAttribute) {
                 return $property;
             }

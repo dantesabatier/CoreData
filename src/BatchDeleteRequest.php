@@ -12,9 +12,7 @@ namespace Sabatier\CoreData;
 use JetBrains\PhpStorm\Pure;
 
 /**
- * Class BatchDeleteRequest
  * A request that deletes objects in the SQL persistent store without loading them into memory.
- * @package Sabatier\CoreData
  */
 class BatchDeleteRequest extends PersistentStoreRequest
 {

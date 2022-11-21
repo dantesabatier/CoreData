@@ -10,9 +10,7 @@
 namespace Sabatier\CoreData;
 
 /**
- * Class PersistentHistoryResultType
  * The types of results from a persistent history change request.
- * @package Sabatier\CoreData
  */
 enum PersistentHistoryResultType: int
 {

@@ -22,9 +22,7 @@ use function Sabatier\Foundation\human_readable_time;
 use function Sabatier\Foundation\typeof;
 
 /**
- * Class MigrationManager
  * A migration manager instance that performs a migration of data from one persistent store to another using a given mapping model.
- * @package Sabatier\CoreData
  * @psalm-consistent-constructor
  * @property-read float $migrationProgress A number between 0 and 1 that indicates the proportion of completeness of the migration. If a migration is not taking place, this property is 1. You can observe this value using key-value observing.
  * @property-read EntityMapping|null $currentEntityMapping The entity mapping currently being processed.
@@ -269,6 +267,7 @@ class MigrationManager extends ObjectClass
 
     /**
      * Migrates the store at a given source URL to the store at a given destination URL, performing all the mappings specified in a given mapping model.
+     *
      * This method performs compatibility checks on the source and destination models and the mapping model.
      * @param URL $sourceURL The location of an existing persistent store. A store must exist at this URL.
      * @param PersistentStoreType $sourceType The type of store at sourceURL (see {@see PersistentStoreCoordinator} for possible values).
@@ -318,6 +317,7 @@ class MigrationManager extends ObjectClass
 
     /**
      * Cancels the migration with a given error.
+     *
      * You can invoke this method from anywhere in the migration process to abort the migration.
      * Calling this method causes {@see migrateStore()} to abort the migration and return error you should provide an appropriate error to indicate the reason for the cancellation.
      * @param Error $error
@@ -330,6 +330,7 @@ class MigrationManager extends ObjectClass
 
     /**
      * Associates a given source managed object instance with an array of destination instances for a given property mapping.
+     *
      * Data migration is performed as a three-stage process (first create the data, then relate the data, then validate the data).
      * You use this method to associate data between the source and destination stores, in order to allow for relationship creation or fixup after the creation stage.
      * This method is called in the default implementation of {@see EntityMigrationPolicy::createDestinationInstances()} method.
@@ -390,6 +391,7 @@ class MigrationManager extends ObjectClass
 
     /**
      * Returns the entity description for the source entity of a given entity mapping.
+     *
      * Entity mappings do not store the actual description objects, but rather the name and version information of the entity.
      * @param EntityMapping $entityMapping An entity mapping.
      * @return EntityDescription|null The entity description for the source entity of entityMapping.
@@ -403,7 +405,8 @@ class MigrationManager extends ObjectClass
     }
 
     /**
-     * Returns the entity description for the destination entity of a given entity mapping
+     * Returns the entity description for the destination entity of a given entity mapping.
+     *
      * Entity mappings do not store the actual description objects, but rather the name and version information of the entity.
      * @param EntityMapping $entityMapping An entity mapping.
      * @return EntityDescription|null The entity description for the destination entity of $entityMapping.

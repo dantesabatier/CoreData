@@ -47,7 +47,12 @@ class BatchFaultingArray extends ArrayClass
         invalid_mutation();
     }
 
-    public function insert(mixed $element, int $at): void
+    public function insert(mixed $newElement): array
+    {
+        invalid_mutation();
+    }
+
+    public function insertAt(mixed $element, int $at): void
     {
         invalid_mutation();
     }
@@ -79,7 +84,7 @@ class BatchFaultingArray extends ArrayClass
         $this->cursor += 1;
         return $result;
     }
-    
+
     public function current(): ManagedObjectID|ManagedObject
     {
         $objectID = $this->objectIDs->current();

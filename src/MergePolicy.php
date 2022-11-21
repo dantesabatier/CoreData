@@ -19,19 +19,19 @@ use Sabatier\Foundation\ObjectClass;
 use const Sabatier\Foundation\CocoaErrorDomain;
 
 /**
- * Class MergePolicy
  * A policy object that you use to resolve conflicts between the persistent store and in-memory versions of managed objects.
+ *
  * A conflict is a mismatch between state held at two different layers in the Core Data stack. A conflict can arise when you save a managed object context, and you have stale data at another layer.
  * There are two places in which a conflict may occur:
  * Between the managed object context layer and its in-memory cached state at the persistent store coordinator layer.
  * Between the cached state at the persistent store coordinator and the external store (file, database, and so forth).
  * Conflicts are represented by instances of {@see MergeConflict}.
- * @package Sabatier\CoreData
  */
 class MergePolicy extends ObjectClass
 {
     /**
      * Returns a merge policy initialized with a given policy type.
+     *
      * If you override this method in a subclass, you should invoke the superclass implementation with the merge policy that is closest to the behavior you want.
      * This will make it easier to use the superclass implementation of {@see resolveConflicts()} and then customize the results.
      * Due to the complexity of merging to-many relationships, this class is designed with the expectation that you call super as the base implementation.
@@ -43,6 +43,7 @@ class MergePolicy extends ObjectClass
 
     /**
      * Resolves the conflicts in a given list.
+     *
      * If you override this method in a subclass, you should typically invoke the superclass implementation in
      * addition to performing your own operations.
      * @param ArrayClass<MergeConflict> $list An array of merge conflicts (instances of {@see MergeConflict}).

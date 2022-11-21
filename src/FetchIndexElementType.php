@@ -10,9 +10,7 @@
 namespace Sabatier\CoreData;
 
 /**
- * Class FetchIndexElementType
  * Defines the possible types of index elements.
- * @package Sabatier\CoreData
  */
 enum FetchIndexElementType: int
 {

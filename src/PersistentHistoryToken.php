@@ -14,10 +14,8 @@ use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
 
 /**
- * Class PersistentHistoryToken
  * A bookmark for keeping track the most recent history that you've processed.
  * You can save a token to disk and fetch history when your app loads based on that token.
- * @package Sabatier\CoreData
  */
 class PersistentHistoryToken extends ObjectClass
 {

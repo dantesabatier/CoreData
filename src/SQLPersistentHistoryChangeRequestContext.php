@@ -4,16 +4,15 @@ namespace Sabatier\CoreData;
 
 use Exception;
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\ComparisonPredicate;
-use Sabatier\Foundation\CompoundPredicate;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\Expression;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Number;
-use Sabatier\Foundation\PredicateOperatorType;
+use Sabatier\Foundation\Predicates\ComparisonPredicate;
+use Sabatier\Foundation\Predicates\CompoundPredicate;
+use Sabatier\Foundation\Predicates\Expression;
+use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\ValueTransformer;
-
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /** @internal */

@@ -10,9 +10,7 @@
 namespace Sabatier\CoreData;
 
 /**
- * Class BatchDeleteRequestResultType
  * Result types for a batch-deletion request
- * @package Sabatier\CoreData
  */
 enum BatchDeleteRequestResultType: int
 {

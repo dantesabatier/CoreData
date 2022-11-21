@@ -13,9 +13,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Number;
 
 /**
- * Class BatchUpdateResult
  * The result returned when executing a batch update request.
- * @package Sabatier\CoreData
  */
 class BatchUpdateResult extends PersistentStoreResult
 {

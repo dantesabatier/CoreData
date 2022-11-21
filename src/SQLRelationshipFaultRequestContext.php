@@ -3,9 +3,9 @@
 namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\ComparisonPredicate;
-use Sabatier\Foundation\Expression;
 use Sabatier\Foundation\InternalInconsistencyException;
+use Sabatier\Foundation\Predicates\ComparisonPredicate;
+use Sabatier\Foundation\Predicates\Expression;
 
 /** @internal */
 class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext

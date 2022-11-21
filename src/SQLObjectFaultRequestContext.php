@@ -3,10 +3,10 @@
 namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\ComparisonPredicate;
-use Sabatier\Foundation\CompoundPredicate;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\Expression;
+use Sabatier\Foundation\Predicates\ComparisonPredicate;
+use Sabatier\Foundation\Predicates\CompoundPredicate;
+use Sabatier\Foundation\Predicates\Expression;
 
 /** @internal */
 class SQLObjectFaultRequestContext extends SQLStoreRequestContext

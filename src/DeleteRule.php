@@ -3,15 +3,12 @@
 /**
  * @author Dante Sabatier <dantesabatier@me.com>
  * @version 1.0
- * @package Sabatier\CoreData
  */
 
 namespace Sabatier\CoreData;
 
 /**
- * Enum DeleteRule
  * Constants that determine what happens when you delete a relationship's owning managed object.
- * @package Sabatier\CoreData
  */
 enum DeleteRule: int
 {

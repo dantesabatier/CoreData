@@ -11,12 +11,10 @@ namespace Sabatier\CoreData;
 
 use JetBrains\PhpStorm\Pure;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\Predicate;
+use Sabatier\Foundation\Predicates\Predicate;
 
 /**
- * Class BatchUpdateRequest
  * A request to Core Data to do a batch update of data in a persistent store without loading any data into memory.
- * @package Sabatier\CoreData
  */
 class BatchUpdateRequest extends PersistentStoreRequest
 {

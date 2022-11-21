@@ -10,7 +10,7 @@
 namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\Expression;
+use Sabatier\Foundation\Predicates\Expression;
 
 /** @internal */
 class MappingModelBuilder

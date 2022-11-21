@@ -3,15 +3,12 @@
 /**
  * @author Dante Sabatier <dantesabatier@me.com>
  * @version 1.0
- * @package Sabatier\CoreData
  */
 
 namespace Sabatier\CoreData;
 
 /**
- * Enum AttributeType
  * The types of attributes that Core Data supports.
- * @package Sabatier\CoreData
  */
 enum AttributeType: int
 {

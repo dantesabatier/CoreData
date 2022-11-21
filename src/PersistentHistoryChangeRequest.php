@@ -14,9 +14,7 @@ use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Number;
 
 /**
- * Class PersistentHistoryChangeRequest
  * A request to fetch or purge persistent history.
- * @package Sabatier\CoreData
  */
 class PersistentHistoryChangeRequest extends PersistentStoreRequest
 {

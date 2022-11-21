@@ -13,9 +13,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\ObjectClass;
 
 /**
- * Class PersistentStoreRequest
  * Criteria used to retrieve data from or save data to a persistent store.
- * @package Sabatier\CoreData
  */
 class PersistentStoreRequest extends ObjectClass
 {

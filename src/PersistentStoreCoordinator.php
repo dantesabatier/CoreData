@@ -29,9 +29,7 @@ use const Sabatier\Foundation\CocoaErrorDomain;
 use const Sabatier\Foundation\LocalizedFailureReasonErrorKey;
 
 /**
- * Class PersistentStoreCoordinator
  * A coordinator that uses the model to help contexts and persistent stores communicate.
- * @package Sabatier\CoreData
  */
 class PersistentStoreCoordinator extends ObjectClass
 {
@@ -64,6 +62,7 @@ class PersistentStoreCoordinator extends ObjectClass
 
     /**
      * Registers a given PersistentStore subclass for a given store type string.
+     *
      * You must invoke this method before a custom subclass of PersistentStore can be loaded into a persistent store coordinator.
      * You can pass nil for storeClass to unregister the store type.
      * @param class-string<PersistentStore>|null $persistentStoreClass The PersistentStore subclass to use for the store of type storeType.
@@ -77,6 +76,7 @@ class PersistentStoreCoordinator extends ObjectClass
 
     /**
      * Returns a dictionary of the registered store types.
+     *
      * A dictionary of the registered store types—the keys are the store type strings, and the values are the {@see PersistentStore} subclasses.
      * @return Dictionary<class-string<PersistentStore>>
      */
@@ -264,6 +264,7 @@ class PersistentStoreCoordinator extends ObjectClass
 
     /**
      * Moves a persistent store to a new location, changing the storage type if necessary.
+     *
      * This method is typically used for "Save As" operations.
      * Performance may vary depending on the type of old and new store.
      * After invocation of this method, the specified store is removed from the coordinator thus store is no longer a useful reference.
@@ -372,6 +373,7 @@ class PersistentStoreCoordinator extends ObjectClass
 
     /**
      * Returns a single persistent history token for the specified persistent stores.
+     *
      * If stores is nil or an empty array, constructs a persistent history token with all the persistent stores in the coordinator.
      * @param ArrayClass<PersistentStore>|null $stores
      * @return PersistentHistoryToken|null

@@ -3,7 +3,6 @@
 /**
  * @author Dante Sabatier <dantesabatier@me.com>
  * @version 1.0
- * @package Sabatier\CoreData
  */
 
 namespace Sabatier\CoreData;
@@ -19,9 +18,7 @@ use function Sabatier\Foundation\request_concrete_implementation;
 use function Sabatier\Foundation\uuid_generate;
 
 /**
- * Class PersistentStore
  * The abstract base class for all Core Data persistent stores.
- * @package Sabatier\CoreData
  * @psalm-consistent-constructor
  */
 abstract class PersistentStore extends ObjectClass
@@ -37,6 +34,7 @@ abstract class PersistentStore extends ObjectClass
 
     /**
      * Returns a store initialized with the given arguments.
+     *
      * You must ensure that you load metadata during initialization and set it using {@see $metadata}.
      * @param PersistentStoreCoordinator $persistentStoreCoordinator A persistent store coordinator.
      * @param string $configurationName The name of the managed object model configuration to use.
@@ -156,6 +154,7 @@ abstract class PersistentStore extends ObjectClass
 
     /**
      * Returns the reference object for a given managed object ID.
+     *
      * Subclasses should invoke this method to extract the reference data from the object ID for each cache node if the data is to be made persistent.
      * @param ManagedObjectID $objectID A managed object ID.
      * @return int|string The reference object for objectID.
@@ -167,6 +166,7 @@ abstract class PersistentStore extends ObjectClass
 
     /**
      * Returns a new reference object for a given managed object.
+     *
      * This method is invoked by the framework after a save operation on a managed object context, once for each newly-inserted managed object.
      * The value returned is used to create a permanent ID for the object and must be unique for an instance within its entity's inheritance hierarchy (in this store).
      * You must override this method.
@@ -219,6 +219,7 @@ abstract class PersistentStore extends ObjectClass
 
     /**
      * Invoked after the persistent store has been added to the persistent store coordinator.
+     *
      * The default implementation does nothing.
      * You can override this method in a subclass in order to perform any kind of setup necessary before the load method is invoked.
      * @param PersistentStoreCoordinator $coordinator The persistent store coordinator to which the receiver was added.
@@ -229,6 +230,7 @@ abstract class PersistentStore extends ObjectClass
 
     /**
      * Invoked before the persistent store is removed from the persistent store coordinator.
+     *
      * The default implementation does nothing.
      * You can override this method in a subclass in order to perform any clean-up before the store is removed from the coordinator (and deallocated).
      * @param PersistentStoreCoordinator $coordinator The persistent store coordinator from which the receiver was removed.
@@ -239,6 +241,7 @@ abstract class PersistentStore extends ObjectClass
 
     /**
      * Returns the migration manager class for this store class.
+     *
      * In a subclass of PersistentStore, you can override this to provide a custom migration manager subclass
      * (for example, to take advantage of store-specific functionality to improve migration performance).
      * @return class-string<MigrationManager> The {@see MigrationManager} class for this store class

@@ -3,7 +3,6 @@
 /**
  * @author Dante Sabatier <dantesabatier@me.com>
  * @version 1.0
- * @package Sabatier\CoreData
  */
 
 namespace Sabatier\CoreData;
@@ -20,9 +19,8 @@ use Sabatier\Foundation\ValueTransformer;
 use function Sabatier\Foundation\human_readable_value;
 
 /**
- * Class AttributeDescription
  * A description of an attribute of a Core Data entity.
- * @package Sabatier\CoreData
+ * 
  * @property mixed $defaultValue The default value of the attribute.
  */
 class AttributeDescription extends PropertyDescription

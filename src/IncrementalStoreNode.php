@@ -13,9 +13,7 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
 
 /**
- * Class IncrementalStoreNode
  * A concrete class used to represent basic nodes in a Core Data incremental store.
- * @package Sabatier\CoreData
  */
 class IncrementalStoreNode extends ObjectClass
 {

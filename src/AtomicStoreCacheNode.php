@@ -13,9 +13,7 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
 
 /**
- * Class AtomicStoreCacheNode
  * A concrete class that you use to represent basic nodes in a Core Data atomic store.
- * @package Sabatier\CoreData
  */
 class AtomicStoreCacheNode extends ObjectClass
 {
@@ -33,6 +31,7 @@ class AtomicStoreCacheNode extends ObjectClass
 
     /**
      * Returns the value for a given key.
+     *
      * The default implementation forwards the request to the {@see propertyCache()} dictionary if key matches a property name of the entity for the cache node. If key does not represent a property, the standard {@see ObjectClass::valueForKey()} implementation is used.
      * @param string $key The name of a property.
      * @return mixed The value for the property named key. For an attribute, the return value is an instance of an attribute type supported by Core Data (see {@see AttributeDescription}); for a to-one relationship, the return value must be another cache node instance; for a to-many relationship, the return value must be a collection of the related cache nodes.
@@ -47,6 +46,7 @@ class AtomicStoreCacheNode extends ObjectClass
 
     /**
      * Sets the value for the given key.
+     *
      * The default implementation forwards the request to the {@see propertyCache()} dictionary if key matches a property name of the entity for this cache node. If key does not represent a property, the standard {@see ObjectClass::setValueForKey()} implementation is used.
      * @param mixed $value The value for the property identified by key.
      * @param string $key The name of a property.

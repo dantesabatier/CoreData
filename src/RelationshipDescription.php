@@ -3,7 +3,6 @@
 /**
  * @author Dante Sabatier <dantesabatier@me.com>
  * @version 1.0
- * @package Sabatier\CoreData
  */
 
 namespace Sabatier\CoreData;
@@ -17,10 +16,9 @@ use Sabatier\Foundation\KeyedUnarchiver;
 use function Sabatier\Foundation\human_readable_value;
 
 /**
- * Class RelationshipDescription
  * A description of a relationship of a Core Data entity.
+ *
  * RelationshipDescription extends PropertyDescription to describe features appropriate to relationships, including cardinality (the number of objects allowed in the relationship), the destination entity, and delete rules.
- * @package Sabatier\CoreData
  */
 class RelationshipDescription extends PropertyDescription
 {

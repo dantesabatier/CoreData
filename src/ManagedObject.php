@@ -6,19 +6,19 @@ use Exception;
 use InvalidArgumentException;
 use JetBrains\PhpStorm\ExpectedValues;
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\ComparisonPredicate;
 use Sabatier\Foundation\ComparisonResult;
-use Sabatier\Foundation\CompoundPredicate;
 use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Error;
-use Sabatier\Foundation\Expression;
-use Sabatier\Foundation\ExpressionType;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyValueChange;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
+use Sabatier\Foundation\Predicates\ComparisonPredicate;
+use Sabatier\Foundation\Predicates\CompoundPredicate;
+use Sabatier\Foundation\Predicates\Expression;
+use Sabatier\Foundation\Predicates\ExpressionType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
@@ -33,9 +33,8 @@ use const Sabatier\Foundation\NotFound;
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /**
- * Class ManagedObject
  * A base class that implements the behavior required of a Core Data model object.
- * @package Sabatier\CoreData
+ *
  * @property-read bool $isInserted A Boolean value that indicates whether the managed object has been inserted in a managed object context.
  * @property-read bool $isUpdated A Boolean value that indicates whether the managed object has unsaved changes.
  * @property-read bool $isDeleted A Boolean value that indicates whether the managed object will be deleted during the next save.
@@ -52,6 +51,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public readonly EntityDescription $entity;
     /** @var ManagedObjectID The object ID of the managed object. If the receiver is a fault, accessing this property does not cause it to fire. If the receiver has not yet been saved, the object ID is a temporary value that will change when the object is saved. */
     public ManagedObjectID $objectID;
+    public readonly ManagedObjectContext $managedObjectContext;
     private Dictionary $changedValues;
     private Dictionary $changedValuesForCurrentEvent;
     /** @var bool A Boolean value that indicates whether the managed object is a fault. Knowing whether an object is a fault is useful in many situations when computations are optional. It can also be used to avoid growing the object graph unnecessarily (which may improve performance as it can avoid time-consuming fetches from data stores). If this property is false, then the receiver's data must be in memory. However, if this property is true, it does not mean that the data is not in memory. The data may be in memory, or it may not, depending on many factors influencing caching. If the receiver is a fault, accessing this property does not cause it to fire. */
@@ -96,7 +96,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * The model associated with context's persistent store coordinator must contain entity.
      * If the receiver is a fault, accessing this property does not cause it to fire.
      */
-    public function __construct(public readonly ManagedObjectContext $managedObjectContext, ?EntityDescription $entity = null)
+    public function __construct(ManagedObjectContext $managedObjectContext, ?EntityDescription $entity = null)
     {
         if ($this->isSubclass(ManagedObject::class)) {
             $entity ??= static::entity();
@@ -110,6 +110,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         unset($this->changedValues);
         unset($this->changedValuesForCurrentEvent);
         unset($this->objectID);
+        $this->managedObjectContext = $managedObjectContext;
         $this->entity = $entity ?? throw new InvalidArgumentException("invalid argument: entity cannot be null");
         $this->managedObjectContext->insert($this);
     }
@@ -203,6 +204,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Returns the entity description that is associated with this subclass.
+     *
      * This method is only legal to call on subclasses of ManagedObject that represent a single entity in the model.
      * @return EntityDescription
      */
@@ -213,6 +215,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Returns a Boolean value that indicates whether the relationship for a given key is a fault.
+     *
      * If the specified relationship is a fault, calling this method does not result in the fault firing.
      * @param string $key The name of one of the receiver's relationships.
      * @return bool true if the relationship for the key is a fault, otherwise false.
@@ -240,10 +243,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Provides an opportunity to add code into the life cycle of the managed object when fulfilling it from a fault.
-     * You typically use this method to compute derived values or to recreate transient relationships from the receiver's persistent properties.
-     * The managed object context's change processing is explicitly disabled around this method so that you can use public setters to establish transient values and other caches without dirtying the object or its context.
-     * Because of this, however, you should not modify relationships in this method as the inverse will not be set.
-     * Subclasses must invoke super's implementation before performing their own initialization.
+     *
+     * You typically use this method to compute derived values or to recreate transient relationships from the receiver's persistent properties. The managed object context's change processing is explicitly disabled around this method so that you can use public setters to establish transient values and other caches without dirtying the object or its context. Because of this, however, you should not modify relationships in this method as the inverse will not be set. Subclasses must invoke super's implementation before performing their own initialization.
      */
     public function awakeFromFetch(): void
     {
@@ -251,11 +252,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Provides an opportunity to add code into the life cycle of the managed object when initially creating it.
-     * You typically use this method to initialize special default property values.
-     * This method is invoked only once in the object's lifetime.
-     * If you want to set attribute values in an implementation of this method, you should typically use primitive accessor methods (either {@see setPrimitiveValueForKey()} or better the appropriate custom primitive accessors).
-     * This ensures that the new values are treated as baseline values rather than being recorded as undoable changes for the properties in question.
-     * Subclasses must invoke super's implementation before performing their own initialization.
+     *
+     * You typically use this method to initialize special default property values. This method is invoked only once in the object's lifetime. If you want to set attribute values in an implementation of this method, you should typically use primitive accessor methods (either {@see setPrimitiveValueForKey()} or better the appropriate custom primitive accessors). This ensures that the new values are treated as baseline values rather than being recorded as undoable changes for the properties in question. Subclasses must invoke super's implementation before performing their own initialization.
      */
     public function awakeFromInsert(): void
     {
@@ -293,9 +291,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Provides an opportunity to add code into the life cycle of the managed object when fulfilling it from a snapshot.
-     * You typically use this method to compute derived values or to recreate transient relationships from the receiver's persistent properties.
-     * If you want to set attribute values and need to avoid emitting key-value observation change notifications, you should use primitive accessor methods (either {@see setPrimitiveValue()} or better the appropriate custom primitive accessors). This ensures that the new values are treated as baseline values rather than being recorded as undoable changes for the properties in question.
-     * Subclasses must invoke super's implementation before performing their own initialization.
+     *
+     * You typically use this method to compute derived values or to recreate transient relationships from the receiver's persistent properties. If you want to set attribute values and need to avoid emitting key-value observation change notifications, you should use primitive accessor methods (either {@see setPrimitiveValue()} or better the appropriate custom primitive accessors). This ensures that the new values are treated as baseline values rather than being recorded as undoable changes for the properties in question. Subclasses must invoke super's implementation before performing their own initialization.
      * @param int $flags A bit mask of {@see SnapshotEventType} constants to denote the event or events that led to the method being invoked.
      * For possible values, see {@see SnapshotEventType}.
      */
@@ -305,6 +302,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Returns a dictionary containing the keys and new values of persistent properties with changes since the last fetching or saving of the managed object.
+     *
      * This method only reports changes to properties that are persistent properties of the receiver, not changes to transient properties or custom instance variables.
      * @return Dictionary A dictionary with keys that are the names of persistent properties with changes since last fetching or saving the receiver, and with the new values for those properties.
      */
@@ -317,6 +315,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Returns a dictionary containing the keys and new values of persistent properties with changes since the last fetching or saving of the managed object.
+     *
      * This method only reports changes to properties that are persistent properties of the receiver, not changes to transient properties or custom instance variables.
      * @return Dictionary A dictionary with keys that are the names of persistent properties with changes since the last posting of {@see ManagedObjectContextObjectsDidChange}, and with the new values for those properties.
      */
@@ -327,6 +326,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Returns a dictionary of the most recent fetched or saved values of the managed object for the properties of the specified keys. nil values are represented by {@see Nil}.
+     *
      * This method only reports values of properties that are defined as persistent properties of the receiver, not values of transient properties or of custom instance variables.
      * You can invoke this method with the keys value of nil to retrieve committed values for all the receiver's properties, as illustrated by the following example.
      * <code>
@@ -368,6 +368,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Provides an opportunity to add code into the life cycle of the managed object before converting it to a fault.
+     *
      * This method is the companion of the {@see didTurnIntoFault()} method. You can use it to (re)set state which requires access to property values (for example, observers across key paths).
      * The default implementation does nothing.
      */
@@ -377,6 +378,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Provides an opportunity to add code into the life cycle of the managed object after converting it to a fault.
+     *
      * You use this method to clear out custom data caches transient values declared as entity properties are typically already cleared out by the time this method is invoked (see, for example, {@see ManagedObjectContext::refresh()}).
      */
     public function didTurnIntoFault(): void
@@ -385,6 +387,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Returns an initialized fetch request with the entity this subclass represents.
+     *
      * This method is only legal to call on subclasses of ManagedObject that represent a single entity in the model.
      * @return FetchRequest<static>
      */
@@ -434,6 +437,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Returns the value for the specified property from the managed object's private internal storage.
+     *
      * This method does not invoke the access notification methods ({@see willAccessValueForKey()} and {@see didAccessValueForKey()}).
      * This method is used primarily by subclasses that implement custom accessor methods that need direct access to the receiver's private storage.
      * @param string $key The name of one of the receiver's properties.
@@ -446,6 +450,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Sets the value of a given property in the managed object's private internal storage.
+     *
      * Sets in the receiver's private internal storage the value of the property specified by key to value.
      * If key identifies a to-one relationship, relates the object specified by value to the receiver, unrelating the previously related object if there was one. Given a collection object and a key that identifies a to-many relationship, relates the objects contained in the collection to the receiver, unrelating previously related objects if there were any.
      * This method does not invoke the change notification methods ({@see willChangeValueForKey()} and {@see didChangeValueForKey()}).
@@ -460,6 +465,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Returns the value for the property specified by key.
+     *
      * If key is not a property defined by the model, the method raises an exception.
      * This method is overridden by ManagedObject to access the managed object's generic dictionary storage unless the receiver's class explicitly provides key-value coding compliant accessor methods for key.
      * @param string $key The name of one of the receiver's properties.
@@ -558,6 +564,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Sets the specified property of the managed object to the specified value.
+     *
      * If key is not a property defined by the model or if is not part of the receiver's properties, the method raises an exception. If key identifies a to-one relationship, relates the object specified by value to the receiver, unrelating the previously related object if there was one. Given a collection object and a key that identifies a to-many relationship, relates the objects contained in the collection to the receiver, unrelating previously related objects if there were any.
      * This method is overridden by ManagedObject to access the managed object's generic dictionary storage unless the receiver's class explicitly provides key-value coding compliant accessor methods for key.
      * @param mixed|null $value The new value for the property specified by key.
@@ -854,6 +861,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Validates a property value for a given key.
+     *
      * This method is responsible for two things: coercing the value into an appropriate type for the object, and validating it according to the object's rules.
      * The default implementation provided by ManagedObject consults the object's entity description to coerce the value and to check for basic errors, such as a null value when that isn't allowed and the length of strings when a field width is specified for the attribute.
      * It then searches for a method of the form validate<Key>() and invokes it if it exists.
@@ -896,6 +904,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Determines whether the managed object can be deleted in its current state.
+     *
      * An object cannot be deleted if it has a relationship has a “deny” delete rule and that relationship has a destination object.
      * ManagedObject's implementation sends the receiver's entity description a message which performs basic checking based on the presence or absence of values.
      * @throws Exception If the receiver cannot be deleted in its current state, the method raises an exception.
@@ -906,6 +915,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Determines whether the managed object can be inserted in its current state.
+     *
      * Subclasses should invoke super's implementation before performing their own validation, and should combine any error returned by super's implementation with their own (see Managed Object Validation).
      * @throws Exception If the receiver cannot be inserted in its current state, the method raises an exception.
      */
@@ -916,6 +926,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Determines whether the managed object's current state is valid.
+     *
      * ManagedObject's implementation iterates through all the receiver's properties validating each in turn. If this results in more than one error, the userInfo dictionary in the Error returned in error contains a key DetailedErrorsKey; the corresponding value is an array containing the individual validation errors. If you pass NULL as the error, validation will abort after the first failure.
      * @throws Exception If the receiver's current state is invalid, the method raises an exception.
      */
@@ -926,6 +937,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Provides support for key-value observing access notification.
+     *
      * Together with {@see willAccessValueForKey()}, this method is used to fire faults, to maintain inverse relationships, and so on.
      * Each read access must be wrapped in this method pair (in the same way that each write access must be wrapped in the {@see willChangeValueForKey()}/{@see didChangeValueForKey()} method pair).
      * In the default implementation of ManagedObject these methods are invoked for you automatically.
@@ -947,6 +959,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Provides support for key-value observing access notification.
+     *
      * See {@see didAccessValueForKey()} for more details.
      * You can invoke this method with the key value of nil to ensure that a fault has been fired, as illustrated by the following example.
      * <code>

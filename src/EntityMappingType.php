@@ -10,10 +10,7 @@
 namespace Sabatier\CoreData;
 
 /**
- * Class EntityMappingType
- *
  * The types for mapping an entity between a source model and a destination model.
- * @package Sabatier\CoreData
  */
 enum EntityMappingType: int
 {

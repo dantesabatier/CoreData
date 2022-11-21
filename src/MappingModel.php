@@ -13,15 +13,13 @@ use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Bundle;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\Expression;
 use Sabatier\Foundation\ObjectClass;
+use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\PropertyListSerialization;
 use Sabatier\Foundation\URL;
 
 /**
- * Class MappingModel
  * A model instance that specifies how to map a model from a source to a destination managed object model.
- * @package Sabatier\CoreData
  * @property ArrayClass<EntityMapping> $entityMappings The entity mappings for the mapping model.
  */
 class MappingModel extends ObjectClass
@@ -122,6 +120,7 @@ class MappingModel extends ObjectClass
 
     /**
      * Returns the mapping model that will translate data from the source to the destination model.
+     *
      * This method is a companion to the {@see ManagedObjectModel::mergedModel()} method.
      * In this case, the framework uses the version information from the models to locate the appropriate mapping model in the available bundles.
      * @param ArrayClass<Bundle>|null $bundles An array of bundles in which to search for mapping models.
@@ -153,6 +152,7 @@ class MappingModel extends ObjectClass
 
     /**
      * Returns a newly created mapping model that will migrate data from the source to the destination model.
+     *
      * A model will be created only if all changes are simple enough to be able to reasonably infer a mapping (for example, removing or renaming an attribute, adding an optional attribute or relationship, or adding renaming or deleting an entity).
      * Element IDs are used to track renamed properties and entities.
      * @param ManagedObjectModel $sourceModel The source managed object model.

@@ -14,9 +14,7 @@ use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\URL;
 
 /**
- * Class PersistentStoreDescription
  * A description object used to create and load a persistent store.
- * @package Sabatier\CoreData
  * @property float $timeout The connection timeout for the associated store. This is a convenience method for setting the {@see PersistentStoreTimeoutOption} on the associated store.
  * @property bool $isReadOnly A flag that indicates whether this store will be read-only.
  * This is a convenience method for setting the {@see ReadOnlyPersistentStoreOption} on the associated store.
@@ -47,25 +45,24 @@ class PersistentStoreDescription extends ObjectClass
     public function __get(string $name)
     {
         return match ($name) {
-            'timeout' => $this->options[PersistentStoreTimeoutOption] ?? 8.0,
-            'isReadOnly' => $this->options[ReadOnlyPersistentStoreOption] ?? false,
-            'shouldInferMappingModelAutomatically' => $this->options[InferMappingModelAutomaticallyOption] ?? true,
-            'shouldMigrateStoreAutomatically' => $this->options[MigratePersistentStoresAutomaticallyOption] ?? true,
+            'timeout' => $this->options->valueForKey(PersistentStoreTimeoutOption) ?? 8.0,
+            'isReadOnly' => $this->options->valueForKey(ReadOnlyPersistentStoreOption) ?? false,
+            'shouldInferMappingModelAutomatically' => $this->options->valueForKey(InferMappingModelAutomaticallyOption) ?? true,
+            'shouldMigrateStoreAutomatically' => $this->options->valueForKey(MigratePersistentStoresAutomaticallyOption) ?? true,
             default => $this->valueForUndefinedKey($name),
         };
     }
 
-    /** @noinspection PhpSecondWriteToReadonlyPropertyInspection */
     public function __set(string $name, mixed $value): void
     {
         if ($name == 'timeout') {
-            $this->options[PersistentStoreTimeoutOption] = $value;
+            $this->options->setValueForKey($value, PersistentStoreTimeoutOption);
         } elseif ($name == 'isReadOnly') {
-            $this->options[ReadOnlyPersistentStoreOption] = $value;
+            $this->options->setValueForKey($value, ReadOnlyPersistentStoreOption);
         } elseif ($name == 'shouldInferMappingModelAutomatically') {
-            $this->options[InferMappingModelAutomaticallyOption] = $value;
+            $this->options->setValueForKey($value, InferMappingModelAutomaticallyOption);
         } elseif ($name == 'shouldMigrateStoreAutomatically') {
-            $this->options[MigratePersistentStoresAutomaticallyOption] = $value;
+            $this->options->setValueForKey($value, MigratePersistentStoresAutomaticallyOption);
         } else {
             $this->setValueForUndefinedKey($value, $name);
         }
@@ -73,6 +70,7 @@ class PersistentStoreDescription extends ObjectClass
 
     /**
      * Sets an option on the store.
+     *
      * If a value was previously set for the given option, that value is replaced with the given value.
      * Note that the keys are case-sensitive. For a list of the available options, see {@see PersistentStoreCoordinator}.
      * @param mixed $option The value to be set for an option on the store.

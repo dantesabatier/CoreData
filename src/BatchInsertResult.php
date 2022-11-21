@@ -13,9 +13,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Number;
 
 /**
- * Class BatchInsertResult
  * The result that Core Data returns when executing a batch-insertion request.
- * @package Sabatier\CoreData
  */
 class BatchInsertResult extends PersistentStoreResult
 {

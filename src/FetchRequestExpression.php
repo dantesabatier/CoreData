@@ -11,16 +11,12 @@ namespace Sabatier\CoreData;
 
 use Exception;
 use InvalidArgumentException;
-use JetBrains\PhpStorm\Pure;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\Expression;
-
+use Sabatier\Foundation\Predicates\Expression;
 use function Sabatier\Foundation\typeof;
 
 /**
- * Class FetchRequestExpression
  * An expression that evaluates the result of a fetch request on a managed object context.
- * @package Sabatier\CoreData
  */
 class FetchRequestExpression extends Expression
 {
@@ -29,7 +25,6 @@ class FetchRequestExpression extends Expression
      * @param Expression $contextExpression The expression for the receiver's managed object context.
      * @param bool $isCountOnlyRequest Returns a Boolean value that indicates whether the receiver represents a count-only fetch request.
      */
-    #[Pure]
     protected function __construct(public readonly Expression $requestExpression, public readonly Expression $contextExpression, public readonly bool $isCountOnlyRequest = false)
     {
         parent::__construct();

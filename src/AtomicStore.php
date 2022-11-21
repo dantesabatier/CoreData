@@ -5,15 +5,15 @@ namespace Sabatier\CoreData;
 use Exception;
 use InvalidArgumentException;
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\ComparisonPredicate;
-use Sabatier\Foundation\CompoundPredicate;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\Expression;
-use Sabatier\Foundation\ExpressionType;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Number;
-use Sabatier\Foundation\Predicate;
-use Sabatier\Foundation\PredicateOperatorType;
+use Sabatier\Foundation\Predicates\ComparisonPredicate;
+use Sabatier\Foundation\Predicates\CompoundPredicate;
+use Sabatier\Foundation\Predicates\Expression;
+use Sabatier\Foundation\Predicates\ExpressionType;
+use Sabatier\Foundation\Predicates\Predicate;
+use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use function Sabatier\Foundation\in_string;
@@ -21,13 +21,12 @@ use function Sabatier\Foundation\request_concrete_implementation;
 use const Sabatier\Foundation\NotFound;
 
 /**
- * Class AtomicStore
  * An abstract superclass that you subclass to create a Core Data atomic store.
+ *
  * This class provides default implementations of some utility methods.
  * You use a custom atomic store if you have a custom file format that you want to integrate with a Core Data application.
  * The atomic stores are all intended to handle data sets that can be expressed in memory.
  * The atomic store API favors simplicity over performance.
- * @package Sabatier\CoreData
  */
 abstract class AtomicStore extends PersistentStore
 {
@@ -109,6 +108,9 @@ abstract class AtomicStore extends PersistentStore
 
     private function executeFetchRequest(FetchRequest $request, ManagedObjectContext $context): ArrayClass
     {
+        if ($request->propertiesToGroupBy || $request->havingPredicate) {
+            throw new InvalidArgumentException(sprintf("invalid fetch request: persistent store of type %s does not support GROUP BY and/or HAVING predicate.", $this->type()));
+        }
         /** @var Set<ManagedObject> $result */
         $result = new Set();
         /** @var AtomicStoreCacheNode $cacheNode */
@@ -124,21 +126,7 @@ abstract class AtomicStore extends PersistentStore
             }
         }
         if ($predicate = $request->predicate) {
-            $transform = function (Predicate $predicate) use ($request, &$transform): Predicate {
-                if (in_string((string)$predicate, 'objectID')) {
-                    if ($predicate instanceof ComparisonPredicate) {
-                        if ($predicate->leftExpression->expressionType === ExpressionType::keyPath && $predicate->leftExpression->keyPath() === 'objectID' && $predicate->rightExpression->expressionType === ExpressionType::constantValue && is_int($predicate->rightExpression->constantValue())) {
-                            return new ComparisonPredicate($predicate->leftExpression, Expression::expressionForConstantValue($this->objectID($request->entity, $predicate->rightExpression->constantValue())));
-                        } elseif ($predicate->rightExpression->expressionType === ExpressionType::keyPath && $predicate->rightExpression->keyPath() === 'objectID' && $predicate->leftExpression->expressionType === ExpressionType::constantValue && is_int($predicate->leftExpression->constantValue())) {
-                            return new ComparisonPredicate($predicate->rightExpression, Expression::expressionForConstantValue($this->objectID($request->entity, $predicate->leftExpression->constantValue())));
-                        }
-                    } elseif ($predicate instanceof CompoundPredicate) {
-                        return new CompoundPredicate($predicate->compoundPredicateType, $predicate->subpredicates->map(fn(Predicate $subpredicate): Predicate => $transform($subpredicate)));
-                    }
-                }
-                return $predicate;
-            };
-            $result = $result->filtered($transform($predicate));
+            $result = $result->filtered($predicate);
         }
         $resultType = $request->resultType;
         if ($resultType === FetchRequestResultType::managedObjectResultType) {
@@ -272,6 +260,7 @@ abstract class AtomicStore extends PersistentStore
 
     /**
      * Loads the cache nodes for the receiver.
+     *
      * You override this method to load the data from the URL specified in {@see __construct()} and create cache nodes for the represented objects.
      * You must respect the configuration specified for the store, as well as the options.
      * Any subclass of AtomicStore must be able to handle being initialized with a URL pointing to a zero-length file.
@@ -288,6 +277,7 @@ abstract class AtomicStore extends PersistentStore
 
     /**
      * Returns a managed object ID from the reference data for a specified entity.
+     *
      * You use this method to create managed object IDs which are then used to create cache nodes for information being loaded into the store.
      * You should not override this method.
      * @param EntityDescription $entity An entity description object.
@@ -310,6 +300,7 @@ abstract class AtomicStore extends PersistentStore
 
     /**
      * Registers a set of cache nodes with the receiver.
+     *
      * You should invoke this method in a subclass during the call to load() to register the loaded information with the store.
      * @param Set<AtomicStoreCacheNode> $cacheNodes A set of cache nodes.
      */
@@ -322,6 +313,7 @@ abstract class AtomicStore extends PersistentStore
 
     /**
      * Returns a new cache node for a given managed object.
+     *
      * This method is invoked by the framework during a save operation, once for each newly-inserted managed object.
      * It should pull information from the managed object and return a cache node containing the information (the node will be registered by the framework).
      * You must override this method.
@@ -335,6 +327,7 @@ abstract class AtomicStore extends PersistentStore
 
     /**
      * Updates the given cache node using the values in a given managed object.
+     *
      * This method is invoked by the framework after a save operation on a managed object context, once for each updated ManagedObject instance.
      * You override this method in a subclass to take the information from managedObject and update node.
      * You must override this method.
@@ -347,6 +340,7 @@ abstract class AtomicStore extends PersistentStore
 
     /**
      * Method invoked before the store removes the given collection of cache nodes.
+     *
      * This method is invoked by the store before the call to {@see save()} with the collection of cache nodes marked as deleted by a managed object context.
      * You can override this method to track the nodes which will not be made persistent in the {@see save()} method.
      * You should not invoke this method directly in a subclass.
@@ -358,6 +352,7 @@ abstract class AtomicStore extends PersistentStore
 
     /**
      * Saves the cache nodes.
+     *
      * You override this method to make persistent the necessary information from the cache nodes to the URL specified for the receiver.
      * You must override this method.
      * @return bool
@@ -370,6 +365,7 @@ abstract class AtomicStore extends PersistentStore
 
     /**
      * Returns the set of cache nodes registered with the receiver.
+     *
      * You should modify this collection using {@see addCacheNodes()} and {@see willRemoveCacheNodes()}.
      * @return Set<AtomicStoreCacheNode> The set of cache nodes registered with the receiver.
      */
@@ -380,6 +376,7 @@ abstract class AtomicStore extends PersistentStore
 
     /**
      * Returns the cache node for a given managed object ID.
+     *
      * This method is normally used by cache nodes to locate related cache nodes (by relationships).
      * @param ManagedObjectID $objectID A managed object ID.
      * @return AtomicStoreCacheNode|null The cache node for objectID.

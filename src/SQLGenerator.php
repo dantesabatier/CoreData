@@ -14,20 +14,20 @@ namespace Sabatier\CoreData;
 use InvalidArgumentException;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\CompareOptions;
-use Sabatier\Foundation\ComparisonPredicate;
-use Sabatier\Foundation\ComparisonPredicateModifier;
 use Sabatier\Foundation\ComparisonResult;
-use Sabatier\Foundation\CompoundPredicate;
-use Sabatier\Foundation\CompoundPredicateLogicalType;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\Expression;
-use Sabatier\Foundation\ExpressionOperator;
-use Sabatier\Foundation\ExpressionOperatorType;
-use Sabatier\Foundation\ExpressionType;
 use Sabatier\Foundation\KeyValueOperator;
 use Sabatier\Foundation\ObjectClass;
-use Sabatier\Foundation\Predicate;
-use Sabatier\Foundation\PredicateOperatorType;
+use Sabatier\Foundation\Predicates\ComparisonPredicate;
+use Sabatier\Foundation\Predicates\ComparisonPredicateModifier;
+use Sabatier\Foundation\Predicates\CompoundPredicate;
+use Sabatier\Foundation\Predicates\CompoundPredicateLogicalType;
+use Sabatier\Foundation\Predicates\Expression;
+use Sabatier\Foundation\Predicates\ExpressionOperator;
+use Sabatier\Foundation\Predicates\ExpressionOperatorType;
+use Sabatier\Foundation\Predicates\ExpressionType;
+use Sabatier\Foundation\Predicates\Predicate;
+use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\UnknownKeyException;
@@ -156,7 +156,7 @@ class SQLGenerator extends ObjectClass
             /** @psalm-suppress RedundantCondition, TypeDoesNotContainType */
             if (/** @phpstan-ignore-line */ SS_COREDATA_DISABLE_FOREIGN_KEY_CHECKS) :
                 if ($statements->contains(fn(SQLStatement $statement): bool => string_has_prefix($statement->string, "INSERT"))) {
-                    $statements->insert(new SQLStatement("/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */"), 0);
+                    $statements->insertAt(new SQLStatement("/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */"), 0);
                     $statements->append(new SQLStatement("/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */"));
                 }
             endif;
@@ -507,9 +507,9 @@ class SQLGenerator extends ObjectClass
                 if ($dictionary) {
                     $serialization = clone $dictionary;
                     $serializationKeys = $serialization->keys;
-                    $serializationKeys->insert($entity->primaryKey->columnName, 0);
+                    $serializationKeys->insertAt($entity->primaryKey->columnName, 0);
                     if (!$entity->entityDescription->isPersistentHistoryEntity) {
-                        $serializationKeys->insert($entity->entityKey->columnName, 1);
+                        $serializationKeys->insertAt($entity->entityKey->columnName, 1);
                     }
                     /** @var ArrayClass<string> $columnNames */
                     $columnNames = $serializationKeys->compactMap(function (string $key) use ($entity, $destination): ?string {
@@ -1252,7 +1252,7 @@ class SQLGenerator extends ObjectClass
         /** @var Dictionary $propertiesToUpdate */
         $propertiesToUpdate = $request->propertiesToUpdate;
         $this->string .= " SET {$propertiesToUpdate->map(function (mixed $value, string $key) use (&$arguments): string {
-                if (is_string($value) && $this->entity->attributes->contains(fn(SQLAttribute $attribute): bool => $attribute->name === $value)) {
+                if (is_string($value) && $this->entity->attributes->contains(fn(SQLAttribute $attribute): bool => string_contains($value, $attribute->name, CompareOptions::words))) {
                     return "`$key` = $value";
                 }
                 $arguments[] = $value;

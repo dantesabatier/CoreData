@@ -15,13 +15,12 @@ use Sabatier\Foundation\ObjectClass;
 use function Sabatier\Foundation\human_readable_value;
 
 /**
- * Class MergeConflict
  * An encapsulation of conflicts that occur during an attempt to save changes in a managed object context.
+ *
  * A conflict can occur in two situations:
  * Between the managed object context and its in-memory cached state at the persistent store coordinator layer.
  * Between the cached state at the persistent store coordinator layer and the external store (file, database, and so forth). In this case, the merge conflict has a cached snapshot and a persisted snapshot. The source object is also provided as a convenience, but it is not directly involved in the conflict.
  * Snapshot dictionaries include values for all attributes and to-one relationships, but not to-many relationships. Relationship values are ManagedObjectID references. To-many relationships must be pulled from the persistent store as needed.
- * @package Sabatier\CoreData
  */
 class MergeConflict extends ObjectClass
 {

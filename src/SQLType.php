@@ -7,7 +7,7 @@ enum SQLType: string
 {
     case tinyint = 'TINYINT';
     case smallint = 'SMALLINT';
-    case MEDIUMINT = 'MEDIUMINT';
+    case mediumint = 'MEDIUMINT';
     case int = 'INT';
     case bigint = 'BIGINT';
     case decimal = 'DECIMAL';

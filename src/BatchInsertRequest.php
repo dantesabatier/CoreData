@@ -15,9 +15,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 
 /**
- * Class BatchInsertRequest
  * A request to insert a batch of data in a persistent store.
- * @package Sabatier\CoreData
  */
 class BatchInsertRequest extends PersistentStoreRequest
 {

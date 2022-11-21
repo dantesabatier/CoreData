@@ -13,10 +13,7 @@ use Closure;
 use Exception;
 use InvalidArgumentException;
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\ComparisonPredicate;
-use Sabatier\Foundation\CompoundPredicate;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\Expression;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyValueChange;
 use Sabatier\Foundation\KeyValueObservedChange;
@@ -26,7 +23,10 @@ use Sabatier\Foundation\NotificationCenter;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\OperationQueue;
-use Sabatier\Foundation\PredicateOperatorType;
+use Sabatier\Foundation\Predicates\ComparisonPredicate;
+use Sabatier\Foundation\Predicates\CompoundPredicate;
+use Sabatier\Foundation\Predicates\Expression;
+use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Throwable;
@@ -34,10 +34,9 @@ use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\typeof;
 
 /**
- * Class ManagedObjectContext
  * An object space that you use to manipulate and track changes to managed objects.
+ *
  * A context consists of a group of related model objects that represent an internally consistent view of one or more persistent stores. Changes to managed objects remain in memory in the associated context until Core Data saves that context to one or more persistent stores. A single managed object instance exists in one and only one context, but multiple copies of an object can exist in different contexts. Therefore, an object is unique to a particular context.
- * @package Sabatier\CoreData
  * @property-read Set<ManagedObject> $registeredObjects The set of objects registered with the context.
  */
 class ManagedObjectContext extends ObjectClass
@@ -295,6 +294,7 @@ class ManagedObjectContext extends ObjectClass
 
     /**
      * Returns an array of objects that meet the criteria specified by a given fetch request.
+     *
      * Returned objects are registered with the receiver.
      * The following points are important to consider:
      * If the fetch request has no predicate, then all instances of the specified entity are retrieved, modulo other criteria below.
@@ -380,6 +380,7 @@ class ManagedObjectContext extends ObjectClass
 
     /**
      * Returns an object for a specified ID even if the object needs to be fetched.
+     *
      * If the object is not registered in the context, it may be fetched or returned as a fault. This method always returns an object.
      * The data in the persistent store represented by objectID is assumed to exist if it does not, the returned object throws an exception when you access any property (that is, when the fault is fired). The benefit of this behavior is that it allows you to create and use faults, then create the underlying data later or in a separate context.
      * @param ManagedObjectID $objectID An object ID.
@@ -399,6 +400,7 @@ class ManagedObjectContext extends ObjectClass
 
     /**
      * Returns the object for the specified ID or nil if the object does not exist.
+     *
      * If there is a managed object with the given ID already registered in the context, that object is returned directly; otherwise the corresponding object is faulted into the context.
      * This method might perform I/O if the data is uncached.
      * Unlike {@see object()}, this method never returns a fault.
@@ -510,6 +512,7 @@ class ManagedObjectContext extends ObjectClass
 
     /**
      * Specifies the store in which a newly inserted object will be saved.
+     *
      * You can obtain a store from the persistent store coordinator, using for example {@see PersistentStoreCoordinator::persistentStore()}.
      * It is only necessary to use this method if the receiver's persistent store coordinator manages multiple writable stores that have object's entity in their configuration. Maintaining configurations in the managed object model can eliminate the need for invoking this method directly in many situations. If the receiver's persistent store coordinator manages only a single writable store, or if only one store has object's entity in its model, object will automatically be assigned to that store.
      * @param ManagedObject $object A managed object.
@@ -522,6 +525,7 @@ class ManagedObjectContext extends ObjectClass
 
     /**
      * Converts to permanent IDs the object IDs of the objects in a given array.
+     *
      * This method converts the object ID of each managed object in objects to a permanent ID.
      * Although the object will have a permanent ID, it will still respond positively to isInserted until it is saved.
      * Any object that already has a permanent ID is ignored.
@@ -553,6 +557,7 @@ class ManagedObjectContext extends ObjectClass
 
     /**
      * Marks an object for conflict detection.
+     *
      * If on the next invocation of {@see save()} object has been modified in its persistent store, the save fails. This allows optimistic locking for unchanged objects. Conflict detection is always performed on changed or deleted objects.
      * @param ManagedObject $object A managed object.
      */
@@ -863,6 +868,7 @@ class ManagedObjectContext extends ObjectClass
 
     /**
      * Handles changes from other processes or from a serialized state.
+     *
      * This method more efficiently merges changes into multiple contexts as well as nested contexts. The dictionary keys should be one or more from an {@see ManagedObjectContextObjectsDidChange}: {@see InsertedObjectsKey}, {@see UpdatedObjectsKey}, {@see DeletedObjectsKey}. The values should be a {@see ArrayClass} of either {@see ManagedObjectID} or {@see URL} objects conforming to valid results from {@see ManagedObjectID::uriRepresentation()}.
      * @param Dictionary<ArrayClass<ManagedObjectID|ManagedObject|URL>> $changeNotificationData
      * @param ArrayClass<ManagedObjectContext> $contexts
@@ -882,6 +888,7 @@ class ManagedObjectContext extends ObjectClass
 
     /**
      * Merges the changes specified in a given notification.
+     *
      * This method refreshes any objects which have been updated in the other context, faults in any newly-inserted objects, and invokes {@see delete()} on those which have been deleted.
      * You can pass a {@see ManagedObjectContextDidSave} posted by a managed object context on another thread, however you must not use the managed objects in the user info dictionary directly.
      * @param Notification $notification A notification posted by another context.
@@ -947,6 +954,7 @@ class ManagedObjectContext extends ObjectClass
 
     /**
      * Attempts to commit unsaved changes to registered objects to the context's parent store.
+     *
      * If there were multiple errors (for example several edited objects had validation failures) the description of Error returned indicates that there were multiple errors, and its userInfo dictionary contains the key DetailedErrors. The value associated with the DetailedErrors key is an array that contains the individual Error objects.
      * If a context's parent store is a persistent store coordinator, then changes are committed to the external store. If a context's parent store is another managed object context, then {@see save()} only updates managed objects in that parent store. To commit changes to the external store, you must save changes in the chain of contexts up to and including the context whose parent is the persistent store coordinator.
      * Always verify that the context has uncommitted changes (using the {@see hasChanges} property) before invoking the save: method. Otherwise, Core Data may perform unnecessary work.
@@ -975,6 +983,7 @@ class ManagedObjectContext extends ObjectClass
 
     /**
      * Returns the context to its base state.
+     *
      * All the receiver's managed objects are “forgotten.” If you use this method, you should ensure that you also discard references to any managed objects fetched using the receiver, since they will be invalid afterwards.
      */
     public function reset(): void
@@ -991,6 +1000,7 @@ class ManagedObjectContext extends ObjectClass
 
     /**
      * Removes everything from the undo stack, discards all insertions and deletions, and restores updated objects to their last committed values.
+     *
      * This method does not refetch data from the persistent store or stores.
      */
     public function rollback(): void

@@ -3,9 +3,7 @@
 namespace Sabatier\CoreData;
 
 /**
- * enum PersistentStoreStoreType
  * The types of persistent stores that Core Data supports.
- * @package Sabatier\CoreData
  */
 enum PersistentStoreType: string
 {

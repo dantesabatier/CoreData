@@ -10,9 +10,7 @@
 namespace Sabatier\CoreData;
 
 /**
- * Class BatchUpdateRequestResultType
  * Result types for a batch-update request.
- * @package Sabatier\CoreData
  */
 enum BatchUpdateRequestResultType: int
 {

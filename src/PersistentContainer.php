@@ -15,17 +15,15 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Bundle;
 use Sabatier\Foundation\Error;
 use Sabatier\Foundation\FileManager;
-use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\SearchPathDirectory;
 use Sabatier\Foundation\SearchPathDomainMask;
 use Sabatier\Foundation\URL;
 
 /**
- * Class PersistentContainer
  * A container that encapsulates the Core Data stack in your app.
+ *
  * PersistentContainer simplifies the creation and management of the Core Data stack by handling the creation of the managed object model ({@see ManagedObjectModel}), persistent store coordinator ({@see PersistentStoreCoordinator}), and the managed object context ({@see ManagedObjectContext}).
- * @package Sabatier\CoreData
  */
 class PersistentContainer extends ObjectClass
 {
@@ -40,58 +38,49 @@ class PersistentContainer extends ObjectClass
 
     /**
      * Initializes a persistent container with the given name and model.
+     *
      * By default, the provided name value of the container is used as the name of the persistent store associated with the container.
      * Passing in the ManagedObjectModel object overrides the lookup of the model by the provided name value.
      * @param string $name The name used by the persistent container.
      */
     public function __construct(public readonly string $name)
     {
-        unset($this->managedObjectModel);
-        unset($this->persistentStoreCoordinator);
-        unset($this->persistentStoreDescriptions);
-        unset($this->viewContext);
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function __get(string $name)
-    {
-        if ($name == 'persistentStoreDescriptions') {
-            /** @psalm-suppress TypeDoesNotContainType, RedundantCondition */
-            if (SS_COREDATA_DEBUG_XML_STORE) : // @phpstan-ignore-line
-                $fileManager = FileManager::default();
-                $directoryUrl = static::defaultDirectoryURL()->appendingPathComponent($this->name);
-                if (!$fileManager->fileExists($directoryUrl->path)) {
-                    $fileManager->createDirectory($directoryUrl, true);
+        $bundle = $this->isSubclass(PersistentContainer::class) ? Bundle::bundleForClass(static::class) : Bundle::main();
+        $this->managedObjectModel = new ManagedObjectModel($bundle->url($this->name, 'plist'));
+        $this->persistentStoreCoordinator = new PersistentStoreCoordinator($this->managedObjectModel);
+        $this->viewContext = new ManagedObjectContext();
+        $this->viewContext->persistentStoreCoordinator = $this->persistentStoreCoordinator;
+        /** @var ArrayClass<string> $types */
+        $types = $bundle->infoDictionary->valueForKeyPath("CFBundleDocumentTypes.CFBundleTypeName") ?? new ArrayClass([SQLStoreType]);
+        $this->persistentStoreDescriptions = $types->compactMap(function (string $type): ?PersistentStoreDescription {
+            if (!$url = match ($type) {
+                SQLStoreType => new URL("sql://$this->name"),
+                XMLStoreType => static::defaultDirectoryURL()->appendingPathComponent($this->name)->appendingPathComponent($this->name)->appendingPathExtension('xml'),
+                default => null
+            }) {
+                return null;
+            }
+            if ($url->isFileURL) {
+                $directoryURL = $url->deleteLastPathComponent();
+                try {
+                    $fileManager = FileManager::default();
+                    if (!$fileManager->fileExists($directoryURL->path)) {
+                        $fileManager->createDirectory($directoryURL, true);
+                    }
+                } catch (Exception) {
+                    return null;
                 }
-                $fileUrl = $directoryUrl->appendingPathComponent($this->name)->appendingPathExtension('xml');
-                $persistentStoreDescription = new PersistentStoreDescription($fileUrl);
-                $persistentStoreDescription->type = XMLStoreType;
-                $persistentStoreDescription->setOptionForKey(true, ValidateXMLStoreOption);
-            else :
-                $persistentStoreDescription = new PersistentStoreDescription(new URL("sql://$this->name"));
-                $persistentStoreDescription->type = SQLStoreType;
-            endif;
+            }
+            $persistentStoreDescription = new PersistentStoreDescription($url);
+            $persistentStoreDescription->type = $type;
             $persistentStoreDescription->configuration = $this->name;
             $persistentStoreDescription->shouldInferMappingModelAutomatically = true;
             $persistentStoreDescription->shouldMigrateStoreAutomatically = true;
-            $this->$name = new ArrayClass([$persistentStoreDescription]);
-            return $this->$name;
-        } elseif ($name == 'managedObjectModel') {
-            $this->$name = new ManagedObjectModel(Bundle::main()->url($this->name, 'plist'));
-            return $this->$name;
-        } elseif ($name == 'persistentStoreCoordinator') {
-            $this->$name = new PersistentStoreCoordinator($this->managedObjectModel);
-            return $this->$name;
-        } elseif ($name == 'viewContext') {
-            $managedObjectContext = new ManagedObjectContext();
-            $managedObjectContext->persistentStoreCoordinator = $this->persistentStoreCoordinator;
-            $this->$name = $managedObjectContext;
-            return $this->$name;
-        } else {
-            return $this->valueForUndefinedKey($name);
-        }
+            if ($type === XMLStoreType) {
+                $persistentStoreDescription->setOptionForKey(true, ValidateXMLStoreOption);
+            }
+            return $persistentStoreDescription;
+        });
     }
 
     /**
@@ -113,6 +102,7 @@ class PersistentContainer extends ObjectClass
 
     /**
      * Creates a private managed object context.
+     *
      * Invoking this method causes the persistent container to create and return a new {@see ManagedObjectContext} with the concurrencyType set to {@see ManagedObjectContextConcurrencyType::private}.
      * This new context will be associated with the {@see PersistentStoreCoordinator} directly and is set to consume {@see ManagedObjectContext::didSaveObjectsNotification} broadcasts automatically.
      * @return ManagedObjectContext A newly created private managed object context.
@@ -127,6 +117,7 @@ class PersistentContainer extends ObjectClass
 
     /**
      * Causes the persistent container to execute the block against a new private queue context.
+     *
      * Each time this method is invoked, the persistent container creates a new {@see ManagedObjectContext} with the concurrencyType set to {@see ManagedObjectContextConcurrencyType::privateQueueConcurrencyType}.
      * The persistent container then executes the passed in block against that newly created context on the context's private queue.
      * @param Closure(ManagedObjectContext): void $task A block that is executed by the persistent container against a newly created private context.

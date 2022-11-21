@@ -10,9 +10,7 @@
 namespace Sabatier\CoreData;
 
 /**
- * Class ManagedObjectContextConcurrencyType
  * Constants to indicate the concurrency pattern with which a context will be used.
- * @package Sabatier\CoreData
  */
 enum ManagedObjectContextConcurrencyType: int
 {

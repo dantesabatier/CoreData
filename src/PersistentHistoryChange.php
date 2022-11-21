@@ -17,9 +17,7 @@ use function Sabatier\Foundation\human_readable_value;
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /**
- * Class PersistentHistoryChange
  * A change representing the insertion, update, or deletion of a managed object in the persistent store.
- * @package Sabatier\CoreData
  */
 class PersistentHistoryChange extends ObjectClass
 {

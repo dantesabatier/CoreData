@@ -34,6 +34,7 @@ class FetchedResultsController extends ObjectClass
 
     /**
      * Executes the controller's fetch request.
+     *
      * After you execute this method, access the controller's fetched objects using the fetchedObjects property.
      * If you specify a value for the sectionNameKeyPath parameter when you initialize the fetched results controller, the fetch request must include a sort descriptor for the corresponding key path; otherwise, the fetch fails.
      * @throws Exception
@@ -83,6 +84,7 @@ class FetchedResultsController extends ObjectClass
 
     /**
      * Returns the corresponding section index entry for a given section name.
+     *
      * The default implementation returns the capitalized first letter of the section name. You should override this method if you need a different way to convert from a section name to its name in the section index.
      * @param string $sectionName The name of a section.
      * @return string|null The section index entry corresponding to the section with name sectionName.

@@ -3,15 +3,12 @@
 /**
  * @author Dante Sabatier <dantesabatier@me.com>
  * @version 1.0
- * @package Sabatier\CoreData
  */
 
 namespace Sabatier\CoreData;
 
 /**
- * Class FetchRequestResultType
  * Constants that specify the possible result types a fetch request can return.
- * @package Sabatier\CoreData
  */
 enum FetchRequestResultType: int
 {

@@ -256,9 +256,13 @@ class SQLConnection extends ObjectClass
     }
 
     /**
+     * @param Closure(ManagedObject): bool $block
+     * @param SQLEntity $entity
+     * @param bool $includeOnConflict
+     * @return int
      * @throws Exception
      */
-    private function insertManagedObjectBlock(Closure $block, SQLEntity $entity, bool $includeOnConflict = false): int
+    private function insertManagedObjectBlock(/** @noinspection PhpSameParameterValueInspection */ Closure $block, SQLEntity $entity, bool $includeOnConflict = false): int
     {
         $requestContext = $this->requestContext;
         /** @var ArrayClass<ManagedObject> $insertedObjects */
@@ -274,16 +278,27 @@ class SQLConnection extends ObjectClass
     }
 
     /**
+     * @param Closure(Dictionary): bool $block
+     * @param SQLEntity $entity
+     * @param bool $includeOnConflict
+     * @return int
      * @throws Exception
      */
     private function insertDictionaryBlock(/** @noinspection PhpSameParameterValueInspection */ Closure $block, SQLEntity $entity, bool $includeOnConflict = false): int
     {
-        return $this->insertManagedObjectBlock(function (ManagedObject $insertedObject) use ($block): bool {
+        $requestContext = $this->requestContext;
+        /** @var ArrayClass<ManagedObject> $insertedObjects */
+        $insertedObjects = new ArrayClass();
+        while (true) {
             $dictionary = new Dictionary();
-            $ok = $block($dictionary);
-            $insertedObject->setValuesForKeys($dictionary);
-            return $ok;
-        }, $entity, $includeOnConflict);
+            $continue = $block($dictionary);
+            $insertedObject = EntityDescription::insertNewObject($entity->tableName, $requestContext->context, $dictionary);
+            if (!$continue) {
+                break;
+            }
+            $insertedObjects->append($insertedObject);
+        }
+        return $this->insertArray($insertedObjects, $entity, $includeOnConflict);
     }
 
     /**

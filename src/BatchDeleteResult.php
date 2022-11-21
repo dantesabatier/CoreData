@@ -13,9 +13,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Number;
 
 /**
- * Class BatchDeleteResult
  * The result returned when executing a batch delete request.
- * @package Sabatier\CoreData
  */
 class BatchDeleteResult extends PersistentStoreResult
 {

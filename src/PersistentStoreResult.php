@@ -10,9 +10,7 @@
 namespace Sabatier\CoreData;
 
 /**
- * Class PersistentStoreResult
  * The abstract base class for results returned from a persistent store coordinator.
- * @package Sabatier\CoreData
  */
 class PersistentStoreResult
 {

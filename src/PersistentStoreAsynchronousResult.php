@@ -10,9 +10,7 @@
 namespace Sabatier\CoreData;
 
 /**
- * Class PersistentStoreAsynchronousResult
  * A concrete class used to represent the results of an asynchronous request.
- * @package Sabatier\CoreData
  */
 class PersistentStoreAsynchronousResult extends PersistentStoreResult
 {

@@ -6,8 +6,6 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 
 /**
- * Class MigrationContext
- * @package Sabatier\CoreData
  * @internal
  */
 class MigrationContext

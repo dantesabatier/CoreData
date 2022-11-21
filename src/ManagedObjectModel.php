@@ -10,24 +10,21 @@ use IteratorAggregate;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Bundle;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\Expression;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\KeyedUnarchiver;
 use Sabatier\Foundation\ObjectClass;
-use Sabatier\Foundation\Predicate;
+use Sabatier\Foundation\Predicates\Expression;
+use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\PropertyListSerialization;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Throwable;
 use Traversable;
-
 use const Sabatier\Foundation\kCFBundleNameKey;
 
 /**
- * Class ManagedObjectModel
  * A programmatic representation of the model file describing your objects.
- * @package Sabatier\CoreData
  * @implements IteratorAggregate<EntityDescription>
  * @property ArrayClass<EntityDescription> $entities The entities in the model. Setting the entities for an object model raises an exception if the object model has been used by an object graph manager.
  */
@@ -59,7 +56,6 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     /**
      * Initializes the managed object model using the model file at the specified URL.
      * @param URL|null $url A URL object specifying the location of a model file.
-     * @throws Exception
      */
     public function __construct(?URL $url = null)
     {
@@ -336,6 +332,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
 
     /**
      * Returns, for the version information in given metadata, a model merged from a given array of models.
+     *
      * This is the companion method to {@see mergedModel()}.
      * @param ArrayClass<ManagedObjectModel> $models An array of instances of ManagedObjectModel.
      * @param Dictionary $metadata A dictionary containing version information from the metadata for a persistent store.
@@ -417,6 +414,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
 
     /**
      * Associates the specified entities with the model using the given configuration name.
+     *
      * This method raises an exception if the receiver has been used by an object graph manager.
      * @param ArrayClass<EntityDescription> $entities An array of instances of EntityDescription.
      * @param string $configuration A name for the configuration.
@@ -439,6 +437,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
 
     /**
      * Returns a copy of the fetch request template with the variables substituted by values from the substitutions' dictionary.
+     *
      * The variables dictionary must provide values for all the variables.
      * This method provides the usual way to bind an “abstractly” defined fetch request template to a concrete fetch.
      * @param string $name A string containing the name of a fetch request template.
@@ -459,6 +458,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
 
     /**
      * Associates the specified fetch request with the receiver using the given name.
+     *
      * This method raises an exception if the receiver has been used by an object graph manager.
      * @param FetchRequest $fetchRequest A fetch request, typically containing predicates with variables for substitution.
      * @param string $name A string that specifies the name of the fetch request template.
@@ -471,6 +471,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
 
     /**
      * Returns a Boolean value that indicates whether a given configuration in the model is compatible with given metadata from a persistent store.
+     *
      * This method compares the version information in the store metadata with the entity versions of a given configuration.
      * For information on specific differences, use {@see entityVersionHashesByName} and perform an entity-by-entity comparison.
      * @param string|null $configuration The name of a configuration in the receiver. Pass nil to specify no configuration.

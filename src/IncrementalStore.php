@@ -15,9 +15,7 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\URL;
 
 /**
- * Class IncrementalStore
  * An abstract superclass defining the API through which Core Data communicates with a store.
- * @package Sabatier\CoreData
  */
 abstract class IncrementalStore extends PersistentStore
 {
@@ -63,6 +61,7 @@ abstract class IncrementalStore extends PersistentStore
 
     /**
      * Returns the reference data used to construct a given object ID.
+     *
      * This method raises an {@see InvalidArgumentException} if the object ID was not created by the receiving store.
      * You should not override this method.
      * @param ManagedObjectID $objectID An object ID created by the receiver.

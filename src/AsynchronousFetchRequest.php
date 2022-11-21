@@ -13,9 +13,7 @@ use Closure;
 use JetBrains\PhpStorm\Pure;
 
 /**
- * Class AsynchronousFetchRequest
  * A fetch request that retrieves results asynchronously and supports progress notification.
- * @package Sabatier\CoreData
  */
 class AsynchronousFetchRequest extends PersistentStoreRequest
 {

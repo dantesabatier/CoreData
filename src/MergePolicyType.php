@@ -10,9 +10,7 @@
 namespace Sabatier\CoreData;
 
 /**
- * Class MergePolicyType
  * Constants that define merge policy types.
- * @package Sabatier\CoreData
  */
 enum MergePolicyType: int
 {

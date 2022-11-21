@@ -10,9 +10,7 @@
 namespace Sabatier\CoreData;
 
 /**
- * Interface FetchRequestResult
  * An abstract protocol used with parameterized fetch requests.
- * @package Sabatier\CoreData
  */
 interface FetchRequestResult
 {

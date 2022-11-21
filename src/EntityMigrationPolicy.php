@@ -16,9 +16,7 @@ use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Set;
 
 /**
- * Class EntityMigrationPolicy
  * A policy instance that customizes the migration process for an entity mapping.
- * @package Sabatier\CoreData
  * @psalm-consistent-constructor
  */
 class EntityMigrationPolicy extends ObjectClass
@@ -38,6 +36,7 @@ class EntityMigrationPolicy extends ObjectClass
 
     /**
      * Creates the destination instance(s) for a given source instance.
+     *
      * This method is invoked by the migration manager on each source instance (as specified by the sourceExpression in the mapping) to create the corresponding destination instance(s).
      * It also associates the source and destination instances by calling {@see MigrationManager::associate()} method.
      * @param ManagedObject $sourceInstance The source instance for which to create destination instances.
@@ -79,6 +78,7 @@ class EntityMigrationPolicy extends ObjectClass
 
     /**
      * Indicates the end of the instance creation stage for the specified entity mapping, and the precursor to the next migration stage.
+     *
      * You can override this method to clean up state from the creation of destination or to prepare state for the creation of relationships.
      * @param EntityMapping $mapping The mapping object in use.
      * @param MigrationManager $manager The migration manager performing the migration.
@@ -92,6 +92,7 @@ class EntityMigrationPolicy extends ObjectClass
 
     /**
      * Constructs the relationships between the newly-created destination instances.
+     *
      * You can use this stage to (re)create relationships between migrated objects, you use the association lookup methods on the MigrationManager instance to determine the appropriate relationship targets.
      * @param ManagedObject $instance The destination instance for which to create relationships.
      * @param EntityMapping $mapping The mapping object in use.
@@ -118,6 +119,7 @@ class EntityMigrationPolicy extends ObjectClass
 
     /**
      * Indicates the end of the relationship creation stage for the specified entity mapping.
+     *
      * This method is invoked after {@see createRelationships()}; you can override it to clean up state from the creation of relationships, or prepare state for custom validation in {@see performCustomValidation()}.
      * @param EntityMapping $mapping The mapping object in use.
      * @param MigrationManager $manager The migration manager performing the migration.
@@ -131,6 +133,7 @@ class EntityMigrationPolicy extends ObjectClass
 
     /**
      * Provides the option to perform custom validation on migrated objects during the validation stage of the entity migration policy.
+     *
      * This method is called before the default save validation is performed by the framework.
      * If you implement this method, you must manually obtain the collection of objects you are interested in validating.
      * @param EntityMapping $mapping The mapping object in use.
@@ -145,6 +148,7 @@ class EntityMigrationPolicy extends ObjectClass
 
     /**
      * Performs cleanup at the end of the migration, from any phase of the mapping.
+     *
      * This is the end to the given entity mapping.
      * You can implement this method to perform any clean-up at the end of the migration (from any of the three phases of the mapping).
      * @param EntityMapping $mapping The mapping object in use.

@@ -13,9 +13,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Number;
 
 /**
- * Class PersistentHistoryResult
  * The result of a request to fetch persistent history.
- * @package Sabatier\CoreData
  */
 class PersistentHistoryResult extends PersistentStoreResult
 {

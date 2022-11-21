@@ -12,10 +12,10 @@
 namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\Expression;
-use Sabatier\Foundation\Predicate;
-use Sabatier\Foundation\PredicateOperator;
-use Sabatier\Foundation\PredicateVisitor;
+use Sabatier\Foundation\Predicates\Expression;
+use Sabatier\Foundation\Predicates\Predicate;
+use Sabatier\Foundation\Predicates\PredicateOperator;
+use Sabatier\Foundation\Predicates\PredicateVisitor;
 
 /** @internal */
 class SQLPredicateAnalyser implements PredicateVisitor

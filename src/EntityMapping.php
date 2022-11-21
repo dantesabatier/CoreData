@@ -11,13 +11,12 @@ namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\Expression;
 use Sabatier\Foundation\ObjectClass;
+use Sabatier\Foundation\Predicates\Expression;
 
 /**
- * Class EntityMapping
  * A mapping instance that specifies how to map an entity from a source to a destination managed object model.
- * @package Sabatier\CoreData
+ *
  * @property-read string $name The name of the entity mapping. The name is used only as a means of distinguishing mappings in a model. If not specified, the value defaults to SOURCE->DESTINATION.
  */
 class EntityMapping extends ObjectClass

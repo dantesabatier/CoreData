@@ -52,20 +52,28 @@ class FaultingMutableSet extends Set
         parent::append($element);
     }
 
+    public function insert(mixed $newElement): array
+    {
+        if ($newElement instanceof ManagedObject) {
+            $newElement = $newElement->objectID;
+        }
+        return parent::insert($newElement);
+    }
+
+    public function insertAt(mixed $element, int $at): void
+    {
+        if ($element instanceof ManagedObject) {
+            $element = $element->objectID;
+        }
+        parent::insertAt($element, $at);
+    }
+
     public function remove(mixed $element): void
     {
         if ($element instanceof ManagedObject) {
             $element = $element->objectID;
         }
         parent::remove($element);
-    }
-
-    public function insert(mixed $newMember): array
-    {
-        if ($newMember instanceof ManagedObject) {
-            $newMember = $newMember->objectID;
-        }
-        return parent::insert($newMember);
     }
 
     public function update(mixed $element)
@@ -97,7 +105,7 @@ class FaultingMutableSet extends Set
         parent::setSet($set->map(fn(ManagedObject|ManagedObjectID $e): ManagedObjectID => $e instanceof ManagedObject ? $e->objectID : $e));
         $this->isFault = false;//$this->isEmpty();
     }
-    
+
     public function current(): ManagedObject
     {
         $current = parent::current();

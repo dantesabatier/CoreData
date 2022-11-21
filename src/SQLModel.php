@@ -24,7 +24,6 @@ class SQLModel extends StoreMapping
     {
         $this->entitiesByName = $this->managedObjectModel->entitiesByName->mapValues(fn(EntityDescription $entityDescription): SQLEntity => new SQLEntity($this, $entityDescription));
         $this->entities = $this->entitiesByName->values;
-        /** @var SQLEntity $entity */
         foreach ($this->entities as $entity) {
             $entity->generateInverseRelationshipsAndMore();
             $entity->doPostModelGenerationCleanup();

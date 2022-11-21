@@ -4,19 +4,17 @@ namespace Sabatier\CoreData;
 
 use Exception;
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\ComparisonPredicate;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\Expression;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\ObjectClass;
-use Sabatier\Foundation\Predicate;
-use Sabatier\Foundation\PredicateOperatorType;
+use Sabatier\Foundation\Predicates\ComparisonPredicate;
+use Sabatier\Foundation\Predicates\Expression;
+use Sabatier\Foundation\Predicates\Predicate;
+use Sabatier\Foundation\Predicates\PredicateOperatorType;
 
 /**
- * Class PropertyDescription
  * A description of a property of a Core Data entity.
- * @package Sabatier\CoreData
  */
 abstract class PropertyDescription extends ObjectClass
 {

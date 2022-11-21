@@ -10,9 +10,7 @@
 namespace Sabatier\CoreData;
 
 /**
- * Class BatchInsertRequestResultType
  * Result types for a batch-insertion request.
- * @package Sabatier\CoreData
  */
 enum BatchInsertRequestResultType: int
 {

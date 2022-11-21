@@ -3,7 +3,6 @@
 /**
  * @author Dante Sabatier <dantesabatier@me.com>
  * @version 1.0
- * @package Sabatier\CoreData
  */
 
 namespace Sabatier\CoreData;
@@ -13,14 +12,12 @@ use InvalidArgumentException;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\OperationQueue;
-use Sabatier\Foundation\Predicate;
+use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\SortDescriptor;
 use function Sabatier\Foundation\string_contains;
 
 /**
- * Class FetchRequest
  * A description of search criteria used to retrieve data from a persistent store.
- * @package Sabatier\CoreData
  * @template ResultType
  */
 class FetchRequest extends PersistentStoreRequest
@@ -114,7 +111,9 @@ class FetchRequest extends PersistentStoreRequest
     }
 
     /**
-     * Executes the fetch request against the managed object context that is associated with the current queue. Calling execute on an FetchRequest will cause the FetchRequest to run against the managed object context ({@see ManagedObjectContext}) that is associated with the queue on which the execute is called.
+     * Executes the fetch request against the managed object context that is associated with the current queue.
+     *
+     * Calling execute on an FetchRequest will cause the FetchRequest to run against the managed object context ({@see ManagedObjectContext}) that is associated with the queue on which the execute is called.
      * @return ArrayClass
      * @throws Exception
      */

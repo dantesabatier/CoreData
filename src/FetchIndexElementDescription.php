@@ -10,14 +10,11 @@
 namespace Sabatier\CoreData;
 
 use InvalidArgumentException;
-use JetBrains\PhpStorm\Pure;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
 
 /**
- * Class FetchIndexElementDescription
  * Description of an Index Element
- * @package Sabatier\CoreData
  */
 class FetchIndexElementDescription extends ObjectClass
 {
@@ -53,7 +50,7 @@ class FetchIndexElementDescription extends ObjectClass
     }
 
     /** @internal */
-    #[Pure]
+
     public function order(): string
     {
         if ($this->collationType !== FetchIndexElementType::binary) {

@@ -10,9 +10,7 @@
 namespace Sabatier\CoreData;
 
 /**
- * Enum PersistentHistoryChangeType
  * The types of changes to managed objects reflected in persistent history.
- * @package Sabatier\CoreData
  */
 enum PersistentHistoryChangeType: int
 {

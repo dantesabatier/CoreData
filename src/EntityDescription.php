@@ -3,7 +3,6 @@
 /**
  * @author Dante Sabatier <dantesabatier@me.com>
  * @version 1.0
- * @package Sabatier\CoreData
  */
 
 namespace Sabatier\CoreData;
@@ -20,9 +19,8 @@ use Sabatier\Foundation\Set;
 use Traversable;
 
 /**
- * Class EntityDescription
  * A description of an entity in Core Data.
- * @package Sabatier\CoreData
+ *
  * @implements IteratorAggregate<PropertyDescription>
  * @property ArrayClass<EntityDescription> $subentities An array containing the sub-entities of the receiver.
  * @property ArrayClass<PropertyDescription> $properties An array containing the properties of the receiver. The elements in the array are instances of {@see AttributeDescription}, {@see RelationshipDescription}, and/or {@see FetchedPropertyDescription}.
@@ -234,6 +232,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
 
     /**
      * Creates, configures, and returns an instance of the class for the entity with a given name.
+     *
      * This method makes it easy for you to create instances of a given entity without worrying about the details of managed object creation. The method is conceptually similar to the following code example.
      * <code>
      * $managedObjectModel = $context->persistentStoreCoordinator->managedObjectModel;

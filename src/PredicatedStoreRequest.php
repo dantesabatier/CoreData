@@ -9,7 +9,7 @@
 
 namespace Sabatier\CoreData;
 
-use Sabatier\Foundation\Predicate;
+use Sabatier\Foundation\Predicates\Predicate;
 
 interface PredicatedStoreRequest
 {

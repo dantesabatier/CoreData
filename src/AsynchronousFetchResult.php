@@ -13,9 +13,7 @@ use JetBrains\PhpStorm\Pure;
 use Sabatier\Foundation\ArrayClass;
 
 /**
- * Class AsynchronousFetchResult
  * A fetch result object that encompasses the response from an executed asynchronous fetch request.
- * @package Sabatier\CoreData
  */
 class AsynchronousFetchResult extends PersistentStoreAsynchronousResult
 {

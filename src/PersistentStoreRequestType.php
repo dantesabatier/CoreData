@@ -10,10 +10,8 @@
 namespace Sabatier\CoreData;
 
 /**
- * Class PersistentStoreRequestType
  * These constants specify the types of fetch request.
  * These constants are used by {@see PersistentStoreRequest::requestType}.
- * @package Sabatier\CoreData
  */
 enum PersistentStoreRequestType: int
 {

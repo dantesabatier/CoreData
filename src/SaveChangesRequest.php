@@ -13,9 +13,7 @@ use JetBrains\PhpStorm\Pure;
 use Sabatier\Foundation\Set;
 
 /**
- * Class SaveChangesRequest
  * An encapsulation of a collection of changes to be made by an object store in response to a save operation on a managed object context.
- * @package Sabatier\CoreData
  */
 class SaveChangesRequest extends PersistentStoreRequest
 {

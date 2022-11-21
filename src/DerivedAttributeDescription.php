@@ -10,15 +10,14 @@
 namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\Expression;
+use Sabatier\Foundation\Predicates\Expression;
 
 /**
- * Class DerivedAttributeDescription
  * A description of an attribute of a Core Data entity that derives its value from one or more other properties.
+ *
  * Use derived attributes to optimize fetch performance; for example:
  * Create a derived searchName attribute to reflect a name attribute with case and diacritics removed for more efficient comparison.
  * Create a derived relationshipCount attribute to reflect the number of objects in a relationship and avoid having to do a join.
- * @package Sabatier\CoreData
  */
 class DerivedAttributeDescription extends AttributeDescription
 {

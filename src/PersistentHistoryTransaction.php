@@ -18,9 +18,7 @@ use Sabatier\Foundation\ObjectClass;
 use function Sabatier\Foundation\human_readable_value;
 
 /**
- * Class PersistentHistoryTransaction
  * A set of changes in the persistent history based on a context save or batch operation.
- * @package Sabatier\CoreData
  */
 class PersistentHistoryTransaction extends ObjectClass
 {
@@ -103,6 +101,7 @@ class PersistentHistoryTransaction extends ObjectClass
 
     /**
      * Obtains a notification for use in merging the transaction's changes into a managed object context.
+     *
      * To merge the relevant changes into your view context, first obtain a notification by calling objectIDNotification() on the transaction. Then, pass the notification to {@see ManagedObjectContext::mergeChanges()}.
      * @return Notification A ManagedObjectContextDidSaveObjectIDs notification.
      */

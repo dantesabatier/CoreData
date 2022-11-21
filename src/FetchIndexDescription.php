@@ -13,13 +13,12 @@ use InvalidArgumentException;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
-use Sabatier\Foundation\Predicate;
+use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\Set;
 
 /**
  * Class FetchIndexDescription
  * The description of the index.
- * @package Sabatier\CoreData
  * @property ArrayClass<FetchIndexElementDescription> $elements An array of fetch index element descriptions. Setting this property to an invalid value throws an exception, such as when the new value includes both R-tree and non R-tree elements.
  */
 class FetchIndexDescription extends ObjectClass

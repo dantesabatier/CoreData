@@ -10,13 +10,11 @@
 namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\Expression;
 use Sabatier\Foundation\ObjectClass;
+use Sabatier\Foundation\Predicates\Expression;
 
 /**
- * Class PropertyMapping
  * A mapping instance that specifies in a model how to map from a property in a source entity to a property in a destination entity.
- * @package Sabatier\CoreData
  */
 class PropertyMapping extends ObjectClass
 {
