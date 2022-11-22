@@ -1019,7 +1019,7 @@ class SQLGenerator extends ObjectClass
                 case ExpressionOperatorType::bitwiseXorWith:
                 case ExpressionOperatorType::leftshiftBy:
                 case ExpressionOperatorType::rightshiftBy:
-                    return $arguments->map(fn(Expression $argument): mixed => match ($argument->expressionType) {
+                    return "({$arguments->map(fn(Expression $argument): mixed => match ($argument->expressionType) {
                         ExpressionType::constantValue => (function () use ($argument): mixed {
                             $value = $argument->constantValue();
                             if ($value instanceof ArrayClass) {
@@ -1031,7 +1031,7 @@ class SQLGenerator extends ObjectClass
                         ExpressionType::conditional => $this->buildConditionalExpression($argument),
                         ExpressionType::aggregate => $argument->collection()->sum(),
                         default => $argument->description(),
-                    })->join(" {$operator->operatorSymbol()} ");
+                    })->join(" {$operator->operatorSymbol()} ")})";
                 case ExpressionOperatorType::sum:
                 case ExpressionOperatorType::count:
                 case ExpressionOperatorType::min:

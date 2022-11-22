@@ -14,6 +14,7 @@ use Exception;
 use InvalidArgumentException;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\FlattenSequence;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyValueChange;
 use Sabatier\Foundation\KeyValueObservedChange;
@@ -319,10 +320,11 @@ class ManagedObjectContext extends ObjectClass
         if ($subresults instanceof BatchFaultingArray) {
             return $subresults; // @phpstan-ignore-line
         }
-        $subresults = $subresults->joined();
+        /** @var FlattenSequence<mixed> $joined */
+        $joined = $subresults->joined();
         $resultType = $request->resultType;
         if ($resultType == FetchRequestResultType::countResultType || $resultType == FetchRequestResultType::dictionaryResultType) {
-            return new ArrayClass($subresults);
+            return new ArrayClass($joined);
         }
         /** @var Set<ManagedObject> $objects */
         $objects = new Set();
@@ -349,7 +351,7 @@ class ManagedObjectContext extends ObjectClass
                 }
             }
         }
-        $objects->appendContentsOf($subresults);
+        $objects->appendContentsOf($joined);
         return new ArrayClass($objects); // @phpstan-ignore-line
     }
 

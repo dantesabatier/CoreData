@@ -290,9 +290,11 @@ class SQLConnection extends ObjectClass
         /** @var ArrayClass<ManagedObject> $insertedObjects */
         $insertedObjects = new ArrayClass();
         while (true) {
-            $dictionary = new Dictionary();
-            $continue = $block($dictionary);
-            $insertedObject = EntityDescription::insertNewObject($entity->tableName, $requestContext->context, $dictionary);
+            /** @var Dictionary<mixed> $keyedValues */
+            $keyedValues = new Dictionary();
+            $continue = $block($keyedValues);
+            $insertedObject = EntityDescription::insertNewObject($entity->tableName, $requestContext->context);
+            $insertedObject->setValuesForKeys($keyedValues);
             if (!$continue) {
                 break;
             }

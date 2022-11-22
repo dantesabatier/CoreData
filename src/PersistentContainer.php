@@ -51,7 +51,8 @@ class PersistentContainer extends ObjectClass
         $this->viewContext = new ManagedObjectContext();
         $this->viewContext->persistentStoreCoordinator = $this->persistentStoreCoordinator;
         /** @var ArrayClass<string> $types */
-        $types = $bundle->infoDictionary->valueForKeyPath("CFBundleDocumentTypes.CFBundleTypeName") ?? new ArrayClass([SQLStoreType]);
+        $types = $bundle->infoDictionary?->valueForKeyPath("CFBundleDocumentTypes.CFBundleTypeName") ?? new ArrayClass([SQLStoreType]);
+        /** @psalm-suppress InvalidPropertyAssignmentValue */
         $this->persistentStoreDescriptions = $types->compactMap(function (string $type): ?PersistentStoreDescription {
             if (!$url = match ($type) {
                 SQLStoreType => new URL("sql://$this->name"),
