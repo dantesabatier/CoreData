@@ -16,6 +16,8 @@ use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
+
+use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\in_string;
 use function Sabatier\Foundation\request_concrete_implementation;
 use const Sabatier\Foundation\NotFound;
@@ -108,47 +110,85 @@ abstract class AtomicStore extends PersistentStore
 
     private function executeFetchRequest(FetchRequest $request, ManagedObjectContext $context): ArrayClass
     {
-        if ($request->propertiesToGroupBy || $request->havingPredicate) {
-            throw new InvalidArgumentException(sprintf("invalid fetch request: persistent store of type %s does not support GROUP BY and/or HAVING predicate.", $this->type()));
-        }
-        /** @var Set<ManagedObject> $result */
-        $result = new Set();
+        /** @var Set<ManagedObject> $objects */
+        $objects = new Set();
         /** @var AtomicStoreCacheNode $cacheNode */
         foreach ($this->nodeCache as $cacheNode) {
             $object = $context->object($cacheNode->objectID);
             $this->updateObject($object);
             if ($request->includesSubentities) {
                 if ($cacheNode->objectID->entity->isKindOf($request->entity)) {
-                    $result->append($object);
+                    $objects->append($object);
                 }
             } elseif ($cacheNode->objectID->entity->isEqual($request->entity)) {
-                $result->append($object);
+                $objects->append($object);
+            }
+        }
+        if (($propertiesToGroupBy = $request->propertiesToGroupBy) && !$propertiesToGroupBy->isEmpty()) {
+            if ($request->resultType !== FetchRequestResultType::dictionaryResultType) {
+                throw new InvalidArgumentException(sprintf("invalid fetch request: GROUP BY requires %s, %s given", human_readable_value(FetchRequestResultType::dictionaryResultType), human_readable_value($request->resultType)));
+            }
+            /** @var Dictionary<ArrayClass<ManagedObject>> $dictionary */
+            $dictionary = new Dictionary();
+            foreach ($objects as $object) {
+                foreach ($propertiesToGroupBy as $property) {
+                    $key = $property instanceof PropertyDescription ? $property->name : $property;
+                    $value = $dictionary[$key];
+                    if ($value instanceof ArrayClass) {
+                        $value->append($object);
+                    } else {
+                        $dictionary[$key] = new ArrayClass([$object]);
+                    }
+                }
+            }
+            /** @var Set<ManagedObject> $objects */
+            $objects = new Set($dictionary->joined());
+            if ($havingPredicate = $request->havingPredicate) {
+                $objects = $objects->filtered($havingPredicate);
             }
         }
         if ($predicate = $request->predicate) {
-            $result = $result->filtered($predicate);
+            $objects = $objects->filtered($predicate);
         }
         $resultType = $request->resultType;
         if ($resultType === FetchRequestResultType::managedObjectResultType) {
-            $result = $result->map(fn(ManagedObject $object): ManagedObject => $object->serialized($request->serialization));
+            $objects = $objects->map(fn(ManagedObject $object): ManagedObject => $object->serialized($request->serialization));
             if ($descriptors = $request->sortDescriptors) {
-                $result = $result->sorted($descriptors);
+                $objects = $objects->sorted($descriptors);
             }
         } elseif ($resultType === FetchRequestResultType::managedObjectIDResultType) {
-            $result = $result->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID);
+            $objects = $objects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID);
         } elseif ($resultType === FetchRequestResultType::dictionaryResultType) {
-            $result = $result->compactMap(fn(ManagedObject $object): ?Dictionary => $this->cacheNode($object->objectID)?->propertyCache?->reduce(new Dictionary(), function (Dictionary $result, mixed $value, string $key) use ($request, $object): Dictionary {
-                $property = $request->entity->propertiesByName[$key];
-                if ($property instanceof DerivedAttributeDescription) {
-                    $value = $property->derivationExpression?->expressionValue($object) ?? $value;
+            $objects = $objects->map(fn(ManagedObject $object): Dictionary => $object->jsonSerialize());
+            if (($propertiesToFetch = $request->propertiesToFetch) && !$propertiesToFetch->isEmpty()) {
+                $descriptions = $propertiesToFetch->filter(fn(PropertyDescription|string $property): bool => $property instanceof ExpressionDescription);
+                if (!$descriptions->isEmpty()) {
+                    /** @var ExpressionDescription $description */
+                    foreach ($descriptions as $description) {
+                        if (!($expression = $description->expression)) {
+                            continue;
+                        }
+                        foreach ($objects as $object) {
+                            $object[$description->name] = ManagedObject::coercedValue($expression->expressionValue(new ArrayClass([$object])), $description->expressionResultType);
+                        }
+                    }
                 }
-                $result[$key] = $value;
-                return $result;
-            }));
+                $keys = $propertiesToFetch->map(fn(PropertyDescription|string $property): string => $property instanceof PropertyDescription ? $property->name : $property);
+                $keys->insertAt("entityName", 0);
+                $keys->insertAt("objectID", 0);
+                foreach ($objects as $object) {
+                    foreach ($object->keys as $key) {
+                        if ($keys->containsElement($key)) {
+                            continue;
+                        }
+                        $object->removeValueForKey($key);
+                    }
+                }
+            }
         } else {
-            $result = [new Number($result->count())];
+            $objects = [new Number($objects->count())];
         }
-        return new ArrayClass($result);
+        return new ArrayClass($objects);
     }
 
     private function executeRefreshRequest(RefreshRequest $request, ManagedObjectContext $context): ArrayClass

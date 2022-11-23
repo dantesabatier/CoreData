@@ -157,7 +157,7 @@ abstract class PropertyDescription extends ObjectClass
 
     public function description(): string
     {
-        return sprintf("(<%s: %s>), name %s, isOptional %s, isTransient %s, entity %s renamingIdentifier %s validation predicates %s warnings %s", static::class, $this->hash(), $this->name, (int)$this->isOptional, (int)$this->isTransient, $this->entity->name, $this->renamingIdentifier, $this->validationPredicates->description(), $this->validationWarnings->description());
+        return sprintf("(<%s: %s>), name %s, isOptional %s, isTransient %s, entity %s renamingIdentifier %s, validation predicates %s, warnings %s", static::class, $this->hash(), $this->name, (int)$this->isOptional, (int)$this->isTransient, $this->entity->name, $this->renamingIdentifier, $this->validationPredicates->description(), $this->validationWarnings->description());
     }
 
     public function jsonSerialize(): Dictionary

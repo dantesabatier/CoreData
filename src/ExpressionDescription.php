@@ -11,6 +11,8 @@ namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\Predicates\Expression;
 
+use function Sabatier\Foundation\human_readable_value;
+
 /**
  * An object that describes an expression to include with a fetch request.
  *
@@ -32,5 +34,10 @@ class ExpressionDescription extends PropertyDescription
         } else {
             return parent::__get($name);
         }
+    }
+    
+    public function description(): string
+    {
+        return sprintf('%s, expression %s', parent::description(), human_readable_value($this->expression));
     }
 }

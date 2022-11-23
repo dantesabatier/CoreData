@@ -89,7 +89,7 @@ class AttributeDescription extends PropertyDescription
 
     public function description(): string
     {
-        return sprintf('%s type %s', parent::description(), human_readable_value($this->type));
+        return sprintf('%s, type %s', parent::description(), human_readable_value($this->type));
     }
 
     public function jsonSerialize(): Dictionary
