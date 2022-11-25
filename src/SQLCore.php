@@ -170,6 +170,9 @@ class SQLCore extends IncrementalStore
         return SQLInPlaceMigrationManager::class;
     }
 
+    /**
+     * @throws Exception
+     */
     public static function cachedModelForPersistentStoreWithURL(URL $url, ?Dictionary $options = null): ?ManagedObjectModel
     {
         $connection = new SQLConnection();

@@ -60,7 +60,6 @@ abstract class PersistentStore extends ObjectClass
     }
 
     /**
-     * @throws Exception
      * @internal
      */
     public static function cachedModelForPersistentStoreWithURL(/** @noinspection PhpUnusedParameterInspection */ URL $url, ?Dictionary $options = null): ?ManagedObjectModel

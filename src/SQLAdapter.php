@@ -11,8 +11,6 @@ namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\ObjectClass;
-use Sabatier\Foundation\Predicates\Expression;
-
 use function Sabatier\Foundation\string_contains;
 
 /** @internal */
