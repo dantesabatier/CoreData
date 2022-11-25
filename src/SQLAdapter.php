@@ -11,6 +11,8 @@ namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\ObjectClass;
+use Sabatier\Foundation\Predicates\Expression;
+
 use function Sabatier\Foundation\string_contains;
 
 /** @internal */
@@ -42,15 +44,15 @@ class SQLAdapter extends ObjectClass
 
     private function generatedAlwaysColumnExpression(SQLAttribute $attribute): ?string
     {
-        $description = $attribute->attributeDescription;
-        if ($description instanceof DerivedAttributeDescription && !string_contains((string)$description->derivationExpression, "@")) {
-            $request = new FetchRequest();
-            $request->entity = $attribute->entity->entityDescription;
-            $generator = new SQLGenerator(new SQLFetchRequestContext($request, new ManagedObjectContext(), $this->sqlCore));
-            $expression = $generator->buildDerivedAttributeDescription($description);
-            return (new SQLStatement($expression, $generator->arguments))->description();
+        $attributeDescription = $attribute->attributeDescription;
+        if (!$attributeDescription instanceof DerivedAttributeDescription || string_contains((string)$attributeDescription->derivationExpression, "@")) {
+            return null;
         }
-        return null;
+        $request = new FetchRequest();
+        $request->entity = $attribute->entity->entityDescription;
+        $generator = new SQLGenerator(new SQLFetchRequestContext($request, new ManagedObjectContext(), $this->sqlCore));
+        $format = $generator->buildDerivedAttributeDescription($attributeDescription);
+        return (string)(new SQLStatement($format, $generator->arguments));
     }
 
     private function typeStringForColumn(SQLColumn $column): ?string

@@ -9,16 +9,11 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
-use Sabatier\Foundation\Predicates\CompoundPredicate;
 use Sabatier\Foundation\Predicates\Expression;
-use Sabatier\Foundation\Predicates\ExpressionType;
-use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
-
 use function Sabatier\Foundation\human_readable_value;
-use function Sabatier\Foundation\in_string;
 use function Sabatier\Foundation\request_concrete_implementation;
 use const Sabatier\Foundation\NotFound;
 
@@ -110,6 +105,12 @@ abstract class AtomicStore extends PersistentStore
 
     private function executeFetchRequest(FetchRequest $request, ManagedObjectContext $context): ArrayClass
     {
+        $resultType = $request->resultType;
+        /** @var ArrayClass<PropertyDescription|string> $propertiesToGroupBy */
+        $propertiesToGroupBy = $request->propertiesToGroupBy ?? new ArrayClass();
+        if (!$propertiesToGroupBy->isEmpty() && $resultType !== FetchRequestResultType::dictionaryResultType) {
+            throw new InvalidArgumentException(sprintf("invalid fetch request: GROUP BY requires %s, %s given", human_readable_value(FetchRequestResultType::dictionaryResultType), human_readable_value($request->resultType)));
+        }
         /** @var Set<ManagedObject> $objects */
         $objects = new Set();
         /** @var AtomicStoreCacheNode $cacheNode */
@@ -124,58 +125,61 @@ abstract class AtomicStore extends PersistentStore
                 $objects->append($object);
             }
         }
-        if (($propertiesToGroupBy = $request->propertiesToGroupBy) && !$propertiesToGroupBy->isEmpty()) {
-            if ($request->resultType !== FetchRequestResultType::dictionaryResultType) {
-                throw new InvalidArgumentException(sprintf("invalid fetch request: GROUP BY requires %s, %s given", human_readable_value(FetchRequestResultType::dictionaryResultType), human_readable_value($request->resultType)));
-            }
-            /** @var Dictionary<ArrayClass<ManagedObject>> $dictionary */
-            $dictionary = new Dictionary();
-            foreach ($objects as $object) {
-                foreach ($propertiesToGroupBy as $property) {
-                    $key = $property instanceof PropertyDescription ? $property->name : $property;
-                    $value = $dictionary[$key];
-                    if ($value instanceof ArrayClass) {
-                        $value->append($object);
-                    } else {
-                        $dictionary[$key] = new ArrayClass([$object]);
-                    }
-                }
-            }
-            /** @var Set<ManagedObject> $objects */
-            $objects = new Set($dictionary->joined());
-            if ($havingPredicate = $request->havingPredicate) {
-                $objects = $objects->filtered($havingPredicate);
-            }
-        }
-        if ($predicate = $request->predicate) {
-            $objects = $objects->filtered($predicate);
-        }
-        $resultType = $request->resultType;
         if ($resultType === FetchRequestResultType::managedObjectResultType) {
+            if ($predicate = $request->predicate) {
+                $objects = $objects->filtered($predicate);
+            }
             $objects = $objects->map(fn(ManagedObject $object): ManagedObject => $object->serialized($request->serialization));
             if ($descriptors = $request->sortDescriptors) {
                 $objects = $objects->sorted($descriptors);
             }
         } elseif ($resultType === FetchRequestResultType::managedObjectIDResultType) {
+            if ($predicate = $request->predicate) {
+                $objects = $objects->filtered($predicate);
+            }
+            if ($descriptors = $request->sortDescriptors) {
+                $objects = $objects->sorted($descriptors);
+            }
             $objects = $objects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID);
         } elseif ($resultType === FetchRequestResultType::dictionaryResultType) {
-            $objects = $objects->map(fn(ManagedObject $object): Dictionary => $object->jsonSerialize());
-            if (($propertiesToFetch = $request->propertiesToFetch) && !$propertiesToFetch->isEmpty()) {
-                $descriptions = $propertiesToFetch->filter(fn(PropertyDescription|string $property): bool => $property instanceof ExpressionDescription);
-                if (!$descriptions->isEmpty()) {
-                    /** @var ExpressionDescription $description */
-                    foreach ($descriptions as $description) {
-                        if (!($expression = $description->expression)) {
-                            continue;
-                        }
-                        foreach ($objects as $object) {
-                            $object[$description->name] = ManagedObject::coercedValue($expression->expressionValue(new ArrayClass([$object])), $description->expressionResultType);
+            if (!$propertiesToGroupBy->isEmpty()) {
+                /** @var Dictionary<ArrayClass<ManagedObject>> $dictionary */
+                $dictionary = new Dictionary();
+                foreach ($objects as $object) {
+                    foreach ($propertiesToGroupBy as $property) {
+                        $key = $property instanceof PropertyDescription ? $property->name : $property;
+                        $value = $dictionary[$key];
+                        if ($value instanceof ArrayClass) {
+                            $value[] = $object;
+                        } else {
+                            $dictionary[$key] = new ArrayClass([$object]);
                         }
                     }
                 }
+                /** @var Set<ManagedObject> $objects */
+                $objects = new Set($dictionary->joined());
+                if ($havingPredicate = $request->havingPredicate) {
+                    $objects = $objects->filtered($havingPredicate);
+                }
+            }
+            if ($predicate = $request->predicate) {
+                $objects = $objects->filtered($predicate);
+            }
+            $objects = $objects->map(fn(ManagedObject $object): Dictionary => $object->jsonSerialize());
+            if (($propertiesToFetch = $request->propertiesToFetch) && !$propertiesToFetch->isEmpty()) {
+                /** @var ArrayClass<ExpressionDescription> $expressionDescriptions */
+                $expressionDescriptions = $propertiesToFetch->filter(fn(PropertyDescription|string $property): bool => $property instanceof ExpressionDescription);
+                foreach ($expressionDescriptions as $expressionDescription) {
+                    if (!($expression = $expressionDescription->expression)) {
+                        continue;
+                    }
+                    foreach ($objects as $object) {
+                        $object[$expressionDescription->name] = ManagedObject::coercedValue($expression->expressionValue(new ArrayClass([$object])), $expressionDescription->expressionResultType);
+                    }
+                }
                 $keys = $propertiesToFetch->map(fn(PropertyDescription|string $property): string => $property instanceof PropertyDescription ? $property->name : $property);
-                $keys->insertAt("entityName", 0);
                 $keys->insertAt("objectID", 0);
+                $keys->insertAt("entityName", 1);
                 foreach ($objects as $object) {
                     foreach ($object->keys as $key) {
                         if ($keys->containsElement($key)) {
@@ -184,6 +188,9 @@ abstract class AtomicStore extends PersistentStore
                         $object->removeValueForKey($key);
                     }
                 }
+            }
+            if ($descriptors = $request->sortDescriptors) {
+                $objects = $objects->sorted($descriptors);
             }
         } else {
             $objects = [new Number($objects->count())];

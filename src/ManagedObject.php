@@ -487,7 +487,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $this->reserved[$key] = true;
                 $value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type);
                 $this->setPrimitiveValueForKey($value, $key);
-                unset($this->reserved[$key]);
+                //unset($this->reserved[$key]);
             }
             return $value;
         } elseif ($property instanceof FetchedPropertyDescription) {
@@ -527,7 +527,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     $value->setArray($context->fetch($fetchRequest));
                 }
                 $this->setPrimitiveValueForKey($value, $key);
-                unset($this->reserved[$key]);
+                //unset($this->reserved[$key]);
             }
             return $value;
         } elseif ($property instanceof RelationshipDescription) {
@@ -1015,7 +1015,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if ($value instanceof ManagedObject) {
             return $this->serializedObject($value, $relationship);
         } elseif ($value instanceof Set) {
-            return $value->map(fn (ManagedObject $object): Dictionary => $this->serializedObject($object, $relationship));
+            return $value->map(fn(ManagedObject $object): Dictionary => $this->serializedObject($object, $relationship));
         }
         if ($relationship->isToMany) {
             return new Set();

@@ -53,35 +53,36 @@ class PersistentContainer extends ObjectClass
         /** @var ArrayClass<string> $types */
         $types = $bundle->infoDictionary?->valueForKeyPath("CFBundleDocumentTypes.CFBundleTypeName") ?? new ArrayClass([SQLStoreType]);
         /** @psalm-suppress InvalidPropertyAssignmentValue */
-        $this->persistentStoreDescriptions = /** @phpstan-ignore-line */$types->compactMap(function (string $type): ?PersistentStoreDescription {
-            if (!$url = match ($type) {
-                SQLStoreType => new URL("sql://$this->name"),
-                XMLStoreType => static::defaultDirectoryURL()->appendingPathComponent($this->name)->appendingPathComponent($this->name)->appendingPathExtension('xml'),
-                default => null
-            }) {
-                return null;
-            }
-            if ($url->isFileURL) {
-                $directoryURL = $url->deletingLastPathComponent();
-                try {
-                    $fileManager = FileManager::default();
-                    if (!$fileManager->fileExists($directoryURL->path)) {
-                        $fileManager->createDirectory($directoryURL, true);
-                    }
-                } catch (Exception) {
+        $this->persistentStoreDescriptions = /** @phpstan-ignore-line */
+            $types->compactMap(function (string $type): ?PersistentStoreDescription {
+                if (!($url = match ($type) {
+                    SQLStoreType => new URL("sql://$this->name"),
+                    XMLStoreType => static::defaultDirectoryURL()->appendingPathComponent($this->name)->appendingPathComponent($this->name)->appendingPathExtension('xml'),
+                    default => null
+                })) {
                     return null;
                 }
-            }
-            $persistentStoreDescription = new PersistentStoreDescription($url);
-            $persistentStoreDescription->type = $type;
-            $persistentStoreDescription->configuration = $this->name;
-            $persistentStoreDescription->shouldInferMappingModelAutomatically = true;
-            $persistentStoreDescription->shouldMigrateStoreAutomatically = true;
-            if ($type === XMLStoreType) {
-                $persistentStoreDescription->setOptionForKey(true, ValidateXMLStoreOption);
-            }
-            return $persistentStoreDescription;
-        });
+                if ($url->isFileURL) {
+                    $directoryURL = $url->deletingLastPathComponent();
+                    try {
+                        $fileManager = FileManager::default();
+                        if (!$fileManager->fileExists($directoryURL->path)) {
+                            $fileManager->createDirectory($directoryURL, true);
+                        }
+                    } catch (Exception) {
+                        return null;
+                    }
+                }
+                $persistentStoreDescription = new PersistentStoreDescription($url);
+                $persistentStoreDescription->type = $type;
+                $persistentStoreDescription->configuration = $this->name;
+                $persistentStoreDescription->shouldInferMappingModelAutomatically = true;
+                $persistentStoreDescription->shouldMigrateStoreAutomatically = true;
+                if ($type === XMLStoreType) {
+                    $persistentStoreDescription->setOptionForKey(true, ValidateXMLStoreOption);
+                }
+                return $persistentStoreDescription;
+            });
     }
 
     /**
