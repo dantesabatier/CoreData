@@ -114,7 +114,7 @@ class SQLStoreMigrator
                             if ($destination->name !== $source->name && ($statement = $adapter->newRenameColumnStatement($destination, $source))) {
                                 $connection->execute($statement);
                             }
-                            if (($destination->sqlType !== $source->sqlType || $destination->isOptional !== $source->isOptional || $destination->propertyDescription->maxValue !== $source->propertyDescription->maxValue || $destination->attributeDescription->defaultValue !== $source->attributeDescription->defaultValue) && ($statement = $adapter->newRenameColumnStatement($destination))) {
+                            if (($destination->sqlType !== $source->sqlType || $destination->isOptional !== $source->isOptional || $destination->propertyDescription->maxValue !== $source->propertyDescription->maxValue || $destination->attributeDescription->defaultValue !== $source->attributeDescription->defaultValue || ($destination->attributeDescription instanceof DerivedAttributeDescription && $source->attributeDescription instanceof DerivedAttributeDescription && (string)$destination->attributeDescription->derivationExpression !== (string)$source->attributeDescription->derivationExpression)) && ($statement = $adapter->newRenameColumnStatement($destination))) {
                                 $connection->execute($statement);
                             }
                         } elseif ($source instanceof SQLForeignKey && $destination instanceof SQLForeignKey) {
