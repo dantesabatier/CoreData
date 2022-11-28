@@ -105,12 +105,12 @@ class SQLStoreMigrator
                 /** @var SQLEntity $destinationEntity */
                 $destinationEntity = $destinationModel->entitiesByName[$destinationEntityName];
                 foreach ($sourceEntity->indexes as $index) {
-                    if (!$destinationEntity->indexes->contains(fn(SQLIndex $e): bool => $e->isEqual($index))) {
+                    if (!$destinationEntity->indexes->containsElement($index)) {
                         $connection->execute(SQLStatement::merging($index->dropTableStatements));
                     }
                 }
                 foreach ($destinationEntity->indexes as $index) {
-                    if (!$sourceEntity->indexes->contains(fn(SQLIndex $e): bool => $e->isEqual($index))) {
+                    if (!$sourceEntity->indexes->containsElement($index)) {
                         $createIndexStatements->appendContentsOf($index->createTableStatements);
                     }
                 }
