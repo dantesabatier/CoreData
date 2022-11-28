@@ -208,7 +208,6 @@ class SQLEntity extends StoreMapping
             $this->$name = $this->entityDescription->uniquenessConstraints;
             return $this->$name;
         } elseif ($name == 'indexes') {
-            $indexes = new Dictionary();
             $updateAccumulatingResult = function (Dictionary $result, FetchIndexDescription $indexDescription): Dictionary {
                 if ($indexDescription->isSpatial()) {
                     $result[$indexDescription->name] = new SQLRTreeIndex($indexDescription, $this);
@@ -219,7 +218,8 @@ class SQLEntity extends StoreMapping
                 }
                 return $result;
             };
-            $indexes->merge($this->entityDescription->indexes->reduce(new Dictionary(), $updateAccumulatingResult));
+            /** @var Dictionary<SQLIndex> $indexes */
+            $indexes = $this->entityDescription->indexes->reduce(new Dictionary(), $updateAccumulatingResult);
             foreach ($this->entityDescription->subentities as $subentity) {
                 $indexes->merge($subentity->indexes->reduce(new Dictionary(), $updateAccumulatingResult));
             }

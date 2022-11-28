@@ -288,11 +288,22 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
 
     /**
      * @param ArrayClass<AttributeDescription|string> $constraint
-     * @return FetchIndexDescription
+     * @return FetchIndexDescription|null
      */
-    private function constraintAsIndex(ArrayClass $constraint): FetchIndexDescription
+    private function constraintAsIndex(ArrayClass $constraint): ?FetchIndexDescription
     {
-        $elements = $constraint->map(fn(AttributeDescription|string $e): FetchIndexElementDescription => $e instanceof AttributeDescription ? new FetchIndexElementDescription($e) : new FetchIndexElementDescription($this->propertiesByName[$e]));
+        /** @var ArrayClass<FetchIndexElementDescription> $elements */
+        $elements = $constraint->compactMap(function (AttributeDescription|string $e): ?FetchIndexElementDescription {
+            if ($e instanceof AttributeDescription) {
+                return new FetchIndexElementDescription($e);
+            } elseif ($property = $this->propertiesByName[$e]) {
+                return new FetchIndexElementDescription($property);
+            }
+            return null;
+        });
+        if ($elements->isEmpty()) {
+            return null;
+        }
         $name = $elements->map(fn(FetchIndexElementDescription $element): string => $element->property->name)->join("_");
         $index = new FetchIndexDescription($name, $elements);
         $index->setUnique(true);
@@ -304,7 +315,8 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
      */
     private function uniquenessConstraintsAsFetchIndexes(): ArrayClass
     {
-        return $this->uniquenessConstraints->map(fn(ArrayClass $constraint): FetchIndexDescription => $this->constraintAsIndex($constraint));
+        /** @var ArrayClass<FetchIndexDescription> */
+        return $this->uniquenessConstraints->compactMap(fn(ArrayClass $constraint): ?FetchIndexDescription => $this->constraintAsIndex($constraint));
     }
 
     public function count(): int

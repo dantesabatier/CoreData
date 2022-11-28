@@ -95,6 +95,26 @@ class SQLStoreMigrator
                     $this->removedEntities->append($sourceEntity);
                 }
             }
+            foreach ($copiedEntityMappings as $mapping) {
+                /** @var string $sourceEntityName */
+                $sourceEntityName = $mapping->sourceEntityName;
+                /** @var string $destinationEntityName */
+                $destinationEntityName = $mapping->destinationEntityName;
+                /** @var SQLEntity $sourceEntity */
+                $sourceEntity = $sourceModel->entitiesByName[$sourceEntityName];
+                /** @var SQLEntity $destinationEntity */
+                $destinationEntity = $destinationModel->entitiesByName[$destinationEntityName];
+                foreach ($sourceEntity->indexes as $index) {
+                    if (!$destinationEntity->indexes->contains(fn(SQLIndex $e): bool => $e->isEqual($index))) {
+                        $connection->execute(SQLStatement::merging($index->dropTableStatements));
+                    }
+                }
+                foreach ($destinationEntity->indexes as $index) {
+                    if (!$sourceEntity->indexes->contains(fn(SQLIndex $e): bool => $e->isEqual($index))) {
+                        $createIndexStatements->appendContentsOf($index->createTableStatements);
+                    }
+                }
+            }
             foreach ($transformedEntityMappings as $mapping) {
                 /** @var string $sourceEntityName */
                 $sourceEntityName = $mapping->sourceEntityName;
@@ -159,16 +179,6 @@ class SQLStoreMigrator
                         if ($statement = $adapter->newCreateIndexStatement($property)) {
                             $connection->execute($statement);
                         }
-                    }
-                }
-                foreach ($sourceEntity->indexes as $index) {
-                    if ($index->isUnique && !$destinationEntity->indexes->contains(fn(SQLIndex $e): bool => $e->isEqual($index))) {
-                        $connection->execute(SQLStatement::merging($index->dropTableStatements));
-                    }
-                }
-                foreach ($destinationEntity->indexes as $index) {
-                    if ($index->isUnique && !$sourceEntity->indexes->contains(fn(SQLIndex $e): bool => $e->isEqual($index))) {
-                        $connection->execute(SQLStatement::merging($index->createTableStatements));
                     }
                 }
             }

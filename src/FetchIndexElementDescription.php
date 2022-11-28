@@ -49,8 +49,15 @@ class FetchIndexElementDescription extends ObjectClass
         };
     }
 
-    /** @internal */
+    public function isEqual(mixed $other): bool
+    {
+        if ($other instanceof FetchIndexElementDescription) {
+            return $this->property->isEqual($other->property) && $this->collationType == $other->collationType;
+        }
+        return false;
+    }
 
+    /** @internal */
     public function order(): string
     {
         if ($this->collationType !== FetchIndexElementType::binary) {
