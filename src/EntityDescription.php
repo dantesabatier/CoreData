@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @author Dante Sabatier <dantesabatier@me.com>
- * @version 1.0
- */
-
 namespace Sabatier\CoreData;
 
 use ArrayIterator;
