@@ -31,6 +31,9 @@ class PersistentHistoryToken extends ObjectClass
         return $this->storeTokens->toArray();
     }
 
+    /**
+     * @param array<string, Number> $data
+     */
     public function __unserialize(array $data): void
     {
         $this->storeTokens = new Dictionary($data);
