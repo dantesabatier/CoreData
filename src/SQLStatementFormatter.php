@@ -8,7 +8,6 @@ use Sabatier\Foundation\Formatter;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
 use Sabatier\Foundation\Value;
-
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\typeof;
 

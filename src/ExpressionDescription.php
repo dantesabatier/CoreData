@@ -10,7 +10,6 @@
 namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\Predicates\Expression;
-
 use function Sabatier\Foundation\human_readable_value;
 
 /**

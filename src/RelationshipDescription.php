@@ -6,7 +6,6 @@ use InvalidArgumentException;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyedArchiver;
-
 use Sabatier\Foundation\KeyedUnarchiver;
 use function Sabatier\Foundation\human_readable_value;
 

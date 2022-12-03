@@ -3,7 +3,6 @@
 namespace Sabatier\CoreData;
 
 use InvalidArgumentException;
-
 use function Sabatier\Foundation\human_readable_value;
 
 /** @internal */

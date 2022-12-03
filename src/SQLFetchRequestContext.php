@@ -21,7 +21,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     {
         parent::__construct($this->request, $context, $sqlCore);
         $this->sqlModel = $this->sqlCore->model;
-        $this->sqlEntityForFetchRequest = $this->sqlModel->entity($this->request->entity->name) ?? throw new InternalInconsistencyException();
+        $this->sqlEntityForFetchRequest = $this->sqlModel->entity($this->request->entity->name) ?? throw new InternalInconsistencyException("Entity \"{$this->request->entity->name}\" does not exists");
         $this->fetchStatement = $this->generator->statement() ?? throw new InternalInconsistencyException();
     }
 

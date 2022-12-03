@@ -11,7 +11,6 @@ namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
-
 use function Sabatier\Foundation\human_readable_value;
 
 /**

@@ -210,7 +210,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public static function entity(): EntityDescription
     {
-        return static::staticAssociatedValueForKey(__FUNCTION__) ?? throw new InvalidArgumentException("Uninitialized Core Data Stack");
+        return static::staticAssociatedValueForKey(__FUNCTION__) ?? throw new InternalInconsistencyException(sprintf("Entity \"%s\" does not exists", static::className()));
     }
 
     /**
@@ -281,7 +281,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 }
             } elseif ($property instanceof RelationshipDescription) {
                 if ($property->isToMany) {
-                    $this->createMutationMethods($key);
+                    if ($this->isSubclass(ManagedObject::class)) {
+                        $this->createMutationMethods($key);
+                    }
                     $value ??= new FaultingMutableSet($this, $property);
                 }
             }
@@ -592,7 +594,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $set->setSet($value);
                 $value = $set;
                 $change = $this->mutableSetValueForKey($key);
-                if (!$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key) && !isset($this->reserved[$key])) {
+                if (!$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications && !$this->objectID->isTemporaryID && !isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
                     $this->reserved[$key] = true;
                     /** @var FaultingMutableSet $change */
                     $change = $this->valueForKey($key);
@@ -602,7 +604,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                             $object->setValuesForKeys($member->dictionaryWithValues($member->persistentProperties->valueForKey('name')));
                         }
                     }
-                    unset($this->reserved[$key]);
+                    //unset($this->reserved[$key]);
                 }
                 $comparisonResult = $change->compare($value);
                 if ($comparisonResult == ComparisonResult::orderedDescending) {
@@ -628,8 +630,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 assert($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null, sprintf("invalid argument: %s(%s) expecting \"%s|%s|null\", \"%s\" given", $this->entity->name, $key, ManagedObject::class, ManagedObjectID::class, typeof($value)));
                 $change = $value;
                 $current = $this->primitiveValueForKey($key);
-                if (!$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications && !$this->objectID->isTemporaryID && !$this->entity->isKindOf($property->inverseRelationship->destinationEntity) && $this->isRelationshipForKeyFault($key)) {
+                if (!$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications && !$this->objectID->isTemporaryID && !$this->entity->isKindOf($property->inverseRelationship->destinationEntity) && !isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
+                    $this->reserved[$key] = true;
                     $current = $this->valueForKey($key);
+                    //unset($this->reserved[$key]);
                 }
                 if ($current === null && $value !== null) {
                     $changeKind = KeyValueChange::insertion;
@@ -701,33 +705,35 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $entity = $store->model->entitiesByName[$this->entity->name];
             foreach ($keyedValues as $key => $value) {
                 $property = $entity->propertiesByName[$key];
-                if ($property instanceof SQLForeignKey) {
-                    $representation[$property->toOneRelationship->name] = $this->managedObjectContext->object($store->newObjectID($property->toOneRelationship->destinationEntity->entityDescription, (int)$value));
-                    $representation->removeValueForKey($key);
+                if (!$property instanceof SQLForeignKey) {
+                    continue;
                 }
+                $representation[$property->toOneRelationship->name] = $this->managedObjectContext->object($store->newObjectID($property->toOneRelationship->destinationEntity->entityDescription, (int)$value));
+                $representation->removeValueForKey($key);
             }
         }
         foreach ($this->entity as $property) {
-            $name = $property->name;
-            if ($property instanceof RelationshipDescription) {
-                $value = $representation[$name];
-                if ($value) {
-                    $destinationEntity = $property->destinationEntity;
-                    if ($value instanceof Set || $value instanceof ArrayClass) {
-                        $representation->setValueForKey($value->compactMap(fn(ManagedObject|ManagedObjectID|Dictionary $object): ?ManagedObject => $managedObject($destinationEntity, $object)), $name);
-                    } elseif ($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value instanceof Dictionary) {
-                        $object = $managedObject($destinationEntity, $value);
-                        if ($object) {
-                            $representation->setValueForKey($object, $name);
-                        } else {
-                            $representation->removeValueForKey($name);
-                        }
-                    } elseif ($value instanceof Nil) {
-                        $representation->setValueForKey($value, $name);
-                    } else {
-                        throw new InvalidArgumentException(sprintf("attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", typeof($value), $name));
-                    }
+            if (!$property instanceof RelationshipDescription) {
+                continue;
+            }
+            $key = $property->name;
+            if (!($value = $representation[$key])) {
+                continue;
+            }
+            $destinationEntity = $property->destinationEntity;
+            if ($value instanceof Set || $value instanceof ArrayClass) {
+                $representation->setValueForKey($value->compactMap(fn(ManagedObject|ManagedObjectID|Dictionary $object): ?ManagedObject => $managedObject($destinationEntity, $object)), $key);
+            } elseif ($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value instanceof Dictionary) {
+                $object = $managedObject($destinationEntity, $value);
+                if ($object) {
+                    $representation->setValueForKey($object, $key);
+                } else {
+                    $representation->removeValueForKey($key);
                 }
+            } elseif ($value instanceof Nil) {
+                $representation->setValueForKey($value, $key);
+            } else {
+                throw new InvalidArgumentException(sprintf("attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", typeof($value), $key));
             }
         }
         parent::setValuesForKeys($representation);

@@ -6,7 +6,6 @@ use JetBrains\PhpStorm\ExpectedValues;
 use Sabatier\Foundation\EscapeSequenceColor;
 use Sabatier\Foundation\EscapeSequenceTextAttribute;
 use Sabatier\Foundation\Formatter;
-
 use function Sabatier\Foundation\escape_sequence;
 
 /** @internal */

@@ -368,6 +368,9 @@ class XMLObjectStore extends AtomicStore
         }
     }
 
+    /**
+     * @throws Exception
+     */
     public function willRemoveCacheNodes(Set $cacheNodes): void
     {
         $document = $this->document();
@@ -432,6 +435,9 @@ class XMLObjectStore extends AtomicStore
         return XMLStoreType;
     }
 
+    /**
+     * @throws Exception
+     */
     public function document(): DOMDocument
     {
         if ($this->document === null) {
