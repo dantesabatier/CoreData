@@ -46,7 +46,8 @@ class SQLColumn extends SQLProperty
             return $this->$name;
         } elseif ($name == 'scale') {
             $this->$name = match ($this->sqlType) {
-                SQLType::decimal, SQLType::double => 2,
+                SQLType::decimal => 2, 
+                SQLType::double => 6,
                 default => 0
             };
             return $this->$name;

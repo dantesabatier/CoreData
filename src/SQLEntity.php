@@ -271,12 +271,19 @@ class SQLEntity extends StoreMapping
     public function columnAfter(int $index): SQLColumn
     {
         $properties = $this->properties;
-        $i = $index;
-        while ($i) {
-            $properties->formIndexBefore($i);
-            $property = $properties[$i];
+        $start = $index;
+        $end = $properties->endIndex();
+        while ($start < $end) {
+            $properties->formIndexBefore($start);
+            $property = $properties[$start];
             if ($property instanceof SQLAttribute) {
-                return $property;
+                if ($property->attributeDescription instanceof DerivedAttributeDescription) {
+                    if (!string_contains((string)$property->attributeDescription->derivationExpression, "@")) {
+                        return $property;
+                    }
+                } else {
+                    return $property;
+                }
             }
         }
         return $this->entityKey;
