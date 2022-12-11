@@ -97,7 +97,9 @@ class SQLAdapter extends ObjectClass
                     case SQLType::double:
                     case SQLType::float:
                     case SQLType::varchar:
+                    case SQLType::varbinary:
                         $defaultValue = $attributeDescription->defaultValue ?? ManagedObject::coercedValue(null, $attributeDescription->type, true);
+                        $defaultValue = ManagedObject::coercedValue($defaultValue, $attributeDescription->type, true);
                         if ($defaultValue !== null) {
                             if (is_string($defaultValue)) {
                                 $defaultValue = "'$defaultValue'";

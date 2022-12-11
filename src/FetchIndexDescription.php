@@ -75,9 +75,9 @@ class FetchIndexDescription extends ObjectClass
     }
 
     /** @internal */
-    public function setUnique(bool $unique): void
+    public function setUnique(bool $isUnique): void
     {
-        $this->elements->setValueForKey($unique, 'isUnique');
+        $this->elements->setValueForKey($isUnique, 'isUnique');
     }
 
     /** @internal */

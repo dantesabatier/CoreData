@@ -9,6 +9,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyedArchiver;
+use Sabatier\Foundation\KeyedUnarchiver;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Set;
 use Traversable;
@@ -263,8 +264,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         $dictionary['properties'] = $this->properties->compactMap(function (PropertyDescription $property) use ($style): ?Dictionary {
             if ($property instanceof AttributeDescription || $property instanceof RelationshipDescription) {
                 $property->versionHashInStyle($data, $style);
-                assert(is_string($data));
-                return unserialize($data);
+                return KeyedUnarchiver::unarchiveTopLevelObjectWithData((string)$data);
             }
             return null;
         });

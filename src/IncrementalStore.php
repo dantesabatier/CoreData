@@ -42,6 +42,7 @@ abstract class IncrementalStore extends PersistentStore
      */
     public function newObjectID(EntityDescription $entity, int|string $referenceObject): ManagedObjectID
     {
+        assert(!$entity->isAbstract, "entity cannot be abstract");
         $key = (string)$referenceObject;
         /** @var Dictionary<ManagedObjectID> $table */
         $table = $this->cacheEntities[$entity->name] ?? new Dictionary();

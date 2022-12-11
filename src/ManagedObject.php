@@ -25,7 +25,6 @@ use Sabatier\Foundation\UUID;
 use Sabatier\Foundation\Value;
 use Sabatier\Foundation\ValueTransformer;
 use Throwable;
-use function Sabatier\Foundation\is_serialized;
 use function Sabatier\Foundation\typeof;
 use const Sabatier\Foundation\CocoaErrorDomain;
 use const Sabatier\Foundation\KeyValueValidationError;
@@ -708,7 +707,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 if (!$property instanceof SQLForeignKey) {
                     continue;
                 }
-                $representation[$property->toOneRelationship->name] = $this->managedObjectContext->object($store->newObjectID($property->toOneRelationship->destinationEntity->entityDescription, (int)$value));
+                $fetchRequest = new FetchRequest();
+                $fetchRequest->entity = $property->toOneRelationship->destinationEntity->entityDescription;
+                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath("objectID"), Expression::expressionForConstantValue((int)$value));
+                /** @noinspection PhpUnhandledExceptionInspection */
+                $representation[$property->toOneRelationship->name] = $this->managedObjectContext->fetch($fetchRequest)->first();
                 $representation->removeValueForKey($key);
             }
         }
@@ -825,19 +828,24 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     $value = $property->defaultValue ?? self::coercedValue($value, $attributeType, $in);
                     $value = self::coercedValue($value, $attributeType, $in);
                 }
-            } elseif ($attributeType == AttributeType::transformable) {
-                if (($attributeValueClassName = $property->attributeValueClassName) && !is_a($value, $attributeValueClassName, true) && (is_string($value) && !is_serialized($value))) {
-                    $value = self::coercedValue($value, $attributeType, $in);
-                }
-                $transformerName = $property->valueTransformerName ?? SecureUnarchiveFromDataTransformerName;
-                if ($transformer = ValueTransformer::valueTransformerForName($transformerName)) {
-                    $value = $in ? $transformer->transformedValue($value) : $transformer->reverseTransformedValue($value);
-                }
             } else {
-                if (($property->isOptional && $value === "") && ($attributeType === AttributeType::string || $attributeType === AttributeType::integer16 || $attributeType === AttributeType::integer32 || $attributeType === AttributeType::integer64 || $attributeType === AttributeType::decimal || $attributeType === AttributeType::double || $attributeType === AttributeType::float)) {
-                    $value = null;
-                } else {
-                    $value = self::coercedValue($value, $attributeType, $in);
+                switch ($attributeType) {
+                    case AttributeType::string:
+                    case AttributeType::integer16:
+                    case AttributeType::integer32:
+                    case AttributeType::integer64:
+                    case AttributeType::decimal:
+                    case AttributeType::double:
+                    case AttributeType::float:
+                        if ($property->isOptional && $value === "") {
+                            $value = null;
+                        } else {
+                            $value = self::coercedValue($value, $attributeType, $in);
+                        }
+                        break;
+                    default:
+                        $value = self::coercedValue($value, $attributeType, $in);
+                        break;
                 }
                 if ($attributeValueClassName = $property->attributeValueClassName) {
                     if ($value && !is_a($value, $attributeValueClassName, true)) {
@@ -845,8 +853,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     }
                 } elseif (!match ($attributeType) {
                         AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => is_int($value) || is_float($value) || $value instanceof Number,
-                        AttributeType::string, AttributeType::binaryData, AttributeType::transformable => is_string($value),
+                        AttributeType::string, AttributeType::binaryData => is_string($value),
                         AttributeType::boolean => is_bool($value) || is_int($value) || $value instanceof Number,
+                        AttributeType::transformable => true,
                         default => false,
                     } && !$property->isOptional) {
                     throw new InvalidArgumentException(sprintf("invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeType->name, typeof($value)));

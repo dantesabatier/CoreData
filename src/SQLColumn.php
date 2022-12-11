@@ -38,7 +38,7 @@ class SQLColumn extends SQLProperty
                 SQLType::int => 11,
                 SQLType::bigint => 20,
                 SQLType::decimal, SQLType::double => 10,
-                SQLType::char => 80,
+                SQLType::binary, SQLType::char => 80,
                 SQLType::varchar => 255,
                 SQLType::varbinary => 9999,
                 default => 0,
@@ -46,7 +46,7 @@ class SQLColumn extends SQLProperty
             return $this->$name;
         } elseif ($name == 'scale') {
             $this->$name = match ($this->sqlType) {
-                SQLType::decimal => 2, 
+                SQLType::decimal => 2,
                 SQLType::double => 6,
                 default => 0
             };
