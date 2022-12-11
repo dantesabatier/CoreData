@@ -173,7 +173,8 @@ class SQLStoreMigrator
             }
             /** @var SQLEntity $rootEntity */
             $rootEntity = $destinationEntity->isRootEntity ? $destinationEntity : $destinationEntity->rootEntity;
-            foreach ($rootEntity->properties as $index => $property) {
+            $properties = clone $rootEntity->properties;
+            foreach ($properties as $index => $property) {
                 if (($property instanceof SQLAttribute || $property instanceof SQLForeignKey) && $destinationEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) && !$sourceEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) && ($statement = $adapter->newCreateColumnStatement($property, $rootEntity->columnAfter($index - 1)))) {
                     $connection->execute($statement);
                     if ($statement = $adapter->newCreateIndexStatement($property)) {
