@@ -275,9 +275,7 @@ class SQLEntity extends StoreMapping
         $end = $properties->endIndex();
         while ($start < $end) {
             $property = $properties[$start];
-            if ($property instanceof SQLEntityKey) {
-                return $property;
-            } elseif ($property instanceof SQLAttribute) {
+            if ($property instanceof SQLAttribute) {
                 if ($property->attributeDescription instanceof DerivedAttributeDescription) {
                     if (!string_contains((string)$property->attributeDescription->derivationExpression, "@")) {
                         return $property;
@@ -285,6 +283,8 @@ class SQLEntity extends StoreMapping
                 } else {
                     return $property;
                 }
+            } elseif ($property instanceof SQLEntityKey || $property instanceof SQLForeignKey) {
+                return $property;
             }
             $properties->formIndexAfter($start);
         }
