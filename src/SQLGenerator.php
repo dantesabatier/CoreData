@@ -751,6 +751,8 @@ class SQLGenerator extends ObjectClass
                 $constantValue = str_replace('%', '', $constantValue);
             } elseif (is_bool($constantValue)) {
                 $constantValue = (int)$constantValue;
+            } elseif ($constantValue instanceof ManagedObject) {
+                $constantValue = $constantValue->objectID;
             }
             $argument = $constantValue;
             if (is_string($argument)) {
@@ -1169,25 +1171,28 @@ class SQLGenerator extends ObjectClass
         $columnNames->appendContentsOf([$entity->primaryKey->columnName, $entity->entityKey->columnName]);
         foreach ($insertedObjects as $insertedObject) {
             foreach ($entity->properties as $property) {
+                if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey) {
+                    $columnNames->append($property->name);
+                } elseif ($property instanceof SQLAttribute) {
+                    if ($insertedObject->changedValuesForCurrentEvent()->offsetExists($property->name)) {
+                        $columnNames->append($property->columnName);
+                    }
+                } elseif ($property instanceof SQLToOne) {
+                    $columnNames->append($property->foreignKey->columnName);
+                }
+            }
+        }
+        foreach ($insertedObjects as $insertedObject) {
+            foreach ($columnNames as $columnName) {
+                $property = $entity->propertiesByName[$columnName];
                 if ($property instanceof SQLPrimaryKey) {
                     $arguments->append($insertedObject->objectID->referenceObject);
                 } elseif ($property instanceof SQLEntityKey) {
                     $arguments->append($insertedObject->entity->name);
                 } elseif ($property instanceof SQLAttribute) {
-                    if ($insertedObject->changedValuesForCurrentEvent()->offsetExists($property->name)) {
-                        $columnNames->append($property->columnName);
-                        $arguments->append($this->coercedValue($insertedObject, $property->attributeDescription));
-                    }
-                } elseif ($property instanceof SQLToOne) {
-                    $value = $insertedObject->primitiveValueForKey($property->name);
-                    if ($value instanceof ManagedObject) {
-                        $value = $value->objectID;
-                    }
-                    if ($value instanceof ManagedObjectID) {
-                        $value = $value->referenceObject;
-                    }
-                    $columnNames->append($property->foreignKey->columnName);
-                    $arguments->append($value);
+                    $arguments->append($this->coercedValue($insertedObject, $property->attributeDescription));
+                } elseif ($property instanceof SQLForeignKey) {
+                    $arguments->append($insertedObject->valueForKeyPath("$property->name.{$entity->primaryKey->name}"));
                 }
             }
         }
