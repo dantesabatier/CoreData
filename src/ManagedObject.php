@@ -829,24 +829,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     $value = self::coercedValue($value, $attributeType, $in);
                 }
             } else {
-                switch ($attributeType) {
-                    case AttributeType::string:
-                    case AttributeType::integer16:
-                    case AttributeType::integer32:
-                    case AttributeType::integer64:
-                    case AttributeType::decimal:
-                    case AttributeType::double:
-                    case AttributeType::float:
-                        if ($property->isOptional && $value === "") {
-                            $value = null;
-                        } else {
-                            $value = self::coercedValue($value, $attributeType, $in);
-                        }
-                        break;
-                    default:
-                        $value = self::coercedValue($value, $attributeType, $in);
-                        break;
-                }
+                $value = match ($attributeType) {
+                    AttributeType::string, AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => $property->isOptional && $value === "" ? null : self::coercedValue($value, $attributeType, $in),
+                    default => self::coercedValue($value, $attributeType, $in),
+                };
                 if ($attributeValueClassName = $property->attributeValueClassName) {
                     if ($value && !is_a($value, $attributeValueClassName, true)) {
                         throw new InvalidArgumentException(sprintf("invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeValueClassName, typeof($value)));
