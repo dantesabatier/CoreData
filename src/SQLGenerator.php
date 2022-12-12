@@ -1192,7 +1192,14 @@ class SQLGenerator extends ObjectClass
                 } elseif ($property instanceof SQLAttribute) {
                     $arguments->append($this->coercedValue($insertedObject, $property->attributeDescription));
                 } elseif ($property instanceof SQLForeignKey) {
-                    $arguments->append($insertedObject->valueForKeyPath("$property->name.{$entity->primaryKey->name}"));
+                    $value = $insertedObject->primitiveValueForKey($property->name);
+                    if ($value instanceof ManagedObject) {
+                        $value = $value->objectID;
+                    }
+                    if ($value instanceof ManagedObjectID) {
+                        $value = $value->referenceObject;
+                    }
+                    $arguments->append($value);
                 }
             }
         }
