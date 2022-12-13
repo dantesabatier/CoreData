@@ -259,7 +259,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
             $dictionary['isAbstract'] = $this->isAbstract;
         }
         if ($superentity = $this->superentity) {
-            $dictionary['superentity'] = new Dictionary(['name' => $superentity->name]);
+            $dictionary['superentity'] = $superentity->versionHashInStyle($style);
         }
         $dictionary['properties'] = $this->properties->compactMap(function (PropertyDescription $property) use ($style): ?Dictionary {
             if ($property instanceof AttributeDescription || $property instanceof RelationshipDescription) {
