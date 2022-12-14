@@ -8,20 +8,20 @@ use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Set;
 
 /** @internal */
-class SQLStoreMigrator
+readonly class SQLStoreMigrator
 {
-    public readonly SQLAdapter $adapter;
-    public readonly SQLConnection $connection;
-    public readonly SQLModel $sourceModel;
+    public SQLAdapter $adapter;
+    public SQLConnection $connection;
+    public SQLModel $sourceModel;
     /** @var ArrayClass<SQLEntity> */
-    private readonly ArrayClass $removedEntities;
+    private ArrayClass $removedEntities;
     /** @var ArrayClass<SQLManyToMany> */
-    private readonly ArrayClass $removedManyToMany;
+    private ArrayClass $removedManyToMany;
 
     /**
      * @throws Exception
      */
-    public function __construct(public readonly SQLCore $store, public readonly SQLModel $destinationModel, public readonly MappingModel $mappingModel)
+    public function __construct(public SQLCore $store, public SQLModel $destinationModel, public MappingModel $mappingModel)
     {
         $this->connection = $this->store->schemaValidationConnection;
         $this->adapter = $this->connection->adapter ?? throw new InternalInconsistencyException();

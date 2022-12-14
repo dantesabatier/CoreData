@@ -3,12 +3,12 @@
 namespace Sabatier\CoreData;
 
 /** @internal */
-class SQLSavePlan
+readonly class SQLSavePlan
 {
-    public readonly ManagedObjectContext $savingContext;
-    public readonly SaveChangesRequest $saveRequest;
+    public ManagedObjectContext $savingContext;
+    public SaveChangesRequest $saveRequest;
 
-    public function __construct(public readonly SQLSaveChangesRequestContext $requestContext)
+    public function __construct(public SQLSaveChangesRequestContext $requestContext)
     {
         $this->savingContext = $this->requestContext->context;
         $this->saveRequest = $this->requestContext->request;

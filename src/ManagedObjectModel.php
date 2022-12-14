@@ -146,7 +146,6 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             $attributes = $dictionary['attributes'];
             if ($attributes) {
                 $properties->appendContentsOf($attributes->map(function (Dictionary $description) use ($entity): AttributeDescription {
-                    //TODO: find a definitive way to do this
                     /** @var Dictionary|null $validation */
                     $validation = $description['validation'];
                     if ($validation) {

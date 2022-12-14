@@ -13,9 +13,9 @@ use JetBrains\PhpStorm\Immutable;
 
 /** @internal */
 #[Immutable]
-class SQLCredential
+readonly class SQLCredential
 {
-    public function __construct(public readonly string $user, public readonly ?string $password = null)
+    public function __construct(public string $user, public ?string $password = null)
     {
     }
 }

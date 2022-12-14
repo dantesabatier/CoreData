@@ -346,9 +346,6 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         if ($this->isAbstract) {
             $dictionary['isAbstract'] = $this->isAbstract;
         }
-        if ($superentity = $this->superentity) {
-            $dictionary['superentity'] = new Dictionary(['name' => $superentity->name]);
-        }
         $attributes = $this->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$this->superentity?->attributesByName?->contains(fn(AttributeDescription $e): bool => $e->name === $attribute->name))->map(fn(AttributeDescription $attribute): Dictionary => $attribute->jsonSerialize());
         if (!$attributes->isEmpty()) {
             $dictionary['attributes'] = $attributes;

@@ -6,9 +6,9 @@ use Exception;
 use const Sabatier\Foundation\NotFound;
 
 /** @internal */
-class FaultHandler
+readonly class FaultHandler
 {
-    public function __construct(private readonly PersistentStore $persistentStore)
+    public function __construct(private PersistentStore $persistentStore)
     {
     }
 

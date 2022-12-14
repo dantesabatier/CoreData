@@ -8,9 +8,9 @@ use Sabatier\Foundation\Set;
 
 /** @internal */
 #[Immutable]
-class FaultingMutableSetMutationMethod
+readonly class FaultingMutableSetMutationMethod
 {
-    public function __construct(public readonly string $name, public readonly Closure $closure)
+    public function __construct(public string $name, public Closure $closure)
     {
     }
 
