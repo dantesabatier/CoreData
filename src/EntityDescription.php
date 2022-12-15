@@ -258,6 +258,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         if ($this->isAbstract) {
             $dictionary['isAbstract'] = $this->isAbstract;
         }
+        $dictionary['versionHashModifier'] = $this->versionHashModifier;
         if ($superentity = $this->superentity) {
             $dictionary['superentity'] = $superentity->versionHashInStyle($style);
         }
@@ -268,7 +269,6 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
             }
             return null;
         });
-        $dictionary['versionHashModifier'] = $this->versionHashModifier;
         /** @noinspection PhpUnhandledExceptionInspection */
         return KeyedArchiver::archivedData($dictionary);
     }
@@ -346,6 +346,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         if ($this->isAbstract) {
             $dictionary['isAbstract'] = $this->isAbstract;
         }
+        $dictionary['versionHashModifier'] = $this->versionHashModifier;
         $attributes = $this->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$this->superentity?->attributesByName?->contains(fn(AttributeDescription $e): bool => $e->name === $attribute->name))->map(fn(AttributeDescription $attribute): Dictionary => $attribute->jsonSerialize());
         if (!$attributes->isEmpty()) {
             $dictionary['attributes'] = $attributes;
