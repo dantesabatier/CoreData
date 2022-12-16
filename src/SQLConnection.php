@@ -27,7 +27,6 @@ use Sabatier\Foundation\ProcessInfo;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\ValueTransformer;
-use Throwable;
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\human_readable_time;
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
@@ -133,53 +132,48 @@ class SQLConnection extends ObjectClass
      */
     public function execute(SQLStatement $statement): PDOStatement
     {
-        try {
-            $time = absolute_time_get_current();
-            if (SQLCore::$debugDefault) {
-                $style = SQLStatementFormatterStyle::string;
-                if (SQLCore::$debugDefault > 1) {
-                    $style |= SQLStatementFormatterStyle::arguments;
-                    if (SQLCore::$debugDefault > 2) {
-                        $style |= SQLStatementFormatterStyle::prettyPrint;
-                    }
+        $time = absolute_time_get_current();
+        if (SQLCore::$debugDefault) {
+            $style = SQLStatementFormatterStyle::string;
+            if (SQLCore::$debugDefault > 1) {
+                $style |= SQLStatementFormatterStyle::arguments;
+                if (SQLCore::$debugDefault > 2) {
+                    $style |= SQLStatementFormatterStyle::prettyPrint;
                 }
-                if (SQLCore::$coloredLoggingDefault) {
-                    $style |= SQLStatementFormatterStyle::highlighted;
-                }
-                error_log(sprintf("CoreData: sql: \n%s", $statement->formatted($style)));
             }
-            $pdo = $this->pdo();
-            if ($statement->arguments->isEmpty()) {
-                $prepare = $pdo->query($statement->string);
-                if (SQLCore::$debugDefault) {
-                    error_log(sprintf("CoreData: annotation: total fetch execution time: %s for %s row(s)", human_readable_time(absolute_time_get_current() - $time), $prepare->rowCount()));
-                }
-                return $prepare;
+            if (SQLCore::$coloredLoggingDefault) {
+                $style |= SQLStatementFormatterStyle::highlighted;
             }
-            $prepare = $pdo->prepare($statement->string);
-            $prepare->execute($statement->arguments->map(function (mixed $e): mixed {
-                if ($e instanceof Nil || $e instanceof BackedEnum) {
-                    return $e->value;
-                } elseif ($e instanceof ManagedObjectID) {
-                    return $e->referenceObject;
-                } elseif ($e instanceof Number) {
-                    if (is_bool($e->value)) {
-                        return $e->intValue;
-                    }
-                    return $e->value;
-                } elseif (is_bool($e)) {
-                    return (int)$e;
-                }
-                return $e;
-            })->toArray());
+            error_log(sprintf("CoreData: sql: \n%s", $statement->formatted($style)));
+        }
+        $pdo = $this->pdo();
+        if ($statement->arguments->isEmpty()) {
+            $prepare = $pdo->query($statement->string);
             if (SQLCore::$debugDefault) {
-                error_log(sprintf("CoreData: annotation: fetch execution time: %s for %s row(s)", human_readable_time(absolute_time_get_current() - $time), $prepare->rowCount()));
+                error_log(sprintf("CoreData: annotation: total fetch execution time: %s for %s row(s)", human_readable_time(absolute_time_get_current() - $time), $prepare->rowCount()));
             }
             return $prepare;
-        } catch (Throwable $throwable) {
-            $throwableClass = $throwable::class;
-            throw new $throwableClass($throwable->getMessage(), (int)$throwable->getCode());
         }
+        $prepare = $pdo->prepare($statement->string);
+        $prepare->execute($statement->arguments->map(function (mixed $e): mixed {
+            if ($e instanceof Nil || $e instanceof BackedEnum) {
+                return $e->value;
+            } elseif ($e instanceof ManagedObjectID) {
+                return $e->referenceObject;
+            } elseif ($e instanceof Number) {
+                if (is_bool($e->value)) {
+                    return $e->intValue;
+                }
+                return $e->value;
+            } elseif (is_bool($e)) {
+                return (int)$e;
+            }
+            return $e;
+        })->toArray());
+        if (SQLCore::$debugDefault) {
+            error_log(sprintf("CoreData: annotation: fetch execution time: %s for %s row(s)", human_readable_time(absolute_time_get_current() - $time), $prepare->rowCount()));
+        }
+        return $prepare;
     }
 
     /**
@@ -446,7 +440,7 @@ class SQLConnection extends ObjectClass
      */
     public function hasHistoryTransactionWithNumber(Number $transactionNumber): bool
     {
-        if ($transactionNumber->intValue && $this->hasPersistentHistoryTables()) {
+        if ($transactionNumber->boolValue && $this->hasPersistentHistoryTables()) {
             $execute = $this->execute(new SQLStatement("SELECT COUNT(`transactionID`) FROM `PersistentHistoryTransaction` WHERE `transactionID` = ?", new ArrayClass([$transactionNumber])));
             return (bool)$execute->fetchColumn();
         }
@@ -716,32 +710,27 @@ class SQLConnection extends ObjectClass
      */
     public function createSchema(): bool
     {
-        try {
-            $time = absolute_time_get_current();
-            $model = $this->sqlCore?->model ?? throw new InvalidArgumentException();
-            $database = $this->schema->name;
-            if (SQLCore::$debugDefault) {
-                error_log("CoreData: annotation: creating database \"$database\"");
-            }
-            $this->execute(new SQLStatement("CREATE DATABASE `$database`"));
-            $this->execute(new SQLStatement("USE `$database`"));
-            $entities = $model->entities->filter(fn(SQLEntity $entity): bool => $entity->isRootEntity && !$entity->entityDescription->isPersistentHistoryEntity);
-            foreach ($entities as $entity) {
-                $this->createTableForEntity($entity);
-            }
-            foreach ($entities as $entity) {
-                $this->createIndexesForEntity($entity);
-            }
-            $this->createManyToManyTablesForEntities($entities);
-            $this->saveCachedModel($model);
-            if (SQLCore::$debugDefault) {
-                error_log("CoreData: annotation: database \"$database\" created, total execution time: " . human_readable_time(absolute_time_get_current() - $time));
-            }
-            return true;
-        } catch (Throwable $throwable) {
-            $throwableClass = $throwable::class;
-            throw new $throwableClass($throwable->getMessage(), (int)$throwable->getCode());
+        $time = absolute_time_get_current();
+        $model = $this->sqlCore?->model ?? throw new InvalidArgumentException();
+        $database = $this->schema->name;
+        if (SQLCore::$debugDefault) {
+            error_log("CoreData: annotation: creating database \"$database\"");
         }
+        $this->execute(new SQLStatement("CREATE DATABASE `$database`"));
+        $this->execute(new SQLStatement("USE `$database`"));
+        $entities = $model->entities->filter(fn(SQLEntity $entity): bool => $entity->isRootEntity && !$entity->entityDescription->isPersistentHistoryEntity);
+        foreach ($entities as $entity) {
+            $this->createTableForEntity($entity);
+        }
+        foreach ($entities as $entity) {
+            $this->createIndexesForEntity($entity);
+        }
+        $this->createManyToManyTablesForEntities($entities);
+        $this->saveCachedModel($model);
+        if (SQLCore::$debugDefault) {
+            error_log("CoreData: annotation: database \"$database\" created, total execution time: " . human_readable_time(absolute_time_get_current() - $time));
+        }
+        return true;
     }
 
     /**
@@ -749,15 +738,10 @@ class SQLConnection extends ObjectClass
      */
     public function createSchemaIfNeeded(): bool
     {
-        try {
-            if (!$this->hasSchema()) {
-                return $this->createSchema();
-            }
-            return false;
-        } catch (Throwable $throwable) {
-            $throwableClass = $throwable::class;
-            throw new $throwableClass($throwable->getMessage(), (int)$throwable->getCode());
+        if (!$this->hasSchema()) {
+            return $this->createSchema();
         }
+        return false;
     }
 
     /**

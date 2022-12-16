@@ -756,21 +756,16 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         $value = $relationship->isToMany ? $this->mutableSetValueForKey($key) : new Set([$this->primitiveValueForKey($key)]);
         return new ArrayClass($value->map(fn(ManagedObject|ManagedObjectID $e): ManagedObjectID => $e instanceof ManagedObject ? $e->objectID : $e));
     }
-
+    
     /**
-     * @param mixed $value
-     * @param AttributeType $attributeType
-     * @param bool $in
-     * @return mixed
-     * @noinspection PhpUnhandledExceptionInspection, PhpDocMissingThrowsInspection
      * @internal
      */
-    public static function coercedValue(mixed $value, AttributeType $attributeType, bool $in = false): mixed
+    public static function coercedValue(mixed $value, AttributeType $type, bool $in = false): mixed
     {
         if ($value instanceof Value) {
             $value = $value->value;
         }
-        switch ($attributeType) {
+        switch ($type) {
             case AttributeType::undefined:
             case AttributeType::objectID:
             case AttributeType::binaryData:
@@ -810,10 +805,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     }
 
     /**
-     * @param mixed|null $value
-     * @param PropertyDescription $property
-     * @param bool $in
-     * @return bool
      * @internal
      */
     public static function coerceValue(mixed &$value, PropertyDescription $property, bool $in = false): bool
@@ -822,29 +813,29 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $value = $value->value;
         }
         if ($property instanceof AttributeDescription) {
-            $attributeType = $property->type;
+            $type = $property->type;
             if ($value === null) {
                 if (!$property->isOptional) {
-                    $value = $property->defaultValue ?? self::coercedValue($value, $attributeType, $in);
-                    $value = self::coercedValue($value, $attributeType, $in);
+                    $value = $property->defaultValue ?? self::coercedValue($value, $type, $in);
+                    $value = self::coercedValue($value, $type, $in);
                 }
             } else {
-                $value = match ($attributeType) {
-                    AttributeType::string, AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => $property->isOptional && $value === "" ? null : self::coercedValue($value, $attributeType, $in),
-                    default => self::coercedValue($value, $attributeType, $in),
+                $value = match ($type) {
+                    AttributeType::string, AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => $property->isOptional && $value === "" ? null : self::coercedValue($value, $type, $in),
+                    default => self::coercedValue($value, $type, $in),
                 };
                 if ($attributeValueClassName = $property->attributeValueClassName) {
                     if ($value && !is_a($value, $attributeValueClassName, true)) {
                         throw new InvalidArgumentException(sprintf("invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeValueClassName, typeof($value)));
                     }
-                } elseif (!match ($attributeType) {
+                } elseif (!match ($type) {
                         AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => is_int($value) || is_float($value) || $value instanceof Number,
                         AttributeType::string, AttributeType::binaryData => is_string($value),
                         AttributeType::boolean => is_bool($value) || is_int($value) || $value instanceof Number,
                         AttributeType::transformable => true,
                         default => false,
                     } && !$property->isOptional) {
-                    throw new InvalidArgumentException(sprintf("invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeType->name, typeof($value)));
+                    throw new InvalidArgumentException(sprintf("invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $type->name, typeof($value)));
                 }
             }
         } elseif ($property instanceof FetchedPropertyDescription) {

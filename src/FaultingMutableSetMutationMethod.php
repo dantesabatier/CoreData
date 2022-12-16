@@ -3,11 +3,9 @@
 namespace Sabatier\CoreData;
 
 use Closure;
-use JetBrains\PhpStorm\Immutable;
 use Sabatier\Foundation\Set;
 
 /** @internal */
-#[Immutable]
 readonly class FaultingMutableSetMutationMethod
 {
     public function __construct(public string $name, public Closure $closure)

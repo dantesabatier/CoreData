@@ -9,10 +9,7 @@
 
 namespace Sabatier\CoreData;
 
-use JetBrains\PhpStorm\Immutable;
-
 /** @internal */
-#[Immutable]
 readonly class SQLCredential
 {
     public function __construct(public string $user, public ?string $password = null)
