@@ -263,20 +263,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             if ($property instanceof AttributeDescription && !$property instanceof DerivedAttributeDescription) {
                 $value ??= $property->defaultValue;
                 if ($value === null && !$property->isOptional) {
-                    switch ($property->type) {
-                        case AttributeType::integer16:
-                        case AttributeType::integer32:
-                        case AttributeType::integer64:
-                        case AttributeType::decimal:
-                        case AttributeType::double:
-                        case AttributeType::float:
-                        case AttributeType::boolean:
-                        case AttributeType::date:
-                            $value = self::coercedValue($value, $property->type);
-                            break;
-                        default:
-                            break;
-                    }
+                    $value = match ($property->type) {
+                        AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float, AttributeType::boolean, AttributeType::date, AttributeType::uuid => self::coercedValue($value, $property->type, $property->attributeValueClassName, $property->valueTransformerName),
+                        default => null
+                    };
                 }
             } elseif ($property instanceof RelationshipDescription) {
                 if ($property->isToMany) {
@@ -486,7 +476,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->didAccessValueForKey($key);
             if ($property instanceof DerivedAttributeDescription && !$value && !isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
                 $this->reserved[$key] = true;
-                $value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type);
+                $value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type, $property->attributeValueClassName, $property->valueTransformerName);
                 $this->setPrimitiveValueForKey($value, $key);
                 //unset($this->reserved[$key]);
             }
@@ -756,11 +746,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         $value = $relationship->isToMany ? $this->mutableSetValueForKey($key) : new Set([$this->primitiveValueForKey($key)]);
         return new ArrayClass($value->map(fn(ManagedObject|ManagedObjectID $e): ManagedObjectID => $e instanceof ManagedObject ? $e->objectID : $e));
     }
-    
+
     /**
      * @internal
      */
-    public static function coercedValue(mixed $value, AttributeType $type, bool $in = false): mixed
+    public static function coercedValue(mixed $value, AttributeType $type, ?string $attributeValueClassName = null, ?string $valueTransformerName = null, bool $in = false): mixed
     {
         if ($value instanceof Value) {
             $value = $value->value;
@@ -796,8 +786,17 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $value = $value instanceof URL ? $value : ($value ? new URL($value) : null);
                 break;
             case AttributeType::transformable:
-                if ($value && ($transformer = ValueTransformer::valueTransformerForName(SecureUnarchiveFromDataTransformerName))) {
+                if ($value && ($transformer = ValueTransformer::valueTransformerForName($valueTransformerName ?? SecureUnarchiveFromDataTransformerName))) {
                     $value = $in ? $transformer->transformedValue($value) : $transformer->reverseTransformedValue($value);
+                    if ($t = match ($attributeValueClassName) {
+                        "string" => AttributeType::string,
+                        "int" => AttributeType::integer16,
+                        "bool" => AttributeType::boolean,
+                        "float", => AttributeType::float,
+                        default => false
+                    }) {
+                        $value = self::coercedValue($value, $t, in: $in);
+                    }
                 }
                 break;
         }
@@ -814,18 +813,20 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         }
         if ($property instanceof AttributeDescription) {
             $type = $property->type;
+            $attributeValueClassName = $property->attributeValueClassName;
+            $valueTransformerName = $property->valueTransformerName;
             if ($value === null) {
                 if (!$property->isOptional) {
-                    $value = $property->defaultValue ?? self::coercedValue($value, $type, $in);
-                    $value = self::coercedValue($value, $type, $in);
+                    $value = $property->defaultValue ?? self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $in);
+                    $value = self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $in);
                 }
             } else {
                 $value = match ($type) {
-                    AttributeType::string, AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => $property->isOptional && $value === "" ? null : self::coercedValue($value, $type, $in),
-                    default => self::coercedValue($value, $type, $in),
+                    AttributeType::string, AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => $property->isOptional && $value === "" ? null : self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $in),
+                    default => self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $in),
                 };
-                if ($attributeValueClassName = $property->attributeValueClassName) {
-                    if ($value && !is_a($value, $attributeValueClassName, true)) {
+                if ($attributeValueClassName !== null) {
+                    if ($value && class_exists($attributeValueClassName) && !is_a($value, $attributeValueClassName, true)) {
                         throw new InvalidArgumentException(sprintf("invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeValueClassName, typeof($value)));
                     }
                 } elseif (!match ($type) {

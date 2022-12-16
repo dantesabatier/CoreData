@@ -15,7 +15,7 @@ use function Sabatier\Foundation\human_readable_value;
 
 /**
  * A description of an attribute of a Core Data entity.
- * 
+ *
  * @property mixed $defaultValue The default value of the attribute.
  */
 class AttributeDescription extends PropertyDescription
@@ -23,7 +23,7 @@ class AttributeDescription extends PropertyDescription
     /** @var AttributeType The attribute's type. */
     public AttributeType $type = AttributeType::undefined;
     protected mixed $defaultValue = null;
-    /** @var class-string|null The name of the class used to represent the attribute. */
+    /** @var string|null The name of the class used to represent the attribute. */
     public ?string $attributeValueClassName = null;
     /** @var string|null The name of the transformer used to transform the attribute value. The attribute must be of type {@see AttributeType::transformable}. The transformer must output data from {@see ValueTransformer::transformedValue()} and must allow reverse transformations. If this value is nil, Core Data uses a default a transformer to archive and unarchive the attribute value. */
     public ?string $valueTransformerName = null;
@@ -54,7 +54,7 @@ class AttributeDescription extends PropertyDescription
             return $this->$name;
         } elseif ($name == 'defaultValue') {
             if ($this->$name !== null) {
-                return ManagedObject::coercedValue($this->$name, $this->type);
+                return ManagedObject::coercedValue($this->$name, $this->type, $this->attributeValueClassName, $this->valueTransformerName);
             }
             return $this->$name;
         } else {
