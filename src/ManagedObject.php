@@ -756,38 +756,31 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $value = $value->value;
         }
         switch ($type) {
-            case AttributeType::undefined:
-            case AttributeType::objectID:
-            case AttributeType::binaryData:
-            case AttributeType::string:
-                break;
             case AttributeType::integer16:
             case AttributeType::integer32:
             case AttributeType::integer64:
-                $value = (int)$value;
-                break;
+                return (int)$value;
             case AttributeType::decimal:
             case AttributeType::double:
-                $value = (double)$value;
-                break;
+                return (double)$value;
             case AttributeType::float:
-                $value = (float)$value;
-                break;
+                return (float)$value;
             case AttributeType::boolean:
-                $value = $value instanceof Number ? $value->boolValue : (new Number($value ?? false))->boolValue;
-                break;
+                return $value instanceof Number ? $value->boolValue : (new Number($value ?? false))->boolValue;
             case AttributeType::date:
-                $value = $value instanceof Date ? $value : ($value ? new Date(strtotime($value)) : null);
-                break;
+                return $value instanceof Date ? $value : ($value ? new Date(strtotime($value)) : null);
             case AttributeType::uuid:
-                $value = $value instanceof UUID ? $value : ($value ? new UUID($value) : null);
-                break;
+                return $value instanceof UUID ? $value : ($value ? new UUID($value) : null);
             case AttributeType::uri:
-                $value = $value instanceof URL ? $value : ($value ? new URL($value) : null);
-                break;
+                return $value instanceof URL ? $value : ($value ? new URL($value) : null);
+            case AttributeType::undefined:
             case AttributeType::transformable:
+            case AttributeType::objectID:
                 if ($value && ($transformer = ValueTransformer::valueTransformerForName($valueTransformerName ?? SecureUnarchiveFromDataTransformerName))) {
-                    $value = $in ? $transformer->transformedValue($value) : $transformer->reverseTransformedValue($value);
+                    if ($in) {
+                        return $transformer->transformedValue($value);
+                    }
+                    $value = $transformer->reverseTransformedValue($value);
                     if ($t = match ($attributeValueClassName) {
                         "string" => AttributeType::string,
                         "int" => AttributeType::integer16,
@@ -798,9 +791,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         $value = self::coercedValue($value, $t, in: $in);
                     }
                 }
-                break;
+                return $value;
+            default:
+                return $value;
         }
-        return $value;
     }
 
     /**
