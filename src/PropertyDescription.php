@@ -11,7 +11,6 @@ use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\Predicate;
-use Sabatier\Foundation\Predicates\PredicateOperatorType;
 
 /**
  * A description of a property of a Core Data entity.
@@ -67,22 +66,34 @@ abstract class PropertyDescription extends ObjectClass
             $validationPredicates = new ArrayClass();
             $minValue = $this->minValue;
             if ($minValue !== null) {
-                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForKeyPath($this->name), Expression::expressionForConstantValue($minValue), PredicateOperatorType::greaterThanOrEqualTo));
+                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class ($minValue) extends Validator {
+                    public function validate(mixed $object): bool
+                    {
+                        if (is_string($object)) {
+                            $object = strlen($object);
+                        }
+                        return $object >= $this->value;
+                    }
+                }), Expression::expressionForKeyPath($this->name), selector: "validate"));
             }
             $maxValue = $this->maxValue;
             if ($maxValue !== null) {
-                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForKeyPath($this->name), Expression::expressionForConstantValue($maxValue), PredicateOperatorType::lessThanOrEqualTo));
+                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class ($maxValue) extends Validator {
+                    public function validate(mixed $object): bool
+                    {
+                        if (is_string($object)) {
+                            $object = strlen($object);
+                        }
+                        return $object <= $this->value;
+                    }
+                }), Expression::expressionForKeyPath($this->name), selector: "validate"));
             }
             $regex = $this->regex;
             if ($regex) {
-                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class ($regex) {
-                    public function __construct(public readonly string $regex)
+                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class ($regex) extends Validator {
+                    public function validate(mixed $object): bool
                     {
-                    }
-
-                    public function validate(string $value): bool
-                    {
-                        return preg_match($this->regex, $value) === 1;
+                        return preg_match($this->value, $object) === 1;
                     }
                 }), Expression::expressionForKeyPath($this->name), selector: "validate"));
             }
