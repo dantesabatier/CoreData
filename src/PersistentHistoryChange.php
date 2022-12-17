@@ -45,11 +45,11 @@ class PersistentHistoryChange extends ObjectClass
         /** @var ValueTransformer $valueTransformer */
         $valueTransformer = ValueTransformer::valueTransformerForName(SecureUnarchiveFromDataTransformerName);
         foreach ($dictionary as $key => $value) {
-            if ($key === 'changeType') {
+            if ($key === "changeType") {
                 $value = PersistentHistoryChangeType::from($value);
-            } elseif ($key === 'tombstone') {
+            } elseif ($key === "tombstone") {
                 $value = $valueTransformer->reverseTransformedValue($value);
-            } elseif ($key === 'updatedProperties') {
+            } elseif ($key === "updatedProperties") {
                 /** @var Set<string>|null $updatedProperties */
                 $updatedProperties = $valueTransformer->reverseTransformedValue($value);
                 if ($updatedProperties) {
@@ -63,7 +63,7 @@ class PersistentHistoryChange extends ObjectClass
     public function __get(string $name)
     {
         return $this->$name = match ($name) {
-            'tombstone', 'transaction', 'updatedProperties' => null,
+            "tombstone", "transaction", "updatedProperties" => null,
             default => $this->valueForUndefinedKey($name)
         };
     }

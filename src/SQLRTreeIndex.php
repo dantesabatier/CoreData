@@ -18,9 +18,9 @@ class SQLRTreeIndex extends SQLIndex
         $element = $indexDescription->elements->first();
         $property = $element->property;
         if ($property->isOptional) {
-            throw new InvalidArgumentException(sprintf("CoreData: annotation: invalid argument for index %s, property \"%s\" cannot be optional", human_readable_value($element->collationType), $property->name));
+            throw new InvalidArgumentException(sprintf("Invalid argument for index %s, property \"%s\" cannot be optional", human_readable_value($element->collationType), $property->name));
         }
-        $this->createTableStatements->append(new SQLStatement("ALTER TABLE `$entity->tableName` ADD CONSTRAINT `$indexDescription->name` SPATIAL INDEX IF NOT EXISTS ({$indexDescription->elements->map(fn(FetchIndexElementDescription $element): string => "`{$element->property->name}` {$element->order()}")->join(', ')})"));
+        $this->createTableStatements->append(new SQLStatement("ALTER TABLE `$entity->tableName` ADD CONSTRAINT `$indexDescription->name` SPATIAL INDEX IF NOT EXISTS ({$indexDescription->elements->map(fn(FetchIndexElementDescription $element): string => "`{$element->property->name}` {$element->order()}")->join(", ")})"));
         $this->updateTableStatements->appendContentsOf($this->createTableStatements);
         $this->updateTableStatements->appendContentsOf($this->dropTableStatements);
     }

@@ -26,7 +26,7 @@ class DerivedAttributeDescription extends AttributeDescription
 
     public function __get(string $name)
     {
-        if ($name == 'propertyType') {
+        if ($name == "propertyType") {
             $this->$name = PropertyDescriptionType::derivedAttribute;
             return $this->$name;
         } else {
@@ -39,7 +39,7 @@ class DerivedAttributeDescription extends AttributeDescription
         /** @var Dictionary<mixed> $dictionary */
         $dictionary = parent::jsonSerialize();
         if ($derivationExpression = $this->derivationExpression) {
-            $dictionary['derivationExpressionFormat'] = (string)$derivationExpression;
+            $dictionary["derivationExpressionFormat"] = (string)$derivationExpression;
         }
         return $dictionary;
     }

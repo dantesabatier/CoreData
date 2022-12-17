@@ -42,7 +42,7 @@ class MergeConflict extends ObjectClass
     public function __get(string $name)
     {
         return $this->$name = match ($name) {
-            'objectSnapshot' => $this->sourceObject->dictionaryWithValues($this->sourceObject->persistentProperties->map(fn(PropertyDescription $property): string => $property->name)),
+            "objectSnapshot" => $this->sourceObject->dictionaryWithValues($this->sourceObject->persistentProperties->map(fn(PropertyDescription $property): string => $property->name)),
             default => $this->valueForUndefinedKey($name)
         };
     }

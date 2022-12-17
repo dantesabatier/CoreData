@@ -44,10 +44,10 @@ class SQLCore extends IncrementalStore
         unset($this->maxPrimaryKeys);
         unset($this->model);
         $managedObjectModel = $this->persistentStoreCoordinator->managedObjectModel;
-        if (!$managedObjectModel->entitiesByName['PersistentHistoryTransaction']) {
+        if (!$managedObjectModel->entitiesByName["PersistentHistoryTransaction"]) {
             $reflectionClass = new ReflectionClass(PersistentHistoryTransaction::class);
             $entityDescription = new EntityDescription();
-            $entityDescription->name = 'PersistentHistoryTransaction';
+            $entityDescription->name = "PersistentHistoryTransaction";
             $entityDescription->isPersistentHistoryEntity = true;
             /** @psalm-suppress InvalidPropertyAssignmentValue */
             $entityDescription->properties = /** @phpstan-ignore-line */
@@ -56,11 +56,11 @@ class SQLCore extends IncrementalStore
                         return null;
                     }
                     $name = $property->name;
-                    if ($name == 'token') {
+                    if ($name == "token") {
                         return null;
                     }
-                    if ($name == 'transactionNumber') {
-                        $name = 'transactionID';
+                    if ($name == "transactionNumber") {
+                        $name = "transactionID";
                     }
                     /** @var ReflectionNamedType $reflectionType */
                     $reflectionType = $property->getType();
@@ -71,15 +71,15 @@ class SQLCore extends IncrementalStore
                         $relationship->entity = $entityDescription;
                         $relationship->isToMany = true;
                         $relationship->lazyInverseRelationshipName = "transaction";
-                        $relationship->lazyDestinationEntityName = 'PersistentHistoryChange';
+                        $relationship->lazyDestinationEntityName = "PersistentHistoryChange";
                         return $relationship;
                     }
                     $attribute = new AttributeDescription();
                     $attribute->name = $name;
                     $attribute->entity = $entityDescription;
-                    if ($type == 'string') {
+                    if ($type == "string") {
                         $attribute->type = AttributeType::string;
-                    } elseif ($type == 'int') {
+                    } elseif ($type == "int") {
                         $attribute->type = AttributeType::integer64;
                         $attribute->isOptional = false;
                     } elseif ($type == Date::class) {
@@ -93,10 +93,10 @@ class SQLCore extends IncrementalStore
             $managedObjectModel->addEntity($entityDescription);
             PersistentHistoryTransaction::$entityDescription = $entityDescription;
         }
-        if (!$managedObjectModel->entitiesByName['PersistentHistoryChange']) {
+        if (!$managedObjectModel->entitiesByName["PersistentHistoryChange"]) {
             $reflectionClass = new ReflectionClass(PersistentHistoryChange::class);
             $entityDescription = new EntityDescription();
-            $entityDescription->name = 'PersistentHistoryChange';
+            $entityDescription->name = "PersistentHistoryChange";
             $entityDescription->isPersistentHistoryEntity = true;
             /** @psalm-suppress InvalidPropertyAssignmentValue */
             $entityDescription->properties = /** @phpstan-ignore-line */
@@ -113,15 +113,15 @@ class SQLCore extends IncrementalStore
                         $relationship->name = $name;
                         $relationship->entity = $entityDescription;
                         $relationship->lazyInverseRelationshipName = "changes";
-                        $relationship->lazyDestinationEntityName = 'PersistentHistoryTransaction';
+                        $relationship->lazyDestinationEntityName = "PersistentHistoryTransaction";
                         return $relationship;
                     }
                     $attribute = new AttributeDescription();
                     $attribute->name = $name;
                     $attribute->entity = $entityDescription;
-                    if ($type == 'string') {
+                    if ($type == "string") {
                         $attribute->type = AttributeType::string;
-                    } elseif ($type == 'int') {
+                    } elseif ($type == "int") {
                         $attribute->type = AttributeType::integer16;
                         $attribute->isOptional = false;
                     } elseif ($type == Date::class) {
@@ -145,19 +145,19 @@ class SQLCore extends IncrementalStore
 
     public function __get(string $name)
     {
-        if ($name == 'adapter') {
+        if ($name == "adapter") {
             $this->$name = new SQLAdapter($this);
             return $this->$name;
-        } elseif ($name == 'schemaValidationConnection') {
+        } elseif ($name == "schemaValidationConnection") {
             $this->$name = new SQLConnection($this->adapter);
             return $this->$name;
-        } elseif ($name == 'queryGenerationTrackingConnection') {
+        } elseif ($name == "queryGenerationTrackingConnection") {
             $this->$name = new SQLConnection($this->adapter);
             return $this->$name;
-        } elseif ($name == 'maxPrimaryKeys') {
+        } elseif ($name == "maxPrimaryKeys") {
             $this->$name = new Dictionary();
             return $this->$name;
-        } elseif ($name == 'model') {
+        } elseif ($name == "model") {
             $this->$name = new SQLModel($this->persistentStoreCoordinator->managedObjectModel, $this->configurationName);
             return $this->$name;
         } else {

@@ -45,23 +45,23 @@ class PersistentStoreDescription extends ObjectClass
     public function __get(string $name)
     {
         return match ($name) {
-            'timeout' => $this->options->valueForKey(PersistentStoreTimeoutOption) ?? 8.0,
-            'isReadOnly' => $this->options->valueForKey(ReadOnlyPersistentStoreOption) ?? false,
-            'shouldInferMappingModelAutomatically' => $this->options->valueForKey(InferMappingModelAutomaticallyOption) ?? true,
-            'shouldMigrateStoreAutomatically' => $this->options->valueForKey(MigratePersistentStoresAutomaticallyOption) ?? true,
+            "timeout" => $this->options->valueForKey(PersistentStoreTimeoutOption) ?? 8.0,
+            "isReadOnly" => $this->options->valueForKey(ReadOnlyPersistentStoreOption) ?? false,
+            "shouldInferMappingModelAutomatically" => $this->options->valueForKey(InferMappingModelAutomaticallyOption) ?? true,
+            "shouldMigrateStoreAutomatically" => $this->options->valueForKey(MigratePersistentStoresAutomaticallyOption) ?? true,
             default => $this->valueForUndefinedKey($name),
         };
     }
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == 'timeout') {
+        if ($name == "timeout") {
             $this->options->setValueForKey($value, PersistentStoreTimeoutOption);
-        } elseif ($name == 'isReadOnly') {
+        } elseif ($name == "isReadOnly") {
             $this->options->setValueForKey($value, ReadOnlyPersistentStoreOption);
-        } elseif ($name == 'shouldInferMappingModelAutomatically') {
+        } elseif ($name == "shouldInferMappingModelAutomatically") {
             $this->options->setValueForKey($value, InferMappingModelAutomaticallyOption);
-        } elseif ($name == 'shouldMigrateStoreAutomatically') {
+        } elseif ($name == "shouldMigrateStoreAutomatically") {
             $this->options->setValueForKey($value, MigratePersistentStoresAutomaticallyOption);
         } else {
             $this->setValueForUndefinedKey($value, $name);

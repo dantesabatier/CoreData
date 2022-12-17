@@ -28,10 +28,10 @@ class SQLColumn extends SQLProperty
 
     public function __get(string $name)
     {
-        if ($name == 'columnName') {
+        if ($name == "columnName") {
             $this->$name = $this->propertyDescription->name;
             return $this->$name;
-        } elseif ($name == 'precision') {
+        } elseif ($name == "precision") {
             $this->$name = match ($this->sqlType) {
                 SQLType::tinyint => 1,
                 SQLType::smallint => 6,
@@ -44,14 +44,14 @@ class SQLColumn extends SQLProperty
                 default => 0,
             };
             return $this->$name;
-        } elseif ($name == 'scale') {
+        } elseif ($name == "scale") {
             $this->$name = match ($this->sqlType) {
                 SQLType::decimal => 2,
                 SQLType::double => 6,
                 default => 0
             };
             return $this->$name;
-        } elseif ($name == 'length') {
+        } elseif ($name == "length") {
             $length = $this->precision ? "$this->precision" : "";
             if ($length && $this->scale) {
                 $length .= ",$this->scale";
@@ -65,7 +65,7 @@ class SQLColumn extends SQLProperty
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == 'columnName' || $name == 'precision' || $name == 'scale' || $name == 'length') {
+        if ($name == "columnName" || $name == "precision" || $name == "scale" || $name == "length") {
             $this->$name = $value;
         } else {
             parent::__set($name, $value);

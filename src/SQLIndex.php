@@ -26,9 +26,9 @@ class SQLIndex extends ObjectClass
         $this->updateTableStatements = new ArrayClass();
         $this->dropTableStatements->append(new SQLStatement("ALTER TABLE `$entity->tableName` DROP INDEX IF EXISTS `$indexDescription->name`"));
         if ($this->isUnique) {
-            $this->createTableStatements->append(new SQLStatement("ALTER TABLE `$entity->tableName` ADD CONSTRAINT `$indexDescription->name` UNIQUE INDEX IF NOT EXISTS ({$indexDescription->elements->map(fn(FetchIndexElementDescription $element): string => "`{$element->property->name}` {$element->order()}")->join(', ')}) USING BTREE"));
+            $this->createTableStatements->append(new SQLStatement("ALTER TABLE `$entity->tableName` ADD CONSTRAINT `$indexDescription->name` UNIQUE INDEX IF NOT EXISTS ({$indexDescription->elements->map(fn(FetchIndexElementDescription $element): string => "`{$element->property->name}` {$element->order()}")->join(", ")}) USING BTREE"));
         } else {
-            $this->createTableStatements->append(new SQLStatement("ALTER TABLE `$entity->tableName` ADD INDEX IF NOT EXISTS `$indexDescription->name` ({$indexDescription->elements->map(fn(FetchIndexElementDescription $element): string => "`{$element->property->name}` {$element->order()}")->join(', ')}) USING BTREE"));
+            $this->createTableStatements->append(new SQLStatement("ALTER TABLE `$entity->tableName` ADD INDEX IF NOT EXISTS `$indexDescription->name` ({$indexDescription->elements->map(fn(FetchIndexElementDescription $element): string => "`{$element->property->name}` {$element->order()}")->join(", ")}) USING BTREE"));
         }
         $this->updateTableStatements->appendContentsOf($this->createTableStatements);
         $this->updateTableStatements->appendContentsOf($this->dropTableStatements);

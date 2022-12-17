@@ -60,7 +60,7 @@ class MergePolicy extends ObjectClass
             $this->process($conflictList, $mergeConflict, $sourceObject, $cachedSnapshot, $persistedSnapshot);
         }
         if (!$conflictList->isEmpty()) {
-            throw new Exception((new Error(CocoaErrorDomain, 133021, new Dictionary(['conflictList' => $conflictList->join(', ')])))->description());
+            throw new Exception((new Error(CocoaErrorDomain, 133021, new Dictionary(["conflictList" => $conflictList->join(", ")])))->description());
         }
     }
 
@@ -85,7 +85,7 @@ class MergePolicy extends ObjectClass
             }
         }
         if (!$conflictList->isEmpty()) {
-            throw new Exception((new Error(CocoaErrorDomain, 133021, new Dictionary(['conflictList' => $conflictList->join(', ')])))->description());
+            throw new Exception((new Error(CocoaErrorDomain, 133021, new Dictionary(["conflictList" => $conflictList->join(", ")])))->description());
         }
     }
 

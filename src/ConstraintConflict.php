@@ -34,13 +34,13 @@ class ConstraintConflict extends ObjectClass
     public function __get(string $name)
     {
         return $this->$name = match ($name) {
-            'constraintValues' => new Dictionary(),
+            "constraintValues" => new Dictionary(),
             default => $this->valueForUndefinedKey($name)
         };
     }
 
     public function description(): string
     {
-        return sprintf("%s %s for constraint (%s): database(%s): conflictedObjects (%s):", $this::class, $this->hash(), $this->constraint->join(', '), human_readable_value($this->databaseObject), $this->conflictingObjects->join(', '));
+        return sprintf("%s %s for constraint (%s): database(%s): conflictedObjects (%s):", $this::class, $this->hash(), $this->constraint->join(", "), human_readable_value($this->databaseObject), $this->conflictingObjects->join(", "));
     }
 }

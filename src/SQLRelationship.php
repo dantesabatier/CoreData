@@ -30,11 +30,11 @@ abstract class SQLRelationship extends SQLProperty
 
     public function __get(string $name)
     {
-        if ($name == 'destinationEntity') {
+        if ($name == "destinationEntity") {
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
             $this->$name = $this->entity->model->entitiesByName[$this->lazyDestinationEntityName];
             return $this->$name;
-        } elseif ($name == 'inverseRelationship') {
+        } elseif ($name == "inverseRelationship") {
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->destinationEntity->propertiesByName[$this->lazyInverseRelationshipName]; // @phpstan-ignore-line
             return $this->$name;
@@ -45,7 +45,7 @@ abstract class SQLRelationship extends SQLProperty
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == 'destinationEntity' || $name == 'inverseRelationship') {
+        if ($name == "destinationEntity" || $name == "inverseRelationship") {
             $this->$name = $value;
         } else {
             parent::__set($name, $value);

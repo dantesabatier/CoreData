@@ -44,7 +44,7 @@ class FetchIndexElementDescription extends ObjectClass
     {
         $propertyName = $this->propertyName ?? throw new InvalidArgumentException("property name cannot be null");
         return $this->$name = match ($name) {
-            'property' => $this->indexDescription->entity->propertiesByName[$propertyName] ?? throw new InvalidArgumentException(sprintf("property \"%s\" does not exists", $propertyName)),
+            "property" => $this->indexDescription->entity->propertiesByName[$propertyName] ?? throw new InvalidArgumentException(sprintf("property \"%s\" does not exists", $propertyName)),
             default => $this->valueForUndefinedKey($name)
         };
     }
@@ -70,9 +70,9 @@ class FetchIndexElementDescription extends ObjectClass
     {
         /** @var Dictionary<mixed> $dictionary */
         $dictionary = new Dictionary();
-        $dictionary['propertyName'] = $this->property->name;
+        $dictionary["propertyName"] = $this->property->name;
         if ($this->collationType !== FetchIndexElementType::bTree) {
-            $dictionary['collationType'] = $this->collationType->value;
+            $dictionary["collationType"] = $this->collationType->value;
         }
         return $dictionary;
     }

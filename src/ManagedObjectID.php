@@ -42,25 +42,25 @@ class ManagedObjectID extends ObjectClass implements FetchRequestResult
     public function __get(string $name)
     {
         return match ($name) {
-            'isTemporaryID' => $this->persistentStore === null || !is_int($this->referenceObject),
+            "isTemporaryID" => $this->persistentStore === null || !is_int($this->referenceObject),
             default => $this->valueForUndefinedKey($name)
         };
     }
 
-    #[ArrayShape(['entityName' => "string", 'referenceObject' => "int|string", 'storeIdentifier' => "string"])] public function __serialize(): array
+    #[ArrayShape(["entityName" => "string", "referenceObject" => "int|string", "storeIdentifier" => "string"])] public function __serialize(): array
     {
-        $serialization = ['entityName' => $this->entity->name, 'referenceObject' => $this->referenceObject];
+        $serialization = ["entityName" => $this->entity->name, "referenceObject" => $this->referenceObject];
         if ($persistentStore = $this->persistentStore) {
-            $serialization['storeIdentifier'] = $persistentStore->identifier;
+            $serialization["storeIdentifier"] = $persistentStore->identifier;
         }
         return $serialization;
     }
 
     public function __unserialize(array $data): void
     {
-        $this->entityName = $data['entityName'];
-        $this->referenceObject = $data['referenceObject'];
-        $this->storeIdentifier = $data['storeIdentifier'] ?? null;
+        $this->entityName = $data["entityName"];
+        $this->referenceObject = $data["referenceObject"];
+        $this->storeIdentifier = $data["storeIdentifier"] ?? null;
     }
 
     /**
@@ -90,12 +90,12 @@ class ManagedObjectID extends ObjectClass implements FetchRequestResult
 
     public function description(): string
     {
-        return sprintf('<%s>', $this->uriRepresentation()->absoluteString);
+        return sprintf("<%s>", $this->uriRepresentation()->absoluteString);
     }
 
     public function debugDescription(): string
     {
-        return sprintf('<%s: %s> %s', self::class, $this->hash(), $this->entity->name);
+        return sprintf("<%s: %s> %s", self::class, $this->hash(), $this->entity->name);
     }
 
     public function jsonSerialize(): string

@@ -62,7 +62,7 @@ abstract class PropertyDescription extends ObjectClass
 
     public function __get(string $name)
     {
-        if ($name == 'validationPredicates') {
+        if ($name == "validationPredicates") {
             /** @var ArrayClass<Predicate> $validationPredicates */
             $validationPredicates = new ArrayClass();
             $minValue = $this->minValue;
@@ -84,23 +84,23 @@ abstract class PropertyDescription extends ObjectClass
                     {
                         return preg_match($this->regex, $value) === 1;
                     }
-                }), Expression::expressionForKeyPath($this->name), selector: 'validate'));
+                }), Expression::expressionForKeyPath($this->name), selector: "validate"));
             }
             $this->$name = $validationPredicates;
             return $this->$name;
-        } elseif ($name == 'validationWarnings') {
+        } elseif ($name == "validationWarnings") {
             $this->$name = $this->validationPredicates->map(fn(Predicate $predicate): string => $predicate->predicateFormat());
             return $this->$name;
-        } elseif ($name == 'versionHash') {
+        } elseif ($name == "versionHash") {
             /** @noinspection PhpUnhandledExceptionInspection */
             $this->versionHashInStyle($hash, VersionHashStyle::default);
             assert(is_string($hash));
             $this->$name = $hash;
             return $this->$name;
-        } elseif ($name == 'renamingIdentifier') {
+        } elseif ($name == "renamingIdentifier") {
             $this->$name = $this->name;
             return $this->$name;
-        } elseif ($name == 'propertyType') {
+        } elseif ($name == "propertyType") {
             $this->$name = PropertyDescriptionType::private;
             return $this->$name;
         } else {
@@ -111,7 +111,7 @@ abstract class PropertyDescription extends ObjectClass
     public function __set(string $name, mixed $value): void
     {
         $this->throwIfNotEditable();
-        if ($name == 'validationPredicates' || $name == 'validationWarnings' || $name == 'renamingIdentifier' || $name == 'propertyType') {
+        if ($name == "validationPredicates" || $name == "validationWarnings" || $name == "renamingIdentifier" || $name == "propertyType") {
             $this->$name = $value;
         } else {
             $this->setValueForUndefinedKey($value, $name);
@@ -164,20 +164,24 @@ abstract class PropertyDescription extends ObjectClass
     {
         /** @var Dictionary<mixed> $dictionary */
         $dictionary = new Dictionary();
-        $dictionary['name'] = $this->name;
+        $dictionary["name"] = $this->name;
         if (!$this->isOptional) {
-            $dictionary['isOptional'] = $this->isOptional;
+            $dictionary["isOptional"] = $this->isOptional;
         }
         if ($this->isTransient) {
-            $dictionary['isTransient'] = $this->isTransient;
+            $dictionary["isTransient"] = $this->isTransient;
         }
-        /** @var Dictionary<mixed> $validation */
-        $validation = new Dictionary();
-        $validation['min'] = $this->minValue;
-        $validation['max'] = $this->maxValue;
-        $validation['regex'] = $this->regex;
-        if (!$validation->isEmpty()) {
-            $dictionary['validation'] = $validation;
+        if ($this->versionHashModifier) {
+            $dictionary["versionHashModifier"] = $this->versionHashModifier;
+        }
+        if ($this->minValue) {
+            $dictionary["minValue"] = $this->minValue;
+        }
+        if ($this->maxValue) {
+            $dictionary["maxValue"] = $this->maxValue;
+        }
+        if ($this->regex) {
+            $dictionary["regex"] = $this->regex;
         }
         return $dictionary;
     }

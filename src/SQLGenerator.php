@@ -69,21 +69,21 @@ class SQLGenerator extends ObjectClass
 
     public function __get(string $name)
     {
-        if ($name == 'request') {
+        if ($name == "request") {
             if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext) {
                 $this->$name = $this->requestContext->fetchContext->request;
             } elseif ($this->requestContext instanceof SQLFetchRequestContext) {
                 $this->$name = $this->requestContext->request;
             }
             return $this->$name;
-        } elseif ($name == 'entity') {
+        } elseif ($name == "entity") {
             if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext) {
                 $this->$name = $this->requestContext->fetchContext->sqlEntityForFetchRequest;
             } elseif ($this->requestContext instanceof SQLFetchRequestContext) {
                 $this->$name = $this->requestContext->sqlEntityForFetchRequest;
             }
             return $this->$name;
-        } elseif ($name == 'arguments') {
+        } elseif ($name == "arguments") {
             $this->$name = new ArrayClass();
             return $this->$name;
         } else {
@@ -367,12 +367,12 @@ class SQLGenerator extends ObjectClass
                 break;
             case FetchRequestResultType::countResultType:
                 $this->selectList .= strtoupper($this->keyValueOperator);
-                $this->selectList .= '(';
+                $this->selectList .= "(";
                 if ($this->useDistinct) {
                     $this->selectList .= "DISTINCT ";
                 }
                 $this->appendSelectListToSQLForRequest($request);
-                $this->selectList .= ')';
+                $this->selectList .= ")";
                 break;
         }
     }
@@ -385,7 +385,7 @@ class SQLGenerator extends ObjectClass
         foreach ($expressions as $expression) {
             $this->appendJoinsForRelationships($this->relationshipsFromKeyPathExpression($expression));
         }
-        $this->joinClause = (new Set(explode(' LEFT JOIN ', $this->joinClause)))->join(' LEFT JOIN ');
+        $this->joinClause = (new Set(explode(" LEFT JOIN ", $this->joinClause)))->join(" LEFT JOIN ");
         $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
     }
 
@@ -538,19 +538,19 @@ class SQLGenerator extends ObjectClass
                     foreach ($copy as $columnName) {
                         if (string_contains($this->selectList, $columnName)) {
                             $columnNames->remove($columnName);
-                            if (string_contains($columnName, '?')) {
+                            if (string_contains($columnName, "?")) {
                                 $this->arguments->popFirst();
                             }
                         }
                     }
                     if (!$columnNames->isEmpty()) {
                         $this->selectList .= ", ";
-                        $this->selectList .= $columnNames->join(', ');
+                        $this->selectList .= $columnNames->join(", ");
                     }
                 }
             }
             $source = $destination;
-            $cursor .= '_';
+            $cursor .= "_";
             $cursor .= $name;
         }
     }
@@ -628,7 +628,7 @@ class SQLGenerator extends ObjectClass
                 continue;
             }
             if ($this->raisesForNotApplicableKeys) {
-                throw new UnknownKeyException(sprintf('%s does not contains a property named "%s"', $entity->tableName, $key));
+                throw new UnknownKeyException(sprintf("%s does not contains a property named \"%s\"", $entity->tableName, $key));
             }
         }
         return $properties;
@@ -658,7 +658,7 @@ class SQLGenerator extends ObjectClass
 
     private function isToManyCountKeyPath(Expression $expression): bool
     {
-        return ($expression->expressionType === ExpressionType::keyPath) && count(explode('.', (string)$expression)) > 1;
+        return ($expression->expressionType === ExpressionType::keyPath) && count(explode(".", (string)$expression)) > 1;
     }
 
     private function buildKeyPathExpression(Expression $expression): string
@@ -748,7 +748,7 @@ class SQLGenerator extends ObjectClass
         } elseif ($expression->expressionType == ExpressionType::constantValue) {
             $constantValue = $expression->constantValue();
             if (is_string($constantValue)) {
-                $constantValue = str_replace('%', '', $constantValue);
+                $constantValue = str_replace("%", '', $constantValue);
             } elseif (is_bool($constantValue)) {
                 $constantValue = (int)$constantValue;
             } elseif ($constantValue instanceof ManagedObject) {
@@ -798,7 +798,7 @@ class SQLGenerator extends ObjectClass
         $rightExpression = $predicate->rightExpression;
         $right = $rightExpression->constantValue() ?? $rightExpression->collection();
         assert($right instanceof ArrayClass && !$right->isEmpty(), sprintf("invalid argument: the right expression of an IN operator must be an non-empty \"%s\", (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
-        $clause .= "{$this->buildKeyPathExpression($leftExpression)} IN (" . ArrayClass::repeating('?', $right->count())->join(', ') . ")";
+        $clause .= "{$this->buildKeyPathExpression($leftExpression)} IN (" . ArrayClass::repeating("?", $right->count())->join(", ") . ")";
         $this->arguments->appendContentsOf($right->map(fn(mixed $element): mixed => $element instanceof Expression ? $element->constantValue() : $element));
     }
 
@@ -814,16 +814,16 @@ class SQLGenerator extends ObjectClass
 
     private function prepareEqual(ComparisonPredicate $predicate, string &$clause): void
     {
-        $operator = '=';
+        $operator = "=";
         if ($this->isNullExpression($predicate->leftExpression) || $this->isNullExpression($predicate->rightExpression)) {
-            $operator = '<=>';
+            $operator = "<=>";
         }
         $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator);
     }
 
     private function prepareNotEqual(ComparisonPredicate $predicate, string &$clause): void
     {
-        $this->prepareClauseWithSimplePredicate($predicate, $clause, '!=');
+        $this->prepareClauseWithSimplePredicate($predicate, $clause, "!=");
     }
 
     private function prepareLike(ComparisonPredicate $predicate, string &$clause): void
@@ -913,11 +913,11 @@ class SQLGenerator extends ObjectClass
             throw new InvalidArgumentException();
         }
         $preparedExpression = $this->buildKeyPathExpression($expression);
-        [$entityAlias, $columnName] = explode('.', $preparedExpression);
+        [$entityAlias, $columnName] = explode(".", $preparedExpression);
         $relationship = (function () use ($expression): ?SQLRelationship {
             $relationship = null;
             $entity = $this->entity;
-            $keys = explode('.', $expression->keyPath());
+            $keys = explode(".", $expression->keyPath());
             foreach ($keys as $key) {
                 $property = $entity->propertiesByName[$key];
                 if ($property instanceof SQLRelationship) {
@@ -1062,25 +1062,25 @@ class SQLGenerator extends ObjectClass
                     $function = $operator->operatorSymbol();
                     break;
                 case ExpressionOperatorType::average:
-                    $function = 'AVG';
+                    $function = "AVG";
                     break;
                 case ExpressionOperatorType::raiseToPower:
-                    $function = 'POW';
+                    $function = "POW";
                     break;
                 case ExpressionOperatorType::random:
-                    $function = 'RAND';
+                    $function = "RAND";
                     break;
                 case ExpressionOperatorType::trunc:
-                    $function = 'TRUNCATE';
+                    $function = "TRUNCATE";
                     break;
                 case ExpressionOperatorType::uppercase:
-                    $function = 'UPPER';
+                    $function = "UPPER";
                     break;
                 case ExpressionOperatorType::lowercase:
-                    $function = 'LOWER';
+                    $function = "LOWER";
                     break;
                 case ExpressionOperatorType::concat:
-                    $function = 'CONCAT_WS';
+                    $function = "CONCAT_WS";
                     break;
                 default:
                     throw new InvalidArgumentException("unsupported expression \"$expression\"");
@@ -1089,25 +1089,25 @@ class SQLGenerator extends ObjectClass
                 throw new InvalidArgumentException("invalid function");
             }
             $column = strtoupper($function);
-            $column .= '(';
+            $column .= "(";
             $column .= $arguments->map(fn(Expression $expression): string => match ($expression->expressionType) {
                 ExpressionType::constantValue => (function () use ($expression): string {
                     $value = $expression->constantValue();
                     if ($value instanceof ArrayClass) {
-                        return $value->join(', ');
+                        return $value->join(", ");
                     }
                     return $expression->description();
                 })(),
                 ExpressionType::keyPath => $this->buildKeyPathExpression($expression),
                 ExpressionType::function => $this->buildFunctionExpression($expression),
                 ExpressionType::conditional => $this->buildConditionalExpression($expression),
-                ExpressionType::aggregate => $expression->collection()->join(', '),
+                ExpressionType::aggregate => $expression->collection()->join(", "),
                 default => $expression->description(),
             })->join(match ($operator->operatorType()) {
-                ExpressionOperatorType::cast => ' AS ',
-                default => ', ',
+                ExpressionOperatorType::cast => " AS ",
+                default => ", ",
             });
-            return $column . ')';
+            return $column . ")";
         }
         throw new InvalidArgumentException("invalid argument: unsupported expression $expression");
     }
@@ -1134,7 +1134,7 @@ class SQLGenerator extends ObjectClass
     private function buildGroupByClause(ArrayClass $propertiesToGroupBy): void
     {
         $this->appendGroupByClauseToSQL();
-        $this->groupByClause .= $propertiesToGroupBy->map(fn(PropertyDescription $property): string => "{$this->entity->tableName}.$property->name")->join(', ');
+        $this->groupByClause .= $propertiesToGroupBy->map(fn(PropertyDescription $property): string => "{$this->entity->tableName}.$property->name")->join(", ");
     }
 
     private function buildOrderByClause(?ArrayClass $descriptors): void
@@ -1147,7 +1147,7 @@ class SQLGenerator extends ObjectClass
         $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
         if (!$descriptors->isEmpty()) {
             $this->appendOrderByClauseToSQL();
-            $this->orderByClause .= $descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? 'ASC' : 'DESC'))->join(', ');
+            $this->orderByClause .= $descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? "ASC" : "DESC"))->join(", ");
         }
     }
 
@@ -1203,7 +1203,7 @@ class SQLGenerator extends ObjectClass
                 }
             }
         }
-        $this->string = "INSERT INTO `$entity->tableName` (" . $columnNames->map(fn(string $columnName): string => "`$columnName`")->join(', ') . ") VALUES " . ArrayClass::repeating("(" . ArrayClass::repeating('?', $columnNames->count())->join(', ') . ")", $insertedObjects->count())->join(', ') . " ON DUPLICATE KEY UPDATE {$columnNames->map(fn(string $columnName): string => "`$columnName` = VALUES(`$columnName`)")->join(', ')}";
+        $this->string = "INSERT INTO `$entity->tableName` (" . $columnNames->map(fn(string $columnName): string => "`$columnName`")->join(", ") . ") VALUES " . ArrayClass::repeating("(" . ArrayClass::repeating("?", $columnNames->count())->join(", ") . ")", $insertedObjects->count())->join(", ") . " ON DUPLICATE KEY UPDATE {$columnNames->map(fn(string $columnName): string => "`$columnName` = VALUES(`$columnName`)")->join(", ")}";
         $this->arguments = $arguments;
     }
 
@@ -1241,14 +1241,14 @@ class SQLGenerator extends ObjectClass
             }
             $arguments->appendContentsOf([$object->objectID->referenceObject, $value]);
             return "WHEN `{$entity->primaryKey->columnName}` = ? THEN ?";
-        })->join(" ")} ELSE `$columnName` END)")->join(", ")} WHERE `{$entity->primaryKey->columnName}` IN (" . ArrayClass::repeating('?', $updatedObjects->count())->join(',') . ")";
+        })->join(" ")} ELSE `$columnName` END)")->join(", ")} WHERE `{$entity->primaryKey->columnName}` IN (" . ArrayClass::repeating("?", $updatedObjects->count())->join(",") . ")";
         $arguments->appendContentsOf($updatedObjects->map(fn(ManagedObject $object): string|int => $object->objectID->referenceObject));
         $this->arguments = $arguments;
     }
 
     private function prepareDeleteStatement(SQLEntity $entity, ArrayClass $objects): void
     {
-        $this->string = "DELETE FROM `$entity->tableName` WHERE `{$entity->primaryKey->columnName}` IN (" . ArrayClass::repeating('?', $objects->count())->join(',') . ")";
+        $this->string = "DELETE FROM `$entity->tableName` WHERE `{$entity->primaryKey->columnName}` IN (" . ArrayClass::repeating("?", $objects->count())->join(",") . ")";
         $this->arguments = $objects;
     }
 
@@ -1269,7 +1269,7 @@ class SQLGenerator extends ObjectClass
                 }
                 $arguments[] = $value;
                 return "`$key` = ?";
-            })->join(', ')}";
+            })->join(", ")}";
         $this->arguments = $arguments;
     }
 

@@ -77,10 +77,10 @@ abstract class AtomicStore extends PersistentStore
     private function storeNextReferenceInMetadata(): void
     {
         $metadata = $this->metadata;
-        if ($this->nextReference === NotFound || $this->nextReference === (int)$metadata['StoreNextReference']) {
+        if ($this->nextReference === NotFound || $this->nextReference === (int)$metadata["StoreNextReference"]) {
             return;
         }
-        $metadata['StoreNextReference'] = $this->nextReference;
+        $metadata["StoreNextReference"] = $this->nextReference;
         static::setMetadata($metadata, $this->url);
     }
 
@@ -204,7 +204,7 @@ abstract class AtomicStore extends PersistentStore
             if (!$objects->isEmpty() && ($entity = $this->persistentStoreCoordinator->managedObjectModel->entitiesByName[$key])) {
                 $fetchRequest = new FetchRequest();
                 $fetchRequest->entity = $entity;
-                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath('objectID'), Expression::expressionForConstantValue($objects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID)), PredicateOperatorType::in);
+                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath("objectID"), Expression::expressionForConstantValue($objects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID)), PredicateOperatorType::in);
                 $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
                 return $this->executeFetchRequest($fetchRequest, $context);
             }
@@ -299,7 +299,7 @@ abstract class AtomicStore extends PersistentStore
     public function newReferenceObject(ManagedObject $managedObject): int|string
     {
         if ($this->nextReference === NotFound) {
-            $this->nextReference = (int)$this->metadata['StoreNextReference'];
+            $this->nextReference = (int)$this->metadata["StoreNextReference"];
         }
         $this->nextReference += 1;
         return $this->nextReference;

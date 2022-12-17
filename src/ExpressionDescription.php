@@ -27,7 +27,7 @@ class ExpressionDescription extends PropertyDescription
 
     public function __get(string $name)
     {
-        if ($name == 'propertyType') {
+        if ($name == "propertyType") {
             $this->$name = PropertyDescriptionType::expression;
             return $this->$name;
         } else {
@@ -37,6 +37,6 @@ class ExpressionDescription extends PropertyDescription
     
     public function description(): string
     {
-        return sprintf('%s, expression %s', parent::description(), human_readable_value($this->expression));
+        return sprintf("%s, expression %s", parent::description(), human_readable_value($this->expression));
     }
 }

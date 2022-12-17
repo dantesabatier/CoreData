@@ -40,7 +40,7 @@ class FetchIndexDescription extends ObjectClass
 
     public function __get(string $name)
     {
-        if ($name == 'elements') {
+        if ($name == "elements") {
             return $this->$name;
         } else {
             return $this->valueForUndefinedKey($name);
@@ -49,12 +49,12 @@ class FetchIndexDescription extends ObjectClass
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == 'elements') {
+        if ($name == "elements") {
             if ((new Set($value->map(fn(FetchIndexElementDescription $element): FetchIndexElementType => $element->collationType)))->count() > 1) {
                 throw new InvalidArgumentException("invalid argument: elements must be of the same collation type");
             }
             $this->$name = $value;
-            $this->$name->setValueForKey($this, 'indexDescription');
+            $this->$name->setValueForKey($this, "indexDescription");
         } else {
             $this->setValueForUndefinedKey($value, $name);
         }
@@ -77,7 +77,7 @@ class FetchIndexDescription extends ObjectClass
     /** @internal */
     public function setUnique(bool $isUnique): void
     {
-        $this->elements->setValueForKey($isUnique, 'isUnique');
+        $this->elements->setValueForKey($isUnique, "isUnique");
     }
 
     /** @internal */
@@ -96,8 +96,8 @@ class FetchIndexDescription extends ObjectClass
     {
         /** @var Dictionary<mixed> $dictionary */
         $dictionary = new Dictionary();
-        $dictionary['name'] = $this->name;
-        $dictionary['elements'] = $this->elements->map(fn(FetchIndexElementDescription $element): Dictionary => $element->jsonSerialize());
+        $dictionary["name"] = $this->name;
+        $dictionary["elements"] = $this->elements->map(fn(FetchIndexElementDescription $element): Dictionary => $element->jsonSerialize());
         return $dictionary;
     }
 }

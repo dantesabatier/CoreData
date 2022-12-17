@@ -35,17 +35,17 @@ abstract class SQLProperty extends ObjectClass
     public function __get(string $name)
     {
         return $this->$name = match ($name) {
-            'name' => $this->propertyDescription->name,
-            'isOptional' => $this->propertyDescription->isOptional,
-            'propertyType' => $this->propertyDescription->propertyType,
-            'sqlType' => SQLType::unknown,
+            "name" => $this->propertyDescription->name,
+            "isOptional" => $this->propertyDescription->isOptional,
+            "propertyType" => $this->propertyDescription->propertyType,
+            "sqlType" => SQLType::unknown,
             default => $this->valueForUndefinedKey($name)
         };
     }
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == 'name' || $name == 'isOptional' || $name == 'propertyType' || $name == 'sqlType') {
+        if ($name == "name" || $name == "isOptional" || $name == "propertyType" || $name == "sqlType") {
             $this->$name = $value;
         } else {
             $this->setValueForUndefinedKey($value, $name);

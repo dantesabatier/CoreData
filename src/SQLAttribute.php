@@ -19,7 +19,7 @@ class SQLAttribute extends SQLColumn
 
     public function __get(string $name)
     {
-        if ($name == 'sqlType') {
+        if ($name == "sqlType") {
             $this->$name = match ($this->attributeDescription->type) {
                 AttributeType::transformable, AttributeType::objectID, AttributeType::undefined => SQLType::varbinary,
                 AttributeType::integer16 => SQLType::smallint,

@@ -116,28 +116,28 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     public function __get(string $name)
     {
-        if ($name == 'objectID') {
+        if ($name == "objectID") {
             $this->$name = new ManagedObjectID($this->entity, (new UUID())->uuidString);
             return $this->$name;
-        } elseif ($name == 'changedValues' || $name == 'changedValuesForCurrentEvent') {
+        } elseif ($name == "changedValues" || $name == "changedValuesForCurrentEvent") {
             $this->$name = new Dictionary();
             return $this->$name;
-        } elseif ($name == 'faultHandler') {
+        } elseif ($name == "faultHandler") {
             $this->$name = ($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? throw new InternalInconsistencyException())->faultHandler;
             return $this->$name;
-        } elseif ($name == 'allProperties') {
+        } elseif ($name == "allProperties") {
             $this->$name = $this->entity->properties;
             return $this->$name;
-        } elseif ($name == 'modeledProperties') {
+        } elseif ($name == "modeledProperties") {
             $this->$name = $this->allProperties;
             return $this->$name;
-        } elseif ($name == 'persistentProperties') {
+        } elseif ($name == "persistentProperties") {
             $this->$name = $this->allProperties->filter(fn(PropertyDescription $property): bool => !$property->isTransient && !$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription);
             return $this->$name;
-        } elseif ($name == 'transientProperties') {
+        } elseif ($name == "transientProperties") {
             $this->$name = $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property->isTransient);
             return $this->$name;
-        } elseif ($name == 'serializationKeys') {
+        } elseif ($name == "serializationKeys") {
             /** @psalm-suppress InvalidArgument */
             $this->$name = match ($this->serializationRule) {
                 SerializationRule::attributesOnly => $this->entity->attributesByName->filter(fn(AttributeDescription $attribute, string $key): bool => !$attribute->isTransient)->keys,
@@ -145,15 +145,15 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 default => new ArrayClass(),
             };
             return $this->$name;
-        } elseif ($name == 'hasPersistentChangedValues') {
+        } elseif ($name == "hasPersistentChangedValues") {
             return !$this->changedValues()->isEmpty();
-        } elseif ($name == 'hasChanges') {
+        } elseif ($name == "hasChanges") {
             return $this->isInserted || $this->isUpdated || $this->isDeleted;
-        } elseif ($name == 'isInserted') {
+        } elseif ($name == "isInserted") {
             return $this->isPendingInsertion;
-        } elseif ($name == 'isUpdated') {
+        } elseif ($name == "isUpdated") {
             return $this->isPendingUpdate;
-        } elseif ($name == 'isDeleted') {
+        } elseif ($name == "isDeleted") {
             return $this->isPendingDeletion;
         } else {
             return $this->valueForKey($name);
@@ -162,7 +162,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == 'changedValues' || $name == 'changedValuesForCurrentEvent' || $name == 'serializationKeys' || $name == 'allProperties' || $name == 'modeledProperties' || $name == 'persistentProperties' || $name == 'transientProperties' || $name == 'faultHandler') {
+        if ($name == "changedValues" || $name == "changedValuesForCurrentEvent" || $name == "serializationKeys" || $name == "allProperties" || $name == "modeledProperties" || $name == "persistentProperties" || $name == "transientProperties" || $name == "faultHandler") {
             $this->$name = $value;
         } else {
             $this->setValueForKey($value, $name);
@@ -300,7 +300,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public function changedValues(): Dictionary
     {
         /** @var ArrayClass<string> $keys */
-        $keys = $this->persistentProperties->valueForKey('name');
+        $keys = $this->persistentProperties->valueForKey("name");
         return $this->changedValues->filter(fn(mixed $value, string $key): bool => $keys->containsElement($key));
     }
 
@@ -395,7 +395,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             return $this->valueForUndefinedKey($key);
         }
         if (!$relationship->isToMany) {
-            throw new InvalidArgumentException(sprintf('%s does not contains a to many relationship named "%s"', $this->debugDescription(), $key));
+            throw new InvalidArgumentException(sprintf("%s does not contains a to many relationship named \"%s\"", $this->debugDescription(), $key));
         }
         $mutableSet = $this->primitiveValueForKey($key);
         if (!$mutableSet instanceof FaultingMutableSet) {
@@ -590,7 +590,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     /** @var ManagedObject $object */
                     foreach ($change as $object) {
                         if ($member = $value->member($object)) {
-                            $object->setValuesForKeys($member->dictionaryWithValues($member->persistentProperties->valueForKey('name')));
+                            $object->setValuesForKeys($member->dictionaryWithValues($member->persistentProperties->valueForKey("name")));
                         }
                     }
                     //unset($this->reserved[$key]);
@@ -645,7 +645,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     {
         $store = $this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? throw new InternalInconsistencyException();
         $managedObjectID = function (EntityDescription $entity, mixed $object) use ($store): ?ManagedObjectID {
-            $objectID = $object['objectID'];
+            $objectID = $object["objectID"];
             if ($objectID instanceof ManagedObjectID) {
                 return $objectID;
             }
@@ -658,7 +658,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 throw new InvalidArgumentException();
             };
             if ($objectID) {
-                if (($entityName = $object['entityName']) && ($entityDescription = $this->managedObjectContext->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[$entityName])) {
+                if (($entityName = $object["entityName"]) && ($entityDescription = $this->managedObjectContext->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[$entityName])) {
                     $entity = $entityDescription;
                 }
                 return $newObjectID($entity, $objectID);
@@ -681,12 +681,12 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             return null;
         };
         $representation = clone $keyedValues;
-        if ($representation['objectID']) {
+        if ($representation["objectID"]) {
             $objectID = $managedObjectID($this->entity, $representation);
             if ($objectID) {
-                $representation['objectID'] = $objectID;
+                $representation["objectID"] = $objectID;
             } else {
-                $representation->removeValueForKey('objectID');
+                $representation->removeValueForKey("objectID");
             }
         }
         if ($store instanceof SQLCore) {
@@ -741,7 +741,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public function objectIDsForRelationshipNamed(string $key): ArrayClass
     {
         if (!($relationship = $this->entity->relationshipsByName[$key])) {
-            throw new InternalInconsistencyException(sprintf('%s %s() does not contains a relationship named "%s"', $this->debugDescription(), __FUNCTION__, $key));
+            throw new InternalInconsistencyException(sprintf("%s %s() does not contains a relationship named \"%s\"", $this->debugDescription(), __FUNCTION__, $key));
         }
         $value = $relationship->isToMany ? $this->mutableSetValueForKey($key) : new Set([$this->primitiveValueForKey($key)]);
         return new ArrayClass($value->map(fn(ManagedObject|ManagedObjectID $e): ManagedObjectID => $e instanceof ManagedObject ? $e->objectID : $e));
@@ -863,7 +863,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             if ($property = $this->entity->propertiesByName[$key]) {
                 return self::coerceValue($value, $property);
             } elseif (property_exists($this, $key)) {
-                if ($key == 'objectID' && (is_int($value) || is_string($value))) {
+                if ($key == "objectID" && (is_int($value) || is_string($value))) {
                     $this->objectID->referenceObject = $value;
                     return false;
                 }
@@ -1041,7 +1041,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     public function description(): string
     {
-        return sprintf('<%s %s> (entity: %s; id: %s %s; data: %s)', $this->entity->name, $this->hash(), $this->entity->name, $this->objectID->hash(), $this->objectID->description(), $this->isFault ? "<fault>" : $this->dictionaryWithValues($this->entity->propertiesByName->filter(fn(PropertyDescription $property): bool => !$this->isRelationshipForKeyFault($property->name))->keys)->description());
+        return sprintf("<%s %s> (entity: %s; id: %s %s; data: %s)", $this->entity->name, $this->hash(), $this->entity->name, $this->objectID->hash(), $this->objectID->description(), $this->isFault ? "<fault>" : $this->dictionaryWithValues($this->entity->propertiesByName->filter(fn(PropertyDescription $property): bool => !$this->isRelationshipForKeyFault($property->name))->keys)->description());
     }
 
     public function debugDescription(): string

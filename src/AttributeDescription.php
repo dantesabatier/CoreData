@@ -40,7 +40,7 @@ class AttributeDescription extends PropertyDescription
 
     public function __get(string $name)
     {
-        if ($name == 'attributeValueClassName') {
+        if ($name == "attributeValueClassName") {
             $this->$name = match ($this->type) {
                 AttributeType::date => Date::class,
                 AttributeType::uuid => UUID::class,
@@ -49,10 +49,10 @@ class AttributeDescription extends PropertyDescription
                 default => null,
             };
             return $this->$name;
-        } elseif ($name == 'propertyType') {
+        } elseif ($name == "propertyType") {
             $this->$name = PropertyDescriptionType::attribute;
             return $this->$name;
-        } elseif ($name == 'defaultValue') {
+        } elseif ($name == "defaultValue") {
             if ($this->$name !== null) {
                 return ManagedObject::coercedValue($this->$name, $this->type, $this->attributeValueClassName, $this->valueTransformerName);
             }
@@ -64,9 +64,9 @@ class AttributeDescription extends PropertyDescription
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == 'attributeValueClassName') {
+        if ($name == "attributeValueClassName") {
             $this->$name = $value;
-        } elseif ($name == 'defaultValue') {
+        } elseif ($name == "defaultValue") {
             $this->$name = (new Value($value))->value;
         } else {
             parent::__set($name, $value);
@@ -79,14 +79,14 @@ class AttributeDescription extends PropertyDescription
         /** @var Dictionary<mixed> $dictionary */
         $dictionary = KeyedUnarchiver::unarchiveTopLevelObjectWithData((string)$data);
         if ($this->type !== AttributeType::undefined) {
-            $dictionary['type'] = $this->type->value;
+            $dictionary["type"] = $this->type->value;
         }
         $out = KeyedArchiver::archivedData($dictionary);
     }
 
     public function description(): string
     {
-        return sprintf('%s, type %s', parent::description(), human_readable_value($this->type));
+        return sprintf("%s, type %s", parent::description(), human_readable_value($this->type));
     }
 
     public function jsonSerialize(): Dictionary
@@ -94,10 +94,10 @@ class AttributeDescription extends PropertyDescription
         /** @var Dictionary<mixed> $dictionary */
         $dictionary = parent::jsonSerialize();
         if ($this->type !== AttributeType::undefined) {
-            $dictionary['type'] = $this->type->value;
+            $dictionary["type"] = $this->type->value;
         }
         if ($this->defaultValue !== null) {
-            $dictionary['defaultValue'] = $this->defaultValue;
+            $dictionary["defaultValue"] = $this->defaultValue;
         }
         return $dictionary;
     }

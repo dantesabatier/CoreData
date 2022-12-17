@@ -79,26 +79,26 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
 
     public function __get(string $name)
     {
-        if ($name == 'subentities') {
+        if ($name == "subentities") {
             return $this->subentitiesByName->values;
-        } elseif ($name == 'indexes') {
+        } elseif ($name == "indexes") {
             return $this->$name;
-        } elseif ($name == 'properties') {
+        } elseif ($name == "properties") {
             return $this->propertiesByName->values;
-        } elseif ($name == 'versionHash') {
+        } elseif ($name == "versionHash") {
             $this->$name = $this->versionHashInStyle(VersionHashStyle::default);
             return $this->$name;
-        } elseif ($name == 'renamingIdentifier') {
+        } elseif ($name == "renamingIdentifier") {
             $this->$name = $this->name;
             return $this->$name;
-        } elseif ($name == 'attributesByName') {
+        } elseif ($name == "attributesByName") {
             if ($this->isEditable) {
                 throw new InternalInconsistencyException(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription(), $name));
             }
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription); // @phpstan-ignore-line
             return $this->$name;
-        } elseif ($name == 'relationshipsByName') {
+        } elseif ($name == "relationshipsByName") {
             if ($this->isEditable) {
                 throw new InternalInconsistencyException(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription(), $name));
             }
@@ -112,9 +112,9 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == 'versionHash' || $name == 'renamingIdentifier' || $name == 'attributesByName' || $name == 'relationshipsByName') {
+        if ($name == "versionHash" || $name == "renamingIdentifier" || $name == "attributesByName" || $name == "relationshipsByName") {
             $this->$name = $value;
-        } elseif ($name == 'subentities') {
+        } elseif ($name == "subentities") {
             $this->throwIfNotEditable();
             $this->subentitiesByName->removeAll();
             /** @var EntityDescription $subentity */
@@ -122,7 +122,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
                 /** @noinspection PhpSecondWriteToReadonlyPropertyInspection */
                 $this->subentitiesByName[$subentity->name] = $subentity;
             }
-        } elseif ($name == 'properties') {
+        } elseif ($name == "properties") {
             $this->throwIfNotEditable();
             $this->propertiesByName->removeAll();
             /** @var PropertyDescription $property */
@@ -134,7 +134,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
                 /** @noinspection PhpSecondWriteToReadonlyPropertyInspection */
                 $this->propertiesByName[$property->name] = $property;
             }
-        } elseif ($name == 'indexes') {
+        } elseif ($name == "indexes") {
             $this->throwIfNotEditable();
             $this->indexes->removeAll();
             /** @var FetchIndexDescription $index */
@@ -254,15 +254,15 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     {
         /** @var Dictionary<mixed> $dictionary */
         $dictionary = new Dictionary();
-        $dictionary['name'] = $this->name;
+        $dictionary["name"] = $this->name;
         if ($this->isAbstract) {
-            $dictionary['isAbstract'] = $this->isAbstract;
+            $dictionary["isAbstract"] = $this->isAbstract;
         }
-        $dictionary['versionHashModifier'] = $this->versionHashModifier;
+        $dictionary["versionHashModifier"] = $this->versionHashModifier;
         if ($superentity = $this->superentity) {
-            $dictionary['superentity'] = $superentity->versionHashInStyle($style);
+            $dictionary["superentity"] = $superentity->versionHashInStyle($style);
         }
-        $dictionary['properties'] = $this->properties->compactMap(function (PropertyDescription $property) use ($style): ?Dictionary {
+        $dictionary["properties"] = $this->properties->compactMap(function (PropertyDescription $property) use ($style): ?Dictionary {
             if ($property instanceof AttributeDescription || $property instanceof RelationshipDescription) {
                 $property->versionHashInStyle($data, $style);
                 return KeyedUnarchiver::unarchiveTopLevelObjectWithData((string)$data);
@@ -341,35 +341,35 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     {
         /** @var Dictionary<mixed> $dictionary */
         $dictionary = new Dictionary();
-        $dictionary['name'] = $this->name;
-        $dictionary['managedObjectClassName'] = $this->managedObjectClassName;
+        $dictionary["name"] = $this->name;
+        $dictionary["managedObjectClassName"] = $this->managedObjectClassName;
         if ($this->isAbstract) {
-            $dictionary['isAbstract'] = $this->isAbstract;
+            $dictionary["isAbstract"] = $this->isAbstract;
         }
-        $dictionary['versionHashModifier'] = $this->versionHashModifier;
+        $dictionary["versionHashModifier"] = $this->versionHashModifier;
         $attributes = $this->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$this->superentity?->attributesByName?->contains(fn(AttributeDescription $e): bool => $e->name === $attribute->name))->map(fn(AttributeDescription $attribute): Dictionary => $attribute->jsonSerialize());
         if (!$attributes->isEmpty()) {
-            $dictionary['attributes'] = $attributes;
+            $dictionary["attributes"] = $attributes;
         }
         $relationships = $this->relationshipsByName->filter(fn(RelationshipDescription $relationship): bool => !$this->superentity?->relationshipsByName?->contains(fn(RelationshipDescription $e): bool => $e->name === $relationship->name))->map(fn(RelationshipDescription $relationship): Dictionary => $relationship->jsonSerialize());
         if (!$relationships->isEmpty()) {
-            $dictionary['relationships'] = $relationships;
+            $dictionary["relationships"] = $relationships;
         }
         $fetchedProperties = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof FetchedPropertyDescription && !$this->superentity?->propertiesByName?->contains(fn(PropertyDescription $e): bool => $e->name === $property->name))->map(fn(PropertyDescription $property): Dictionary => $property->jsonSerialize());
         if (!$fetchedProperties->isEmpty()) {
-            $dictionary['fetchedProperties'] = $fetchedProperties;
+            $dictionary["fetchedProperties"] = $fetchedProperties;
         }
         $uniquenessConstraints = $this->uniquenessConstraints;
         if (!$uniquenessConstraints->isEmpty()) {
-            $dictionary['uniquenessConstraints'] = $uniquenessConstraints;
+            $dictionary["uniquenessConstraints"] = $uniquenessConstraints;
         }
         $indexes = $this->indexes->filter(fn(FetchIndexDescription $index): bool => !$index->isUnique() && !$this->superentity?->indexes?->contains(fn(FetchIndexDescription $e): bool => $e->name === $index->name))->map(fn(FetchIndexDescription $index): Dictionary => $index->jsonSerialize());
         if (!$indexes->isEmpty()) {
-            $dictionary['indexes'] = $indexes;
+            $dictionary["indexes"] = $indexes;
         }
         $subentities = $this->subentitiesByName->map(fn(EntityDescription $subentity): Dictionary => $subentity->jsonSerialize());
         if (!$subentities->isEmpty()) {
-            $dictionary['subentities'] = $subentities;
+            $dictionary["subentities"] = $subentities;
         }
         return $dictionary;
     }

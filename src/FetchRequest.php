@@ -76,14 +76,14 @@ class FetchRequest extends PersistentStoreRequest
 
     public function __get(string $name)
     {
-        if ($name == 'entityName') {
+        if ($name == "entityName") {
             $this->$name = $this->entity->name;
             return $this->$name;
-        } elseif ($name == 'entity') {
+        } elseif ($name == "entity") {
             $entityName = $this->entityName ?? throw new InvalidArgumentException("invalid fetch request: expecting an entity or an entity name");
             $this->$name = EntityDescription::entity($entityName, $this->context());
             return $this->$name;
-        } elseif ($name == 'serialization') {
+        } elseif ($name == "serialization") {
             /** @psalm-suppress all */
             $this->$name = ($this->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $this->entity->propertiesByName[$property]) ?? $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient && (!$attribute instanceof DerivedAttributeDescription || !string_contains($attribute->derivationExpression, "@")))->values)->reduce(new Dictionary(), function (Dictionary $result, PropertyDescription $propertyDescription): Dictionary {
                 if ($propertyDescription instanceof AttributeDescription) {
@@ -122,7 +122,7 @@ class FetchRequest extends PersistentStoreRequest
         if (!($queue = OperationQueue::current())) {
             throw new InvalidArgumentException("current operation queue not found");
         }
-        if (!($context = $queue->associatedValueForKey('managedObjectContext'))) {
+        if (!($context = $queue->associatedValueForKey("managedObjectContext"))) {
             throw new InvalidArgumentException("unable to find the managed object context associated with the current operation queue");
         }
         return $context;

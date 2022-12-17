@@ -43,32 +43,32 @@ class SQLManyToMany extends SQLRelationship
 
     public function __get(string $name)
     {
-        if ($name == 'inverseManyToMany') {
+        if ($name == "inverseManyToMany") {
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->inverseRelationship; // @phpstan-ignore-line
             return $this->$name;
-        } elseif ($name == 'correlationTableName') {
-            $this->$name = (new ArrayClass([$this->destinationEntity, $this->inverseRelationship->destinationEntity]))->sorted([new SortDescriptor('tableName')])->valueForKey('tableName')->join('');
+        } elseif ($name == "correlationTableName") {
+            $this->$name = (new ArrayClass([$this->destinationEntity, $this->inverseRelationship->destinationEntity]))->sorted([new SortDescriptor("tableName")])->valueForKey("tableName")->join('');
             return $this->$name;
-        } elseif ($name == 'columnName') {
+        } elseif ($name == "columnName") {
             $this->$name = "{$this->name}ID";
             return $this->$name;
-        } elseif ($name == 'columnSQLType') {
+        } elseif ($name == "columnSQLType") {
             $this->$name = SQLType::int;
             return $this->$name;
-        } elseif ($name == 'inverseColumnName') {
+        } elseif ($name == "inverseColumnName") {
             $this->$name = $this->inverseManyToMany->columnName;
             return $this->$name;
-        } elseif ($name == 'orderColumnName') {
+        } elseif ($name == "orderColumnName") {
             $this->$name = $this->isReflexive ? $this->columnName : (new ArrayClass([$this->columnName, $this->inverseColumnName]))->sort(fn(string $e, string $e1): int => ComparisonResult::orderedAscending->value * ($e <=> $e1))[0];
             return $this->$name;
-        } elseif ($name == 'inverseOrderColumnName') {
+        } elseif ($name == "inverseOrderColumnName") {
             $this->$name = $this->isReflexive ? $this->columnName : (new ArrayClass([$this->columnName, $this->inverseColumnName]))->sort(fn(string $e, string $e1): int => ComparisonResult::orderedAscending->value * ($e <=> $e1))[1];
             return $this->$name;
-        } elseif ($name == 'isReflexive') {
+        } elseif ($name == "isReflexive") {
             $this->$name = $this->columnName === $this->inverseColumnName;
             return $this->$name;
-        } elseif ($name == 'isMaster') {
+        } elseif ($name == "isMaster") {
             $this->$name = false;
             return $this->$name;
         } else {
@@ -78,7 +78,7 @@ class SQLManyToMany extends SQLRelationship
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == 'inverseManyToMany' || $name == 'correlationTableName' || $name == 'columnName' || $name == 'columnSQLType' || $name == 'inverseColumnName' || $name == 'orderColumnName' || $name == 'inverseOrderColumnName' || $name == 'isReflexive' || $name == 'isMaster') {
+        if ($name == "inverseManyToMany" || $name == "correlationTableName" || $name == "columnName" || $name == "columnSQLType" || $name == "inverseColumnName" || $name == "orderColumnName" || $name == "inverseOrderColumnName" || $name == "isReflexive" || $name == "isMaster") {
             $this->$name = $value;
         } else {
             parent::__set($name, $value);

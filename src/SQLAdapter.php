@@ -26,7 +26,7 @@ class SQLAdapter extends ObjectClass
     public function __get(string $name)
     {
         return $this->$name = match ($name) {
-            'model' => $this->sqlCore->model,
+            "model" => $this->sqlCore->model,
             default => $this->valueForUndefinedKey($name)
         };
     }
@@ -172,10 +172,10 @@ class SQLAdapter extends ObjectClass
         $destinationEntity = $toOneRelationship->destinationEntity;
         $primaryKey = $destinationEntity->primaryKey;
         return new SQLStatement("ALTER TABLE `$entity->tableName` ADD CONSTRAINT FK_{$entity->tableName}_{$toOneRelationship->foreignEntityKey->name} FOREIGN KEY IF NOT EXISTS (`$foreignKey->columnName`) REFERENCES `$destinationEntity->tableName` (`$primaryKey->columnName`) ON UPDATE CASCADE ON DELETE " . match ($foreignKey->relationshipDescription->inverseRelationship->deleteRule) {
-                DeleteRule::noActionDeleteRule => 'NO ACTION',
-                DeleteRule::nullifyDeleteRule => 'SET NULL',
-                DeleteRule::cascadeDeleteRule => 'CASCADE',
-                DeleteRule::denyDeleteRule => 'RESTRICT'
+                DeleteRule::noActionDeleteRule => "NO ACTION",
+                DeleteRule::nullifyDeleteRule => "SET NULL",
+                DeleteRule::cascadeDeleteRule => "CASCADE",
+                DeleteRule::denyDeleteRule => "RESTRICT"
             });
     }
 
@@ -290,7 +290,7 @@ class SQLAdapter extends ObjectClass
     public function newCreateTableStatementForManyToMany(SQLManyToMany $manyToMany): SQLStatement
     {
         $columnNames = new ArrayClass([$manyToMany->orderColumnName, $manyToMany->inverseOrderColumnName]);
-        return new SQLStatement("CREATE TABLE IF NOT EXISTS `$manyToMany->correlationTableName` ({$columnNames->map(fn (string $columnName): string => "`$columnName` {$manyToMany->columnSQLType->value}(11) UNSIGNED")->join(", ")}, CONSTRAINT PRIMARY KEY ({$columnNames->map(fn(string $columnName): string => "`$columnName`")->join(', ')}) USING BTREE) ENGINE={$this->sqlCore->schemaValidationConnection->schema->engine} DEFAULT CHARSET={$this->sqlCore->schemaValidationConnection->schema->charset} COLLATE={$this->sqlCore->schemaValidationConnection->schema->collation}");
+        return new SQLStatement("CREATE TABLE IF NOT EXISTS `$manyToMany->correlationTableName` ({$columnNames->map(fn (string $columnName): string => "`$columnName` {$manyToMany->columnSQLType->value}(11) UNSIGNED")->join(", ")}, CONSTRAINT PRIMARY KEY ({$columnNames->map(fn(string $columnName): string => "`$columnName`")->join(", ")}) USING BTREE) ENGINE={$this->sqlCore->schemaValidationConnection->schema->engine} DEFAULT CHARSET={$this->sqlCore->schemaValidationConnection->schema->charset} COLLATE={$this->sqlCore->schemaValidationConnection->schema->collation}");
     }
 
     public function newCreateTableStatement(SQLEntity $entity): SQLStatement

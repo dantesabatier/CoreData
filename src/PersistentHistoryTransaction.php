@@ -55,9 +55,9 @@ class PersistentHistoryTransaction extends ObjectClass
         unset($this->token);
         unset($this->transactionNumber);
         foreach ($dictionary as $key => $value) {
-            if ($key === 'transactionID') {
-                $key = 'transactionNumber';
-            } elseif ($key === 'timestamp') {
+            if ($key === "transactionID") {
+                $key = "transactionNumber";
+            } elseif ($key === "timestamp") {
                 $value = new Date(strtotime($value));
             }
             $this->$key = $value;
@@ -67,11 +67,11 @@ class PersistentHistoryTransaction extends ObjectClass
     public function __get(string $name)
     {
         return $this->$name = match ($name) {
-            'author', 'changes', 'contextName' => null,
-            'bundleID', 'storeID', 'processID' => UnknownName,
-            'timestamp' => new Date(),
-            'token' => new PersistentHistoryToken(new Dictionary([$this->storeID => new Number($this->transactionNumber)])),
-            'transactionNumber' => 0,
+            "author", "changes", "contextName" => null,
+            "bundleID", "storeID", "processID" => UnknownName,
+            "timestamp" => new Date(),
+            "token" => new PersistentHistoryToken(new Dictionary([$this->storeID => new Number($this->transactionNumber)])),
+            "transactionNumber" => 0,
             default => $this->valueForUndefinedKey($name)
         };
     }

@@ -44,21 +44,21 @@ class RelationshipDescription extends PropertyDescription
 
     public function __get(string $name)
     {
-        if ($name == 'destinationEntity') {
+        if ($name == "destinationEntity") {
             if ($this->entity->isEditable) {
                 throw new InternalInconsistencyException(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription(), $name));
             }
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
             $this->$name = $this->entity->managedObjectModel->entitiesByName[$this->lazyDestinationEntityName] ?? $this->entity->managedObjectModel->entitiesByName->first(fn(EntityDescription $entity): bool => $entity->renamingIdentifier === $this->lazyDestinationEntityName) ?? throw new InvalidArgumentException(sprintf("%s, destination entity \"%s\" does not exists", $this->name, $this->lazyDestinationEntityName));
             return $this->$name;
-        } elseif ($name == 'inverseRelationship') {
+        } elseif ($name == "inverseRelationship") {
             if ($this->entity->isEditable) {
                 throw new InternalInconsistencyException(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription(), $name));
             }
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
             $this->$name = $this->destinationEntity->relationshipsByName[$this->lazyInverseRelationshipName] ?? $this->destinationEntity->relationshipsByName->first(fn(RelationshipDescription $relationship): bool => $relationship->renamingIdentifier === $this->lazyInverseRelationshipName) ?? throw new InvalidArgumentException(sprintf("%s, inverse relationship \"%s\" does not exists", $this->name, $this->lazyInverseRelationshipName));
             return $this->$name;
-        } elseif ($name == 'propertyType') {
+        } elseif ($name == "propertyType") {
             $this->$name = PropertyDescriptionType::relationship;
             return $this->$name;
         } else {
@@ -68,7 +68,7 @@ class RelationshipDescription extends PropertyDescription
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == 'destinationEntity' || $name == 'inverseRelationship') {
+        if ($name == "destinationEntity" || $name == "inverseRelationship") {
             $this->$name = $value;
         } else {
             parent::__set($name, $value);
@@ -81,16 +81,16 @@ class RelationshipDescription extends PropertyDescription
         /** @var Dictionary<mixed> $dictionary */
         $dictionary = KeyedUnarchiver::unarchiveTopLevelObjectWithData((string)$data);
         if ($this->deleteRule !== DeleteRule::nullifyDeleteRule) {
-            $dictionary['deleteRule'] = $this->deleteRule->value;
+            $dictionary["deleteRule"] = $this->deleteRule->value;
         }
-        $dictionary['lazyDestinationEntityName'] = $this->lazyDestinationEntityName;
-        $dictionary['lazyInverseRelationshipName'] = $this->lazyInverseRelationshipName;
+        $dictionary["lazyDestinationEntityName"] = $this->lazyDestinationEntityName;
+        $dictionary["lazyInverseRelationshipName"] = $this->lazyInverseRelationshipName;
         $out = KeyedArchiver::archivedData($dictionary);
     }
 
     public function description(): string
     {
-        return sprintf('%s destinationEntityName %s InverseRelationshipName %s minCount %s maxCount %s deleteRule %s', parent::description(), $this->lazyDestinationEntityName, $this->lazyInverseRelationshipName, $this->minCount, $this->maxCount, human_readable_value($this->deleteRule));
+        return sprintf("%s destinationEntityName %s InverseRelationshipName %s minCount %s maxCount %s deleteRule %s", parent::description(), $this->lazyDestinationEntityName, $this->lazyInverseRelationshipName, $this->minCount, $this->maxCount, human_readable_value($this->deleteRule));
     }
 
     public function jsonSerialize(): Dictionary
@@ -98,22 +98,22 @@ class RelationshipDescription extends PropertyDescription
         /** @var Dictionary<mixed> $dictionary */
         $dictionary = parent::jsonSerialize();
         if ($this->isToMany) {
-            $dictionary['isToMany'] = $this->isToMany;
+            $dictionary["isToMany"] = $this->isToMany;
         }
         if ($this->isOrdered) {
-            $dictionary['isOrdered'] = $this->isOrdered;
+            $dictionary["isOrdered"] = $this->isOrdered;
         }
         if ($this->deleteRule !== DeleteRule::nullifyDeleteRule) {
-            $dictionary['deleteRule'] = $this->deleteRule->value;
+            $dictionary["deleteRule"] = $this->deleteRule->value;
         }
         if ($this->maxCount) {
-            $dictionary['maxCount'] = $this->maxCount;
+            $dictionary["maxCount"] = $this->maxCount;
         }
         if ($this->minCount) {
-            $dictionary['minCount'] = $this->minCount;
+            $dictionary["minCount"] = $this->minCount;
         }
-        $dictionary['lazyDestinationEntityName'] = $this->lazyDestinationEntityName;
-        $dictionary['lazyInverseRelationshipName'] = $this->lazyInverseRelationshipName;
+        $dictionary["lazyDestinationEntityName"] = $this->lazyDestinationEntityName;
+        $dictionary["lazyInverseRelationshipName"] = $this->lazyInverseRelationshipName;
         return $dictionary;
     }
 }

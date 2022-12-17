@@ -48,44 +48,44 @@ class MappingModel extends ObjectClass
             /** @var Dictionary<mixed> $dictionary */
             $dictionary = PropertyListSerialization::propertyListWithURL($url);
             /** @var ArrayClass<Dictionary<mixed>>|null $entities */
-            $entities = $dictionary['entities'];
+            $entities = $dictionary["entities"];
             if ($entities) {
                 $this->entityMappings = $entities->map(function (Dictionary $dictionary): EntityMapping {
                     $transform = function (Dictionary $dictionary): PropertyMapping {
                         /** @var string $name */
-                        $name = $dictionary['name'] ?? throw new InferredMappingModelException();
+                        $name = $dictionary["name"] ?? throw new InferredMappingModelException();
                         $property = new PropertyMapping($name);
                         /** @var string|null $valueExpressionFormat */
-                        $valueExpressionFormat = $dictionary['valueExpressionFormat'];
+                        $valueExpressionFormat = $dictionary["valueExpressionFormat"];
                         if ($valueExpressionFormat) {
-                            $dictionary->removeValueForKey('valueExpressionFormat');
+                            $dictionary->removeValueForKey("valueExpressionFormat");
                             $property->valueExpression = Expression::expressionWithFormat($valueExpressionFormat);
                         }
                         return $property;
                     };
                     $mapping = new EntityMapping();
                     /** @var string|null $sourceExpressionFormat */
-                    $sourceExpressionFormat = $dictionary['sourceExpressionFormat'];
+                    $sourceExpressionFormat = $dictionary["sourceExpressionFormat"];
                     if ($sourceExpressionFormat) {
-                        $dictionary->removeValueForKey('sourceExpressionFormat');
+                        $dictionary->removeValueForKey("sourceExpressionFormat");
                         $mapping->sourceExpression = Expression::expressionWithFormat($sourceExpressionFormat);
                     }
                     /** @var int|null $mappingType */
-                    $mappingType = $dictionary['mappingType'];
+                    $mappingType = $dictionary["mappingType"];
                     if ($mappingType) {
-                        $dictionary->removeValueForKey('mappingType');
+                        $dictionary->removeValueForKey("mappingType");
                         $mapping->mappingType = EntityMappingType::from($mappingType);
                     }
                     /** @var ArrayClass<Dictionary<mixed>>|null $attributes */
-                    $attributes = $dictionary['attributes'];
+                    $attributes = $dictionary["attributes"];
                     if ($attributes) {
-                        $dictionary->removeValueForKey('attributes');
+                        $dictionary->removeValueForKey("attributes");
                         $mapping->attributeMappings = $attributes->map($transform);
                     }
                     /** @var ArrayClass<Dictionary<mixed>>|null $relationships */
-                    $relationships = $dictionary['relationships'];
+                    $relationships = $dictionary["relationships"];
                     if ($relationships) {
-                        $dictionary->removeValueForKey('relationships');
+                        $dictionary->removeValueForKey("relationships");
                         $mapping->relationshipMappings = $relationships->map($transform);
                     }
                     $mapping->setValuesForKeys($dictionary);
@@ -97,7 +97,7 @@ class MappingModel extends ObjectClass
 
     public function __get(string $name)
     {
-        if ($name === 'entityMappings') {
+        if ($name === "entityMappings") {
             return $this->entityMappingsByName->values;
         } else {
             return $this->valueForUndefinedKey($name);
@@ -106,7 +106,7 @@ class MappingModel extends ObjectClass
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name === 'entityMappings') {
+        if ($name === "entityMappings") {
             $this->sourceEntityVersionHashesByName->removeAll();
             $this->destinationEntityVersionHashesByName->removeAll();
             $this->entityMappingsByName->removeAll();

@@ -67,8 +67,8 @@ class MigrationManager extends ObjectClass
     public function __get(string $name)
     {
         return match ($name) {
-            'migrationProgress' => $this->$name,
-            'currentEntityMapping' => $this->migrationContext->currentEntityMapping,
+            "migrationProgress" => $this->$name,
+            "currentEntityMapping" => $this->migrationContext->currentEntityMapping,
             default => $this->valueForUndefinedKey($name)
         };
     }
@@ -177,7 +177,7 @@ class MigrationManager extends ObjectClass
                 } elseif ($value instanceof ManagedObject) {
                     $destinationInstances->appendContentsOf($expression->expressionValue($source, new Dictionary(["\$manager" => $this, "\$source" => new ArrayClass([$value])])));
                 } elseif ($value) {
-                    throw new InvalidArgumentException(sprintf('%s %s() Unexpected value "%s" for relationship %s->%s', $this->debugDescription(), __FUNCTION__, typeof($value), $source->entity->name, $key));
+                    throw new InvalidArgumentException(sprintf("%s %s() Unexpected value \"%s\" for relationship %s->%s", $this->debugDescription(), __FUNCTION__, typeof($value), $source->entity->name, $key));
                 }
                 $relationshipsByName[$relationshipKey] = $destinationInstances;
                 $this->byMappingBySourceRelationshipsAssociationTable[$key] = $relationshipsByName;
@@ -212,14 +212,14 @@ class MigrationManager extends ObjectClass
         $migrationContext = $this->migrationContext;
         $migrationContext->currentEntityMapping = $mapping;
         $migrationContext->currentMigrationStep = $step;
-        $this->willChangeValueForKey('migrationProgress');
+        $this->willChangeValueForKey("migrationProgress");
         $this->migrationProgress = $this->migrationContext->currentMigrationStep / ($this->mappingModel->entityMappings->count() * 3);
-        $this->didChangeValueForKey('migrationProgress');
+        $this->didChangeValueForKey("migrationProgress");
         if (!($destinationEntity = $this->destinationEntity($mapping)) || $destinationEntity->isAbstract) {
             return;
         }
         if (static::$migrationDebugLevel) {
-            error_log(sprintf('CoreData: Processing entity mapping "%s" (pass %s of %s), elapsed time %s, %s%% completed', $mapping->name, $pass, 3, human_readable_time(absolute_time_get_current() - $this->timestamp), round($this->migrationProgress * 100, 2)));
+            error_log(sprintf("CoreData: Processing entity mapping \"%s\" (pass %s of %s), elapsed time %s, %s%% completed", $mapping->name, $pass, 3, human_readable_time(absolute_time_get_current() - $this->timestamp), round($this->migrationProgress * 100, 2)));
         }
         if ($migrationCancellationError = $this->migrationCancellationError) {
             throw new Exception($migrationCancellationError->localizedDescription, $migrationCancellationError->code);
@@ -294,9 +294,9 @@ class MigrationManager extends ObjectClass
                 $this->do($i, $i * $index, $mapping);
             }
         }
-        $this->willChangeValueForKey('migrationProgress');
+        $this->willChangeValueForKey("migrationProgress");
         $this->migrationProgress = 1.0;
-        $this->didChangeValueForKey('migrationProgress');
+        $this->didChangeValueForKey("migrationProgress");
         return true;
     }
 

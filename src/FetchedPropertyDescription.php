@@ -27,7 +27,7 @@ class FetchedPropertyDescription extends PropertyDescription
 
     public function __get(string $name)
     {
-        if ($name == 'propertyType') {
+        if ($name == "propertyType") {
             $this->$name = PropertyDescriptionType::fetchedProperty;
             return $this->$name;
         } else {
@@ -40,8 +40,8 @@ class FetchedPropertyDescription extends PropertyDescription
         /** @var Dictionary<mixed> $dictionary */
         $dictionary = parent::jsonSerialize();
         if ($fetchRequest = $this->fetchRequest) {
-            $dictionary['fetchRequestEntityName'] = $fetchRequest->entityName;
-            $dictionary['fetchRequestPredicateFormat'] = $fetchRequest->predicate?->predicateFormat();
+            $dictionary["fetchRequestEntityName"] = $fetchRequest->entityName;
+            $dictionary["fetchRequestPredicateFormat"] = $fetchRequest->predicate?->predicateFormat();
         }
         return $dictionary;
     }

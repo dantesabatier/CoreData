@@ -54,8 +54,8 @@ class PersistentStoreCoordinator extends ObjectClass
     public function __get(string $name)
     {
         return $this->$name = match ($name) {
-            'persistentStores' => new ArrayClass(),
-            'queue' => new OperationQueue(),
+            "persistentStores" => new ArrayClass(),
+            "queue" => new OperationQueue(),
             default => $this->valueForUndefinedKey($name)
         };
     }
@@ -209,7 +209,7 @@ class PersistentStoreCoordinator extends ObjectClass
          * @param class-string<PersistentStore> $class
          * @throws Exception
          */ fn(string $class, string $type): bool => $type === $class::metadataForPersistentStore($storeURL)[StoreTypeKey]) ?? throw new InvalidArgumentException();
-        $persistentStore = new $persistentStoreClass($this, $configuration ?? 'Default', $storeURL, $options);
+        $persistentStore = new $persistentStoreClass($this, $configuration ?? "Default", $storeURL, $options);
         if (!$persistentStore->load() || !$persistentStore->loadMetadata()) {
             throw new RuntimeException();
         }

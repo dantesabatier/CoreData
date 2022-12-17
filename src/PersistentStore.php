@@ -47,9 +47,9 @@ abstract class PersistentStore extends ObjectClass
     public function __get(string $name)
     {
         return $this->$name = match ($name) {
-            'identifier' => uuid_generate(),
-            'metadata' => new Dictionary([StoreTypeKey => $this->type(), StoreUUIDKey => $this->identifier]),
-            'faultHandler' => new FaultHandler($this),
+            "identifier" => uuid_generate(),
+            "metadata" => new Dictionary([StoreTypeKey => $this->type(), StoreUUIDKey => $this->identifier]),
+            "faultHandler" => new FaultHandler($this),
             default => $this->valueForUndefinedKey($name)
         };
     }

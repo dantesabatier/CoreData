@@ -53,9 +53,9 @@ class SQLConnection extends ObjectClass
     {
         /** @psalm-suppress PossiblyNullArgument */
         return $this->$name = match ($name) {
-            'schema' => new SQLSchema(ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_NAME'], ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_HOST'], new SQLCredential(ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_USER'], ProcessInfo::processInfo()->environment['COREDATA_SQL_DATABASE_PASSWORD'])),
-            'sqlCore' => $this->adapter?->sqlCore,
-            'bundleID' => Bundle::main()->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString,
+            "schema" => new SQLSchema(ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_NAME"], ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_HOST"], new SQLCredential(ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_USER"], ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_PASSWORD"])),
+            "sqlCore" => $this->adapter?->sqlCore,
+            "bundleID" => Bundle::main()->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString,
             default => $this->valueForUndefinedKey($name)
         };
     }
@@ -102,7 +102,7 @@ class SQLConnection extends ObjectClass
         $this->open = true;
         $schemaName = $this->schema->name;
         if (SQLCore::$debugDefault) {
-            error_log(sprintf('CoreData: annotation: Connecting to %s database "%s"', SQLStoreType, $schemaName));
+            error_log(sprintf("CoreData: annotation: Connecting to %s database \"%s\"", SQLStoreType, $schemaName));
         }
         if ($this->createSchemaIfNeeded()) {
             return true;
@@ -313,7 +313,7 @@ class SQLConnection extends ObjectClass
             $columnNames->appendContentsOf($element->changedValuesForCurrentEvent()->keys);
         }
         $columns = $entity->columnsToCreate->filter(fn(SQLColumn $column): bool => $columnNames->containsElement($column->columnName));
-        $string = "INSERT INTO `$entity->tableName` ({$columns->map(fn(SQLColumn $column): string => "`$column->columnName`")->join(', ')}) VALUES " . ArrayClass::repeating("(" . ArrayClass::repeating('?', $columns->count())->join(', ') . ")", $array->count())->join(', ') . " RETURNING `{$entity->primaryKey->columnName}`";
+        $string = "INSERT INTO `$entity->tableName` ({$columns->map(fn(SQLColumn $column): string => "`$column->columnName`")->join(", ")}) VALUES " . ArrayClass::repeating("(" . ArrayClass::repeating("?", $columns->count())->join(", ") . ")", $array->count())->join(", ") . " RETURNING `{$entity->primaryKey->columnName}`";
         $arguments = $array->flatMap(fn(ManagedObject|Dictionary $object): ArrayClass => $columns->map(function (SQLColumn $column) use ($entity, $object): mixed {
             if ($column instanceof SQLEntityKey) {
                 return $entity->tableName;
@@ -344,7 +344,7 @@ class SQLConnection extends ObjectClass
         };
         if ($requestContext->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey)) {
             $this->createHistoryTrackingTables();
-            $transactionID = $this->fetchMaxPrimaryKey('PersistentHistoryTransaction') + 1;
+            $transactionID = $this->fetchMaxPrimaryKey("PersistentHistoryTransaction") + 1;
             $insertedObjectIDs = $requestContext->result;
             if ($requestContext->request->resultType !== BatchInsertRequestResultType::objectIDs) {
                 $insertedObjectIDs = $objectIDs();
@@ -372,7 +372,7 @@ class SQLConnection extends ObjectClass
                 return 0;
             }
             $this->createHistoryTrackingTables();
-            $transactionID = $this->fetchMaxPrimaryKey('PersistentHistoryTransaction') + 1;
+            $transactionID = $this->fetchMaxPrimaryKey("PersistentHistoryTransaction") + 1;
             $statement = new SQLStatement("INSERT INTO `PersistentHistoryTransaction` (`transactionID`, `author`, `bundleID`, `contextName`, `processID`, `storeID`) VALUES (?, ?, ?, ?, ?, ?)", new ArrayClass([$transactionID, $requestContext->context->transactionAuthor, $this->bundleID, $requestContext->context->name, ProcessInfo::processInfo()->globallyUniqueString, $requestContext->sqlCore->identifier]));
             $this->execute($statement);
             if (!$insertedObjects->isEmpty()) {
@@ -399,14 +399,14 @@ class SQLConnection extends ObjectClass
             $affectedObjectIDs = $requestContext->affectedObjectIDs;
             if ($requestContext->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey) && !$affectedObjectIDs->isEmpty()) {
                 $this->createHistoryTrackingTables();
-                $transactionID = $this->fetchMaxPrimaryKey('PersistentHistoryTransaction') + 1;
+                $transactionID = $this->fetchMaxPrimaryKey("PersistentHistoryTransaction") + 1;
                 $this->insertUpdates($affectedObjectIDs, $transactionID, new Set($requestContext->request->propertiesToUpdate?->keys ?? []));
                 return $transactionID;
             }
         } elseif ($requestContext instanceof SQLBatchDeleteRequestContext) {
             if ($requestContext->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey) && !$requestContext->affectedObjectIDs->isEmpty()) {
                 $this->createHistoryTrackingTables();
-                $transactionID = $this->fetchMaxPrimaryKey('PersistentHistoryTransaction') + 1;
+                $transactionID = $this->fetchMaxPrimaryKey("PersistentHistoryTransaction") + 1;
                 $this->insertBatchDeleteChangesForTransactionID($transactionID);
                 return $transactionID;
             }
@@ -420,7 +420,7 @@ class SQLConnection extends ObjectClass
     public function hasHistoryRows(): bool
     {
         if ($this->hasPersistentHistoryTables()) {
-            return $this->tableHasRows('PersistentHistoryTransaction');
+            return $this->tableHasRows("PersistentHistoryTransaction");
         }
         return false;
     }
@@ -452,7 +452,7 @@ class SQLConnection extends ObjectClass
      */
     private function hasPersistentHistoryTables(): bool
     {
-        $execute = $this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name IN (?, ?)", new ArrayClass([$this->schema->name, 'PersistentHistoryTransaction', 'PersistentHistoryChange'])));
+        $execute = $this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name IN (?, ?)", new ArrayClass([$this->schema->name, "PersistentHistoryTransaction", "PersistentHistoryChange"])));
         return (bool)$execute->fetchColumn();
     }
 
@@ -528,7 +528,7 @@ class SQLConnection extends ObjectClass
      */
     public function hasCachedModelTable(): bool
     {
-        $execute = $this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?", new ArrayClass([$this->schema->name, 'ManagedObjectModel'])));
+        $execute = $this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?", new ArrayClass([$this->schema->name, "ManagedObjectModel"])));
         return (bool)$execute->fetchColumn();
     }
 
@@ -566,7 +566,7 @@ class SQLConnection extends ObjectClass
         $this->createCachedModelTable();
         $execute = $this->execute(new SQLStatement("SELECT * FROM `ManagedObjectModel`"));
         if ($array = $execute->fetch()) {
-            return $this->decompressedModelWithData($array['data']);
+            return $this->decompressedModelWithData($array["data"]);
         }
         return null;
     }
@@ -607,7 +607,7 @@ class SQLConnection extends ObjectClass
      */
     public function hasMetadataTable(): bool
     {
-        $execute = $this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?", new ArrayClass([$this->schema->name, 'PersistentStoreMetadata'])));
+        $execute = $this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?", new ArrayClass([$this->schema->name, "PersistentStoreMetadata"])));
         return (bool)$execute->fetchColumn();
     }
 
@@ -631,7 +631,7 @@ class SQLConnection extends ObjectClass
         $this->createMetadata();
         $execute = $this->execute(new SQLStatement("SELECT * FROM `PersistentStoreMetadata`"));
         if ($array = $execute->fetch()) {
-            return $this->decompressedMetadataWithData($array['data']);
+            return $this->decompressedMetadataWithData($array["data"]);
         }
         return null;
     }
