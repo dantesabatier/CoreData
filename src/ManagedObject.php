@@ -766,7 +766,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             case AttributeType::float:
                 return (float)$value;
             case AttributeType::boolean:
-                return $value instanceof Number ? $value->boolValue : (new Number($value ?? false))->boolValue;
+                $number = $value instanceof Number ? $value : (new Number($value ?? false));
+                return $in ? $number->intValue : $number->boolValue;
             case AttributeType::date:
                 return $value instanceof Date ? $value : ($value ? new Date(strtotime($value)) : null);
             case AttributeType::uuid:

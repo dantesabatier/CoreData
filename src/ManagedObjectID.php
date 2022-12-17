@@ -71,7 +71,7 @@ class ManagedObjectID extends ObjectClass implements FetchRequestResult
      */
     public function uriRepresentation(): URL
     {
-        $host = $this->persistentStore?->identifier ?? '';
+        $host = $this->persistentStore?->identifier ?? "";
         $url = new URL("x-coredata://$host");
         $url->appendPathComponent($this->entity->name);
         if ($referenceObject = $this->referenceObject) {

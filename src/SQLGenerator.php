@@ -44,13 +44,13 @@ use function Sabatier\Foundation\typeof;
 /** @internal */
 class SQLGenerator extends ObjectClass
 {
-    private string $string = '';
-    private string $selectList = '';
-    private string $joinClause = '';
-    private string $whereClause = '';
-    private string $groupByClause = '';
-    private string $havingClause = '';
-    private string $orderByClause = '';
+    private string $string = "";
+    private string $selectList = "";
+    private string $joinClause = "";
+    private string $whereClause = "";
+    private string $groupByClause = "";
+    private string $havingClause = "";
+    private string $orderByClause = "";
     private FetchRequest $request;
     private SQLEntity $entity;
     /** @var ArrayClass */
@@ -253,13 +253,13 @@ class SQLGenerator extends ObjectClass
 
     private function resetSQL(): void
     {
-        $this->string = '';
-        $this->selectList = '';
-        $this->joinClause = '';
-        $this->whereClause = '';
-        $this->groupByClause = '';
-        $this->havingClause = '';
-        $this->orderByClause = '';
+        $this->string = "";
+        $this->selectList = "";
+        $this->joinClause = "";
+        $this->whereClause = "";
+        $this->groupByClause = "";
+        $this->havingClause = "";
+        $this->orderByClause = "";
         $this->arguments->removeAll();
     }
 
@@ -401,7 +401,7 @@ class SQLGenerator extends ObjectClass
         }
     }
 
-    private function addJoinForToOneRelationship(SQLToOne $toOne, string $sourcePath = '', string $destinationPath = ''): void
+    private function addJoinForToOneRelationship(SQLToOne $toOne, string $sourcePath = "", string $destinationPath = ""): void
     {
         $sourceEntity = $toOne->entity;
         $inverseRelationship = $toOne->inverseRelationship;
@@ -429,7 +429,7 @@ class SQLGenerator extends ObjectClass
         }
     }
 
-    private function addJoinForToManyRelationship(SQLToMany $toMany, string $sourcePath = '', string $destinationPath = ''): void
+    private function addJoinForToManyRelationship(SQLToMany $toMany, string $sourcePath = "", string $destinationPath = ""): void
     {
         $sourceEntity = $toMany->entity;
         $inverseToOne = $toMany->inverseToOne;
@@ -453,7 +453,7 @@ class SQLGenerator extends ObjectClass
         }
     }
 
-    private function addJoinForManyToManyRelationship(SQLManyToMany $manyToMany, string $sourcePath = '', string $destinationPath = ''): void
+    private function addJoinForManyToManyRelationship(SQLManyToMany $manyToMany, string $sourcePath = "", string $destinationPath = ""): void
     {
         $correlationTableName = $manyToMany->correlationTableName;
         $inverseManyToMany = $manyToMany->inverseManyToMany;
@@ -480,7 +480,7 @@ class SQLGenerator extends ObjectClass
      */
     private function appendJoinsForRelationships(ArrayClass $relationships): void
     {
-        $source = '';
+        $source = "";
         /** @var SQLEntity $entity */
         $entity = $this->entity;
         $cursor = $entity->tableName;
@@ -748,7 +748,7 @@ class SQLGenerator extends ObjectClass
         } elseif ($expression->expressionType == ExpressionType::constantValue) {
             $constantValue = $expression->constantValue();
             if (is_string($constantValue)) {
-                $constantValue = str_replace("%", '', $constantValue);
+                $constantValue = str_replace("%", "", $constantValue);
             } elseif (is_bool($constantValue)) {
                 $constantValue = (int)$constantValue;
             } elseif ($constantValue instanceof ManagedObject) {

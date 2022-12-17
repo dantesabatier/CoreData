@@ -248,7 +248,7 @@ class XMLObjectStore extends AtomicStore
             $element->setAttribute('name', $relationship->name);
             $element->setAttribute('type', "$relationship->minCount/$relationship->maxCount");
             $element->setAttribute('destination', $destinationEntity->name);
-            $element->setAttribute('references', '');
+            $element->setAttribute('references', "");
             $node->appendChild($element);
         }
         return $element;
@@ -259,7 +259,7 @@ class XMLObjectStore extends AtomicStore
     {
         assert($node instanceof DOMElement);
         if (!($element = (new ArrayClass($node->getElementsByTagName('attribute')))->first(fn(DOMElement $element): bool => $element->getAttribute('name') === $attribute->name))) {
-            $element = $this->document()->createElement('attribute', $value ?? '');
+            $element = $this->document()->createElement('attribute', $value ?? "");
             assert($element instanceof DOMElement);
             $element->setAttribute('name', $attribute->name);
             $element->setAttribute('type', $attribute->type->name);
