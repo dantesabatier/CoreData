@@ -812,8 +812,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $valueTransformerName = $property->valueTransformerName;
             if ($value === null) {
                 if (!$property->isOptional) {
-                    $value = $property->defaultValue ?? self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $in);
-                    $value = self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $in);
+                    $value = self::coercedValue($property->defaultValue, $type, $attributeValueClassName, $valueTransformerName, $in);
                 }
             } else {
                 $value = match ($type) {

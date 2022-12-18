@@ -96,8 +96,9 @@ class AttributeDescription extends PropertyDescription
         if ($this->type !== AttributeType::undefined) {
             $dictionary["type"] = $this->type->value;
         }
-        if ($this->defaultValue !== null) {
-            $dictionary["defaultValue"] = $this->defaultValue;
+        $defaultValue = $this->defaultValue;
+        if ($defaultValue !== null) {
+            $dictionary["defaultValue"] = $defaultValue;
         }
         return $dictionary;
     }
