@@ -185,11 +185,13 @@ abstract class PropertyDescription extends ObjectClass
         if ($this->versionHashModifier) {
             $dictionary["versionHashModifier"] = $this->versionHashModifier;
         }
-        if ($this->minValue) {
-            $dictionary["minValue"] = $this->minValue;
+        $minValue = $this->minValue;
+        if ($minValue !== null) {
+            $dictionary["minValue"] = $minValue;
         }
-        if ($this->maxValue) {
-            $dictionary["maxValue"] = $this->maxValue;
+        $maxValue = $this->maxValue;
+        if ($maxValue !== null) {
+            $dictionary["maxValue"] = $maxValue;
         }
         if ($this->regex) {
             $dictionary["regex"] = $this->regex;
