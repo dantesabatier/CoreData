@@ -9,12 +9,22 @@
 
 namespace Sabatier\CoreData;
 
+use Sabatier\Foundation\Set;
+
 /** @internal */
 class SQLAttribute extends SQLColumn
 {
+    /** @var Set<string> */
+    public readonly Set $triggerKeys;
+    public readonly bool $isBackedByTrigger;
+    public readonly bool $isDerivedAttribute;
+
     public function __construct(SQLEntity $entity, public readonly AttributeDescription $attributeDescription)
     {
         parent::__construct($entity, $this->attributeDescription);
+        unset($this->triggerKeys);
+        unset($this->isBackedByTrigger);
+        unset($this->isDerivedAttribute);
     }
 
     public function __get(string $name)
@@ -35,8 +45,21 @@ class SQLAttribute extends SQLColumn
                 AttributeType::uuid => SQLType::uuid,
             };
             return $this->$name;
+        } elseif ($name == "triggerKeys") {
+            $this->$name = new Set();
+            return $this->$name;
+        } elseif ($name == "isBackedByTrigger") {
+            $this->$name = !$this->triggerKeys->isEmpty();
+            return $this->$name;
+        } elseif ($name == "isDerivedAttribute") {
+            $this->$name = $this->attributeDescription instanceof DerivedAttributeDescription;
+            return $this->$name;
         } else {
             return parent::__get($name);
         }
+    }
+
+    public function addKeyForTriggerOnRelationship(SQLRelationship $relationship): void
+    {
     }
 }

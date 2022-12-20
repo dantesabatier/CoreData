@@ -98,8 +98,8 @@ class ManagedObjectID extends ObjectClass implements FetchRequestResult
         return sprintf("<%s: %s> %s", self::class, $this->hash(), $this->entity->name);
     }
 
-    public function jsonSerialize(): string
+    public function jsonSerialize(): int|string
     {
-        return $this->description();
+        return $this->referenceObject;
     }
 }

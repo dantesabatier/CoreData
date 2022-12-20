@@ -66,6 +66,7 @@ abstract class PropertyDescription extends ObjectClass
             $validationPredicates = new ArrayClass();
             $minValue = $this->minValue;
             if ($minValue !== null) {
+                /** @psalm-suppress InternalClass */
                 $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class ($minValue) extends Validator {
                     public function validate(mixed $object): bool
                     {
@@ -78,6 +79,7 @@ abstract class PropertyDescription extends ObjectClass
             }
             $maxValue = $this->maxValue;
             if ($maxValue !== null) {
+                /** @psalm-suppress InternalClass */
                 $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class ($maxValue) extends Validator {
                     public function validate(mixed $object): bool
                     {
@@ -90,6 +92,7 @@ abstract class PropertyDescription extends ObjectClass
             }
             $regex = $this->regex;
             if ($regex) {
+                /** @psalm-suppress InternalClass */
                 $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class ($regex) extends Validator {
                     public function validate(mixed $object): bool
                     {

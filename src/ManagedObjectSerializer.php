@@ -22,6 +22,7 @@ final class ManagedObjectSerializer
         if ($serializationKeys->isEmpty()) {
             return;
         }
+        $serializationKeys->insertAt("objectID", 0);
         $object->serializationRule = SerializationRule::custom;
         $object->serializationKeys = $serializationKeys;
     }

@@ -138,12 +138,22 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->$name = $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property->isTransient);
             return $this->$name;
         } elseif ($name == "serializationKeys") {
-            /** @psalm-suppress InvalidArgument */
-            $this->$name = match ($this->serializationRule) {
-                SerializationRule::attributesOnly => $this->entity->attributesByName->filter(fn(AttributeDescription $attribute, string $key): bool => !$attribute->isTransient)->keys,
-                SerializationRule::attributesAndRelationships => $this->entity->attributesByName->filter(fn(AttributeDescription $attribute, string $key): bool => !$attribute->isTransient)->merging($this->entity->relationshipsByName->filter(fn(RelationshipDescription $relationship): bool => $relationship->isToMany && !$relationship->inverseRelationship->isToMany))->keys,
+            /** @var ArrayClass<string> $serializationKeys */
+            $serializationKeys = match ($this->serializationRule) {
+                SerializationRule::attributesOnly => $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient)->keys,
+                SerializationRule::attributesAndRelationships => $this->entity->propertiesByName->filter(function (PropertyDescription $property): bool {
+                    if ($property instanceof AttributeDescription) {
+                        return !$property->isTransient;
+                    } elseif ($property instanceof RelationshipDescription) {
+                        return $property->isToMany && !$property->inverseRelationship->isToMany;
+                    } else {
+                        return $property instanceof FetchedPropertyDescription;
+                    }
+                })->keys,
                 default => new ArrayClass(),
             };
+            $serializationKeys->insertAt("objectID", 0);
+            $this->$name = $serializationKeys;
             return $this->$name;
         } elseif ($name == "hasPersistentChangedValues") {
             return !$this->changedValues()->isEmpty();
@@ -1012,17 +1022,19 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     public function jsonSerialize(): Dictionary
     {
-        return $this->serializationKeys->reduce(new Dictionary(), function (Dictionary &$result, string $key): Dictionary {
+        return $this->serializationKeys->reduce(new Dictionary(), function (Dictionary &$dictionary, string $key): Dictionary {
             if ($property = $this->entity->propertiesByName[$key]) {
                 if ($property instanceof AttributeDescription) {
-                    $result[$key] = $this->valueForKey($key);
+                    $dictionary[$key] = $this->valueForKey($key);
                 } elseif ($property instanceof RelationshipDescription) {
-                    $result[$key] = $this->serializedRelationshipValueForRelationship($property);
+                    $dictionary[$key] = $this->serializedRelationshipValueForRelationship($property);
                 } else {
-                    $result[$key] = $this->valueForKey($key);
+                    $dictionary[$key] = $this->valueForKey($key);
                 }
+            } else {
+                $dictionary[$key] = $this->valueForKey($key);
             }
-            return $result;
+            return $dictionary;
         });
     }
 
