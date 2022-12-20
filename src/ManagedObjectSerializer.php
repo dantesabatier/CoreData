@@ -2,32 +2,55 @@
 
 namespace Sabatier\CoreData;
 
+use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\KeyedArchiver;
 
 /** @internal */
 final class ManagedObjectSerializer
 {
-    private static function serializationKeys(ManagedObject $object, Dictionary $dictionary): ArrayClass
+    private static ?ManagedObjectSerializer $shared = null;
+    /** @var Dictionary<ArrayClass<string>> */
+    private readonly Dictionary $byHashSerializationsKeys;
+
+    public function __construct()
+    {
+        $this->byHashSerializationsKeys = new Dictionary();
+    }
+
+    public static function shared(): ManagedObjectSerializer
+    {
+        if (self::$shared === null) {
+            self::$shared = new ManagedObjectSerializer();
+        }
+        return self::$shared;
+    }
+
+    private function serializationKeys(ManagedObject $object, Dictionary $dictionary): ArrayClass
     {
         return $dictionary->filter(fn(mixed $value, string $key): bool => $object->entity->propertiesByName[$key] !== null)->keys;
     }
 
-    private static function update(ManagedObject $object, Dictionary $dictionary): void
+    private function update(ManagedObject $object, Dictionary $dictionary): void
     {
         if ($dictionary->isEmpty()) {
             return;
         }
-        $serializationKeys = self::serializationKeys($object, $dictionary);
+        $serializationKeys = $this->serializationKeys($object, $dictionary);
         if ($serializationKeys->isEmpty()) {
             return;
         }
         $serializationKeys->insertAt("objectID", 0);
         $object->serializationRule = SerializationRule::custom;
         $object->serializationKeys = $serializationKeys;
+        try {
+            $this->byHashSerializationsKeys->setValueForKey($serializationKeys, KeyedArchiver::archivedData($dictionary));
+        } catch (Exception) {
+        }
     }
 
-    private static function serialization(string $propertyName, Dictionary $dictionary): ?Dictionary
+    private function serialization(string $propertyName, Dictionary $dictionary): ?Dictionary
     {
         if ($dictionary[$propertyName]) {
             return $dictionary[$propertyName];
@@ -37,7 +60,7 @@ final class ManagedObjectSerializer
                 return $value;
             }
             if ($value instanceof Dictionary) {
-                $serialization = self::serialization($propertyName, $value);
+                $serialization = $this->serialization($propertyName, $value);
                 if (!$serialization?->isEmpty()) {
                     return $serialization;
                 }
@@ -46,12 +69,10 @@ final class ManagedObjectSerializer
         return null;
     }
 
-    private static function serialize(ManagedObject $object, Dictionary $dictionary): void
+    private function serialize(ManagedObject $object, Dictionary $dictionary): void
     {
-        self::update($object, $dictionary);
-        $entity = $object->entity;
-        $context = $object->managedObjectContext;
-        foreach ($entity as $property) {
+        $this->update($object, $dictionary);
+        foreach ($object->entity as $property) {
             if ($property instanceof AttributeDescription) {
                 continue;
             }
@@ -60,31 +81,36 @@ final class ManagedObjectSerializer
             if ($value === null) {
                 continue;
             }
-            $serialization = self::serialization($key, $dictionary);
+            $serialization = $this->serialization($key, $dictionary);
             if (!$serialization instanceof Dictionary) {
                 continue;
             }
-            $objs = $value;
-            if ($property instanceof RelationshipDescription) {
-                $objs = $property->isToMany ? $value : [$value];
-            }
+            $objs = $property instanceof RelationshipDescription ? ($property->isToMany ? $value : [$value]) : $value;
             foreach ($objs as $obj) {
                 if ($obj instanceof ManagedObjectID) {
-                    $obj = $context->object($obj);
+                    $obj = $object->managedObjectContext->object($obj);
                 }
                 if ($obj instanceof ManagedObject) {
-                    self::serialize($obj, $serialization);
+                    $this->serialize($obj, $serialization);
                 }
             }
         }
     }
 
-    public static function serialized(ManagedObject $object, ?Dictionary $serialization): ManagedObject
+    public function serialized(ManagedObject $object, ?Dictionary $dictionary): ManagedObject
     {
-        if (!$serialization || $serialization->isEmpty()) {
+        if (!$dictionary || $dictionary->isEmpty()) {
             return $object;
         }
-        self::serialize($object, $serialization);
+        try {
+            if ($serializationKeys = $this->byHashSerializationsKeys[KeyedArchiver::archivedData($dictionary)]) {
+                $object->serializationKeys = $serializationKeys;
+                $object->serializationRule = SerializationRule::custom;
+                return $object;
+            }
+        } catch (Exception) {
+        }
+        $this->serialize($object, $dictionary);
         return $object;
     }
 }

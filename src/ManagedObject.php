@@ -776,7 +776,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             case AttributeType::float:
                 return (float)$value;
             case AttributeType::boolean:
-                $number = $value instanceof Number ? $value : (new Number($value ?? false));
+                $number = $value instanceof Number ? $value : (new Number((bool)$value));
                 return $in ? $number->intValue : $number->boolValue;
             case AttributeType::date:
                 return $value instanceof Date ? $value : ($value ? new Date(strtotime($value)) : null);
@@ -1040,7 +1040,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     public function serialized(?Dictionary $serialization = null): self
     {
-        return ManagedObjectSerializer::serialized($this, $serialization);
+        return ManagedObjectSerializer::shared()->serialized($this, $serialization);
     }
 
     final public function isEqual(mixed $other): bool
