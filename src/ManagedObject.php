@@ -22,7 +22,6 @@ use Sabatier\Foundation\Predicates\ExpressionType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
-use Sabatier\Foundation\Value;
 use Sabatier\Foundation\ValueTransformer;
 use Throwable;
 use function Sabatier\Foundation\typeof;
@@ -762,7 +761,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public static function coercedValue(mixed $value, AttributeType $type, ?string $attributeValueClassName = null, ?string $valueTransformerName = null, bool $in = false): mixed
     {
-        if ($value instanceof Value) {
+        if ($value instanceof Nil) {
             $value = $value->value;
         }
         switch ($type) {
