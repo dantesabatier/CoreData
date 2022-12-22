@@ -19,7 +19,6 @@ use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\PropertyListSerialization;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
-use Throwable;
 use Traversable;
 use const Sabatier\Foundation\kCFBundleNameKey;
 
@@ -483,9 +482,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                         $result[$entity->name] = $entity->versionHash;
                         return $result;
                     }) ?? $this->entityVersionHashesByName) === $metadata[StoreModelVersionHashesKey];
-            } catch (Throwable $throwable) {
-                $throwableClass = $throwable::class;
-                throw new $throwableClass($throwable->getMessage(), (int)$throwable->getCode());
+            } catch (Exception) {
             }
         }
         return true;

@@ -23,7 +23,6 @@ use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
 use Sabatier\Foundation\ValueTransformer;
-use Throwable;
 use function Sabatier\Foundation\typeof;
 use const Sabatier\Foundation\CocoaErrorDomain;
 use const Sabatier\Foundation\KeyValueValidationError;
@@ -968,9 +967,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if ($key === null) {
             try {
                 $this->faultHandler->fulfillFault($this);
-            } catch (Throwable $throwable) {
-                $throwableClass = $throwable::class;
-                throw new $throwableClass($throwable->getMessage(), (int)$throwable->getCode());
+            } catch (Exception) {
             }
         }
     }

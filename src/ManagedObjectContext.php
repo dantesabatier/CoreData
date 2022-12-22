@@ -30,7 +30,6 @@ use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
-use Throwable;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\typeof;
 
@@ -562,33 +561,29 @@ class ManagedObjectContext extends ObjectClass
      *
      * If on the next invocation of {@see save()} object has been modified in its persistent store, the save fails. This allows optimistic locking for unchanged objects. Conflict detection is always performed on changed or deleted objects.
      * @param ManagedObject $object A managed object.
+     * @throws Exception
      */
     public function detectConflicts(ManagedObject $object): void
     {
-        try {
-            if ($object->isDeleted) {
-                /** @psalm-suppress InvalidArgument */
-                $this->mergePolicy->resolveConflicts($object->entity->relationshipsByName->compactMap(function (RelationshipDescription $relationship) use ($object): ?MergeConflict {
-                    if ($relationship->inverseRelationship->deleteRule == DeleteRule::denyDeleteRule) {
-                        /** @var FetchRequest<ManagedObject> $fetchRequest */
-                        $fetchRequest = new FetchRequest();
-                        $fetchRequest->entity = $object->entity;
-                        $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath("objectID"), Expression::expressionForConstantValue($object->objectID));
-                        if ($store = $object->objectID->persistentStore) {
-                            $fetchRequest->affectedStores = new ArrayClass([$store]);
-                        }
-                        $persistedObjects = $this->fetch($fetchRequest);
-                        if ($persistedObject = $persistedObjects->first()) {
-                            $persistentPropertyKeys = $object->persistentProperties->map(fn(PropertyDescription $property): string => $property->name);
-                            return new MergeConflict($object, 0, 1, $object->dictionaryWithValues($persistentPropertyKeys), $persistedObject->dictionaryWithValues($persistentPropertyKeys));
-                        }
+        if ($object->isDeleted) {
+            /** @psalm-suppress InvalidArgument */
+            $this->mergePolicy->resolveConflicts($object->entity->relationshipsByName->compactMap(function (RelationshipDescription $relationship) use ($object): ?MergeConflict {
+                if ($relationship->inverseRelationship->deleteRule == DeleteRule::denyDeleteRule) {
+                    /** @var FetchRequest<ManagedObject> $fetchRequest */
+                    $fetchRequest = new FetchRequest();
+                    $fetchRequest->entity = $object->entity;
+                    $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath("objectID"), Expression::expressionForConstantValue($object->objectID));
+                    if ($store = $object->objectID->persistentStore) {
+                        $fetchRequest->affectedStores = new ArrayClass([$store]);
                     }
-                    return null;
-                }));
-            }
-        } catch (Throwable $throwable) {
-            $throwableClass = $throwable::class;
-            throw new $throwableClass($throwable->getMessage(), (int)$throwable->getCode());
+                    $persistedObjects = $this->fetch($fetchRequest);
+                    if ($persistedObject = $persistedObjects->first()) {
+                        $persistentPropertyKeys = $object->persistentProperties->map(fn(PropertyDescription $property): string => $property->name);
+                        return new MergeConflict($object, 0, 1, $object->dictionaryWithValues($persistentPropertyKeys), $persistedObject->dictionaryWithValues($persistentPropertyKeys));
+                    }
+                }
+                return null;
+            }));
         }
     }
 
