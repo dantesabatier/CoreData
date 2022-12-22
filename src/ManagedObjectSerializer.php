@@ -29,7 +29,7 @@ final class ManagedObjectSerializer
 
     private function serializationKeys(ManagedObject $object, Dictionary $dictionary): ArrayClass
     {
-        return $dictionary->filter(fn(mixed $value, string $key): bool => $object->entity->propertiesByName[$key] !== null)->keys;
+        return $dictionary->keys->filter(fn(string $key): bool => $object->entity->propertiesByName[$key] !== null);
     }
 
     private function update(ManagedObject $object, Dictionary $dictionary): void
@@ -44,10 +44,7 @@ final class ManagedObjectSerializer
         $serializationKeys->insertAt("objectID", 0);
         $object->serializationRule = SerializationRule::custom;
         $object->serializationKeys = $serializationKeys;
-        try {
-            $this->byHashSerializationsKeys->setValueForKey($serializationKeys, KeyedArchiver::archivedData($dictionary));
-        } catch (Exception) {
-        }
+        $this->byHashSerializationsKeys->setValueForKey($serializationKeys, (string)$dictionary->hash());
     }
 
     private function serialization(string $propertyName, Dictionary $dictionary): ?Dictionary
@@ -102,13 +99,10 @@ final class ManagedObjectSerializer
         if (!$dictionary || $dictionary->isEmpty()) {
             return $object;
         }
-        try {
-            if ($serializationKeys = $this->byHashSerializationsKeys[KeyedArchiver::archivedData($dictionary)]) {
-                $object->serializationKeys = $serializationKeys;
-                $object->serializationRule = SerializationRule::custom;
-                return $object;
-            }
-        } catch (Exception) {
+        if ($serializationKeys = $this->byHashSerializationsKeys[(string)$dictionary->hash()]) {
+            $object->serializationKeys = $serializationKeys;
+            $object->serializationRule = SerializationRule::custom;
+            return $object;
         }
         $this->serialize($object, $dictionary);
         return $object;
