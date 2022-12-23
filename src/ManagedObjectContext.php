@@ -14,7 +14,6 @@ use Exception;
 use InvalidArgumentException;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\FlattenSequence;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyValueChange;
 use Sabatier\Foundation\KeyValueObservedChange;
@@ -309,7 +308,6 @@ class ManagedObjectContext extends ObjectClass
      * @return ArrayClass<T> An array of objects that meet the criteria specified by request fetched from the receiver and from the persistent stores associated with the receiver's persistent store coordinator.
      * If no objects match the criteria specified by request, returns an empty array.
      * @throws Exception If there is a problem executing the fetch, upon return contains an error that describes the problem.
-     * @psalm-suppress InvalidReturnType, InvalidReturnStatement
      */
     public function fetch(FetchRequest $request): ArrayClass
     {
@@ -317,41 +315,11 @@ class ManagedObjectContext extends ObjectClass
         $result = $this->execute($request);
         $subresults = $result->subresults;
         if ($subresults instanceof BatchFaultingArray) {
-            return $subresults; // @phpstan-ignore-line
+            /** @var ArrayClass<mixed> */
+            return $subresults;
         }
-        /** @var FlattenSequence<mixed> $joined */
-        $joined = $subresults->joined();
-        $resultType = $request->resultType;
-        if ($resultType == FetchRequestResultType::countResultType || $resultType == FetchRequestResultType::dictionaryResultType) {
-            return new ArrayClass($joined);
-        }
-        /** @var Set<ManagedObject> $objects */
-        $objects = new Set();
-        if ($request->includesPendingChanges) {
-            $objects->formUnion($this->insertedObjects);
-            $objects->formUnion($this->updatedObjects);
-            $objects = $objects->filter(function (ManagedObject $object) use ($request): bool {
-                $stores = $request->affectedStores ?? $this->persistentStoreCoordinator?->persistentStores ?? throw new InternalInconsistencyException();
-                if ($object->isDeleted || !$stores->containsElement($object->objectID->persistentStore ?? throw new InternalInconsistencyException()) || (($predicate = $request->predicate) && !$predicate->evaluate($object))) {
-                    return false;
-                }
-                $requestEntity = $request->entity;
-                $objectEntity = $object->entity;
-                if ($request->includesSubentities) {
-                    return $objectEntity->isKindOf($requestEntity);
-                }
-                return $objectEntity->isEqual($requestEntity);
-            });
-            if ($resultType == FetchRequestResultType::managedObjectIDResultType) {
-                $objects = $objects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID);
-            } elseif ($resultType == FetchRequestResultType::managedObjectResultType) {
-                if ($sortDescriptors = $request->sortDescriptors) {
-                    $objects = $objects->sorted($sortDescriptors);
-                }
-            }
-        }
-        $objects->appendContentsOf($joined);
-        return new ArrayClass($objects); // @phpstan-ignore-line
+        /** @var ArrayClass<mixed> */
+        return new ArrayClass($subresults->joined());
     }
 
     /**
@@ -911,6 +879,7 @@ class ManagedObjectContext extends ObjectClass
         $this->obtainPermanentIDs(new ArrayClass($this->insertedObjects)) ?: throw new InternalInconsistencyException();
         $insertedObjects = clone $this->insertedObjects;
         foreach ($insertedObjects as $insertedObject) {
+            /** @var FetchRequest<Number> $fetchRequest */
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $insertedObject->entity;
             $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath("objectID"), Expression::expressionForConstantValue($insertedObject->objectID));

@@ -56,6 +56,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     $propertyDescription = $property->propertyDescription;
                                     if ($propertyDescription instanceof ExpressionDescription) {
                                         $value = ManagedObject::coercedValue($value, $propertyDescription->expressionResultType);
+                                    } elseif ($propertyDescription instanceof AttributeDescription) {
+                                        $value = ManagedObject::coercedValue($value, $propertyDescription->type);
                                     }
                                 }
                                 $representation[$key] = $value;
@@ -85,9 +87,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 }
                                 if ($property instanceof SQLColumn) {
                                     if (($relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany) && $current instanceof Set) {
-                                        if ($current->isEmpty() && $property instanceof SQLPrimaryKey) {
-                                            $current[] = new Dictionary();
-                                        }
                                         $cached = $current;
                                         if ($property instanceof SQLPrimaryKey && !$cached->contains(fn(Dictionary $dictionary): bool => $dictionary[$property->name] === $value)) {
                                             $cached[] = new Dictionary();
