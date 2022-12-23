@@ -22,6 +22,7 @@ use Sabatier\Foundation\Predicates\ExpressionType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
+use Sabatier\Foundation\Value;
 use Sabatier\Foundation\ValueTransformer;
 use function Sabatier\Foundation\typeof;
 use const Sabatier\Foundation\CocoaErrorDomain;
@@ -760,7 +761,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public static function coercedValue(mixed $value, AttributeType $type, ?string $attributeValueClassName = null, ?string $valueTransformerName = null, bool $in = false): mixed
     {
-        if ($value instanceof Nil) {
+        if ($value instanceof Value) {
             $value = $value->value;
         }
         switch ($type) {
@@ -774,8 +775,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             case AttributeType::float:
                 return (float)$value;
             case AttributeType::boolean:
-                $number = $value instanceof Number ? $value : (new Number((bool)$value));
-                return $in ? $number->intValue : $number->boolValue;
+                return $in ? (int)$value : (bool)$value;
             case AttributeType::date:
                 return $value instanceof Date ? $value : ($value ? new Date(strtotime($value)) : null);
             case AttributeType::uuid:
