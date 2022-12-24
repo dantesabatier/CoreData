@@ -2,10 +2,8 @@
 
 namespace Sabatier\CoreData;
 
-use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\KeyedArchiver;
 
 /** @internal */
 final class ManagedObjectSerializer
