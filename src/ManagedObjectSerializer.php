@@ -26,18 +26,13 @@ final class ManagedObjectSerializer
         }
         return self::$shared;
     }
-
-    private function serializationKeys(ManagedObject $object, Dictionary $dictionary): ArrayClass
-    {
-        return $dictionary->keys->filter(fn(string $key): bool => $object->entity->propertiesByName[$key] !== null);
-    }
-
+    
     private function update(ManagedObject $object, Dictionary $dictionary): void
     {
         if ($dictionary->isEmpty()) {
             return;
         }
-        $serializationKeys = $this->serializationKeys($object, $dictionary);
+        $serializationKeys = $dictionary->keys->filter(fn(string $key): bool => isset($object->entity->propertiesByName[$key]));
         if ($serializationKeys->isEmpty()) {
             return;
         }
