@@ -97,11 +97,10 @@ class MappingModel extends ObjectClass
 
     public function __get(string $name)
     {
-        if ($name === "entityMappings") {
-            return $this->entityMappingsByName->values;
-        } else {
-            return $this->valueForUndefinedKey($name);
-        }
+        return match ($name) {
+            "entityMappings" => $this->entityMappingsByName->values,
+            default => $this->valueForUndefinedKey($name)
+        };
     }
 
     public function __set(string $name, mixed $value): void

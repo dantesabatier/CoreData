@@ -40,11 +40,10 @@ class FetchIndexDescription extends ObjectClass
 
     public function __get(string $name)
     {
-        if ($name == "elements") {
-            return $this->$name;
-        } else {
-            return $this->valueForUndefinedKey($name);
-        }
+        return match ($name) {
+            "elements" => $this->$name,
+            default => $this->valueForUndefinedKey($name)
+        };
     }
 
     public function __set(string $name, mixed $value): void
