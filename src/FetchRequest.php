@@ -80,7 +80,7 @@ class FetchRequest extends PersistentStoreRequest
             $this->$name = $this->entity->name;
             return $this->$name;
         } elseif ($name == "entity") {
-            $entityName = $this->entityName ?? throw new InvalidArgumentException("invalid fetch request: expecting an entity or an entity name");
+            $entityName = $this->entityName ?? throw new InvalidArgumentException("Invalid fetch request: expecting an entity or an entity name");
             $this->$name = EntityDescription::entity($entityName, $this->context());
             return $this->$name;
         } elseif ($name == "serialization") {
@@ -120,10 +120,10 @@ class FetchRequest extends PersistentStoreRequest
     private function context(): ManagedObjectContext
     {
         if (!($queue = OperationQueue::current())) {
-            throw new InvalidArgumentException("current operation queue not found");
+            throw new InvalidArgumentException("Current operation queue not found");
         }
         if (!($context = $queue->associatedValueForKey("managedObjectContext"))) {
-            throw new InvalidArgumentException("unable to find the managed object context associated with the current operation queue");
+            throw new InvalidArgumentException("Unable to find the managed object context associated with the current operation queue");
         }
         return $context;
     }

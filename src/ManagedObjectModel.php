@@ -122,7 +122,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     private function newEntity(Dictionary $dictionary): EntityDescription
     {
         /** @var string $name */
-        $name = $dictionary["name"] ?? throw new InvalidArgumentException();
+        $name = $dictionary["name"] ?? throw new InvalidArgumentException("Entity name cannot be null");
         $entity = $this->entitiesByName[$name];
         if (!$entity instanceof EntityDescription) {
             $entity = new EntityDescription();

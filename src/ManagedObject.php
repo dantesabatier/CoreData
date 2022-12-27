@@ -109,7 +109,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         unset($this->changedValuesForCurrentEvent);
         unset($this->objectID);
         $this->managedObjectContext = $managedObjectContext;
-        $this->entity = $entity ?? throw new InvalidArgumentException("invalid argument: entity cannot be null");
+        $this->entity = $entity ?? throw new InvalidArgumentException("Invalid argument: entity cannot be null");
         $this->managedObjectContext->insert($this);
     }
 
@@ -122,7 +122,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->$name = new Dictionary();
             return $this->$name;
         } elseif ($name == "faultHandler") {
-            $this->$name = ($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? throw new InternalInconsistencyException())->faultHandler;
+            $this->$name = ($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? throw new InternalInconsistencyException("Persistent store coordinator cannot be null"))->faultHandler;
             return $this->$name;
         } elseif ($name == "allProperties") {
             $this->$name = $this->entity->properties;
@@ -233,7 +233,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if ($this->entity->relationshipsByName[$key]) {
             return $this->isRelationshipForKeyFault($key);
         }
-        throw new InternalInconsistencyException(sprintf("this class does not contains a relationship named \"%s\"", $key));
+        throw new InternalInconsistencyException(sprintf("This class does not contains a relationship named \"%s\"", $key));
     }
 
     /**
@@ -536,7 +536,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->didAccessValueForKey($key);
             if (!isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
                 $this->reserved[$key] = true;
-                $store = $context->persistentStoreCoordinator?->persistentStoreForObject($this) ?? throw new InternalInconsistencyException();
+                $store = $context->persistentStoreCoordinator?->persistentStoreForObject($this) ?? throw new InternalInconsistencyException("Persistent store coordinator cannot be null");
                 $newValue = $store->newValueForRelationship($property, $this->objectID, $context);
                 if ($property->isToMany) {
                     $value ??= new FaultingMutableSet($this, $property);
@@ -652,7 +652,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     final public function setValuesForKeys(Dictionary $keyedValues): void
     {
-        $store = $this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? throw new InternalInconsistencyException();
+        $store = $this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? throw new InternalInconsistencyException("Persistent store coordinator cannot be null");
         $managedObjectID = function (EntityDescription $entity, mixed $object) use ($store): ?ManagedObjectID {
             $objectID = $object["objectID"];
             if ($objectID instanceof ManagedObjectID) {
@@ -663,8 +663,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     return $store->objectID($entity, $referenceObject);
                 } elseif ($store instanceof IncrementalStore) {
                     return $store->newObjectID($entity, $referenceObject);
+                } else {
+                    throw new InvalidArgumentException("Unsupported store $store");
                 }
-                throw new InvalidArgumentException();
             };
             if ($objectID) {
                 if (($entityName = $object["entityName"]) && ($entityDescription = $this->managedObjectContext->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[$entityName])) {
@@ -735,7 +736,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             } elseif ($value instanceof Nil) {
                 $representation->setValueForKey($value, $key);
             } else {
-                throw new InvalidArgumentException(sprintf("attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", typeof($value), $key));
+                throw new InvalidArgumentException(sprintf("Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", typeof($value), $key));
             }
         }
         parent::setValuesForKeys($representation);
@@ -829,7 +830,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 };
                 if ($attributeValueClassName !== null) {
                     if ($value && class_exists($attributeValueClassName) && !is_a($value, $attributeValueClassName, true)) {
-                        throw new InvalidArgumentException(sprintf("invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeValueClassName, typeof($value)));
+                        throw new InvalidArgumentException(sprintf("Invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeValueClassName, typeof($value)));
                     }
                 } elseif (!match ($type) {
                         AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => is_int($value) || is_float($value) || $value instanceof Number,
@@ -838,7 +839,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         AttributeType::transformable => true,
                         default => false,
                     } && !$property->isOptional) {
-                    throw new InvalidArgumentException(sprintf("invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $type->name, typeof($value)));
+                    throw new InvalidArgumentException(sprintf("Invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $type->name, typeof($value)));
                 }
             }
         } elseif ($property instanceof FetchedPropertyDescription) {

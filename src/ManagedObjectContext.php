@@ -183,7 +183,7 @@ class ManagedObjectContext extends ObjectClass
 
     private function executePersistentStoreRequest(PersistentStoreRequest $request): UnknownRequestTypeResult
     {
-        $stores = $request->affectedStores ?? $this->persistentStoreCoordinator?->persistentStores ?? throw new InternalInconsistencyException();
+        $stores = $request->affectedStores ?? $this->persistentStoreCoordinator?->persistentStores ?? throw new InternalInconsistencyException("Affected stores cannot be null");
         $this->processingChanges = true;
         $result = new UnknownRequestTypeResult($stores->map(fn(PersistentStore $store): ArrayClass => $store->execute($request, $this)));
         $this->processingChanges = false;
@@ -209,7 +209,7 @@ class ManagedObjectContext extends ObjectClass
         if ($request->fetchBatchSize) {
             return match ($request->resultType) {
                 FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType => new UnknownRequestTypeResult(new BatchFaultingArray($request, $this)),
-                default => throw new InvalidArgumentException(sprintf("invalid fetch request: %s->fetchBatchSize cannot be used with %s", FetchRequest::class, human_readable_value($request->resultType))),
+                default => throw new InvalidArgumentException(sprintf("Invalid fetch request: %s->fetchBatchSize cannot be used with %s", FetchRequest::class, human_readable_value($request->resultType))),
             };
         }
         return $this->executePersistentStoreRequest($request);
@@ -443,7 +443,7 @@ class ManagedObjectContext extends ObjectClass
             $this->delete($fault);
             return true;
         }
-        throw new InternalInconsistencyException(sprintf("inaccessible fault <%s %s:objectID=%s property=%s>", $fault::class, $fault->hash(), $oid->description(), $property->description()));
+        throw new InternalInconsistencyException(sprintf("Inaccessible fault <%s %s:objectID=%s property=%s>", $fault::class, $fault->hash(), $oid->description(), $property->description()));
     }
 
     /**
@@ -876,14 +876,15 @@ class ManagedObjectContext extends ObjectClass
      */
     private function newSaveRequestForCurrentState(): ?SaveChangesRequest
     {
-        $this->obtainPermanentIDs(new ArrayClass($this->insertedObjects)) ?: throw new InternalInconsistencyException();
+        $this->obtainPermanentIDs(new ArrayClass($this->insertedObjects)) ?: throw new InternalInconsistencyException("Unable to obtain permanent ids for inserted objects");
         $insertedObjects = clone $this->insertedObjects;
         foreach ($insertedObjects as $insertedObject) {
             /** @var FetchRequest<Number> $fetchRequest */
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $insertedObject->entity;
             $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath("objectID"), Expression::expressionForConstantValue($insertedObject->objectID));
-            $persistentStore = $insertedObject->objectID->persistentStore ?? throw new InternalInconsistencyException();
+            /** @var PersistentStore $persistentStore */
+            $persistentStore = $insertedObject->objectID->persistentStore;
             $fetchRequest->affectedStores = new ArrayClass([$persistentStore]);
             if ($this->count($fetchRequest)) {
                 $this->insertedObjects->remove($insertedObject);

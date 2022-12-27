@@ -53,7 +53,7 @@ abstract class AtomicStore extends PersistentStore
 
     private function updateObject(ManagedObject $object): void
     {
-        $cacheNode = $this->cacheNode($object->objectID) ?? throw new InvalidArgumentException("invalid argument: object \"$object\" does not exists ");
+        $cacheNode = $this->cacheNode($object->objectID) ?? throw new InvalidArgumentException("Invalid argument: object \"$object\" does not exists ");
         foreach ($object->entity as $property) {
             if (!$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription) {
                 $key = $property->name;
@@ -109,7 +109,7 @@ abstract class AtomicStore extends PersistentStore
         /** @var ArrayClass<PropertyDescription|string> $propertiesToGroupBy */
         $propertiesToGroupBy = $request->propertiesToGroupBy ?? new ArrayClass();
         if (!$propertiesToGroupBy->isEmpty() && $resultType !== FetchRequestResultType::dictionaryResultType) {
-            throw new InvalidArgumentException(sprintf("invalid fetch request: GROUP BY requires %s, %s given", human_readable_value(FetchRequestResultType::dictionaryResultType), human_readable_value($request->resultType)));
+            throw new InvalidArgumentException(sprintf("Invalid fetch request: GROUP BY requires %s, %s given", human_readable_value(FetchRequestResultType::dictionaryResultType), human_readable_value($request->resultType)));
         }
         /** @var Set<ManagedObject> $objects */
         $objects = new Set();
@@ -221,7 +221,7 @@ abstract class AtomicStore extends PersistentStore
             /** @var Set<AtomicStoreCacheNode> $deletedNodes */
             $deletedNodes = new Set();
             foreach ($deletedObjects as $deletedObject) {
-                $deletedNodes->append($this->cacheNode($deletedObject->objectID) ?? throw new InternalInconsistencyException());
+                $deletedNodes->append($this->cacheNode($deletedObject->objectID) ?? throw new InternalInconsistencyException("Unable to delete an uncached object $deletedObject"));
                 $this->removeObject($deletedObject);
             }
             $this->willRemoveCacheNodes($deletedNodes);
@@ -292,7 +292,7 @@ abstract class AtomicStore extends PersistentStore
     public function referenceObject(ManagedObjectID $objectID): int|string
     {
         /** @var ManagedObjectID $managedObjectID */
-        $managedObjectID = $this->cacheEntities[$objectID->entity->name][(string)$objectID] ?? throw new InvalidArgumentException("object id wasn't created by this store.");
+        $managedObjectID = $this->cacheEntities[$objectID->entity->name][(string)$objectID] ?? throw new InvalidArgumentException("Object id wasn't created by this store.");
         return $managedObjectID->referenceObject;
     }
 

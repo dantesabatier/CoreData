@@ -70,7 +70,7 @@ abstract class IncrementalStore extends PersistentStore
     public function referenceObject(ManagedObjectID $objectID): int|string
     {
         /** @var ManagedObjectID $managedObjectID */
-        $managedObjectID = $this->cacheEntities[$objectID->entity->name][(string)$objectID] ?? throw new InvalidArgumentException("object id wasn't created by this store.");
+        $managedObjectID = $this->cacheEntities[$objectID->entity->name][(string)$objectID] ?? throw new InvalidArgumentException("Object id wasn't created by this store.");
         return $managedObjectID->referenceObject;
     }
 

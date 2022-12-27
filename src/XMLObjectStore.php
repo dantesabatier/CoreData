@@ -122,7 +122,7 @@ class XMLObjectStore extends AtomicStore
             foreach ($attributeElements as $attributeElement) {
                 $key = $attributeElement->getAttribute('name');
                 if (!($attribute = $entity->attributesByName[$key])) {
-                    throw new UnknownKeyException(sprintf("%s %s() entity \"%s\" does not contains an attribute named \"%s\"", self::class, __FUNCTION__, $entity->name, $key));
+                    throw new UnknownKeyException(sprintf("Entity \"%s\" does not contains an attribute named \"%s\"", $entity->name, $key));
                 }
                 $info[$attribute->name] = $attributeElement->attributes;
                 $value = ManagedObject::coercedValue($attributeElement->nodeValue, $attribute->type);
@@ -136,7 +136,7 @@ class XMLObjectStore extends AtomicStore
             foreach ($relationshipElements as $relationshipElement) {
                 $key = $relationshipElement->getAttribute('name');
                 if (!($relationship = $entity->relationshipsByName[$key])) {
-                    throw new UnknownKeyException(sprintf("%s %s() entity \"%s\" does not contains a relationship named \"%s\"", self::class, __FUNCTION__, $entity->name, $key));
+                    throw new UnknownKeyException(sprintf("Entity \"%s\" does not contains a relationship named \"%s\"", $entity->name, $key));
                 }
                 $info[$relationship->name] = $relationshipElement->attributes;
                 if (($references = $relationshipElement->getAttribute('references')) && ($destination = $relationshipElement->getAttribute('destination')) && ($destinationEntity = $this->entitiesForConfiguration[$destination])) {

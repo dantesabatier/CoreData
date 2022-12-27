@@ -53,7 +53,7 @@ class MappingModel extends ObjectClass
                 $this->entityMappings = $entities->map(function (Dictionary $dictionary): EntityMapping {
                     $transform = function (Dictionary $dictionary): PropertyMapping {
                         /** @var string $name */
-                        $name = $dictionary["name"] ?? throw new InferredMappingModelException();
+                        $name = $dictionary["name"] ?? throw new InferredMappingModelException(sprintf("%s name cannot be null", PropertyMapping::class));
                         $property = new PropertyMapping($name);
                         /** @var string|null $valueExpressionFormat */
                         $valueExpressionFormat = $dictionary["valueExpressionFormat"];

@@ -42,9 +42,9 @@ class FetchIndexElementDescription extends ObjectClass
 
     public function __get(string $name)
     {
-        $propertyName = $this->propertyName ?? throw new InvalidArgumentException("property name cannot be null");
+        $propertyName = $this->propertyName ?? throw new InvalidArgumentException("Property name cannot be null");
         return $this->$name = match ($name) {
-            "property" => $this->indexDescription->entity->propertiesByName[$propertyName] ?? throw new InvalidArgumentException(sprintf("property \"%s\" does not exists", $propertyName)),
+            "property" => $this->indexDescription->entity->propertiesByName[$propertyName] ?? throw new InvalidArgumentException(sprintf("Property \"%s\" does not exists", $propertyName)),
             default => $this->valueForUndefinedKey($name)
         };
     }

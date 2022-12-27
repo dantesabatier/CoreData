@@ -29,12 +29,12 @@ class SQLStatement extends ObjectClass
     public function __construct(public readonly string $string, public readonly ArrayClass $arguments = new ArrayClass())
     {
         if (string_ends_with($this->string, ";")) {
-            throw new InvalidArgumentException("invalid sql statement: sql string must not end with a semicolon \";\"");
+            throw new InvalidArgumentException("Invalid sql statement: sql string must not end with a semicolon \";\"");
         }
         $numberOfArguments = $this->arguments->count();
         $numberOfPlaceholders = string_search($this->string, "?", SearchMethod::contains);
         if ($numberOfArguments !== $numberOfPlaceholders) {
-            throw new InvalidArgumentException(sprintf("invalid sql statement: number of arguments (%s) does not match the number of placeholders (%s)\n\"%s\"\n%s", $numberOfArguments, $numberOfPlaceholders, $this->string, $this->arguments->description()));
+            throw new InvalidArgumentException(sprintf("Invalid sql statement: number of arguments (%s) does not match the number of placeholders (%s)\n\"%s\"\n%s", $numberOfArguments, $numberOfPlaceholders, $this->string, $this->arguments->description()));
         }
     }
 
@@ -45,7 +45,7 @@ class SQLStatement extends ObjectClass
     public static function merging(ArrayClass $statements): SQLStatement
     {
         if ($statements->isEmpty()) {
-            throw new InvalidArgumentException("invalid sql statement: statements cannot be empty");
+            throw new InvalidArgumentException("Invalid sql statement: statements cannot be empty");
         }
         if ($statements->count() === 1) {
             return $statements[0];

@@ -50,7 +50,7 @@ class FetchIndexDescription extends ObjectClass
     {
         if ($name == "elements") {
             if ((new Set($value->map(fn(FetchIndexElementDescription $element): FetchIndexElementType => $element->collationType)))->count() > 1) {
-                throw new InvalidArgumentException("invalid argument: elements must be of the same collation type");
+                throw new InvalidArgumentException("Invalid argument: elements must be of the same collation type");
             }
             $this->$name = $value;
             $this->$name->setValueForKey($this, "indexDescription");

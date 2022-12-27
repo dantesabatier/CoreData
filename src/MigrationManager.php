@@ -177,7 +177,7 @@ class MigrationManager extends ObjectClass
                 } elseif ($value instanceof ManagedObject) {
                     $destinationInstances->appendContentsOf($expression->expressionValue($source, new Dictionary(["\$manager" => $this, "\$source" => new ArrayClass([$value])])));
                 } elseif ($value) {
-                    throw new InvalidArgumentException(sprintf("%s %s() Unexpected value \"%s\" for relationship %s->%s", $this->debugDescription(), __FUNCTION__, typeof($value), $source->entity->name, $key));
+                    throw new InvalidArgumentException(sprintf("Unexpected value \"%s\" for relationship %s->%s", typeof($value), $source->entity->name, $key));
                 }
                 $relationshipsByName[$relationshipKey] = $destinationInstances;
                 $this->byMappingBySourceRelationshipsAssociationTable[$key] = $relationshipsByName;
@@ -422,6 +422,6 @@ class MigrationManager extends ObjectClass
     /** @psalm-suppress all */
     private function mapping(string $named): EntityMapping
     {
-        return $this->mappingModel->entityMappingsByName[$named] ?? throw new InvalidArgumentException("entity mapping name \"$named\" does not exist");
+        return $this->mappingModel->entityMappingsByName[$named] ?? throw new InvalidArgumentException("Entity mapping name \"$named\" does not exist");
     }
 }
