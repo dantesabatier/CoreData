@@ -33,7 +33,7 @@ const UpdatedObjectIDsKey = "UpdatedObjectIDsKey";
 // Persistent Store Metadata Keys
 
 /** @var string A key that indicates a persistent store posts a remote change notification for every write to the store, including writes by other processes. */
-const PersistentStoreRemoteChangeNotificationPostOptionKey = "PersistentStoreRemoteChangeNotificationPostOptionKey";
+const PersistentStoreRemoteChangeNotificationPostOptionKey = "PersistentStoreRemoteChangeNotificationPostOption";
 
 // Persistent Store Coordinator Constants
 
@@ -49,7 +49,7 @@ const StoreUUIDKey = "StoreUUID";
  * @var string A dictionary key for enabling persistent history tracking.
  * By default, persistent history tracking is disabled.
  */
-const PersistentHistoryTrackingKey = "PersistentHistoryTrackingKey";
+const PersistentHistoryTrackingKey = "PersistentHistoryTracking";
 
 // Notification Names
 
