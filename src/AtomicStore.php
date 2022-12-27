@@ -111,8 +111,8 @@ abstract class AtomicStore extends PersistentStore
         if (!$propertiesToGroupBy->isEmpty() && $resultType !== FetchRequestResultType::dictionaryResultType) {
             throw new InvalidArgumentException(sprintf("Invalid fetch request: GROUP BY requires %s, %s given", human_readable_value(FetchRequestResultType::dictionaryResultType), human_readable_value($request->resultType)));
         }
-        /** @var Set<ManagedObject> $objects */
-        $objects = new Set();
+        /** @var ArrayClass<ManagedObject> $objects */
+        $objects = new ArrayClass();
         /** @var AtomicStoreCacheNode $cacheNode */
         foreach ($this->nodeCache as $cacheNode) {
             $object = $context->object($cacheNode->objectID);
@@ -156,8 +156,8 @@ abstract class AtomicStore extends PersistentStore
                         }
                     }
                 }
-                /** @var Set<ManagedObject> $objects */
-                $objects = new Set($dictionary->joined());
+                /** @var ArrayClass<ManagedObject> $objects */
+                $objects = new ArrayClass($dictionary->joined());
                 if ($havingPredicate = $request->havingPredicate) {
                     $objects = $objects->filtered($havingPredicate);
                 }
@@ -170,11 +170,10 @@ abstract class AtomicStore extends PersistentStore
                 /** @var ArrayClass<ExpressionDescription> $expressionDescriptions */
                 $expressionDescriptions = $propertiesToFetch->filter(fn(PropertyDescription|string $property): bool => $property instanceof ExpressionDescription);
                 foreach ($expressionDescriptions as $expressionDescription) {
-                    if (!($expression = $expressionDescription->expression)) {
-                        continue;
-                    }
-                    foreach ($objects as $object) {
-                        $object[$expressionDescription->name] = ManagedObject::coercedValue($expression->expressionValue(new ArrayClass([$object])), $expressionDescription->expressionResultType);
+                    if ($expression = $expressionDescription->expression) {
+                        foreach ($objects as $object) {
+                            $object[$expressionDescription->name] = ManagedObject::coercedValue($expression->expressionValue(new ArrayClass([$object])), $expressionDescription->expressionResultType);
+                        }
                     }
                 }
                 $keys = $propertiesToFetch->map(fn(PropertyDescription|string $property): string => $property instanceof PropertyDescription ? $property->name : $property);
@@ -182,10 +181,9 @@ abstract class AtomicStore extends PersistentStore
                 $keys->insertAt("entityName", 1);
                 foreach ($objects as $object) {
                     foreach ($object->keys as $key) {
-                        if ($keys->containsElement($key)) {
-                            continue;
+                        if (!$keys->containsElement($key)) {
+                            $object->removeValueForKey($key);
                         }
-                        $object->removeValueForKey($key);
                     }
                 }
             }
@@ -193,9 +191,9 @@ abstract class AtomicStore extends PersistentStore
                 $objects = $objects->sorted($descriptors);
             }
         } else {
-            $objects = [new Number($objects->count())];
+            $objects = new ArrayClass([new Number($objects->count())]);
         }
-        return new ArrayClass($objects);
+        return $objects;
     }
 
     private function executeRefreshRequest(RefreshRequest $request, ManagedObjectContext $context): ArrayClass
