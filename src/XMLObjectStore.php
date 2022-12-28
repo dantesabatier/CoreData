@@ -26,6 +26,7 @@ use Sabatier\Foundation\UUID;
 /** @internal */
 class XMLObjectStore extends AtomicStore
 {
+    public string $type = XMLStoreType;
     private ?DOMDocument $document = null;
     /** @var Dictionary<EntityDescription> */
     private readonly Dictionary $entitiesForConfiguration;
@@ -319,8 +320,7 @@ class XMLObjectStore extends AtomicStore
             $document->load($path, $options);
             return $document;
         }
-        //TODO: review this structure
-        $type = $document->createElement(StoreTypeKey, $this->type());
+        $type = $document->createElement(StoreTypeKey, $this->type);
         $uuid = $document->createElement(StoreUUIDKey, $this->identifier);
         $metadata = $document->createElement('metadata');
         $metadata->appendChild($uuid);
@@ -428,11 +428,6 @@ class XMLObjectStore extends AtomicStore
 
     public function willRemove(PersistentStoreCoordinator $coordinator): void
     {
-    }
-
-    public function type(): string
-    {
-        return XMLStoreType;
     }
 
     /**

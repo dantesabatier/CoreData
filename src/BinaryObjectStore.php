@@ -12,8 +12,5 @@ namespace Sabatier\CoreData;
 /** @internal */
 class BinaryObjectStore extends MappedObjectStore
 {
-    public function type(): string
-    {
-        return BinaryStoreType;
-    }
+    public string $type = BinaryStoreType;
 }

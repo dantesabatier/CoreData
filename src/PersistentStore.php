@@ -18,6 +18,8 @@ use function Sabatier\Foundation\uuid_generate;
  */
 abstract class PersistentStore extends ObjectClass
 {
+    /** @var string The type string of the persistent store. */
+    public string $type;
     /** @var string The unique identifier for the persistent store. */
     public string $identifier;
     /** @var Dictionary<mixed> The metadata for the persistent store. The dictionary must include the store type. */
@@ -48,7 +50,7 @@ abstract class PersistentStore extends ObjectClass
     {
         return $this->$name = match ($name) {
             "identifier" => uuid_generate(),
-            "metadata" => new Dictionary([StoreTypeKey => $this->type(), StoreUUIDKey => $this->identifier]),
+            "metadata" => new Dictionary([StoreTypeKey => $this->type, StoreUUIDKey => $this->identifier]),
             "faultHandler" => new FaultHandler($this),
             default => $this->valueForUndefinedKey($name)
         };
@@ -249,16 +251,7 @@ abstract class PersistentStore extends ObjectClass
     {
         return MigrationManager::class;
     }
-
-    /**
-     * The type string of the persistent store.
-     * @return string
-     */
-    public function type(): string
-    {
-        request_concrete_implementation($this, __FUNCTION__);
-    }
-
+    
     public function load(): bool
     {
         request_concrete_implementation($this, __FUNCTION__);

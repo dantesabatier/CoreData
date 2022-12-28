@@ -27,6 +27,7 @@ class SQLCore extends IncrementalStore
 {
     public static int $debugDefault = 0;
     public static bool $coloredLoggingDefault = false;
+    public string $type = SQLStoreType;
     public readonly SQLModel $model;
     public readonly SQLAdapter $adapter;
     public readonly SQLConnection $schemaValidationConnection;
@@ -395,11 +396,6 @@ class SQLCore extends IncrementalStore
         }
         $this->maxPrimaryKeys[$entityName] += 1;
         return $this->maxPrimaryKeys[$entityName];
-    }
-
-    public function type(): string
-    {
-        return SQLStoreType;
     }
 
     public function load(): bool

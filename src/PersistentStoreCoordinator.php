@@ -219,7 +219,7 @@ class PersistentStoreCoordinator extends ObjectClass
         $persistentStore->didAdd($this);
         NotificationCenter::default()->postNotificationName(PersistentStoreCoordinatorStoresDidChange, $this, $userInfo);
         if ($options?->valueForKey(MigratePersistentStoresAutomaticallyOption) && !$this->managedObjectModel->isConfigurationCompatibleWithStoreMetadata($configuration, $this->metadata($persistentStore)) && ($store = $this->migratePersistentStore($persistentStore, $storeURL, $options, $storeType))) {
-            return $this->addPersistentStoreWithType(PersistentStoreType::from($store->type()), $store->configurationName, $store->url, $store->options);
+            return $this->addPersistentStoreWithType(PersistentStoreType::from($store->type), $store->configurationName, $store->url, $store->options);
         }
         return $persistentStore;
     }
@@ -285,7 +285,7 @@ class PersistentStoreCoordinator extends ObjectClass
         } else {
             $mappingModel = MappingModel::mappingModel(null, $sourceModel, $destinationModel) ?? throw new InternalInconsistencyException();
         }
-        $sourceType = PersistentStoreType::from($store->type());
+        $sourceType = PersistentStoreType::from($store->type);
         $sourceOptions = $store->options;
         $migrationManagerClass = $store::migrationManagerClass();
         /** @var MigrationManager $migrationManager */
