@@ -449,9 +449,8 @@ class XMLObjectStore extends AtomicStore
     public function load(): bool
     {
         $document = $this->document();
-        $metadata = self::loadMetadataFromDocument($document);
-        $this->metadata = $metadata;
-        $this->identifier = $metadata[StoreUUIDKey];
+        $this->metadata = self::loadMetadataFromDocument($document);
+        $this->identifier = $this->metadata[StoreUUIDKey];
         $this->loadFromDocument($document);
         return true;
     }
