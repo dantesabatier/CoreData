@@ -15,7 +15,7 @@ class SQLInPlaceMigrationManager extends MigrationManager
         }
         $destinationOptions?->removeValueForKey(MigratePersistentStoresAutomaticallyOption);
         /** @var PersistentStoreCoordinator $persistentStoreCoordinator */
-        $persistentStoreCoordinator = $this->sourceContext->persistentStoreCoordinator;
+        $persistentStoreCoordinator = $this->destinationContext->persistentStoreCoordinator;
         /** @var SQLCore $store */
         $store = $persistentStoreCoordinator->persistentStore($sourceURL);
         $model = new SQLModel($this->destinationModel, $store->configurationName);

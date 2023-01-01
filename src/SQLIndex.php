@@ -18,7 +18,8 @@ class SQLIndex extends ObjectClass
 
     public function __construct(public readonly FetchIndexDescription $indexDescription, public readonly SQLEntity $entity)
     {
-        $entity = $this->entity;
+        /** @var SQLEntity $entity */
+        $entity = $this->entity->isRootEntity ? $this->entity : $this->entity->rootEntity;
         $indexDescription = $this->indexDescription;
         $this->isUnique = $indexDescription->isUnique();
         $this->createTableStatements = new ArrayClass();
