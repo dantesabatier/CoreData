@@ -9,11 +9,11 @@ use Sabatier\Foundation\ObjectClass;
 class SQLIndex extends ObjectClass
 {
     /** @var ArrayClass<SQLStatement> */
-    public ArrayClass $createTableStatements;
+    public readonly ArrayClass $createTableStatements;
     /** @var ArrayClass<SQLStatement> */
-    public ArrayClass $dropTableStatements;
+    public readonly ArrayClass $dropTableStatements;
     /** @var ArrayClass<SQLStatement> */
-    public ArrayClass $updateTableStatements;
+    public readonly ArrayClass $updateTableStatements;
     public readonly bool $isUnique;
 
     public function __construct(public readonly FetchIndexDescription $indexDescription, public readonly SQLEntity $entity)
