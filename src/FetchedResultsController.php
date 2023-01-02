@@ -4,9 +4,11 @@ namespace Sabatier\CoreData;
 
 use Exception;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\IndexPath;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\SortDescriptor;
+use const Sabatier\Foundation\NotFound;
 
 /**
  * A controller that you use to manage the results of a Core Data fetch request and to display data to the user.
@@ -42,8 +44,9 @@ class FetchedResultsController extends ObjectClass
         if ($name == "fetchedObjects" || $name == "sections") {
             return $this->$name;
         } elseif ($name == "sectionIndexTitles") {
-            /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
-            $this->$name = $this->sections?->compactMap(fn(FetchedResultsSectionInfo $section): ?string => $section->indexTitle) ?? new ArrayClass();
+            /** @var ArrayClass<string> $sectionIndexTitles */
+            $sectionIndexTitles = $this->sections?->compactMap(fn(FetchedResultsSectionInfo $section): ?string => $section->indexTitle) ?? new ArrayClass();
+            $this->$name = $sectionIndexTitles;
             return $this->$name;
         } else {
             return $this->valueForUndefinedKey($name);
@@ -54,19 +57,17 @@ class FetchedResultsController extends ObjectClass
      * Executes the controller's fetch request.
      *
      * After you execute this method, access the controller's fetched objects using the fetchedObjects property.
-     * If you specify a value for the sectionNameKeyPath parameter when you initialize the fetched results controller, the fetch request must include a sort descriptor for the corresponding key path; otherwise, the fetch fails.
+     * If you specify a value for the sectionNameKeyPath parameter when you initialize the fetched results' controller, the fetch request must include a sort descriptor for the corresponding key path; otherwise, the fetch fails.
      * @throws Exception
      */
     public function performFetch(): void
     {
-        $sectionNameKeyPath = $this->sectionNameKeyPath;
+        $sectionNameKeyPath = $this->sectionNameKeyPath ?? "";
         $this->fetchedObjects = $this->managedObjectContext->fetch($this->fetchRequest);
-        if ($sectionNameKeyPath !== null && !$this->fetchRequest->sortDescriptors?->contains(fn(SortDescriptor $sortDescriptor): bool => $sortDescriptor->key === $sectionNameKeyPath)) {
+        if ($sectionNameKeyPath !== "" && !$this->fetchRequest->sortDescriptors?->contains(fn(SortDescriptor $sortDescriptor): bool => $sortDescriptor->key === $sectionNameKeyPath)) {
             throw new InternalInconsistencyException();
         }
-        if ($sectionNameKeyPath !== null) {
-            $this->sections = new ArrayClass([new FetchedResultsSectionInfo($sectionNameKeyPath, $this->fetchedObjects, $this->sectionIndexTitle($sectionNameKeyPath))]);
-        }
+        $this->sections = new ArrayClass([new FetchedResultsSectionInfo($sectionNameKeyPath, $this->fetchedObjects, $this->sectionIndexTitle($sectionNameKeyPath))]);
     }
 
     /**
@@ -79,21 +80,28 @@ class FetchedResultsController extends ObjectClass
 
     /**
      * Returns the object at the given index path in the fetch results.
-     * @param mixed $indexPath An index path in the fetch results. If indexPath does not describe a valid index path in the fetch results, an exception is raised.
+     * @param IndexPath $indexPath An index path in the fetch results. If indexPath does not describe a valid index path in the fetch results, an exception is raised.
      * @return ResultType The object at a given index path in the fetch results.
      */
-    public function object(mixed $indexPath)
+    public function object(IndexPath $indexPath)
     {
-        return $this->fetchedObjects?->elementAt($indexPath->row);
+        return $this->sections?->elementAt($indexPath->section)?->objects?->elementAt($indexPath->row) ?? throw new InternalInconsistencyException();
     }
 
     /**
      * Returns the index path of a given object.
      * @param ResultType $object An object in the receiver's fetch results.
-     * @return mixed The index path of object in the receiver's fetch results, or nil if object could not be found.
+     * @return IndexPath|null The index path of object in the receiver's fetch results, or nil if object could not be found.
      */
-    public function indexPath(/** @noinspection PhpUnusedParameterInspection */ mixed $object): mixed
+    public function indexPath(mixed $object): ?IndexPath
     {
+        if ($sections = $this->sections) {
+            foreach ($sections as $section => $e) {
+                if ($row = $e->objects?->indexOf($object)) {
+                    return new IndexPath([$section, $row]);
+                }
+            }
+        }
         return null;
     }
 
@@ -103,9 +111,9 @@ class FetchedResultsController extends ObjectClass
      * @param int $at The index of a section.
      * @return int The section number for the given section title and index in the section index
      */
-    public function section(/** @noinspection PhpUnusedParameterInspection */ string $title, int $at): int
+    public function section(string $title, int $at): int
     {
-        return 0;
+        return $this->sections?->elementAt($at)?->indexTitle === $title ? $at : $this->sections?->firstIndex(fn(FetchedResultsSectionInfo $section): bool => $section->indexTitle === $title) ?? NotFound;
     }
 
     /**
