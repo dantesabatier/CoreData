@@ -35,15 +35,6 @@ class FaultingMutableSet extends Set
         return parent::indexOf($element);
     }
 
-    public function elementAt(mixed $index)
-    {
-        $element = parent::elementAt($index);
-        if ($element instanceof ManagedObjectID) {
-            $element = $this->source->managedObjectContext->object($element);
-        }
-        return $element;
-    }
-
     public function append(mixed $element): void
     {
         if ($element instanceof ManagedObject) {

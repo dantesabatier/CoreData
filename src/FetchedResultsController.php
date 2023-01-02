@@ -13,17 +13,15 @@ use const Sabatier\Foundation\NotFound;
 /**
  * A controller that you use to manage the results of a Core Data fetch request and to display data to the user.
  * @template ResultType
- * @property-read ArrayClass<ResultType>|null $fetchedObjects The results of the fetch. The value of the property is nil if performFetch() hasn't been called. The results array only includes instances of the entity specified by the fetch request (fetchRequest) and that match its predicate. (If the fetch request has no predicate, then the results array includes all instances of the entity specified by the fetch request.) The results array reflects the in-memory state of managed objects in the controller's managed object context, not their state in the persistent store. The returned array does not, however, update as managed objects are inserted, modified, or deleted.
- * @property-read ArrayClass<FetchedResultsSectionInfo>|null $sections The sections for the fetch results.
  */
 class FetchedResultsController extends ObjectClass
 {
     /** @var FetchedResultsControllerDelegate|null The object that is notified when the fetched results changed. If you do not specify a delegate, the controller does not track changes to managed objects associated with its managed object context. */
     public ?FetchedResultsControllerDelegate $delegate = null;
-    /** @var ArrayClass<ResultType>|null */
-    protected ?ArrayClass $fetchedObjects = null;
-    /** @var ArrayClass<FetchedResultsSectionInfo>|null */
-    protected ?ArrayClass $sections;
+    /** @var ArrayClass<ResultType> The results of the fetch. The results array only includes instances of the entity specified by the fetch request (fetchRequest) and that match its predicate. (If the fetch request has no predicate, then the results array includes all instances of the entity specified by the fetch request.) The results array reflects the in-memory state of managed objects in the controller's managed object context, not their state in the persistent store. The returned array does not, however, update as managed objects are inserted, modified, or deleted. */
+    public readonly ArrayClass $fetchedObjects;
+    /** @var ArrayClass<FetchedResultsSectionInfo> The sections for the fetch results. */
+    public readonly ArrayClass $sections;
     /** @var ArrayClass<string> The array of section index titles. The default implementation returns the array created by calling {@see sectionIndexTitle()} on all the known sections. You should override this method if you want to return a different array for the section index. You only need this method if you use a section index. */
     public ArrayClass $sectionIndexTitles;
 
@@ -36,16 +34,19 @@ class FetchedResultsController extends ObjectClass
      */
     public function __construct(public readonly FetchRequest $fetchRequest, public readonly ManagedObjectContext $managedObjectContext, public readonly ?string $sectionNameKeyPath = null, public readonly ?string $cacheName = null)
     {
+        unset($this->fetchedObjects);
+        unset($this->sections);
         unset($this->sectionIndexTitles);
     }
 
     public function __get(string $name)
     {
         if ($name == "fetchedObjects" || $name == "sections") {
+            $this->$name = new ArrayClass();
             return $this->$name;
         } elseif ($name == "sectionIndexTitles") {
             /** @var ArrayClass<string> $sectionIndexTitles */
-            $sectionIndexTitles = $this->sections?->compactMap(fn(FetchedResultsSectionInfo $section): ?string => $section->indexTitle) ?? new ArrayClass();
+            $sectionIndexTitles = $this->sections->compactMap(fn(FetchedResultsSectionInfo $section): ?string => $section->indexTitle);
             $this->$name = $sectionIndexTitles;
             return $this->$name;
         } else {
@@ -64,7 +65,7 @@ class FetchedResultsController extends ObjectClass
     {
         $sectionNameKeyPath = $this->sectionNameKeyPath ?? "";
         $this->fetchedObjects = $this->managedObjectContext->fetch($this->fetchRequest);
-        if ($sectionNameKeyPath !== "" && !$this->fetchRequest->sortDescriptors?->contains(fn(SortDescriptor $sortDescriptor): bool => $sortDescriptor->key === $sectionNameKeyPath)) {
+        if ($sectionNameKeyPath != "" && !$this->fetchRequest->sortDescriptors?->contains(fn(SortDescriptor $sortDescriptor): bool => $sortDescriptor->key == $sectionNameKeyPath)) {
             throw new InternalInconsistencyException();
         }
         $this->sections = new ArrayClass([new FetchedResultsSectionInfo($sectionNameKeyPath, $this->fetchedObjects, $this->sectionIndexTitle($sectionNameKeyPath))]);
@@ -85,7 +86,7 @@ class FetchedResultsController extends ObjectClass
      */
     public function object(IndexPath $indexPath)
     {
-        return $this->sections?->elementAt($indexPath->section)?->objects?->elementAt($indexPath->row) ?? throw new InternalInconsistencyException();
+        return $this->sections[$indexPath->section]->objects[$indexPath->row];
     }
 
     /**
@@ -95,11 +96,9 @@ class FetchedResultsController extends ObjectClass
      */
     public function indexPath(mixed $object): ?IndexPath
     {
-        if ($sections = $this->sections) {
-            foreach ($sections as $section => $e) {
-                if ($row = $e->objects?->indexOf($object)) {
-                    return new IndexPath([$section, $row]);
-                }
+        foreach ($this->sections as $section => $e) {
+            if ($row = $e->objects->indexOf($object)) {
+                return new IndexPath([$section, $row]);
             }
         }
         return null;
@@ -113,7 +112,7 @@ class FetchedResultsController extends ObjectClass
      */
     public function section(string $title, int $at): int
     {
-        return $this->sections?->elementAt($at)?->indexTitle === $title ? $at : $this->sections?->firstIndex(fn(FetchedResultsSectionInfo $section): bool => $section->indexTitle === $title) ?? NotFound;
+        return $this->sections[$at]->indexTitle === $title ? $at : $this->sections->firstIndex(fn(FetchedResultsSectionInfo $section): bool => $section->indexTitle === $title) ?? NotFound;
     }
 
     /**
