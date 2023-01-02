@@ -70,7 +70,7 @@ class FetchIndexDescription extends ObjectClass
     /** @internal */
     public function isUnique(): bool
     {
-        return $this->elements->contains(fn(FetchIndexElementDescription $element): bool => $element->isUnique);
+        return $this->elements->first()?->isUnique ?? false;
     }
 
     /** @internal */
@@ -82,13 +82,13 @@ class FetchIndexDescription extends ObjectClass
     /** @internal */
     public function isSpatial(): bool
     {
-        return $this->elements->contains(fn(FetchIndexElementDescription $element): bool => $element->collationType === FetchIndexElementType::rTree);
+        return $this->elements->first()?->collationType === FetchIndexElementType::rTree;
     }
 
     /** @internal */
     public function isBinary(): bool
     {
-        return $this->elements->contains(fn(FetchIndexElementDescription $element): bool => $element->collationType === FetchIndexElementType::binary);
+        return $this->elements->first()?->collationType === FetchIndexElementType::binary;
     }
 
     public function jsonSerialize(): Dictionary
