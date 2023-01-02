@@ -12,6 +12,7 @@ use Sabatier\Foundation\SortDescriptor;
  * A controller that you use to manage the results of a Core Data fetch request and to display data to the user.
  * @template ResultType
  * @property-read ArrayClass<ResultType>|null $fetchedObjects The results of the fetch. The value of the property is nil if performFetch() hasn't been called. The results array only includes instances of the entity specified by the fetch request (fetchRequest) and that match its predicate. (If the fetch request has no predicate, then the results array includes all instances of the entity specified by the fetch request.) The results array reflects the in-memory state of managed objects in the controller's managed object context, not their state in the persistent store. The returned array does not, however, update as managed objects are inserted, modified, or deleted.
+ * @property-read ArrayClass<FetchedResultsSectionInfo>|null $sections The sections for the fetch results.
  */
 class FetchedResultsController extends ObjectClass
 {
@@ -19,10 +20,10 @@ class FetchedResultsController extends ObjectClass
     public ?FetchedResultsControllerDelegate $delegate = null;
     /** @var ArrayClass<ResultType>|null */
     protected ?ArrayClass $fetchedObjects = null;
-    /** @var ArrayClass<FetchedResultsSectionInfo>|null The sections for the fetch results. The objects in the sections array implement the FetchedResultsSectionInfo protocol. */
-    public ?ArrayClass $sections = null;
-    /** @var ArrayClass<string> The array of section index titles. The default implementation returns the array created by calling sectionIndexTitle(forSectionName:) on all the known sections. You should override this method if you want to return a different array for the section index. You only need this method if you use a section index. */
-    public readonly ArrayClass $sectionIndexTitles;
+    /** @var ArrayClass<FetchedResultsSectionInfo>|null */
+    protected ?ArrayClass $sections;
+    /** @var ArrayClass<string> The array of section index titles. The default implementation returns the array created by calling {@see sectionIndexTitle()} on all the known sections. You should override this method if you want to return a different array for the section index. You only need this method if you use a section index. */
+    public ArrayClass $sectionIndexTitles;
 
     /**
      * Returns a fetch request controller initialized using the given arguments.
@@ -33,16 +34,12 @@ class FetchedResultsController extends ObjectClass
      */
     public function __construct(public readonly FetchRequest $fetchRequest, public readonly ManagedObjectContext $managedObjectContext, public readonly ?string $sectionNameKeyPath = null, public readonly ?string $cacheName = null)
     {
-        unset($this->sections);
         unset($this->sectionIndexTitles);
     }
 
     public function __get(string $name)
     {
-        if ($name == "fetchedObjects") {
-            return $this->$name;
-        } elseif ($name == "sections") {
-            $this->$name = null;
+        if ($name == "fetchedObjects" || $name == "sections") {
             return $this->$name;
         } elseif ($name == "sectionIndexTitles") {
             /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
@@ -62,10 +59,14 @@ class FetchedResultsController extends ObjectClass
      */
     public function performFetch(): void
     {
-        if (($sectionNameKeyPath = $this->sectionNameKeyPath) && !$this->fetchRequest->sortDescriptors?->contains(fn(SortDescriptor $sortDescriptor): bool => $sortDescriptor->key === $sectionNameKeyPath)) {
+        $sectionNameKeyPath = $this->sectionNameKeyPath;
+        $this->fetchedObjects = $this->managedObjectContext->fetch($this->fetchRequest);
+        if ($sectionNameKeyPath !== null && !$this->fetchRequest->sortDescriptors?->contains(fn(SortDescriptor $sortDescriptor): bool => $sortDescriptor->key === $sectionNameKeyPath)) {
             throw new InternalInconsistencyException();
         }
-        $this->fetchedObjects = $this->managedObjectContext->fetch($this->fetchRequest);
+        if ($sectionNameKeyPath !== null) {
+            $this->sections = new ArrayClass([new FetchedResultsSectionInfo($sectionNameKeyPath, $this->fetchedObjects, $this->sectionIndexTitle($sectionNameKeyPath))]);
+        }
     }
 
     /**
