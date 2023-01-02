@@ -4,22 +4,25 @@ namespace Sabatier\CoreData;
 
 use Exception;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\ObjectClass;
+use Sabatier\Foundation\SortDescriptor;
 
 /**
  * A controller that you use to manage the results of a Core Data fetch request and to display data to the user.
  * @template ResultType
+ * @property-read ArrayClass<ResultType>|null $fetchedObjects The results of the fetch. The value of the property is nil if performFetch() hasn't been called. The results array only includes instances of the entity specified by the fetch request (fetchRequest) and that match its predicate. (If the fetch request has no predicate, then the results array includes all instances of the entity specified by the fetch request.) The results array reflects the in-memory state of managed objects in the controller's managed object context, not their state in the persistent store. The returned array does not, however, update as managed objects are inserted, modified, or deleted.
  */
 class FetchedResultsController extends ObjectClass
 {
     /** @var FetchedResultsControllerDelegate|null The object that is notified when the fetched results changed. If you do not specify a delegate, the controller does not track changes to managed objects associated with its managed object context. */
     public ?FetchedResultsControllerDelegate $delegate = null;
-    /** @var ArrayClass<ResultType>|null The results of the fetch. The value of the property is nil if performFetch() hasn't been called. The results array only includes instances of the entity specified by the fetch request (fetchRequest) and that match its predicate. (If the fetch request has no predicate, then the results array includes all instances of the entity specified by the fetch request.) The results array reflects the in-memory state of managed objects in the controller's managed object context, not their state in the persistent store. The returned array does not, however, update as managed objects are inserted, modified, or deleted. */
-    public ?ArrayClass $fetchedObjects = null;
+    /** @var ArrayClass<ResultType>|null */
+    protected ?ArrayClass $fetchedObjects = null;
     /** @var ArrayClass<FetchedResultsSectionInfo>|null The sections for the fetch results. The objects in the sections array implement the FetchedResultsSectionInfo protocol. */
     public ?ArrayClass $sections = null;
     /** @var ArrayClass<string> The array of section index titles. The default implementation returns the array created by calling sectionIndexTitle(forSectionName:) on all the known sections. You should override this method if you want to return a different array for the section index. You only need this method if you use a section index. */
-    public ArrayClass $sectionIndexTitles;
+    public readonly ArrayClass $sectionIndexTitles;
 
     /**
      * Returns a fetch request controller initialized using the given arguments.
@@ -30,6 +33,24 @@ class FetchedResultsController extends ObjectClass
      */
     public function __construct(public readonly FetchRequest $fetchRequest, public readonly ManagedObjectContext $managedObjectContext, public readonly ?string $sectionNameKeyPath = null, public readonly ?string $cacheName = null)
     {
+        unset($this->sections);
+        unset($this->sectionIndexTitles);
+    }
+
+    public function __get(string $name)
+    {
+        if ($name == "fetchedObjects") {
+            return $this->$name;
+        } elseif ($name == "sections") {
+            $this->$name = null;
+            return $this->$name;
+        } elseif ($name == "sectionIndexTitles") {
+            /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
+            $this->$name = $this->sections?->compactMap(fn(FetchedResultsSectionInfo $section): ?string => $section->indexTitle) ?? new ArrayClass();
+            return $this->$name;
+        } else {
+            return $this->valueForUndefinedKey($name);
+        }
     }
 
     /**
@@ -41,6 +62,10 @@ class FetchedResultsController extends ObjectClass
      */
     public function performFetch(): void
     {
+        if (($sectionNameKeyPath = $this->sectionNameKeyPath) && !$this->fetchRequest->sortDescriptors?->contains(fn(SortDescriptor $sortDescriptor): bool => $sortDescriptor->key === $sectionNameKeyPath)) {
+            throw new InternalInconsistencyException();
+        }
+        $this->fetchedObjects = $this->managedObjectContext->fetch($this->fetchRequest);
     }
 
     /**
@@ -89,8 +114,8 @@ class FetchedResultsController extends ObjectClass
      * @param string $sectionName The name of a section.
      * @return string|null The section index entry corresponding to the section with name sectionName.
      */
-    public function sectionIndexTitle(/** @noinspection PhpUnusedParameterInspection */ string $sectionName): ?string
+    public function sectionIndexTitle(string $sectionName): ?string
     {
-        return null;
+        return ucfirst($sectionName);
     }
 }
