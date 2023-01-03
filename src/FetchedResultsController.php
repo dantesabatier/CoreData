@@ -112,7 +112,7 @@ class FetchedResultsController extends ObjectClass
      */
     public function section(string $title, int $at): int
     {
-        return $this->sections[$at]->indexTitle === $title ? $at : $this->sections->firstIndex(fn(FetchedResultsSectionInfo $section): bool => $section->indexTitle === $title) ?? NotFound;
+        return $this->sections->offsetExists($at) && $this->sections[$at]->indexTitle === $title ? $at : $this->sections->firstIndex(fn(FetchedResultsSectionInfo $section): bool => $section->indexTitle === $title) ?? NotFound;
     }
 
     /**

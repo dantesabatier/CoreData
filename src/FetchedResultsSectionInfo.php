@@ -17,7 +17,7 @@ class FetchedResultsSectionInfo
      * @param ArrayClass $objects The array of objects in the section.
      * @param string|null $indexTitle The index title of the section.
      */
-    public function __construct(public string $name, public readonly ArrayClass $objects = new ArrayClass(), public readonly ?string $indexTitle = null)
+    public function __construct(public readonly string $name, public readonly ArrayClass $objects = new ArrayClass(), public readonly ?string $indexTitle = null)
     {
         $this->numberOfObjects = $this->objects->count();
     }
