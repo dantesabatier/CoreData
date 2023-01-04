@@ -57,7 +57,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     if ($propertyDescription instanceof ExpressionDescription) {
                                         $value = ManagedObject::coercedValue($value, $propertyDescription->expressionResultType);
                                     } elseif ($propertyDescription instanceof AttributeDescription) {
-                                        $value = ManagedObject::coercedValue($value, $propertyDescription->type);
+                                        ManagedObject::coerceValue($value, $propertyDescription);
                                     }
                                 }
                                 $representation[$key] = $value;

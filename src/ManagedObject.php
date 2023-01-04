@@ -24,6 +24,8 @@ use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
 use Sabatier\Foundation\Value;
 use Sabatier\Foundation\ValueTransformer;
+
+use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\typeof;
 use const Sabatier\Foundation\CocoaErrorDomain;
 use const Sabatier\Foundation\KeyValueValidationError;
@@ -273,7 +275,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $value ??= $property->defaultValue;
                 if ($value === null && !$property->isOptional) {
                     $value = match ($property->type) {
-                        AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float, AttributeType::boolean, AttributeType::date, AttributeType::uuid => self::coercedValue($value, $property->type, $property->attributeValueClassName, $property->valueTransformerName),
+                        AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float, AttributeType::string, AttributeType::boolean => self::coercedValue($value, $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional),
                         default => null
                     };
                 }
@@ -485,7 +487,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->didAccessValueForKey($key);
             if ($property instanceof DerivedAttributeDescription && !$value && !isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
                 $this->reserved[$key] = true;
-                $value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type, $property->attributeValueClassName, $property->valueTransformerName);
+                $value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional);
                 $this->setPrimitiveValueForKey($value, $key);
                 //unset($this->reserved[$key]);
             }
@@ -760,7 +762,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /**
      * @internal
      */
-    public static function coercedValue(mixed $value, AttributeType $type, ?string $attributeValueClassName = null, ?string $valueTransformerName = null, bool $in = false): mixed
+    public static function coercedValue(mixed $value, AttributeType $type, ?string $attributeValueClassName = null, ?string $valueTransformerName = null, bool $isOptional = true, bool $in = false): mixed
     {
         if ($value instanceof Value) {
             $value = $value->value;
@@ -769,20 +771,36 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             case AttributeType::integer16:
             case AttributeType::integer32:
             case AttributeType::integer64:
-                return (int)$value;
+                return $isOptional ? $value : (int)$value;
             case AttributeType::decimal:
             case AttributeType::double:
-                return (double)$value;
+                return $isOptional ? $value : (double)$value;
             case AttributeType::float:
-                return (float)$value;
+                return $isOptional ? $value : (float)$value;
+            case AttributeType::string:
+                return $isOptional ? $value : (string)$value;
             case AttributeType::boolean:
-                return $in ? (int)$value : (bool)$value;
+                return $isOptional ? $value : ($in ? (int)$value : (bool)$value);
             case AttributeType::date:
-                return $value instanceof Date ? $value : ($value ? new Date(strtotime($value)) : null);
+                return match(typeof($value)) {
+                    Date::class => $value,
+                    "string" => $in ? $value : new Date(strtotime((string)$value)),
+                    "null" => $isOptional ? null : new Date(),
+                    default => null
+                };
             case AttributeType::uuid:
-                return $value instanceof UUID ? $value : ($value ? new UUID($value) : null);
+                return match(typeof($value)) {
+                    UUID::class => $value,
+                    "string" => $in ? $value : new UUID($value),
+                    "null" => $isOptional ? null : new UUID(),
+                    default => null
+                };
             case AttributeType::uri:
-                return $value instanceof URL ? $value : ($value ? new URL($value) : null);
+                return match(typeof($value)) {
+                    URL::class => $value,
+                    "string" => $in ? $value : new URL((string)$value),
+                    default => null
+                };
             case AttributeType::undefined:
             case AttributeType::transformable:
             case AttributeType::objectID:
@@ -798,7 +816,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         "float", => AttributeType::float,
                         default => false
                     }) {
-                        $value = self::coercedValue($value, $t, in: $in);
+                        $value = self::coercedValue($value, $t, isOptional: $isOptional, in: $in);
                     }
                 }
                 return $value;
@@ -819,14 +837,15 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $type = $property->type;
             $attributeValueClassName = $property->attributeValueClassName;
             $valueTransformerName = $property->valueTransformerName;
+            $isOptional = $property->isOptional;
             if ($value === null) {
-                if (!$property->isOptional) {
-                    $value = self::coercedValue($property->defaultValue, $type, $attributeValueClassName, $valueTransformerName, $in);
+                if (!$isOptional) {
+                    $value = self::coercedValue($property->defaultValue, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $in);
                 }
             } else {
                 $value = match ($type) {
-                    AttributeType::string, AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => $property->isOptional && $value === "" ? null : self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $in),
-                    default => self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $in),
+                    AttributeType::string, AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => $isOptional && $value === "" ? null : self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $in),
+                    default => self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $in),
                 };
                 if ($attributeValueClassName !== null) {
                     if ($value && class_exists($attributeValueClassName) && !is_a($value, $attributeValueClassName, true)) {

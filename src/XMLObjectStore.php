@@ -126,7 +126,8 @@ class XMLObjectStore extends AtomicStore
                     throw new UnknownKeyException(sprintf("Entity \"%s\" does not contains an attribute named \"%s\"", $entity->name, $key));
                 }
                 $info[$attribute->name] = $attributeElement->attributes;
-                $value = ManagedObject::coercedValue($attributeElement->nodeValue, $attribute->type);
+                $value = $attributeElement->nodeValue;
+                ManagedObject::coerceValue($value, $attribute);
                 if ($value === null) {
                     continue;
                 }
@@ -292,7 +293,7 @@ class XMLObjectStore extends AtomicStore
             case AttributeType::string:
             case AttributeType::objectID:
             case AttributeType::transformable:
-                $value = ManagedObject::coercedValue($value, $attribute->type);
+                ManagedObject::coerceValue($value, $attribute);
                 if (empty($value)) {
                     $value = null;
                 }

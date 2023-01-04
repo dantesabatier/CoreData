@@ -53,10 +53,11 @@ class AttributeDescription extends PropertyDescription
             $this->$name = PropertyDescriptionType::attribute;
             return $this->$name;
         } elseif ($name == "defaultValue") {
-            if ($this->$name !== null) {
-                return ManagedObject::coercedValue($this->$name, $this->type, $this->attributeValueClassName, $this->valueTransformerName);
+            $defaultValue = $this->$name;
+            if ($defaultValue !== null) {
+                ManagedObject::coerceValue($defaultValue, $this);
             }
-            return $this->$name;
+            return $defaultValue;
         } else {
             return parent::__get($name);
         }
