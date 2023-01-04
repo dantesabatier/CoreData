@@ -24,8 +24,6 @@ use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
 use Sabatier\Foundation\Value;
 use Sabatier\Foundation\ValueTransformer;
-
-use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\typeof;
 use const Sabatier\Foundation\CocoaErrorDomain;
 use const Sabatier\Foundation\KeyValueValidationError;
@@ -767,36 +765,48 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if ($value instanceof Value) {
             $value = $value->value;
         }
+        $v = function (string $t) use ($value, $isOptional, $in) {
+            $f = fn() => match ($t) {
+                "string" => (string)$value,
+                "int" => (int)$value,
+                "bool" => $in ? (int)$value : (bool)$value,
+                "float", => (float)$value,
+                default => $value
+            };
+            return match (typeof($value)) {
+                "null" => $isOptional ? null : $f(),
+                default => $f()
+            };
+        };
         switch ($type) {
             case AttributeType::integer16:
             case AttributeType::integer32:
             case AttributeType::integer64:
-                return $isOptional ? $value : (int)$value;
+                return $v("int");
             case AttributeType::decimal:
             case AttributeType::double:
-                return $isOptional ? $value : (double)$value;
             case AttributeType::float:
-                return $isOptional ? $value : (float)$value;
+                return $v("float");
             case AttributeType::string:
-                return $isOptional ? $value : (string)$value;
+                return $v("string");
             case AttributeType::boolean:
-                return $isOptional ? $value : ($in ? (int)$value : (bool)$value);
+                return $v("bool");
             case AttributeType::date:
-                return match(typeof($value)) {
+                return match (typeof($value)) {
                     Date::class => $value,
                     "string" => $in ? $value : new Date(strtotime((string)$value)),
                     "null" => $isOptional ? null : new Date(),
                     default => null
                 };
             case AttributeType::uuid:
-                return match(typeof($value)) {
+                return match (typeof($value)) {
                     UUID::class => $value,
                     "string" => $in ? $value : new UUID($value),
                     "null" => $isOptional ? null : new UUID(),
                     default => null
                 };
             case AttributeType::uri:
-                return match(typeof($value)) {
+                return match (typeof($value)) {
                     URL::class => $value,
                     "string" => $in ? $value : new URL((string)$value),
                     default => null
