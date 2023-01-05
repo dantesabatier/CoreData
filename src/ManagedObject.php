@@ -796,20 +796,20 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     Date::class => $value,
                     "string" => $in ? $value : new Date(strtotime((string)$value)),
                     "null" => $isOptional ? null : new Date(),
-                    default => null
+                    default => throw new InvalidArgumentException()
                 };
             case AttributeType::uuid:
                 return match (typeof($value)) {
                     UUID::class => $value,
                     "string" => $in ? $value : new UUID($value),
                     "null" => $isOptional ? null : new UUID(),
-                    default => null
+                    default => throw new InvalidArgumentException()
                 };
             case AttributeType::uri:
                 return match (typeof($value)) {
                     URL::class => $value,
                     "string" => $in ? $value : new URL((string)$value),
-                    default => null
+                    default => throw new InvalidArgumentException()
                 };
             case AttributeType::undefined:
             case AttributeType::transformable:
