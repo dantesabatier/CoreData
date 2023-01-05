@@ -40,8 +40,8 @@ return static function (RectorConfig $rectorConfig): void {
         ],
         ExplicitBoolCompareRector::class,
         ReadOnlyPropertyRector::class => [
-            __DIR__ . "src/SQLStoreMigrator.php",
-            __DIR__ . "src/FaultHandler.php",
+            __DIR__ . "/src/SQLStoreMigrator.php",
+            __DIR__ . "/src/FaultHandler.php",
         ],
         ReturnNeverTypeRector::class,
         NullToStrictStringFuncCallArgRector::class,
