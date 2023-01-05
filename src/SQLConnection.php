@@ -36,9 +36,8 @@ class SQLConnection extends ObjectClass
 {
     public readonly SQLSchema $schema;
     public SQLStoreRequestContext $requestContext;
-    /** @noRector */
-    public ?SQLCore $sqlCore;
-    private string $bundleID;
+    public readonly ?SQLCore $sqlCore;
+    private readonly string $bundleID;
     private ?PDO $pdo = null;
     private bool $open = false;
 

@@ -400,7 +400,7 @@ class SQLCore extends IncrementalStore
 
     public function load(): bool
     {
-        return true;
+        return $this->queryGenerationTrackingConnection->connect();
     }
 
     public function ensureDatabaseMatchesModel(): void

@@ -765,18 +765,16 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if ($value instanceof Value) {
             $value = $value->value;
         }
-        $v = function (string $t) use ($value, $isOptional, $in) {
-            $f = fn() => match ($t) {
-                "string" => (string)$value,
-                "int" => (int)$value,
-                "bool" => $in ? (int)$value : (bool)$value,
-                "float", => (float)$value,
-                default => $value
-            };
-            return match (typeof($value)) {
-                "null" => $isOptional ? null : $f(),
-                default => $f()
-            };
+        $f = fn(string $t): mixed => match ($t) {
+            "string" => (string)$value,
+            "int" => (int)$value,
+            "bool" => $in ? (int)$value : (bool)$value,
+            "float", => (float)$value,
+            default => $value
+        };
+        $v = fn (string $t): mixed => match (typeof($value)) {
+            "null" => $isOptional ? null : $f($t),
+            default => $f($t)
         };
         switch ($type) {
             case AttributeType::integer16:

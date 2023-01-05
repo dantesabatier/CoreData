@@ -230,14 +230,14 @@ class PersistentStoreCoordinator extends ObjectClass
      * @param Closure(PersistentStoreDescription, Error|null): void $completion The completion handler block that's invoked after the store is added.
      * @noinspection PhpUnhandledExceptionInspection, PhpDocMissingThrowsInspection
      */
-    public function addPersistentStoreWithDescription(PersistentStoreDescription $description, Closure $completion): void
+    public function      addPersistentStoreWithDescription(PersistentStoreDescription $description, Closure $completion): void
     {
         $block = function () use ($description, $completion): void {
             try {
                 $this->addPersistentStoreWithType(PersistentStoreType::from($description->type), $description->configuration, $description->url, $description->options);
                 $completion($description, null);
             } catch (Throwable $throwable) {
-                $completion($description, new Error(CocoaErrorDomain, -1, new Dictionary([LocalizedFailureReasonErrorKey => (string)$throwable])));
+                $completion($description, new Error(CocoaErrorDomain, (int)$throwable->getCode(), new Dictionary([LocalizedFailureReasonErrorKey => $throwable->getMessage()])));
             }
         };
         if ($description->shouldAddStoreAsynchronously) {
