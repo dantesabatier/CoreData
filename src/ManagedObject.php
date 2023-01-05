@@ -772,7 +772,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             "float", => (float)$value,
             default => $value
         };
-        $v = fn (string $t): mixed => match (typeof($value)) {
+        $v = fn(string $t): mixed => match (typeof($value)) {
             "null" => $isOptional ? null : $f($t),
             default => $f($t)
         };

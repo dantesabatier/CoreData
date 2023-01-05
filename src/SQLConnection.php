@@ -188,8 +188,7 @@ class SQLConnection extends ObjectClass
      */
     private function countOfRowsInTable(string $tableName): int
     {
-        $execute = $this->execute(new SQLStatement("SELECT COUNT(*) FROM `$tableName`"));
-        return (int)$execute->fetchColumn();
+        return (int)$this->execute(new SQLStatement("SELECT COUNT(*) FROM `$tableName`"))->fetchColumn();
     }
 
     /**
@@ -440,8 +439,7 @@ class SQLConnection extends ObjectClass
     public function hasHistoryTransactionWithNumber(Number $transactionNumber): bool
     {
         if ($transactionNumber->boolValue && $this->hasPersistentHistoryTables()) {
-            $execute = $this->execute(new SQLStatement("SELECT COUNT(`transactionID`) FROM `PersistentHistoryTransaction` WHERE `transactionID` = ?", new ArrayClass([$transactionNumber])));
-            return (bool)$execute->fetchColumn();
+            return (bool)$this->execute(new SQLStatement("SELECT COUNT(`transactionID`) FROM `PersistentHistoryTransaction` WHERE `transactionID` = ?", new ArrayClass([$transactionNumber])))->fetchColumn();
         }
         return false;
     }
@@ -451,8 +449,7 @@ class SQLConnection extends ObjectClass
      */
     private function hasPersistentHistoryTables(): bool
     {
-        $execute = $this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name IN (?, ?)", new ArrayClass([$this->schema->name, "PersistentHistoryTransaction", "PersistentHistoryChange"])));
-        return (bool)$execute->fetchColumn();
+        return (bool)$this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name IN (?, ?)", new ArrayClass([$this->schema->name, "PersistentHistoryTransaction", "PersistentHistoryChange"])))->fetchColumn();
     }
 
     /**
@@ -518,8 +515,7 @@ class SQLConnection extends ObjectClass
     public function fetchMaxPrimaryKey(string $entityName): int
     {
         $entity = $this->sqlCore?->model?->entitiesByName[$entityName] ?? throw new InvalidArgumentException("Invalid argument: entity \"$entityName\" does not exists");
-        $execute = $this->execute(new SQLStatement("SELECT MAX({$entity->primaryKey->columnName}) FROM `$entity->tableName`"));
-        return (int)$execute->fetchColumn();
+        return (int)$this->execute(new SQLStatement("SELECT MAX({$entity->primaryKey->columnName}) FROM `$entity->tableName`"))->fetchColumn();
     }
 
     /**
@@ -527,8 +523,7 @@ class SQLConnection extends ObjectClass
      */
     public function hasCachedModelTable(): bool
     {
-        $execute = $this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?", new ArrayClass([$this->schema->name, "ManagedObjectModel"])));
-        return (bool)$execute->fetchColumn();
+        return (bool)$this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?", new ArrayClass([$this->schema->name, "ManagedObjectModel"])))->fetchColumn();
     }
 
     /**
@@ -563,8 +558,7 @@ class SQLConnection extends ObjectClass
     {
         $this->connect();
         $this->createCachedModelTable();
-        $execute = $this->execute(new SQLStatement("SELECT * FROM `ManagedObjectModel`"));
-        if ($array = $execute->fetch()) {
+        if ($array = $this->execute(new SQLStatement("SELECT * FROM `ManagedObjectModel`"))->fetch()) {
             return $this->decompressedModelWithData($array["data"]);
         }
         return null;
@@ -606,8 +600,7 @@ class SQLConnection extends ObjectClass
      */
     public function hasMetadataTable(): bool
     {
-        $execute = $this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?", new ArrayClass([$this->schema->name, "PersistentStoreMetadata"])));
-        return (bool)$execute->fetchColumn();
+        return (bool)$this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?", new ArrayClass([$this->schema->name, "PersistentStoreMetadata"])))->fetchColumn();
     }
 
     /**
@@ -628,8 +621,7 @@ class SQLConnection extends ObjectClass
     {
         $this->connect();
         $this->createMetadata();
-        $execute = $this->execute(new SQLStatement("SELECT * FROM `PersistentStoreMetadata`"));
-        if ($array = $execute->fetch()) {
+        if ($array = $this->execute(new SQLStatement("SELECT * FROM `PersistentStoreMetadata`"))->fetch()) {
             return $this->decompressedMetadataWithData($array["data"]);
         }
         return null;
@@ -700,8 +692,7 @@ class SQLConnection extends ObjectClass
     public function hasSchema(): bool
     {
         /** @noinspection SqlShadowingAlias */
-        $execute = $this->execute(new SQLStatement("SELECT COUNT(*) schema_name FROM information_schema.schemata WHERE schema_name = ?", new ArrayClass([$this->schema->name])));
-        return (bool)$execute->fetchColumn();
+        return (bool)$this->execute(new SQLStatement("SELECT COUNT(*) schema_name FROM information_schema.schemata WHERE schema_name = ?", new ArrayClass([$this->schema->name])))->fetchColumn();
     }
 
     /**

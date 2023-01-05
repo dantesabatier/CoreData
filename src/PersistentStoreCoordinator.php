@@ -230,7 +230,7 @@ class PersistentStoreCoordinator extends ObjectClass
      * @param Closure(PersistentStoreDescription, Error|null): void $completion The completion handler block that's invoked after the store is added.
      * @noinspection PhpUnhandledExceptionInspection, PhpDocMissingThrowsInspection
      */
-    public function      addPersistentStoreWithDescription(PersistentStoreDescription $description, Closure $completion): void
+    public function addPersistentStoreWithDescription(PersistentStoreDescription $description, Closure $completion): void
     {
         $block = function () use ($description, $completion): void {
             try {
