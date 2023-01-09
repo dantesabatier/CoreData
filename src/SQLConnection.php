@@ -35,8 +35,8 @@ use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 class SQLConnection extends ObjectClass
 {
     public readonly SQLSchema $schema;
-    public SQLStoreRequestContext $requestContext;
     public readonly ?SQLCore $sqlCore;
+    private SQLStoreRequestContext $requestContext;
     private readonly string $bundleID;
     private ?PDO $pdo = null;
     private bool $open = false;

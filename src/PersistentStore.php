@@ -251,7 +251,10 @@ abstract class PersistentStore extends ObjectClass
     {
         return MigrationManager::class;
     }
-    
+
+    /**
+     * @throws Exception
+     */
     public function load(): bool
     {
         request_concrete_implementation($this, __FUNCTION__);
