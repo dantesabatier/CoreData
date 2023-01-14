@@ -17,7 +17,9 @@ use PDO;
 use PDOStatement;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Bundle;
+use Sabatier\Foundation\CompareOptions;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\KeyedUnarchiver;
 use Sabatier\Foundation\Nil;
@@ -29,6 +31,7 @@ use Sabatier\Foundation\URL;
 use Sabatier\Foundation\ValueTransformer;
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\human_readable_time;
+use function Sabatier\Foundation\string_has_prefix;
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /** @internal */
@@ -144,6 +147,9 @@ class SQLConnection extends ObjectClass
                 $style |= SQLStatementFormatterStyle::highlighted;
             }
             error_log(sprintf("CoreData: sql: \n%s", $statement->formatted($style)));
+        }
+        if ($this->sqlCore?->options?->valueForKey(ReadOnlyPersistentStoreOption) && !string_has_prefix($statement->string, "SELECT", CompareOptions::caseInsensitive)) {
+            throw new InternalInconsistencyException("Cannot modify a read only persistent store");
         }
         $pdo = $this->pdo();
         if ($statement->arguments->isEmpty()) {
