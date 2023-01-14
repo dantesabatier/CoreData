@@ -16,6 +16,7 @@ use ReflectionProperty;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\NotificationCenter;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Set;
@@ -255,6 +256,9 @@ class SQLCore extends IncrementalStore
      */
     private function processRequestContext(SQLStoreRequestContext $requestContext): mixed
     {
+        if ($requestContext->isWritingRequest && $this->isReadOnly) {
+            throw new InternalInconsistencyException("Cannot modify a read only persistent store");
+        }
         $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
         if ($requestContext->isWritingRequest) {
             if (!$requestContext->hasHistoryTracking && $this->options?->valueForKey(PersistentStoreRemoteChangeNotificationPostOptionKey) && $requestContext->transactionID->intValue) {
