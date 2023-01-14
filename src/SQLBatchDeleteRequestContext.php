@@ -50,12 +50,8 @@ class SQLBatchDeleteRequestContext extends SQLStoreRequestContext
             BatchDeleteRequestResultType::objectIDs => $objectIDs(),
             BatchDeleteRequestResultType::count => new ArrayClass([new Number($execute->rowCount())]),
         };
-        if ($this->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey)) {
-            /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
-            $this->affectedObjectIDs = $this->request->resultType === BatchDeleteRequestResultType::objectIDs ? $this->result : $objectIDs();
-        } else {
-            $this->affectedObjectIDs = new ArrayClass();
-        }
+        /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
+        $this->affectedObjectIDs = $this->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey) ? ($this->request->resultType === BatchDeleteRequestResultType::objectIDs ? $this->result : $objectIDs()) : new ArrayClass();
         $this->connection->execute($deleteStatement);
         $this->transactionID = new Number($this->connection->insertTransactionForRequestContext($this));
         return true;

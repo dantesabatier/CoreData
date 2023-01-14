@@ -43,8 +43,7 @@ class SQLBatchUpdateRequestContext extends SQLStoreRequestContext
         if (!($updateStatement = $this->updateStatement)) {
             return false;
         }
-        $fetchStatement = $this->fetchContext->fetchStatement;
-        $statement = SQLStatement::merging(new ArrayClass([new SQLStatement("$fetchStatement->string FOR UPDATE", $fetchStatement->arguments), $updateStatement]));
+        $statement = SQLStatement::merging(new ArrayClass([new SQLStatement("{$this->fetchContext->fetchStatement->string} FOR UPDATE", $this->fetchContext->fetchStatement->arguments), $updateStatement]));
         $execute = $this->connection->execute($statement);
         /** @return ArrayClass<ManagedObjectID> */
         $objectIDs = function () use ($execute): ArrayClass {
@@ -64,12 +63,8 @@ class SQLBatchUpdateRequestContext extends SQLStoreRequestContext
             BatchUpdateRequestResultType::objectIDs => $objectIDs(),
             BatchUpdateRequestResultType::count => new ArrayClass([new Number($execute->rowCount())]),
         };
-        if ($this->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey)) {
-            /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
-            $this->affectedObjectIDs = $this->request->resultType === BatchUpdateRequestResultType::objectIDs ? $this->result : $objectIDs();
-        } else {
-            $this->affectedObjectIDs = new ArrayClass();
-        }
+        /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
+        $this->affectedObjectIDs = $this->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey) ? ($this->request->resultType === BatchUpdateRequestResultType::objectIDs ? $this->result : $objectIDs()) : new ArrayClass();
         $this->transactionID = new Number($this->connection->insertTransactionForRequestContext($this));
         return true;
     }

@@ -20,11 +20,11 @@ class SQLSaveChangesRequestContext extends SQLStoreRequestContext
 
     public function executeRequestCore(): bool
     {
-        if ($statement = $this->generator->statement()) {
-            $this->connection->execute($statement);
-            $this->transactionID = new Number($this->connection->insertTransactionForRequestContext($this));
-            return true;
+        if (!($statement = $this->generator->statement())) {
+            return false;
         }
-        return false;
+        $this->connection->execute($statement);
+        $this->transactionID = new Number($this->connection->insertTransactionForRequestContext($this));
+        return true;
     }
 }
