@@ -43,6 +43,7 @@ abstract class PersistentStore extends ObjectClass
     {
         unset($this->identifier);
         unset($this->metadata);
+        unset($this->isReadOnly);
         unset($this->faultHandler);
     }
 
@@ -51,6 +52,7 @@ abstract class PersistentStore extends ObjectClass
         return $this->$name = match ($name) {
             "identifier" => uuid_generate(),
             "metadata" => new Dictionary([StoreTypeKey => $this->type, StoreUUIDKey => $this->identifier]),
+            "isReadOnly" => (bool)$this->options?->valueForKey(ReadOnlyPersistentStoreOption),
             "faultHandler" => new FaultHandler($this),
             default => $this->valueForUndefinedKey($name)
         };
