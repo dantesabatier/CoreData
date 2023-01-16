@@ -2,21 +2,13 @@
 
 namespace Sabatier\CoreData;
 
-use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 
 /** @internal */
 final class ManagedObjectSerializer
 {
     private static ?ManagedObjectSerializer $shared = null;
-    /** @var Dictionary<ArrayClass<string>> */
-    private readonly Dictionary $byHashSerializationsKeys;
-
-    public function __construct()
-    {
-        $this->byHashSerializationsKeys = new Dictionary();
-    }
-
+    
     public static function shared(): ManagedObjectSerializer
     {
         if (self::$shared === null) {
@@ -37,7 +29,6 @@ final class ManagedObjectSerializer
         $serializationKeys->insertAt("objectID", 0);
         $object->serializationRule = SerializationRule::custom;
         $object->serializationKeys = $serializationKeys;
-        $this->byHashSerializationsKeys->setValueForKey($serializationKeys, (string)$dictionary->hash());
     }
 
     private function serialization(string $propertyName, Dictionary $dictionary): ?Dictionary
@@ -90,11 +81,6 @@ final class ManagedObjectSerializer
     public function serialized(ManagedObject $object, ?Dictionary $dictionary): ManagedObject
     {
         if (!$dictionary || $dictionary->isEmpty()) {
-            return $object;
-        }
-        if ($serializationKeys = $this->byHashSerializationsKeys[(string)$dictionary->hash()]) {
-            $object->serializationKeys = $serializationKeys;
-            $object->serializationRule = SerializationRule::custom;
             return $object;
         }
         $this->serialize($object, $dictionary);
