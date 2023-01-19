@@ -64,13 +64,12 @@ class PersistentContainer extends ObjectClass
                 }
                 if ($url->isFileURL) {
                     $directoryURL = $url->deletingLastPathComponent();
-                    try {
-                        $fileManager = FileManager::default();
-                        if (!$fileManager->fileExists($directoryURL->path)) {
-                            $fileManager->createDirectory($directoryURL, true);
+                    if (!FileManager::default()->fileExists($directoryURL->path)) {
+                        try {
+                            FileManager::default()->createDirectory($directoryURL, true);
+                        } catch (Exception) {
+                            return null;
                         }
-                    } catch (Exception) {
-                        return null;
                     }
                 }
                 $persistentStoreDescription = new PersistentStoreDescription($url);

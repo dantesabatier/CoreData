@@ -9,7 +9,6 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\OperationQueue;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\SortDescriptor;
-use function Sabatier\Foundation\string_contains;
 
 /**
  * A description of search criteria used to retrieve data from a persistent store.
@@ -85,7 +84,7 @@ class FetchRequest extends PersistentStoreRequest
             return $this->$name;
         } elseif ($name == "serialization") {
             /** @psalm-suppress all */
-            $this->$name = ($this->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $this->entity->propertiesByName[$property]) ?? $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient && (!$attribute instanceof DerivedAttributeDescription || !string_contains($attribute->derivationExpression, "@")))->values)->reduce(new Dictionary(), function (Dictionary $result, PropertyDescription $propertyDescription): Dictionary {
+            $this->$name = ($this->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $this->entity->propertiesByName[$property]) ?? $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient && (!$attribute instanceof DerivedAttributeDescription || !str_contains($attribute->derivationExpression, "@")))->values)->reduce(new Dictionary(), function (Dictionary $result, PropertyDescription $propertyDescription): Dictionary {
                 if ($propertyDescription instanceof AttributeDescription) {
                     $result[$propertyDescription->name] = $propertyDescription->type;
                 } elseif (/** @phpstan-ignore-line */ $propertyDescription instanceof RelationshipDescription) {

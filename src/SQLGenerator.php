@@ -34,7 +34,6 @@ use Sabatier\Foundation\UnknownKeyException;
 use Sabatier\Foundation\Value;
 use function Sabatier\Foundation\equivalent;
 use function Sabatier\Foundation\human_readable_value;
-use function Sabatier\Foundation\in_string;
 use function Sabatier\Foundation\kvc_components;
 use function Sabatier\Foundation\string_contains;
 use function Sabatier\Foundation\string_has_prefix;
@@ -946,7 +945,7 @@ class SQLGenerator extends ObjectClass
             switch ($expression->expressionType) {
                 case ExpressionType::keyPath:
                     $keyPath = (string)$expression;
-                    if (in_string($keyPath, "@")) {
+                    if (str_contains($keyPath, "@")) {
                         $entity = $this->entity;
                         [$keyPathToCollection, $collectionOperator, $keyPathToProperty] = kvc_components($keyPath);
                         if ($keyPathToCollection && $collectionOperator) {

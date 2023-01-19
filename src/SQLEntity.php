@@ -11,7 +11,6 @@ namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
-use function Sabatier\Foundation\string_contains;
 
 /** @internal */
 class SQLEntity extends StoreMapping
@@ -230,11 +229,11 @@ class SQLEntity extends StoreMapping
             return $this->$name;
         } elseif ($name == "columnsToFetch") {
             /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute ? ($property->attributeDescription instanceof DerivedAttributeDescription && !string_contains((string)$property->attributeDescription->derivationExpression, "@") || !$property->attributeDescription instanceof DerivedAttributeDescription) : !$property instanceof SQLRelationship && !$property instanceof SQLForeignKey); // @phpstan-ignore-line
+            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute ? ($property->attributeDescription instanceof DerivedAttributeDescription && !str_contains((string)$property->attributeDescription->derivationExpression, "@") || !$property->attributeDescription instanceof DerivedAttributeDescription) : !$property instanceof SQLRelationship && !$property instanceof SQLForeignKey); // @phpstan-ignore-line
             return $this->$name;
         } elseif ($name == "columnsToCreate") {
             /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute ? ($property->attributeDescription instanceof DerivedAttributeDescription && !string_contains((string)$property->attributeDescription->derivationExpression, "@") || !$property->attributeDescription instanceof DerivedAttributeDescription) : !$property instanceof SQLRelationship); // @phpstan-ignore-line
+            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute ? ($property->attributeDescription instanceof DerivedAttributeDescription && !str_contains((string)$property->attributeDescription->derivationExpression, "@") || !$property->attributeDescription instanceof DerivedAttributeDescription) : !$property instanceof SQLRelationship); // @phpstan-ignore-line
             return $this->$name;
         } elseif ($name == "entityID") {
             $this->$name = 0;
@@ -276,7 +275,7 @@ class SQLEntity extends StoreMapping
             $property = $this->properties[$start];
             if ($property instanceof SQLAttribute) {
                 if ($property->attributeDescription instanceof DerivedAttributeDescription) {
-                    if (!string_contains((string)$property->attributeDescription->derivationExpression, "@")) {
+                    if (!str_contains((string)$property->attributeDescription->derivationExpression, "@")) {
                         return $property;
                     }
                 } else {

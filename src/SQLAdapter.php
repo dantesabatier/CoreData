@@ -11,7 +11,6 @@ namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\ObjectClass;
-use function Sabatier\Foundation\string_contains;
 
 /** @internal */
 class SQLAdapter extends ObjectClass
@@ -43,7 +42,7 @@ class SQLAdapter extends ObjectClass
     private function generatedAlwaysColumnExpression(SQLAttribute $attribute): ?string
     {
         $attributeDescription = $attribute->attributeDescription;
-        if (!$attributeDescription instanceof DerivedAttributeDescription || string_contains((string)$attributeDescription->derivationExpression, "@")) {
+        if (!$attributeDescription instanceof DerivedAttributeDescription || str_contains((string)$attributeDescription->derivationExpression, "@")) {
             return null;
         }
         $request = new FetchRequest();
