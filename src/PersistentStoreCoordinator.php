@@ -17,7 +17,6 @@ use RuntimeException;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Error;
-use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\NotificationCenter;
 use Sabatier\Foundation\Number;
@@ -100,27 +99,19 @@ class PersistentStoreCoordinator extends ObjectClass
 
     /**
      * Sets the URL for a given persistent store.
+     *
+     * For atomic stores, this method alters the location to which the next save operation will write the file; for non-atomic stores, invoking this method will relinquish the existing connection and create a new one at the specified URL.
+     * (For non-atomic stores, a store must already exist at the destination URL; a new store will not be created.)
      * @param URL $url The new location for store.
      * @param PersistentStore $store A persistent store associated with the receiver.
      * @return bool true if the store was relocated, otherwise false.
-     * For atomic stores, this method alters the location to which the next save operation will write the file; for non-atomic stores, invoking this method will relinquish the existing connection and create a new one at the specified URL.
-     * (For non-atomic stores, a store must already exist at the destination URL; a new store will not be created.)
      * @throws Exception
      */
     public function setURL(URL $url, PersistentStore $store): bool
     {
-        if ($store instanceof AtomicStore) {
-            $fileManager = FileManager::default();
-            if ($fileManager->fileExists($url->path) && !$fileManager->removeItem($url)) {
-                return false;
-            }
-            if ($fileManager->moveItem($store->url, $url)) {
-                $store->url = $url;
-                return true;
-            }
-        }
+        $ok = $store::replacePersistentStoreAtURL($store->url, null, $url, $store->options);
         $store->url = $url;
-        return true;
+        return $ok;
     }
 
     /**

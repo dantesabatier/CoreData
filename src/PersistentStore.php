@@ -71,12 +71,11 @@ abstract class PersistentStore extends ObjectClass
      */
     public static function destroyPersistentStoreAtURL(URL $url, ?Dictionary $options = null): bool
     {
-        try {
-            $fileManager = FileManager::default();
-            if ($fileManager->fileExists($url->path)) {
-                return $fileManager->removeItem($url);
-            }
+        if (!FileManager::default()->fileExists($url->path)) {
             return true;
+        }
+        try {
+            return FileManager::default()->removeItem($url);
         } catch (Exception) {
             return false;
         }
@@ -88,11 +87,7 @@ abstract class PersistentStore extends ObjectClass
     public static function replacePersistentStoreAtURL(URL $destinationURL, ?Dictionary $destinationOptions, URL $sourceURL, ?Dictionary $sourceOptions): bool
     {
         try {
-            $fileManager = FileManager::default();
-            if ($fileManager->fileExists($destinationURL->path)) {
-                $fileManager->removeItem($destinationURL);
-            }
-            return $fileManager->moveItem($sourceURL, $destinationURL);
+            return FileManager::default()->moveItem($sourceURL, $destinationURL);
         } catch (Exception) {
             return false;
         }
