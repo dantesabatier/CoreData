@@ -52,7 +52,7 @@ class SQLConnection extends ObjectClass
     {
         /** @psalm-suppress PossiblyNullArgument */
         return $this->$name = match ($name) {
-            "schema" => new SQLSchema(ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_NAME"], ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_HOST"], new SQLCredential(ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_USER"], ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_PASSWORD"])),
+            "schema" => new SQLSchema($this->adapter?->sqlCore?->url?->host ?? ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_NAME"], ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_HOST"] ?? "localhost", new SQLCredential(ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_USER"], ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_PASSWORD"])),
             "sqlCore" => $this->adapter?->sqlCore,
             "bundleID" => Bundle::main()->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString,
             default => $this->valueForUndefinedKey($name)
@@ -68,9 +68,9 @@ class SQLConnection extends ObjectClass
     public static function destroyPersistentStoreAtURL(/** @noinspection PhpUnusedParameterInspection */ URL $url, ?Dictionary $options = null): bool
     {
         $connection = new SQLConnection();
+        $connection->schema = new SQLSchema($url->host ?? ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_NAME"], ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_HOST"] ?? "localhost", new SQLCredential(ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_USER"], ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_PASSWORD"]));
         /** @noinspection PhpUnhandledExceptionInspection */
-        $connection->destroySchema();
-        return true;
+        return $connection->destroySchema();
     }
 
     public static function replacePersistentStoreAtURL(/** @noinspection PhpUnusedParameterInspection */ URL $destinationURL, ?Dictionary $destinationOptions, URL $sourceURL, ?Dictionary $sourceOptions): bool
