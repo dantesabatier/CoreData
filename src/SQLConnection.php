@@ -52,7 +52,7 @@ class SQLConnection extends ObjectClass
     {
         /** @psalm-suppress PossiblyNullArgument */
         return $this->$name = match ($name) {
-            "schema" => new SQLSchema($this->adapter?->sqlCore?->url?->host ?? ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_NAME"], ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_HOST"] ?? "localhost", new SQLCredential(ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_USER"], ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_PASSWORD"])),
+            "schema" => new SQLSchema($this->adapter?->sqlCore?->url?->host ?? ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_NAME"], ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_HOST"] ?? "localhost", new SQLCredential(ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_USER"] ?? "root", ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_PASSWORD"])),
             "sqlCore" => $this->adapter?->sqlCore,
             "bundleID" => Bundle::main()->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString,
             default => $this->valueForUndefinedKey($name)
@@ -69,7 +69,7 @@ class SQLConnection extends ObjectClass
     {
         $connection = new SQLConnection();
         /** @psalm-suppress PossiblyNullArgument */
-        $connection->schema = new SQLSchema($url->host ?? ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_NAME"], ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_HOST"] ?? "localhost", new SQLCredential(ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_USER"], ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_PASSWORD"]));
+        $connection->schema = new SQLSchema($url->host ?? ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_NAME"], ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_HOST"] ?? "localhost", new SQLCredential(ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_USER"] ?? "root", ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_PASSWORD"]));
         /** @noinspection PhpUnhandledExceptionInspection */
         return $connection->destroySchema();
     }
