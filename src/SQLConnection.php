@@ -68,6 +68,7 @@ class SQLConnection extends ObjectClass
     public static function destroyPersistentStoreAtURL(/** @noinspection PhpUnusedParameterInspection */ URL $url, ?Dictionary $options = null): bool
     {
         $connection = new SQLConnection();
+        /** @psalm-suppress PossiblyNullArgument */
         $connection->schema = new SQLSchema($url->host ?? ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_NAME"], ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_HOST"] ?? "localhost", new SQLCredential(ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_USER"], ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_PASSWORD"]));
         /** @noinspection PhpUnhandledExceptionInspection */
         return $connection->destroySchema();
