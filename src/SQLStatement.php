@@ -34,7 +34,7 @@ class SQLStatement extends ObjectClass
         $numberOfArguments = $this->arguments->count();
         $numberOfPlaceholders = string_search($this->string, "?", SearchMethod::contains);
         if ($numberOfArguments !== $numberOfPlaceholders) {
-            throw new InvalidArgumentException(sprintf("Invalid sql statement: number of arguments (%s) does not match the number of placeholders (%s)\n\"%s\"\n%s", $numberOfArguments, $numberOfPlaceholders, $this->string, $this->arguments->description()));
+            throw new InvalidArgumentException(sprintf("Invalid sql statement: number of arguments (%s) does not match the number of placeholders (%s)\n\"%s\"\n%s", $numberOfArguments, $numberOfPlaceholders, $this->string, (string)$this->arguments));
         }
     }
 

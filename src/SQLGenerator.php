@@ -20,6 +20,7 @@ use Sabatier\Foundation\KeyValueOperator;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\ComparisonPredicateModifier;
+use Sabatier\Foundation\Predicates\ComparisonPredicateOptions;
 use Sabatier\Foundation\Predicates\CompoundPredicate;
 use Sabatier\Foundation\Predicates\CompoundPredicateLogicalType;
 use Sabatier\Foundation\Predicates\Expression;
@@ -747,7 +748,7 @@ class SQLGenerator extends ObjectClass
         } elseif ($expression->expressionType == ExpressionType::constantValue) {
             $constantValue = $expression->constantValue();
             if (is_string($constantValue)) {
-                $constantValue = str_replace("%", "", $constantValue);
+                $constantValue = addcslashes($constantValue, "%_");
             } elseif (is_bool($constantValue)) {
                 $constantValue = (int)$constantValue;
             } elseif ($constantValue instanceof ManagedObject) {
@@ -755,7 +756,10 @@ class SQLGenerator extends ObjectClass
             }
             $argument = $constantValue;
             if (is_string($argument)) {
-                $argument = "$prefix$constantValue$suffix";
+                $argument = "$prefix$argument$suffix";
+                if (str_contains($argument, "\%") || str_contains($argument, "\_")) {
+                    $constantValue = "?";
+                }
             }
             $arguments[] = $argument;
             return $constantValue;
@@ -828,7 +832,7 @@ class SQLGenerator extends ObjectClass
     private function prepareLike(ComparisonPredicate $predicate, string &$clause): void
     {
         $operator = "LIKE";
-        if (!($predicate->options & CompareOptions::caseInsensitive)) {
+        if (!($predicate->options & ComparisonPredicateOptions::caseInsensitive)) {
             $operator .= " BINARY";
         }
         $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator);
@@ -837,7 +841,7 @@ class SQLGenerator extends ObjectClass
     private function prepareBeginsWith(ComparisonPredicate $predicate, string &$clause): void
     {
         $operator = "LIKE";
-        if (!($predicate->options & CompareOptions::caseInsensitive)) {
+        if (!($predicate->options & ComparisonPredicateOptions::caseInsensitive)) {
             $operator .= " BINARY";
         }
         $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator, "", "%");
@@ -846,7 +850,7 @@ class SQLGenerator extends ObjectClass
     private function prepareEndsWith(ComparisonPredicate $predicate, string &$clause): void
     {
         $operator = "LIKE";
-        if (($predicate->options & CompareOptions::caseInsensitive)) {
+        if (!($predicate->options & ComparisonPredicateOptions::caseInsensitive)) {
             $operator .= " BINARY";
         }
         $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator, "%");
@@ -855,7 +859,7 @@ class SQLGenerator extends ObjectClass
     private function prepareContains(ComparisonPredicate $predicate, string &$clause): void
     {
         $operator = "LIKE";
-        if (!($predicate->options & CompareOptions::caseInsensitive)) {
+        if (!($predicate->options & ComparisonPredicateOptions::caseInsensitive)) {
             $operator .= " BINARY";
         }
         $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator, "%", "%");
