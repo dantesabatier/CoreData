@@ -27,6 +27,8 @@ use Sabatier\Foundation\URL;
  */
 class PersistentContainer extends ObjectClass
 {
+    /** @var string The container’s name. This property is passed in as part of the initialization of the persistent container. This name is used to locate the {@see ManagedObjectModel} (if the {@see ManagedObjectModel} object is not passed in as part of the initialization) and is used to name the persistent store. */
+    public readonly string $name;
     /** @var ManagedObjectModel The model associated with this persistent container. This property contains a reference to the {@see ManagedObjectModel} object associated with this persistent container. */
     public readonly ManagedObjectModel $managedObjectModel;
     /** @var PersistentStoreCoordinator The persistent store coordinator associated with this persistent container. When the persistent container is initialized, it creates a persistent store coordinator as part of that initialization. That persistent store coordinator is referenced in this property. */
@@ -42,11 +44,13 @@ class PersistentContainer extends ObjectClass
      * By default, the provided name value of the container is used as the name of the persistent store associated with the container.
      * Passing in the ManagedObjectModel object overrides the lookup of the model by the provided name value.
      * @param string $name The name used by the persistent container.
+     * @param ManagedObjectModel|null $managedObjectModel The managed object model to be used by the persistent container.
      */
-    public function __construct(public readonly string $name)
+    public function __construct(string $name, ?ManagedObjectModel $managedObjectModel = null)
     {
         $bundle = $this->isSubclass(PersistentContainer::class) ? Bundle::bundleForClass(static::class) : Bundle::main();
-        $this->managedObjectModel = new ManagedObjectModel($bundle->url($this->name, 'plist'));
+        $this->name = $name;
+        $this->managedObjectModel = $managedObjectModel ?? new ManagedObjectModel($bundle->url($this->name, 'plist'));
         $this->persistentStoreCoordinator = new PersistentStoreCoordinator($this->managedObjectModel);
         $this->viewContext = new ManagedObjectContext();
         $this->viewContext->persistentStoreCoordinator = $this->persistentStoreCoordinator;

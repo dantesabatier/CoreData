@@ -29,6 +29,7 @@ return static function (RectorConfig $rectorConfig): void {
     $rectorConfig->skip([
         ClassPropertyAssignToConstructorPromotionRector::class => [
             __DIR__ . "/src/ManagedObject.php",
+            __DIR__ . "/src/PersistentContainer.php",
             __DIR__ . "/src/PersistentHistoryChangeRequest.php",
             __DIR__ . "/src/PersistentHistoryChange.php",
         ],
