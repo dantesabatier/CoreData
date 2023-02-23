@@ -37,8 +37,6 @@ use function Sabatier\Foundation\equivalent;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\kvc_components;
 use function Sabatier\Foundation\string_contains;
-use function Sabatier\Foundation\string_has_prefix;
-use function Sabatier\Foundation\string_has_suffix;
 use function Sabatier\Foundation\typeof;
 
 /** @internal */
@@ -155,7 +153,7 @@ class SQLGenerator extends ObjectClass
         if (!$statements->isEmpty()) {
             /** @psalm-suppress RedundantCondition, TypeDoesNotContainType */
             if (/** @phpstan-ignore-line */ SS_COREDATA_DISABLE_FOREIGN_KEY_CHECKS) :
-                if ($statements->contains(fn(SQLStatement $statement): bool => string_has_prefix($statement->string, "INSERT"))) {
+                if ($statements->contains(fn(SQLStatement $statement): bool => str_starts_with($statement->string, "INSERT"))) {
                     $statements->insertAt(new SQLStatement("/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */"), 0);
                     $statements->append(new SQLStatement("/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */"));
                 }
@@ -246,7 +244,7 @@ class SQLGenerator extends ObjectClass
     private function endSQL(): void
     {
         $delimiter = ";";
-        if (string_has_suffix($this->string, $delimiter)) {
+        if (str_ends_with($this->string, $delimiter)) {
             $this->string = rtrim($this->string, ";");
         }
     }
@@ -335,7 +333,7 @@ class SQLGenerator extends ObjectClass
             /** @psalm-suppress InvalidArgument */
             $columnNames->appendContentsOf($properties->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => is_string($property) ? $request->entity->attributesByName[$property] : ($property instanceof AttributeDescription || $property instanceof ExpressionDescription ? $property : null))->map(function (PropertyDescription $property) use ($entity): string {
                 if ($property instanceof AttributeDescription) {
-                    if ($property instanceof DerivedAttributeDescription && string_contains((string)$property->derivationExpression, "@")) {
+                    if ($property instanceof DerivedAttributeDescription && str_contains((string)$property->derivationExpression, "@")) {
                         return "{$this->buildDerivedAttributeDescription($property)} AS $property->name";
                     }
                 } elseif ($property instanceof ExpressionDescription) {
@@ -518,7 +516,7 @@ class SQLGenerator extends ObjectClass
                             return "$destination.$property->columnName AS {$destination}_$property->columnName";
                         } elseif ($property instanceof SQLAttribute) {
                             $attributeDescription = $property->attributeDescription;
-                            if ($attributeDescription instanceof DerivedAttributeDescription && string_contains((string)$attributeDescription->derivationExpression, "@")) {
+                            if ($attributeDescription instanceof DerivedAttributeDescription && str_contains((string)$attributeDescription->derivationExpression, "@")) {
                                 $propertyName = "{$destination}_$attributeDescription->name";
                                 return (function () use ($entity, $propertyName, $attributeDescription): string {
                                     $bk = $this->entity;
@@ -536,9 +534,9 @@ class SQLGenerator extends ObjectClass
                 if (!$columnNames->isEmpty()) {
                     $copy = clone $columnNames;
                     foreach ($copy as $columnName) {
-                        if (string_contains($this->selectList, $columnName)) {
+                        if (str_contains($this->selectList, $columnName)) {
                             $columnNames->remove($columnName);
-                            if (string_contains($columnName, "?")) {
+                            if (str_contains($columnName, "?")) {
                                 $this->arguments->popFirst();
                             }
                         }
@@ -671,7 +669,7 @@ class SQLGenerator extends ObjectClass
         foreach ($properties as $property) {
             if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
                 $propertyDescription = $property->propertyDescription;
-                if ($propertyDescription instanceof DerivedAttributeDescription && string_contains((string)$propertyDescription->derivationExpression, "@")) {
+                if ($propertyDescription instanceof DerivedAttributeDescription && str_contains((string)$propertyDescription->derivationExpression, "@")) {
                     return $this->buildDerivedAttributeDescription($propertyDescription);
                 }
                 $alias .= ".";
