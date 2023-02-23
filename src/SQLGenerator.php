@@ -33,7 +33,7 @@ use Sabatier\Foundation\Set;
 use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\UnknownKeyException;
 use Sabatier\Foundation\Value;
-use function Sabatier\Foundation\equivalent;
+use function Sabatier\Foundation\is_equal;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\kvc_components;
 use function Sabatier\Foundation\string_contains;
@@ -778,9 +778,9 @@ class SQLGenerator extends ObjectClass
             if (is_string($key)) {
                 $key = str_replace([$suffix, $prefix], "", $key);
             }
-            if (equivalent($key, $right)) {
+            if (is_equal($key, $right)) {
                 $clause .= "$left $operator ?";
-            } elseif (equivalent($key, $left)) {
+            } elseif (is_equal($key, $left)) {
                 $clause .= "? $operator $right";
             } else {
                 $clause .= "$left $operator $right";
