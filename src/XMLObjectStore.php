@@ -49,9 +49,9 @@ class XMLObjectStore extends AtomicStore
 
     private static function loadMetadataFromDocument(DOMDocument $document): Dictionary
     {
-        $model = $document->getElementsByTagName('model')->item(0);
+        $model = $document->getElementsByTagName("model")->item(0);
         assert($model instanceof DOMElement);
-        $metadataXML = $model->getElementsByTagName('metadata')->item(0);
+        $metadataXML = $model->getElementsByTagName("metadata")->item(0);
         assert($metadataXML instanceof DOMElement);
         /** @var Dictionary<string> $metadata */
         $metadata = new Dictionary();
@@ -65,7 +65,7 @@ class XMLObjectStore extends AtomicStore
 
     public static function metadataForPersistentStore(URL $url): Dictionary
     {
-        $document = new DOMDocument('1.0', 'UTF-8');
+        $document = new DOMDocument("1.0", "UTF-8");
         $document->preserveWhiteSpace = false;
         $document->formatOutput = true;
         return self::loadMetadataFromDocument($document);
@@ -75,17 +75,17 @@ class XMLObjectStore extends AtomicStore
     {
         $path = $url->path;
         $metadata ??= new Dictionary([StoreTypeKey => XMLStoreType, StoreUUIDKey => (new UUID())->uuidString]);
-        $document = new DOMDocument('1.0', 'UTF-8');
+        $document = new DOMDocument("1.0", "UTF-8");
         $document->preserveWhiteSpace = false;
         $document->formatOutput = true;
         if (FileManager::default()->fileExists($path)) {
             $document->load($path);
-            $model = $document->getElementsByTagName('model')->item(0);
+            $model = $document->getElementsByTagName("model")->item(0);
         } else {
-            $model = $document->createElement('model');
+            $model = $document->createElement("model");
         }
         if ($model instanceof DOMElement) {
-            $metadataXML = $model->getElementsByTagName('metadata')->item(0);
+            $metadataXML = $model->getElementsByTagName("metadata")->item(0);
             if ($metadataXML instanceof DOMElement) {
                 foreach ($metadata as $key => $value) {
                     if (!($element = (new ArrayClass($metadataXML->getElementsByTagName($key)))->first())) {
@@ -105,23 +105,23 @@ class XMLObjectStore extends AtomicStore
     {
         /** @var Set<AtomicStoreCacheNode> $cacheNodes */
         $cacheNodes = new Set();
-        $model = $document->getElementsByTagName('model')->item(0);
+        $model = $document->getElementsByTagName("model")->item(0);
         assert($model instanceof DOMElement);
-        $parent = $model->getElementsByTagName('elements')->item(0);
+        $parent = $model->getElementsByTagName("elements")->item(0);
         assert($parent instanceof DOMElement);
-        $children = $parent->getElementsByTagName('element');
+        $children = $parent->getElementsByTagName("elements");
         /** @var DOMElement $element */
         foreach ($children as $element) {
-            $entityName = $element->getAttribute('name');
+            $entityName = $element->getAttribute("name");
             $entity = $this->entitiesForConfiguration[$entityName];
             assert($entity instanceof EntityDescription);
             /** @var Dictionary<mixed> $info */
             $info = $this->xmlInfo[$entity->name] ?? new Dictionary();
             $cacheNode = $this->createCacheNodeFromXMLElement($element);
-            $attributeElements = $element->getElementsByTagName('attribute');
+            $attributeElements = $element->getElementsByTagName("attribute");
             /** @var DOMElement $attributeElement */
             foreach ($attributeElements as $attributeElement) {
-                $key = $attributeElement->getAttribute('name');
+                $key = $attributeElement->getAttribute("name");
                 if (!($attribute = $entity->attributesByName[$key])) {
                     throw new UnknownKeyException(sprintf("Entity \"%s\" does not contains an attribute named \"%s\"", $entity->name, $key));
                 }
@@ -133,15 +133,15 @@ class XMLObjectStore extends AtomicStore
                 }
                 $cacheNode->setValueForKey($value, $key);
             }
-            $relationshipElements = $element->getElementsByTagName('relationship');
+            $relationshipElements = $element->getElementsByTagName("relationship");
             /** @var DOMElement $relationshipElement */
             foreach ($relationshipElements as $relationshipElement) {
-                $key = $relationshipElement->getAttribute('name');
+                $key = $relationshipElement->getAttribute("name");
                 if (!($relationship = $entity->relationshipsByName[$key])) {
                     throw new UnknownKeyException(sprintf("Entity \"%s\" does not contains a relationship named \"%s\"", $entity->name, $key));
                 }
                 $info[$relationship->name] = $relationshipElement->attributes;
-                if (($references = $relationshipElement->getAttribute('references')) && ($destination = $relationshipElement->getAttribute('destination')) && ($destinationEntity = $this->entitiesForConfiguration[$destination])) {
+                if (($references = $relationshipElement->getAttribute("references")) && ($destination = $relationshipElement->getAttribute("destination")) && ($destinationEntity = $this->entitiesForConfiguration[$destination])) {
                     $managedObjectIDs = (new Set(explode(" ", $references)))->map(fn(string $reference): ManagedObjectID => $this->objectID($destinationEntity, (int)$reference));
                     $value = $relationship->isToMany ? $managedObjectIDs : $managedObjectIDs->first();
                     $cacheNode->setValueForKey($value, $key);
@@ -155,10 +155,10 @@ class XMLObjectStore extends AtomicStore
 
     private function createCacheNodeFromXMLElement(DOMElement $element): XMLObjectStoreCacheNode
     {
-        $entityName = $element->getAttribute('name');
+        $entityName = $element->getAttribute("name");
         /** @var EntityDescription $entity */
         $entity = $this->entitiesForConfiguration[$entityName];
-        $referenceObject = $element->getAttribute('id');
+        $referenceObject = $element->getAttribute("id");
         $objectID = $this->objectID($entity, (int)$referenceObject);
         return new XMLObjectStoreCacheNode($element, $objectID);
     }
@@ -170,10 +170,10 @@ class XMLObjectStore extends AtomicStore
     {
         $document = $this->document();
         $objectID = $object->objectID;
-        $parent = $document->getElementsByTagName('elements')->item(0);
-        $element = $document->createElement('element');
-        $element->setAttribute('id', (string)$objectID->referenceObject);
-        $element->setAttribute('name', $objectID->entityName);
+        $parent = $document->getElementsByTagName("elements")->item(0);
+        $element = $document->createElement("element");
+        $element->setAttribute("id", (string)$objectID->referenceObject);
+        $element->setAttribute("name", $objectID->entityName);
         $parent->appendChild($element);
         $node = new XMLObjectStoreCacheNode($element, $objectID);
         $this->updateCacheNode($node, $object);
@@ -196,8 +196,8 @@ class XMLObjectStore extends AtomicStore
         foreach ($object->entity->relationshipsByName as $key => $relationship) {
             $value = $object->primitiveValueForKey($key);
             $relationshipNode = $this->createRelationshipChildOnNode($node, $relationship);
-            $destinationNode = $relationshipNode->getAttributeNode('destination');
-            $referencesNode = $relationshipNode->getAttributeNode('references');
+            $destinationNode = $relationshipNode->getAttributeNode("destination");
+            $referencesNode = $relationshipNode->getAttributeNode("references");
             $referencesNode->value = $this->getIDRefString($value, $relationship);
             $inverseRelationship = $relationship->inverseRelationship;
             /** @var Set<ManagedObjectID> $managedObjectIDs */
@@ -207,11 +207,11 @@ class XMLObjectStore extends AtomicStore
                 $cacheNode = $this->cacheNode($managedObjectID);
                 if ($cacheNode instanceof XMLObjectStoreCacheNode) {
                     $relationshipNode = $this->createRelationshipChildOnNode($cacheNode->data, $inverseRelationship);
-                    $referencesNode = $relationshipNode->getAttributeNode('references');
-                    $references = new Set(explode(' ', $relationshipNode->getAttribute('references')));
-                    $references->formUnion(new Set(explode(' ', $this->getIDRefString($object, $inverseRelationship))));
-                    $referencesNode->value = trim($references->join(' '));
-                    $destinationNode = $relationshipNode->getAttributeNode('destination');
+                    $referencesNode = $relationshipNode->getAttributeNode("references");
+                    $references = new Set(explode(" ", $relationshipNode->getAttribute("references")));
+                    $references->formUnion(new Set(explode(" ", $this->getIDRefString($object, $inverseRelationship))));
+                    $referencesNode->value = trim($references->join(" "));
+                    $destinationNode = $relationshipNode->getAttributeNode("destination");
                     $destinationNode->value = $object->entity->name;
                 }
             }
@@ -221,7 +221,7 @@ class XMLObjectStore extends AtomicStore
 
     private function getIDRefString(Set|ManagedObject|ManagedObjectID|Nil|null $value, ?RelationshipDescription $relationship = null): string
     {
-        return $this->managedObjectIDs($value, $relationship)->map(fn(ManagedObjectID $objectID): string|int => $objectID->referenceObject)->join(' ');
+        return $this->managedObjectIDs($value, $relationship)->map(fn(ManagedObjectID $objectID): string|int => $objectID->referenceObject)->join(" ");
     }
 
     private function managedObjectIDs(/** @noinspection PhpUnusedParameterInspection */ Set|ManagedObject|ManagedObjectID|Nil|null $value, ?RelationshipDescription $relationship = null): Set
@@ -242,15 +242,15 @@ class XMLObjectStore extends AtomicStore
     private function createRelationshipChildOnNode(DOMNode $node, RelationshipDescription $relationship): DOMElement
     {
         assert($node instanceof DOMElement);
-        if (!($element = (new ArrayClass($node->getElementsByTagName('relationship')))->first(fn(DOMElement $element): bool => $element->getAttribute('name') === $relationship->name))) {
+        if (!($element = (new ArrayClass($node->getElementsByTagName("relationship")))->first(fn(DOMElement $element): bool => $element->getAttribute("name") === $relationship->name))) {
             $destinationEntity = $relationship->destinationEntity;
             $document = $this->document();
-            $element = $document->createElement('relationship');
+            $element = $document->createElement("relationship");
             assert($element instanceof DOMElement);
-            $element->setAttribute('name', $relationship->name);
-            $element->setAttribute('type', "$relationship->minCount/$relationship->maxCount");
-            $element->setAttribute('destination', $destinationEntity->name);
-            $element->setAttribute('references', "");
+            $element->setAttribute("name", $relationship->name);
+            $element->setAttribute("type", "$relationship->minCount/$relationship->maxCount");
+            $element->setAttribute("destination", $destinationEntity->name);
+            $element->setAttribute("references", "");
             $node->appendChild($element);
         }
         return $element;
@@ -260,11 +260,11 @@ class XMLObjectStore extends AtomicStore
     private function createAttributeChildOnNode(DOMNode $node, AttributeDescription $attribute, ?string $value = null): void
     {
         assert($node instanceof DOMElement);
-        if (!($element = (new ArrayClass($node->getElementsByTagName('attribute')))->first(fn(DOMElement $element): bool => $element->getAttribute('name') === $attribute->name))) {
-            $element = $this->document()->createElement('attribute', $value ?? "");
+        if (!($element = (new ArrayClass($node->getElementsByTagName("attribute")))->first(fn(DOMElement $element): bool => $element->getAttribute("name") === $attribute->name))) {
+            $element = $this->document()->createElement("attribute", $value ?? "");
             assert($element instanceof DOMElement);
-            $element->setAttribute('name', $attribute->name);
-            $element->setAttribute('type', $attribute->type->name);
+            $element->setAttribute("name", $attribute->name);
+            $element->setAttribute("type", $attribute->type->name);
             $node->appendChild($element);
         }
         $element->nodeValue = $value;
@@ -309,7 +309,7 @@ class XMLObjectStore extends AtomicStore
      */
     private function createDocument(): DOMDocument
     {
-        $document = new DOMDocument('1.0', 'UTF-8');
+        $document = new DOMDocument("1.0", "UTF-8");
         $document->preserveWhiteSpace = false;
         $document->formatOutput = true;
         $path = $this->url->path;
@@ -323,12 +323,12 @@ class XMLObjectStore extends AtomicStore
         }
         $type = $document->createElement(StoreTypeKey, $this->type);
         $uuid = $document->createElement(StoreUUIDKey, $this->identifier);
-        $metadata = $document->createElement('metadata');
+        $metadata = $document->createElement("metadata");
         $metadata->appendChild($uuid);
         $metadata->appendChild($type);
-        $model = $document->createElement('model');
+        $model = $document->createElement("model");
         $model->appendChild($metadata);
-        $parent = $document->createElement('elements');
+        $parent = $document->createElement("elements");
         $model->appendChild($parent);
         $document->appendChild($model);
         return $document;
@@ -375,12 +375,12 @@ class XMLObjectStore extends AtomicStore
     public function willRemoveCacheNodes(Set $cacheNodes): void
     {
         $document = $this->document();
-        $model = $document->getElementsByTagName('model')->item(0);
+        $model = $document->getElementsByTagName("model")->item(0);
         assert($model instanceof DOMElement);
-        $parent = $model->getElementsByTagName('elements')->item(0);
+        $parent = $model->getElementsByTagName("elements")->item(0);
         assert($parent instanceof DOMElement);
         /** @var ArrayClass<DOMElement> $children */
-        $children = new ArrayClass($parent->getElementsByTagName('element'));
+        $children = new ArrayClass($parent->getElementsByTagName("element"));
         /** @var AtomicStoreCacheNode $cacheNode */
         foreach ($cacheNodes as $cacheNode) {
             if ($cacheNode instanceof XMLObjectStoreCacheNode) {
@@ -389,18 +389,18 @@ class XMLObjectStore extends AtomicStore
                 $deletedElements = $children->filter(fn(DOMElement $element): bool => $element->isSameNode($cacheNode->data));
                 /** @var DOMElement $deletedElement */
                 foreach ($deletedElements as $deletedElement) {
-                    $relationshipElements = $deletedElement->getElementsByTagName('relationship');
+                    $relationshipElements = $deletedElement->getElementsByTagName("relationship");
                     foreach ($relationshipElements as $relationshipElement) {
                         /** @var string $name */
-                        $name = $relationshipElement->getAttribute('name');
+                        $name = $relationshipElement->getAttribute("name");
                         $relationship = $entity->relationshipsByName[$name] ?? throw new InternalInconsistencyException();
                         /** @psalm-suppress PossiblyNullPropertyFetch */
                         if ($relationship->deleteRule === DeleteRule::cascadeDeleteRule) {
                             /** @var string $destination */
-                            $destination = $relationshipElement->getAttribute('destination');
-                            $references = new Set(explode(' ', $relationshipElement->getAttribute('references')));
+                            $destination = $relationshipElement->getAttribute("destination");
+                            $references = new Set(explode(" ", $relationshipElement->getAttribute("references")));
                             foreach ($references as $reference) {
-                                $remainingElements = $children->filter(fn(DOMElement $element): bool => $element->getAttribute('name') === $destination && $element->getAttribute('id') === $reference);
+                                $remainingElements = $children->filter(fn(DOMElement $element): bool => $element->getAttribute("name") === $destination && $element->getAttribute("id") === $reference);
                                 foreach ($remainingElements as $remainingElement) {
                                     $parent->removeChild($remainingElement);
                                 }
@@ -409,14 +409,14 @@ class XMLObjectStore extends AtomicStore
                     }
                     $reference = (string)$cacheNode->objectID->referenceObject;
                     foreach ($children as $element) {
-                        $relationshipElements = $element->getElementsByTagName('relationship');
+                        $relationshipElements = $element->getElementsByTagName("relationship");
                         foreach ($relationshipElements as $relationshipElement) {
-                            if ($entity->name === $relationshipElement->getAttribute('destination')) {
-                                $references = new Set(explode(' ', $relationshipElement->getAttribute('references')));
+                            if ($entity->name === $relationshipElement->getAttribute("destination")) {
+                                $references = new Set(explode(" ", $relationshipElement->getAttribute("references")));
                                 if ($references->containsElement($reference)) {
                                     $references->remove($reference);
-                                    $referencesNode = $relationshipElement->getAttributeNode('references');
-                                    $referencesNode->value = $references->join(' ');
+                                    $referencesNode = $relationshipElement->getAttributeNode("references");
+                                    $referencesNode->value = $references->join(" ");
                                 }
                             }
                         }

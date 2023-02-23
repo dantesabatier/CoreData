@@ -33,7 +33,7 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
         if ($date = $this->request->date) {
             $request = PersistentHistoryChangeRequest::fetchHistoryAfterDate($date);
         } elseif ($transactionNumber = $this->request->transactionNumber) {
-            $request = PersistentHistoryChangeRequest::fetchHistoryAfterTransaction(new PersistentHistoryTransaction(new Dictionary(['transactionNumber' => $transactionNumber->intValue])));
+            $request = PersistentHistoryChangeRequest::fetchHistoryAfterTransaction(new PersistentHistoryTransaction(new Dictionary(["transactionNumber" => $transactionNumber->intValue])));
         } elseif ($fetchRequest = $this->request->fetchRequest) {
             $request = PersistentHistoryChangeRequest::fetchHistoryWithFetchRequest($fetchRequest);
         } else {
@@ -112,23 +112,23 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
         /** @var ValueTransformer $valueTransformer */
         $valueTransformer = ValueTransformer::valueTransformerForName(SecureUnarchiveFromDataTransformerName);
         /** @var string $data */
-        $data = $dictionary['changedObjectID'];
+        $data = $dictionary["changedObjectID"];
         /** @var ManagedObjectID $changedObjectID */
         $changedObjectID = $valueTransformer->reverseTransformedValue($data);
         /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
         $changedObjectID->entity = $persistentStoreCoordinator->managedObjectModel->entitiesByName[$changedObjectID->entityName];
         $changedObjectID->persistentStore = $persistentStoreCoordinator->persistentStores->first(fn(PersistentStore $persistentStore): bool => $persistentStore->identifier === $changedObjectID->storeIdentifier);
-        $dictionary->removeValueForKey('changedObjectID');
-        $dictionary->removeValueForKey('transaction');
+        $dictionary->removeValueForKey("changedObjectID");
+        $dictionary->removeValueForKey("transaction");
         return new PersistentHistoryChange($dictionary, $changedObjectID);
     }
 
     private function transactionFromResult(Dictionary $dictionary): PersistentHistoryTransaction
     {
         /** @var Set<Dictionary>|null $changes */
-        $changes = $dictionary['changes'];
+        $changes = $dictionary["changes"];
         if ($changes) {
-            $dictionary['changes'] = new ArrayClass($changes->map(fn(Dictionary $dictionary): PersistentHistoryChange => $this->changeFromResult($dictionary)));
+            $dictionary["changes"] = new ArrayClass($changes->map(fn(Dictionary $dictionary): PersistentHistoryChange => $this->changeFromResult($dictionary)));
         }
         return new PersistentHistoryTransaction($dictionary);
     }
@@ -174,7 +174,7 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
             $changes = $context->result->map(fn(Dictionary $dictionary): PersistentHistoryChange => $this->changeFromResult($dictionary));
             $this->result = match ($request->resultType) {
                 PersistentHistoryResultType::objectIDs => $changes->map(fn(PersistentHistoryChange $change): ManagedObjectID => $change->changedObjectID),
-                PersistentHistoryResultType::transactionsOnly, PersistentHistoryResultType::transactionsAndChanges => new ArrayClass([new PersistentHistoryTransaction(new Dictionary(['changes' => $changes]))]),
+                PersistentHistoryResultType::transactionsOnly, PersistentHistoryResultType::transactionsAndChanges => new ArrayClass([new PersistentHistoryTransaction(new Dictionary(["changes" => $changes]))]),
                 PersistentHistoryResultType::changesOnly => $changes,
                 default => new ArrayClass(),
             };

@@ -23,9 +23,9 @@ class SQLStatementFormatter extends Formatter
         if ($object instanceof SQLStatement) {
             $string = $object->string;
             if ($this->style & SQLStatementFormatterStyle::arguments) {
-                $string = sprintf(str_replace(['%', '?'], ['%%', '%s'], $string), ...$object->arguments->map(fn(mixed $e): string => match (typeof($e)) {
+                $string = sprintf(str_replace(["%", "?"], ["%%", "%s"], $string), ...$object->arguments->map(fn(mixed $e): string => match (typeof($e)) {
                     ManagedObjectID::class => (string)$e->referenceObject,
-                    Date::class, UUID::class, URL::class, 'string' => "'$e'",
+                    Date::class, UUID::class, URL::class, "string" => "'$e'",
                     default => (function () use ($e): string {
                         if ($e instanceof Value) {
                             $e = $e->value;

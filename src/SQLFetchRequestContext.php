@@ -38,7 +38,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                 do {
                     /** @var array<string, mixed> $data */
                     while ($data = $execute->fetch()) {
-                        $entityName = $data['entityName'] ?? $this->request->entity->name;
+                        $entityName = $data["entityName"] ?? $this->request->entity->name;
                         /** @var SQLEntity $entity */
                         $entity = $this->sqlModel->entitiesByName[$entityName];
                         $currentEntity = $entity;
