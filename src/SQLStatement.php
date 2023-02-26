@@ -15,6 +15,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\CompareOptions;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\SearchMethod;
+use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\string_ends_with;
 use function Sabatier\Foundation\string_is_equal;
 use function Sabatier\Foundation\string_search;
@@ -34,7 +35,7 @@ class SQLStatement extends ObjectClass
         $numberOfArguments = $this->arguments->count();
         $numberOfPlaceholders = string_search($this->string, "?", SearchMethod::contains);
         if ($numberOfArguments !== $numberOfPlaceholders) {
-            throw new InvalidArgumentException(sprintf("Invalid sql statement: number of arguments (%s) does not match the number of placeholders (%s)\n\"%s\"\n%s", $numberOfArguments, $numberOfPlaceholders, $this->string, (string)$this->arguments));
+            throw new InvalidArgumentException(sprintf("Invalid sql statement: number of arguments (%s) does not match the number of placeholders (%s)\n\"%s\"\n%s", $numberOfArguments, $numberOfPlaceholders, $this->string, human_readable_value($this->arguments)));
         }
     }
 
@@ -44,19 +45,16 @@ class SQLStatement extends ObjectClass
      */
     public static function merging(ArrayClass $statements): SQLStatement
     {
-        if ($statements->isEmpty()) {
-            throw new InvalidArgumentException("Invalid sql statement: statements cannot be empty");
-        }
-        if ($statements->count() === 1) {
-            return $statements[0];
-        }
-        return new SQLStatement($statements->map(fn(SQLStatement $statement): string => $statement->string)->join(";\n"), $statements->flatMap(fn(SQLStatement $statement): ArrayClass => $statement->arguments));
+        return match ($statements->count()) {
+            0 => throw new InvalidArgumentException("Invalid sql statement: statements cannot be empty"),
+            1 => $statements[0],
+            default => new SQLStatement($statements->map(fn(SQLStatement $statement): string => $statement->string)->join(";\n"), $statements->flatMap(fn(SQLStatement $statement): ArrayClass => $statement->arguments))
+        };
     }
 
     public function formatted(#[ExpectedValues(flagsFromClass: SQLStatementFormatterStyle::class)] int $style = SQLStatementFormatterStyle::string | SQLStatementFormatterStyle::arguments): string
     {
-        $formatter = new SQLStatementFormatter($style);
-        return $formatter->string($this) ?? $this->string;
+        return (new SQLStatementFormatter($style))->string($this) ?? $this->string;
     }
 
     public function isEqual(mixed $other): bool

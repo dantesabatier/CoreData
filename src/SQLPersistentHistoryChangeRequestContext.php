@@ -153,33 +153,28 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
             return false;
         }
         $context = $this->fetchRequestContextForChanges();
-        $context->executeRequestUsingConnection($this->connection);
-        switch ($request->resultType) {
-            case PersistentHistoryResultType::statusOnly:
-                $this->result = new ArrayClass([new Number((bool)$context->result->sum())]);
-                return true;
-            case PersistentHistoryResultType::count:
-                $this->result = $context->result;
-                return true;
-            default:
+        $context->executeRequestUsingConnection($connection);
+        $this->result = match ($request->resultType) {
+            PersistentHistoryResultType::statusOnly => new ArrayClass([new Number((bool)$context->result->sum())]),
+            PersistentHistoryResultType::count => $context->result,
+            default => (function () use ($request, $context): ArrayClass {
                 if ($context->request->entity->isKindOf(PersistentHistoryTransaction::$entityDescription ?? throw new InternalInconsistencyException())) {
                     $transactions = $context->result->map(fn(Dictionary $dictionary): PersistentHistoryTransaction => $this->transactionFromResult($dictionary));
-                    $this->result = match ($request->resultType) {
+                    return match ($request->resultType) {
                         PersistentHistoryResultType::objectIDs => $transactions->flatMap(fn(PersistentHistoryTransaction $transaction): iterable => $transaction->changes?->map(fn(PersistentHistoryChange $change): ManagedObjectID => $change->changedObjectID) ?? []),
-                        PersistentHistoryResultType::transactionsOnly, PersistentHistoryResultType::transactionsAndChanges => $transactions,
                         PersistentHistoryResultType::changesOnly => $transactions->flatMap(fn(PersistentHistoryTransaction $transaction): iterable => $transaction->changes ?? []),
-                        default => new ArrayClass(),
+                        default => $transactions
                     };
                 } else {
                     $changes = $context->result->map(fn(Dictionary $dictionary): PersistentHistoryChange => $this->changeFromResult($dictionary));
-                    $this->result = match ($request->resultType) {
+                    return match ($request->resultType) {
                         PersistentHistoryResultType::objectIDs => $changes->map(fn(PersistentHistoryChange $change): ManagedObjectID => $change->changedObjectID),
                         PersistentHistoryResultType::transactionsOnly, PersistentHistoryResultType::transactionsAndChanges => new ArrayClass([new PersistentHistoryTransaction(new Dictionary(["changes" => $changes]))]),
-                        PersistentHistoryResultType::changesOnly => $changes,
-                        default => new ArrayClass(),
+                        default => $changes
                     };
                 }
-                return true;
-        }
+            })()
+        };
+        return true;
     }
 }
