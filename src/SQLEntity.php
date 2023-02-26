@@ -34,8 +34,8 @@ class SQLEntity extends StoreMapping
     public readonly ArrayClass $multiColumnUniquenessConstraints;
     /** @var Dictionary<SQLIndex> */
     public readonly Dictionary $indexes;
-    /** @var Dictionary<SQLIndex> */
-    public readonly Dictionary $rtreeIndexes;
+    /** @var Dictionary<SQLRTreeIndex> */
+    public readonly Dictionary $rTreeIndexes;
     // TODO: implement optimistic locking
     public readonly ?SQLOptLockKey $optLockKey;
     public readonly SQLPrimaryKey $primaryKey;
@@ -88,7 +88,7 @@ class SQLEntity extends StoreMapping
         unset($this->properties);
         unset($this->attributes);
         unset($this->indexes);
-        unset($this->rtreeIndexes);
+        unset($this->rTreeIndexes);
         unset($this->columnsToFetch);
         unset($this->columnsToCreate);
         unset($this->entityID);
@@ -224,7 +224,8 @@ class SQLEntity extends StoreMapping
             }
             $this->$name = $indexes;
             return $this->$name;
-        } elseif ($name == "rtreeIndexes") {
+        } elseif ($name == "rTreeIndexes") {
+            /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->indexes->filter(fn(SQLIndex $index): bool => $index instanceof SQLRTreeIndex);
             return $this->$name;
         } elseif ($name == "columnsToFetch") {
