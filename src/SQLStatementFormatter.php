@@ -38,7 +38,7 @@ class SQLStatementFormatter extends Formatter
                     })()
                 })->toArray());
             }
-            $style = 0;
+            $style = SQLFormatterStyle::none;
             if ($this->style & SQLStatementFormatterStyle::highlighted) {
                 $style |= SQLFormatterStyle::highlighted;
             }

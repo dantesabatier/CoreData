@@ -3,10 +3,11 @@
 namespace Sabatier\CoreData;
 
 /** @internal */
-enum SQLStatementFormatterStyle: int
+class SQLStatementFormatterStyle
 {
-    public const string = 1;
-    public const arguments = 2;
-    public const prettyPrint = 4;
-    public const highlighted = 8;
+    final const none = 0;
+    final const string = 1;
+    final const arguments = 2;
+    final const prettyPrint = 4;
+    final const highlighted = 8;
 }
