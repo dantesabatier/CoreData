@@ -18,6 +18,7 @@ use PDOStatement;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Bundle;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\KeyedUnarchiver;
 use Sabatier\Foundation\Nil;
@@ -65,8 +66,9 @@ class SQLConnection extends ObjectClass
         $this->disconnect();
     }
 
-    public static function destroyPersistentStoreAtURL(/** @noinspection PhpUnusedParameterInspection */ URL $url, ?Dictionary $options = null): bool
+    public static function destroyPersistentStoreAtURL(URL $url, ?Dictionary $options = null): bool
     {
+        !$options?->valueForKey(ReadOnlyPersistentStoreOption) ?: throw new InternalInconsistencyException("Cannot destroy a read only persistent store");
         $connection = new SQLConnection();
         /** @psalm-suppress PossiblyNullArgument */
         $connection->schema = new SQLSchema($url->host ?? ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_NAME"], ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_HOST"] ?? "localhost", new SQLCredential(ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_USER"] ?? "root", ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_PASSWORD"]));
