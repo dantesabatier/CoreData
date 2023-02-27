@@ -109,7 +109,7 @@ class XMLObjectStore extends AtomicStore
         assert($model instanceof DOMElement);
         $parent = $model->getElementsByTagName("elements")->item(0);
         assert($parent instanceof DOMElement);
-        $children = $parent->getElementsByTagName("elements");
+        $children = $parent->getElementsByTagName("element");
         /** @var DOMElement $element */
         foreach ($children as $element) {
             $entityName = $element->getAttribute("name");
