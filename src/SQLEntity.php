@@ -226,7 +226,7 @@ class SQLEntity extends StoreMapping
             return $this->$name;
         } elseif ($name == "rTreeIndexes") {
             /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = /** @phpstan-ignore-line */ $this->indexes->filter(fn(SQLIndex $index): bool => $index instanceof SQLRTreeIndex);
+            $this->$name = $this->indexes->filter(fn(SQLIndex $index): bool => $index instanceof SQLRTreeIndex); // @phpstan-ignore-line
             return $this->$name;
         } elseif ($name == "columnsToFetch") {
             /** @psalm-suppress PropertyTypeCoercion */
