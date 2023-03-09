@@ -53,7 +53,7 @@ class SQLConnection extends ObjectClass
     {
         /** @psalm-suppress PossiblyNullArgument */
         return $this->$name = match ($name) {
-            "schema" => new SQLSchema($this->adapter?->sqlCore?->url?->host ?? ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_NAME"], ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_HOST"] ?? "localhost", new SQLCredential(ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_USER"] ?? "root", ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_PASSWORD"])),
+            "schema" => new SQLSchema($this->adapter?->sqlCore?->url?->host ?? ProcessInfo::processInfo()->environment["SQLSchemaName"], ProcessInfo::processInfo()->environment["SQLSchemaHost"] ?? "localhost", new SQLCredential(ProcessInfo::processInfo()->environment["SQLSchemaCredentialUser"] ?? "root", ProcessInfo::processInfo()->environment["SQLSchemaCredentialPassword"])),
             "sqlCore" => $this->adapter?->sqlCore,
             "bundleID" => Bundle::main()->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString,
             default => $this->valueForUndefinedKey($name)
@@ -71,7 +71,7 @@ class SQLConnection extends ObjectClass
         !$options?->valueForKey(ReadOnlyPersistentStoreOption) ?: throw new InternalInconsistencyException("Cannot destroy a read only persistent store");
         $connection = new SQLConnection();
         /** @psalm-suppress PossiblyNullArgument */
-        $connection->schema = new SQLSchema($url->host ?? ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_NAME"], ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_HOST"] ?? "localhost", new SQLCredential(ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_USER"] ?? "root", ProcessInfo::processInfo()->environment["COREDATA_SQL_DATABASE_PASSWORD"]));
+        $connection->schema = new SQLSchema($url->host ?? ProcessInfo::processInfo()->environment["SQLSchemaName"], ProcessInfo::processInfo()->environment["SQLSchemaHost"] ?? "localhost", new SQLCredential(ProcessInfo::processInfo()->environment["SQLSchemaCredentialUser"] ?? "root", ProcessInfo::processInfo()->environment["SQLSchemaCredentialPassword"]));
         /** @noinspection PhpUnhandledExceptionInspection */
         return $connection->destroySchema();
     }
