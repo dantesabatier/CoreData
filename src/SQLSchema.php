@@ -9,6 +9,9 @@
 
 namespace Sabatier\CoreData;
 
+use Sabatier\Foundation\InternalInconsistencyException;
+use Sabatier\Foundation\ProcessInfo;
+
 /** @internal */
 class SQLSchema
 {
@@ -18,5 +21,10 @@ class SQLSchema
 
     public function __construct(public readonly string $name, public readonly string $host, public readonly SQLCredential $credential)
     {
+    }
+
+    public static function schema(?string $name = null): SQLSchema
+    {
+        return new SQLSchema($name ?? ProcessInfo::processInfo()->environment["SQLSchemaName"] ?? throw new InternalInconsistencyException("Schema must have a name"), ProcessInfo::processInfo()->environment["SQLSchemaHost"] ?? "localhost", new SQLCredential(ProcessInfo::processInfo()->environment["SQLSchemaCredentialUser"] ?? "root", ProcessInfo::processInfo()->environment["SQLSchemaCredentialPassword"]));
     }
 }
