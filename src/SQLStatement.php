@@ -16,7 +16,6 @@ use Sabatier\Foundation\CompareOptions;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\SearchMethod;
 use function Sabatier\Foundation\human_readable_value;
-use function Sabatier\Foundation\string_ends_with;
 use function Sabatier\Foundation\string_is_equal;
 use function Sabatier\Foundation\string_search;
 
@@ -29,7 +28,7 @@ class SQLStatement extends ObjectClass
      */
     public function __construct(public readonly string $string, public readonly ArrayClass $arguments = new ArrayClass())
     {
-        if (string_ends_with($this->string, ";")) {
+        if (str_ends_with($this->string, ";")) {
             throw new InvalidArgumentException("Invalid sql statement: sql string must not end with a semicolon \";\"");
         }
         $numberOfArguments = $this->arguments->count();
