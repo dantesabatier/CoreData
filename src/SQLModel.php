@@ -28,7 +28,7 @@ class SQLModel extends StoreMapping
 
     public function __get(string $name)
     {
-        $this->$name = match ($name) {
+        return $this->$name = match ($name) {
             "entitiesByName" => $this->managedObjectModel->entitiesByName->mapValues(fn(EntityDescription $entityDescription): SQLEntity => new SQLEntity($this, $entityDescription)),
             "entities" => (function(): ArrayClass {
                 $entities = $this->entitiesByName->values;
