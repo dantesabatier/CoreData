@@ -22,24 +22,12 @@ class SQLModel extends StoreMapping
 
     public function __construct(public readonly ManagedObjectModel $managedObjectModel, public readonly string $configurationName)
     {
-        unset($this->entitiesByName);
-        unset($this->entities);
-    }
-
-    public function __get(string $name)
-    {
-        return $this->$name = match ($name) {
-            "entitiesByName" => $this->managedObjectModel->entitiesByName->mapValues(fn(EntityDescription $entityDescription): SQLEntity => new SQLEntity($this, $entityDescription)),
-            "entities" => (function(): ArrayClass {
-                $entities = $this->entitiesByName->values;
-                foreach ($entities as $entity) {
-                    $entity->generateInverseRelationshipsAndMore();
-                    $entity->doPostModelGenerationCleanup();
-                }
-                return $entities;
-            })(),
-            default => $this->valueForUndefinedKey($name)
-        };
+        $this->entitiesByName = $this->managedObjectModel->entitiesByName->mapValues(fn (EntityDescription $entityDescription): SQLEntity => new SQLEntity($this, $entityDescription));
+        $this->entities = $this->entitiesByName->values;
+        foreach ($this->entities as $entity) {
+            $entity->generateInverseRelationshipsAndMore();
+            $entity->doPostModelGenerationCleanup();
+        }
     }
 
     public function entity(string $named): ?SQLEntity
