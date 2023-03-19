@@ -129,8 +129,7 @@ abstract class PersistentStore extends ObjectClass
      * If the relationship is a to-many, the method should return a collection object containing {@see ManagedObjectID} instances to identify the related objects.
      * Using an array instance is preferred because it will be the most efficient.
      * A store may also return an instance of {@see Set}; an instance of Dictionary is not acceptable.
-     * If an object with object ID objectID cannot be found, the method should return nil and—if error is not
-     * NULL—create and return an appropriate error object in error.
+     * If an object with object ID objectID cannot be found, the method should return nil and if error is not null create and return an appropriate error object in error.
      * @throws Exception
      */
     public function newValueForRelationship(/** @noinspection PhpUnusedParameterInspection */ RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): mixed
