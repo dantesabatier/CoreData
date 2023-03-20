@@ -22,7 +22,7 @@ class SQLModel extends StoreMapping
 
     public function __construct(public readonly ManagedObjectModel $managedObjectModel, public readonly string $configurationName)
     {
-        $this->entitiesByName = $this->managedObjectModel->entitiesByName->mapValues(fn (EntityDescription $entityDescription): SQLEntity => new SQLEntity($this, $entityDescription));
+        $this->entitiesByName = $this->managedObjectModel->entitiesByName->mapValues(fn(EntityDescription $entityDescription): SQLEntity => new SQLEntity($this, $entityDescription));
         $this->entities = $this->entitiesByName->values;
         foreach ($this->entities as $entity) {
             $entity->generateInverseRelationshipsAndMore();
