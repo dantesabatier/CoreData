@@ -25,6 +25,6 @@ class SQLSchema
 
     public static function schema(?string $name = null): SQLSchema
     {
-        return new SQLSchema($name ?? ProcessInfo::processInfo()->environment["SQLSchemaName"] ?? throw new InternalInconsistencyException("Schema must have a name"), ProcessInfo::processInfo()->environment["SQLSchemaHost"] ?? "localhost", new SQLCredential(ProcessInfo::processInfo()->environment["SQLSchemaCredentialUser"] ?? "root", ProcessInfo::processInfo()->environment["SQLSchemaCredentialPassword"]));
+        return new SQLSchema($name ?? ProcessInfo::processInfo()->environment["SQL_SCHEMA_NAME"] ?? throw new InternalInconsistencyException("Environment variable \"SQL_SCHEMA_NAME\" cannot be null"), ProcessInfo::processInfo()->environment["SQL_SCHEMA_HOST"] ?? "localhost", new SQLCredential(ProcessInfo::processInfo()->environment["SQL_SCHEMA_CREDENTIAL_USER"] ?? "root", ProcessInfo::processInfo()->environment["SQL_SCHEMA_CREDENTIAL_PASSWORD"]));
     }
 }
