@@ -22,9 +22,9 @@ class ConstraintConflict extends ObjectClass
      * Initializes a constraint conflict.
      * @param ArrayClass<string> $constraint The constraint that has been violated.
      * @param ManagedObject|null $databaseObject The object whose database row is using constraint values.
-     * @param Dictionary<mixed>|null $databaseSnapshot The values currently stored in the database.
+     * @param Dictionary|null $databaseSnapshot The values currently stored in the database.
      * @param ArrayClass<ManagedObject> $conflictingObjects The managed objects that are in conflict.
-     * @param ArrayClass<Dictionary<mixed>> $conflictingSnapshots The original property values of objects in violation of the constraint.
+     * @param ArrayClass<Dictionary> $conflictingSnapshots The original property values of objects in violation of the constraint.
      */
     public function __construct(public readonly ArrayClass $constraint, public readonly ?ManagedObject $databaseObject, public readonly ?Dictionary $databaseSnapshot, public readonly ArrayClass $conflictingObjects, public readonly ArrayClass $conflictingSnapshots)
     {

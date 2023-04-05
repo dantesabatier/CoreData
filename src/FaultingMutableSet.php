@@ -1,17 +1,13 @@
 <?php
 
-/**
- * Created by PhpStorm.
- * User: dante
- * Date: 17/06/20
- * Time: 09:28
- */
-
 namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\Set;
 
-/** @internal */
+/**
+ * @extends Set<ManagedObject|ManagedObjectID>
+ * @internal
+ */
 class FaultingMutableSet extends Set
 {
     public bool $isFault = true;

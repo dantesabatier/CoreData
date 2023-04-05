@@ -20,7 +20,7 @@ class IncrementalStoreNode extends ObjectClass
     /**
      * Returns an object initialized with the given values.
      * @param ManagedObjectID $objectID The object ID that identifies the data stored by the receiver.
-     * @param Dictionary<mixed> $values
+     * @param Dictionary $values
      * @param int $version The version of data in the receiver.
      */
     public function __construct(public readonly ManagedObjectID $objectID, public readonly Dictionary $values, public int $version = 0)
@@ -29,7 +29,7 @@ class IncrementalStoreNode extends ObjectClass
 
     /**
      * Update the values and version to reflect new data being saved to or loaded from the external store.
-     * @param Dictionary<mixed> $values
+     * @param Dictionary $values
      * @param int $version
      */
     public function updateWithValues(Dictionary $values, int $version = 0): void

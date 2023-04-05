@@ -33,7 +33,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         /** @var ArrayClass<Dictionary|Number> $values */
         $values = match ($resultType) {
             FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType, FetchRequestResultType::dictionaryResultType => (function () use ($execute): ArrayClass {
-                /** @var Dictionary<Dictionary<mixed>> $map */
+                /** @var Dictionary<Dictionary> $map */
                 $map = new Dictionary();
                 do {
                     /** @var array<string, mixed> $data */
@@ -43,7 +43,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         $entity = $this->sqlModel->entitiesByName[$entityName];
                         $currentEntity = $entity;
                         $referenceObject = (string)$data[$entity->primaryKey->columnName];
-                        /** @var Dictionary<mixed> $representation */
+                        /** @var Dictionary $representation */
                         $representation = $map[$referenceObject] ?? new Dictionary();
                         foreach ($data as $key => $value) {
                             if ($value === null) {

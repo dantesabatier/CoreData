@@ -283,7 +283,7 @@ class SQLConnection extends ObjectClass
         /** @var ArrayClass<ManagedObject> $insertedObjects */
         $insertedObjects = new ArrayClass();
         while (true) {
-            /** @var Dictionary<mixed> $keyedValues */
+            /** @var Dictionary $keyedValues */
             $keyedValues = new Dictionary();
             $continue = $block($keyedValues);
             $insertedObject = EntityDescription::insertNewObject($entity->tableName, $requestContext->context);
@@ -535,7 +535,7 @@ class SQLConnection extends ObjectClass
         $managedObjectModel = $model->managedObjectModel;
         $this->createCachedModelTable();
         $this->execute(new SQLStatement("INSERT INTO `ManagedObjectModel` (`modelID`, `data`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `modelID` = VALUES(`modelID`), `data` = VALUES(`data`)", new ArrayClass([1, $this->compressedDataWithModel($managedObjectModel)])));
-        /** @var Dictionary<mixed> $metadata */
+        /** @var Dictionary $metadata */
         $metadata = $this->adapter?->sqlCore?->metadata ?? new Dictionary([StoreTypeKey => SQLStoreType]);
         $metadata[StoreModelVersionHashesKey] = $managedObjectModel->versionHash;
         $this->saveMetadata($metadata);

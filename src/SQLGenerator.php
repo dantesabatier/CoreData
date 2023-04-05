@@ -500,7 +500,7 @@ class SQLGenerator extends ObjectClass
             $entity = $relationship->destinationEntity;
             if ($resultType !== FetchRequestResultType::countResultType) {
                 $columnNames = $entity->columnsToFetch->map(fn(SQLColumn $column): string => "$destination.$column->columnName AS {$destination}_$column->columnName");
-                /** @var Dictionary<mixed>|null $dictionary */
+                /** @var Dictionary|null $dictionary */
                 $dictionary = $serialization[$name];
                 if ($dictionary) {
                     $serialization = clone $dictionary;
@@ -554,7 +554,7 @@ class SQLGenerator extends ObjectClass
     }
 
     /**
-     * @param Dictionary<mixed>|null $serialization
+     * @param Dictionary|null $serialization
      * @param string|null $parent
      * @return Set<Expression>
      */
@@ -768,7 +768,7 @@ class SQLGenerator extends ObjectClass
 
     private function prepareClauseWithSimplePredicate(ComparisonPredicate $predicate, string &$clause, string $operator, string $prefix = "", string $suffix = ""): void
     {
-        /** @var ArrayClass<mixed> $arguments */
+        /** @var ArrayClass $arguments */
         $arguments = new ArrayClass();
         $left = $this->buildComparisonExpression($predicate->leftExpression, $arguments, $prefix, $suffix);
         $right = $this->buildComparisonExpression($predicate->rightExpression, $arguments, $prefix, $suffix);
@@ -1165,7 +1165,7 @@ class SQLGenerator extends ObjectClass
      */
     private function prepareInsertStatement(SQLEntity $entity, ArrayClass $insertedObjects): void
     {
-        /** @var ArrayClass<mixed> $arguments */
+        /** @var ArrayClass $arguments */
         $arguments = new ArrayClass();
         /** @var Set<string> $columnNames */
         $columnNames = new Set();
@@ -1214,7 +1214,7 @@ class SQLGenerator extends ObjectClass
      */
     private function prepareUpdateStatement(SQLEntity $entity, ArrayClass $updatedObjects): void
     {
-        /** @var ArrayClass<mixed> $arguments */
+        /** @var ArrayClass $arguments */
         $arguments = new ArrayClass();
         /** @var Set<string> $columnNames */
         $columnNames = new Set();
@@ -1260,7 +1260,7 @@ class SQLGenerator extends ObjectClass
 
     private function appendSetStatementForBatchUpdateRequest(BatchUpdateRequest $request): void
     {
-        /** @var ArrayClass<mixed> $arguments */
+        /** @var ArrayClass $arguments */
         $arguments = new ArrayClass();
         /** @var Dictionary $propertiesToUpdate */
         $propertiesToUpdate = $request->propertiesToUpdate;
@@ -1281,12 +1281,12 @@ class SQLGenerator extends ObjectClass
     }
 
     /**
-     * @param Set<mixed> $objects
-     * @return Dictionary<ArrayClass<mixed>>
+     * @param Set $objects
+     * @return Dictionary<ArrayClass>
      */
     private function groupedObjects(Set $objects): Dictionary
     {
-        /** @var Dictionary<ArrayClass<mixed>> $map */
+        /** @var Dictionary<ArrayClass> $map */
         $map = new Dictionary();
         $object = $objects->first();
         if ($object instanceof PersistentHistoryTransaction) {
@@ -1296,7 +1296,7 @@ class SQLGenerator extends ObjectClass
             foreach ($objects as $object) {
                 $entity = $object->entity;
                 $key = $entity->name;
-                /** @var ArrayClass<mixed> $value */
+                /** @var ArrayClass $value */
                 $value = $map[$key] ?? new ArrayClass();
                 if (!$value->containsElement($object)) {
                     $value->append($object);

@@ -52,7 +52,7 @@ class FetchRequest extends PersistentStoreRequest
     public ?ArrayClass $propertiesToFetch = null;
     /** @var ArrayClass<string|PropertyDescription>|null An array of objects that indicates how data should be grouped before a select statement is run in an SQL database. An array of {@see PropertyDescription} or {@see ExpressionDescription} objects or key-path strings that indicate how data should be grouped before a select statement is run in an SQL database. If you use this setting, you must set the resultType to {@see FetchRequestResultType::dictionary}, and the SELECT values must be literals, aggregates, or columns specified in propertiesToGroupBy. Aggregates will operate on the groups specified in propertiesToGroupBy rather than the whole table. If you set propertiesToGroupBy, you can also set a predicate to filter rows that are returned by propertiesToGroupBy. */
     public ?ArrayClass $propertiesToGroupBy = null;
-    /** @var Dictionary<mixed> A dictionary with the property names as keys and attribute types ({@see AttributeType} as values, if key is a relationship you must provide another dictionary ({@see Dictionary}). */
+    /** @var Dictionary A dictionary with the property names as keys and attribute types ({@see AttributeType} as values, if key is a relationship you must provide another dictionary ({@see Dictionary}). */
     public Dictionary $serialization;
     /** @var string|null The name of the entity to fetch. */
     public readonly ?string $entityName;

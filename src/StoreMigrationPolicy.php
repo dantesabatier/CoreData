@@ -15,7 +15,7 @@ class StoreMigrationPolicy
     public static int $migrationDebugLevel = 0;
     /** @var ArrayClass<Bundle>|null */
     public ?ArrayClass $resourceBundles = null;
-    /** @var Dictionary<mixed>|null */
+    /** @var Dictionary|null */
     public ?Dictionary $destinationOptions = null;
     public ?string $destinationConfiguration = null;
     public PersistentStoreType $destinationType = PersistentStoreType::sql;
@@ -23,9 +23,9 @@ class StoreMigrationPolicy
     public ?MappingModel $mappingModel = null;
     public ?ManagedObjectModel $destinationModel = null;
     public ?ManagedObjectModel $sourceModel = null;
-    /** @var Dictionary<mixed>|null */
+    /** @var Dictionary|null */
     public ?Dictionary $sourceOptions = null;
-    /** @var Dictionary<mixed>|null */
+    /** @var Dictionary|null */
     public ?Dictionary $sourceMetadata = null;
     public ?string $sourceConfiguration = null;
     public PersistentStoreType $sourceType = PersistentStoreType::sql;

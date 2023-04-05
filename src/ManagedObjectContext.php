@@ -54,7 +54,7 @@ class ManagedObjectContext extends ObjectClass
     public ?ManagedObjectContext $parent = null;
     /** @var string|null The developer-provided name of the context. */
     public ?string $name = null;
-    /** @var Dictionary<mixed> The user information for the context. */
+    /** @var Dictionary The user information for the context. */
     public readonly Dictionary $userInfo;
     /** @var Set<IncrementalStoreNode> */
     private readonly Set $unprocessedChanges;
@@ -318,10 +318,10 @@ class ManagedObjectContext extends ObjectClass
         $result = $this->execute($request);
         $subresults = $result->subresults;
         if ($subresults instanceof BatchFaultingArray) {
-            /** @var ArrayClass<mixed> */
+            /** @var ArrayClass */
             return $subresults;
         }
-        /** @var ArrayClass<mixed> */
+        /** @var ArrayClass */
         return new ArrayClass($subresults->joined());
     }
 

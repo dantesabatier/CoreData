@@ -18,7 +18,7 @@ use Sabatier\Foundation\Predicates\Expression;
  */
 class PropertyMapping extends ObjectClass
 {
-    /** @var Dictionary<mixed>|null The user info for the property mapping. */
+    /** @var Dictionary|null The user info for the property mapping. */
     public ?Dictionary $userInfo = null;
 
     /**

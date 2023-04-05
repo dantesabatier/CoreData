@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use DOMAttr;
 use DOMDocument;
 use DOMElement;
 use DOMNode;
@@ -30,7 +31,7 @@ class XMLObjectStore extends AtomicStore
     private ?DOMDocument $document = null;
     /** @var Dictionary<EntityDescription> */
     private readonly Dictionary $entitiesForConfiguration;
-    /** @var Dictionary<mixed> */
+    /** @var Dictionary */
     private Dictionary $xmlInfo;
 
     public function __construct(PersistentStoreCoordinator $coordinator, string $configurationName, URL $url, ?Dictionary $options = null)
@@ -115,7 +116,7 @@ class XMLObjectStore extends AtomicStore
             $entityName = $element->getAttribute("name");
             $entity = $this->entitiesForConfiguration[$entityName];
             assert($entity instanceof EntityDescription);
-            /** @var Dictionary<mixed> $info */
+            /** @var Dictionary $info */
             $info = $this->xmlInfo[$entity->name] ?? new Dictionary();
             $cacheNode = $this->createCacheNodeFromXMLElement($element);
             $attributeElements = $element->getElementsByTagName("attribute");
@@ -196,7 +197,9 @@ class XMLObjectStore extends AtomicStore
         foreach ($object->entity->relationshipsByName as $key => $relationship) {
             $value = $object->primitiveValueForKey($key);
             $relationshipNode = $this->createRelationshipChildOnNode($node, $relationship);
+            /** @var DOMAttr $destinationNode */
             $destinationNode = $relationshipNode->getAttributeNode("destination");
+            /** @var DOMAttr $referencesNode */
             $referencesNode = $relationshipNode->getAttributeNode("references");
             $referencesNode->value = $this->getIDRefString($value, $relationship);
             $inverseRelationship = $relationship->inverseRelationship;
@@ -207,10 +210,12 @@ class XMLObjectStore extends AtomicStore
                 $cacheNode = $this->cacheNode($managedObjectID);
                 if ($cacheNode instanceof XMLObjectStoreCacheNode) {
                     $relationshipNode = $this->createRelationshipChildOnNode($cacheNode->data, $inverseRelationship);
+                    /** @var DOMAttr $referencesNode */
                     $referencesNode = $relationshipNode->getAttributeNode("references");
                     $references = new Set(explode(" ", $relationshipNode->getAttribute("references")));
                     $references->formUnion(new Set(explode(" ", $this->getIDRefString($object, $inverseRelationship))));
                     $referencesNode->value = trim($references->join(" "));
+                    /** @var DOMAttr $destinationNode */
                     $destinationNode = $relationshipNode->getAttributeNode("destination");
                     $destinationNode->value = $object->entity->name;
                 }
@@ -415,6 +420,7 @@ class XMLObjectStore extends AtomicStore
                                 $references = new Set(explode(" ", $relationshipElement->getAttribute("references")));
                                 if ($references->containsElement($reference)) {
                                     $references->remove($reference);
+                                    /** @var DOMAttr $referencesNode */
                                     $referencesNode = $relationshipElement->getAttributeNode("references");
                                     $referencesNode->value = $references->join(" ");
                                 }

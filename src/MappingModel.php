@@ -45,9 +45,9 @@ class MappingModel extends ObjectClass
         $this->entityMappingsByName = new Dictionary();
         if ($url) {
             //FIXME: implement url loading, test it and improve it
-            /** @var Dictionary<mixed> $dictionary */
+            /** @var Dictionary $dictionary */
             $dictionary = PropertyListSerialization::propertyListWithURL($url);
-            /** @var ArrayClass<Dictionary<mixed>>|null $entities */
+            /** @var ArrayClass<Dictionary>|null $entities */
             $entities = $dictionary["entities"];
             if ($entities) {
                 $this->entityMappings = $entities->map(function (Dictionary $dictionary): EntityMapping {
@@ -76,13 +76,13 @@ class MappingModel extends ObjectClass
                         $dictionary->removeValueForKey("mappingType");
                         $mapping->mappingType = EntityMappingType::from($mappingType);
                     }
-                    /** @var ArrayClass<Dictionary<mixed>>|null $attributes */
+                    /** @var ArrayClass<Dictionary>|null $attributes */
                     $attributes = $dictionary["attributes"];
                     if ($attributes) {
                         $dictionary->removeValueForKey("attributes");
                         $mapping->attributeMappings = $attributes->map($transform);
                     }
-                    /** @var ArrayClass<Dictionary<mixed>>|null $relationships */
+                    /** @var ArrayClass<Dictionary>|null $relationships */
                     $relationships = $dictionary["relationships"];
                     if ($relationships) {
                         $dictionary->removeValueForKey("relationships");

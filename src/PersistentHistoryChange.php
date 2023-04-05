@@ -29,7 +29,7 @@ class PersistentHistoryChange extends ObjectClass
     public readonly PersistentHistoryChangeType $changeType;
     /** @var ManagedObjectID The identifier of the managed object that changed. */
     public readonly ManagedObjectID $changedObjectID;
-    /** @var Dictionary<mixed>|null A dictionary of attributes marked for preservation after deletion, and their values when deleted. This value is expected on changes of type {@see PersistentHistoryChangeType::delete}. */
+    /** @var Dictionary|null A dictionary of attributes marked for preservation after deletion, and their values when deleted. This value is expected on changes of type {@see PersistentHistoryChangeType::delete}. */
     public readonly ?Dictionary $tombstone;
     /** @var PersistentHistoryTransaction|null The persistent history transaction containing this change. */
     public readonly ?PersistentHistoryTransaction $transaction;

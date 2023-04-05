@@ -28,7 +28,7 @@ class PersistentStoreDescription extends ObjectClass
     public string $type = SQLStoreType;
     /** @var string|null The name of the configuration used by this store. This displays the name of a configuration in the receiver's managed object model that will be used by the new store. The configuration can be nil, in which case no other configurations are allowed. */
     public ?string $configuration = null;
-    /** @var Dictionary<mixed> A dictionary containing key-value pairs that specify numerous settings for the persistent store. For key definitions, see {@see PersistentStoreCoordinator}. */
+    /** @var Dictionary A dictionary containing key-value pairs that specify numerous settings for the persistent store. For key definitions, see {@see PersistentStoreCoordinator}. */
     public readonly Dictionary $options;
     /** @var bool A flag that determines whether the store is added asynchronously. By default, the store is added to the {@see PersistentStoreCoordinator} synchronously on the calling thread. If this flag is set to true, the store is added asynchronously on a background queue. The default for this flag is false. */
     public bool $shouldAddStoreAsynchronously = false;

@@ -23,7 +23,7 @@ use function Sabatier\Foundation\human_readable_value;
  */
 class MergeConflict extends ObjectClass
 {
-    /** @var Dictionary<mixed> A dictionary containing the values of the source object. */
+    /** @var Dictionary A dictionary containing the values of the source object. */
     public readonly Dictionary $objectSnapshot;
 
     /**
@@ -31,8 +31,8 @@ class MergeConflict extends ObjectClass
      * @param ManagedObject $sourceObject The source object for the conflict.
      * @param int $newVersionNumber The new version number for the change. A value of 0 means the object was deleted and the corresponding snapshot is nil.
      * @param int $oldVersionNumber The old version number for the change.
-     * @param Dictionary<mixed>|null $cachedSnapshot A dictionary containing the values of sourceObject held in the persistent store coordinator layer.
-     * @param Dictionary<mixed>|null $persistedSnapshot A dictionary containing the values of sourceObject held in the persistent store.
+     * @param Dictionary|null $cachedSnapshot A dictionary containing the values of sourceObject held in the persistent store coordinator layer.
+     * @param Dictionary|null $persistedSnapshot A dictionary containing the values of sourceObject held in the persistent store.
      */
     public function __construct(public readonly ManagedObject $sourceObject, public readonly int $newVersionNumber, public readonly int $oldVersionNumber, public readonly ?Dictionary $cachedSnapshot = null, public readonly ?Dictionary $persistedSnapshot = null)
     {

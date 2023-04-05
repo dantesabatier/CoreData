@@ -24,7 +24,7 @@ class SQLStatement extends ObjectClass
 {
     /**
      * @param string $string
-     * @param ArrayClass<mixed> $arguments
+     * @param ArrayClass $arguments
      */
     public function __construct(public readonly string $string, public readonly ArrayClass $arguments = new ArrayClass())
     {

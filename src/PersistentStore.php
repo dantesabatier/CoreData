@@ -22,7 +22,7 @@ abstract class PersistentStore extends ObjectClass
     public string $type;
     /** @var string The unique identifier for the persistent store. */
     public string $identifier;
-    /** @var Dictionary<mixed> The metadata for the persistent store. The dictionary must include the store type. */
+    /** @var Dictionary The metadata for the persistent store. The dictionary must include the store type. */
     public Dictionary $metadata;
     /** @var bool A Boolean value that indicates whether the persistent store is read-only. */
     public bool $isReadOnly = false;
@@ -36,7 +36,7 @@ abstract class PersistentStore extends ObjectClass
      * @param PersistentStoreCoordinator $persistentStoreCoordinator A persistent store coordinator.
      * @param string $configurationName The name of the managed object model configuration to use.
      * @param URL $url The URL of the store to load.
-     * @param Dictionary<mixed>|null $options A dictionary containing configuration options.
+     * @param Dictionary|null $options A dictionary containing configuration options.
      * @see PersistentStoreCoordinator for a list of key names for options in this dictionary.
      */
     public function __construct(public readonly PersistentStoreCoordinator $persistentStoreCoordinator, public readonly string $configurationName, public URL $url, public readonly ?Dictionary $options = null)
@@ -97,7 +97,7 @@ abstract class PersistentStore extends ObjectClass
      * Returns a value as appropriate for the given request, or nil if the request cannot be completed.
      * @param PersistentStoreRequest $request A fetch request.
      * @param ManagedObjectContext $context The managed object context used to execute request.
-     * @return ArrayClass<ManagedObject|ManagedObjectID|Dictionary<mixed>|Number> A value as appropriate for request.
+     * @return ArrayClass<ManagedObject|ManagedObjectID|Dictionary|Number> A value as appropriate for request.
      * @throws Exception If an error occurs, upon return contains an error object that describes the problem.
      */
     public function execute(PersistentStoreRequest $request, ManagedObjectContext $context): ArrayClass
@@ -182,7 +182,7 @@ abstract class PersistentStore extends ObjectClass
      * Returns the metadata from the persistent store at the given URL.
      * Subclasses must override this method.
      * @param URL $url The location of the store.
-     * @return Dictionary<mixed> The metadata from the persistent store at url.
+     * @return Dictionary The metadata from the persistent store at url.
      * @throws Exception If an error occurs, upon return contains an error that describes the problem.
      */
     public static function metadataForPersistentStore(/** @noinspection PhpUnusedParameterInspection */ URL $url): Dictionary
@@ -193,7 +193,7 @@ abstract class PersistentStore extends ObjectClass
     /**
      * Sets the metadata for the store at a given URL.
      * Subclasses must override this method to set metadata appropriately.
-     * @param Dictionary<mixed>|null $metadata The metadata for the store at url.
+     * @param Dictionary|null $metadata The metadata for the store at url.
      * @param URL $url The location of the store.
      * @return bool true if the metadata was written correctly, otherwise false.
      * @throws Exception

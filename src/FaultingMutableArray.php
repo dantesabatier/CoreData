@@ -4,7 +4,10 @@ namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;
 
-/** @internal */
+/**
+ * @extends ArrayClass<ManagedObject>
+ * @internal
+ */
 class FaultingMutableArray extends ArrayClass
 {
     public bool $isFault = true;

@@ -77,7 +77,7 @@ class AttributeDescription extends PropertyDescription
     public function versionHashInStyle(?string &$out, VersionHashStyle $style): void
     {
         parent::versionHashInStyle($data, $style);
-        /** @var Dictionary<mixed> $dictionary */
+        /** @var Dictionary $dictionary */
         $dictionary = KeyedUnarchiver::unarchiveTopLevelObjectWithData((string)$data);
         if ($this->type !== AttributeType::undefined) {
             $dictionary["type"] = $this->type->value;
@@ -92,7 +92,7 @@ class AttributeDescription extends PropertyDescription
 
     public function jsonSerialize(): Dictionary
     {
-        /** @var Dictionary<mixed> $dictionary */
+        /** @var Dictionary $dictionary */
         $dictionary = parent::jsonSerialize();
         if ($this->type !== AttributeType::undefined) {
             $dictionary["type"] = $this->type->value;
