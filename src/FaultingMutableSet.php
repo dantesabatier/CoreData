@@ -5,7 +5,7 @@ namespace Sabatier\CoreData;
 use Sabatier\Foundation\Set;
 
 /**
- * @extends Set<ManagedObject|ManagedObjectID>
+ * @extends Set<mixed>
  * @internal
  */
 class FaultingMutableSet extends Set

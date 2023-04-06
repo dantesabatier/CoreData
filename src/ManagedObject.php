@@ -427,6 +427,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if (!$mutableArray instanceof FaultingMutableArray) {
             $array = new FaultingMutableArray($this, $property);
             if ($mutableArray instanceof ArrayClass) {
+                /** @psalm-suppress InvalidArgument */
                 $array->appendContentsOf($mutableArray);
             }
             $this->setPrimitiveValueForKey($array, $key);

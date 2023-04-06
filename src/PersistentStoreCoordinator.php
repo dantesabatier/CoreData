@@ -332,7 +332,6 @@ class PersistentStoreCoordinator extends ObjectClass
      * @return ArrayClass<ManagedObject|ManagedObjectID|Dictionary|Number>|ArrayClass<ArrayClass<ManagedObject|ManagedObjectID|Dictionary|Number>> An array containing managed objects, managed object IDs, or dictionaries as appropriate for a fetch request; an empty array if request is a save request, or nil if an error occurred.
      * User defined requests return arrays of arrays, where a nested array is the result returned from a single store.
      * @throws Exception If an error occurs, upon return contains an error object that describes the problem.
-     * @noinspection PhpDocDuplicateTypeInspection
      */
     public function execute(PersistentStoreRequest $request, ManagedObjectContext $context): ArrayClass
     {
