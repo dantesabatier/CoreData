@@ -769,7 +769,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         $f = fn(string $t): mixed => match ($t) {
             "string" => (string)$value,
             "int" => (int)$value,
-            "bool" => $in ? (int)$value : (bool)$value,
+            "bool" => $in ? (new Number($value))->intValue : (new Number($value))->boolValue,
             "float", => (float)$value,
             default => $value
         };
@@ -853,7 +853,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 }
             } else {
                 $value = match ($type) {
-                    AttributeType::string, AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => $isOptional && $value === "" ? null : self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $in),
+                    AttributeType::string, AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float, AttributeType::boolean => $isOptional && $value === "" ? null : self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $in),
                     default => self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $in),
                 };
                 if ($attributeValueClassName !== null) {
