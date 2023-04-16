@@ -710,7 +710,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 }
                 $fetchRequest = new FetchRequest();
                 $fetchRequest->entity = $property->toOneRelationship->destinationEntity->entityDescription;
-                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath("objectID"), Expression::expressionForConstantValue($value));
+                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath("objectID"), Expression::expressionForConstantValue((int)$value));
                 /** @noinspection PhpUnhandledExceptionInspection */
                 $representation[$property->toOneRelationship->name] = $this->managedObjectContext->fetch($fetchRequest)->first();
                 $representation->removeValueForKey($key);
