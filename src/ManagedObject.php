@@ -705,12 +705,12 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $entity = $store->model->entitiesByName[$this->entity->name];
             foreach ($keyedValues as $key => $value) {
                 $property = $entity->propertiesByName[$key];
-                if (!$property instanceof SQLForeignKey) {
+                if (!$property instanceof SQLForeignKey || $value instanceof Nil) {
                     continue;
                 }
                 $fetchRequest = new FetchRequest();
                 $fetchRequest->entity = $property->toOneRelationship->destinationEntity->entityDescription;
-                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath("objectID"), Expression::expressionForConstantValue((int)$value));
+                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath("objectID"), Expression::expressionForConstantValue($value));
                 /** @noinspection PhpUnhandledExceptionInspection */
                 $representation[$property->toOneRelationship->name] = $this->managedObjectContext->fetch($fetchRequest)->first();
                 $representation->removeValueForKey($key);
