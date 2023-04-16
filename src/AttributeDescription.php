@@ -27,7 +27,7 @@ class AttributeDescription extends PropertyDescription
     public ?string $attributeValueClassName = null;
     /** @var string|null The name of the transformer used to transform the attribute value. The attribute must be of type {@see AttributeType::transformable}. The transformer must output data from {@see ValueTransformer::transformedValue()} and must allow reverse transformations. If this value is nil, Core Data uses a default a transformer to archive and unarchive the attribute value. */
     public ?string $valueTransformerName = null;
-    /** @var bool A Boolean value that indicates whether the attribute allows external binary storage. */
+    /** @var bool A Boolean value that indicates whether the attribute allows external binary storage. If this value is true, the corresponding attribute may be stored in a file external to the persistent store itself. */
     public bool $allowsExternalBinaryDataStorage = false;
     /** @var bool A Boolean value that indicates whether the attribute records its value in the persistent history transaction for a managed object's deletion. */
     public bool $preservesValueInHistoryOnDeletion = false;
