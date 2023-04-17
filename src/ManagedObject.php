@@ -761,7 +761,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /**
      * @internal
      */
-    public static function coercedValue(mixed $value, AttributeType $type, ?string $attributeValueClassName = null, ?string $valueTransformerName = null, bool $isOptional = true, bool $in = false): mixed
+    public static function coercedValue(/** @noinspection PhpUnusedParameterInspection */ mixed $value, AttributeType $type, ?string $attributeValueClassName = null, ?string $valueTransformerName = null, bool $isOptional = true, bool $in = false): mixed
     {
         if ($value instanceof Value) {
             $value = $value->value;
@@ -814,19 +814,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             case AttributeType::transformable:
             case AttributeType::objectID:
                 if ($value && ($transformer = ValueTransformer::valueTransformerForName($valueTransformerName ?? SecureUnarchiveFromDataTransformerName))) {
-                    if ($in) {
-                        return $transformer->transformedValue($value);
-                    }
-                    $value = $transformer->reverseTransformedValue($value);
-                    if ($t = match ($attributeValueClassName) {
-                        "string" => AttributeType::string,
-                        "int" => AttributeType::integer16,
-                        "bool" => AttributeType::boolean,
-                        "float", => AttributeType::float,
-                        default => false
-                    }) {
-                        $value = self::coercedValue($value, $t, isOptional: $isOptional, in: $in);
-                    }
+                    return $in ? $transformer->transformedValue($value) : $transformer->reverseTransformedValue($value);
                 }
                 return $value;
             default:
