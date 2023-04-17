@@ -813,7 +813,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             case AttributeType::undefined:
             case AttributeType::transformable:
             case AttributeType::objectID:
-                if ($value && ($transformer = ValueTransformer::valueTransformerForName($valueTransformerName ?? SecureUnarchiveFromDataTransformerName))) {
+                if ($transformer = ValueTransformer::valueTransformerForName($valueTransformerName ?? SecureUnarchiveFromDataTransformerName)) {
                     return $in ? $transformer->transformedValue($value) : $transformer->reverseTransformedValue($value);
                 }
                 return $value;
