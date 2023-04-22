@@ -761,60 +761,65 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /**
      * @internal
      */
-    public static function coercedValue(/** @noinspection PhpUnusedParameterInspection */ mixed $value, AttributeType $type, ?string $attributeValueClassName = null, ?string $valueTransformerName = null, bool $isOptional = true, bool $in = false): mixed
+    public static function coercedValue(/** @noinspection PhpUnusedParameterInspection */ mixed $value, AttributeType $type, ?string $attributeValueClassName = null, ?string $valueTransformerName = null, bool $isOptional = true, bool $write = false): mixed
     {
         if ($value instanceof Value) {
             $value = $value->value;
         }
-        $f = fn(string $t): mixed => match ($t) {
+        $coercedValue = fn(string $t): string|int|bool|float|null => match ($t) {
             "string" => (string)$value,
             "int" => (int)$value,
-            "bool" => $in ? (new Number($value))->intValue : (new Number($value))->boolValue,
+            "bool" => (function () use ($write, $value): bool|int {
+                if ($value === null) {
+                    $value = false;
+                }
+                return $write ? (new Number($value))->intValue : (new Number($value))->boolValue;
+            })(),
             "float", => (float)$value,
             default => $value
         };
-        $v = fn(string $t): mixed => match (typeof($value)) {
-            "null" => $isOptional ? null : $f($t),
-            default => $f($t)
+        $optionalValue = fn(string $t): mixed => match (typeof($value)) {
+            "null" => $isOptional ? null : $coercedValue($t),
+            default => $coercedValue($t)
         };
         switch ($type) {
             case AttributeType::integer16:
             case AttributeType::integer32:
             case AttributeType::integer64:
-                return $v("int");
+                return $optionalValue("int");
             case AttributeType::decimal:
             case AttributeType::double:
             case AttributeType::float:
-                return $v("float");
+                return $optionalValue("float");
             case AttributeType::string:
-                return $v("string");
+                return $optionalValue("string");
             case AttributeType::boolean:
-                return $v("bool");
+                return $optionalValue("bool");
             case AttributeType::date:
                 return match (typeof($value)) {
                     Date::class => $value,
-                    "string" => $in ? $value : new Date(strtotime((string)$value)),
+                    "string" => $write ? $value : new Date(strtotime((string)$value)),
                     "null" => $isOptional ? null : new Date(),
                     default => throw new InvalidArgumentException()
                 };
             case AttributeType::uuid:
                 return match (typeof($value)) {
                     UUID::class => $value,
-                    "string" => $in ? $value : new UUID($value),
+                    "string" => $write ? $value : new UUID($value),
                     "null" => $isOptional ? null : new UUID(),
                     default => throw new InvalidArgumentException()
                 };
             case AttributeType::uri:
                 return match (typeof($value)) {
                     URL::class => $value,
-                    "string" => $in ? $value : new URL((string)$value),
+                    "string" => $write ? $value : new URL((string)$value),
                     default => throw new InvalidArgumentException()
                 };
             case AttributeType::undefined:
             case AttributeType::transformable:
             case AttributeType::objectID:
                 if ($transformer = ValueTransformer::valueTransformerForName($valueTransformerName ?? SecureUnarchiveFromDataTransformerName)) {
-                    return $in ? $transformer->transformedValue($value) : $transformer->reverseTransformedValue($value);
+                    return $write ? $transformer->transformedValue($value) : $transformer->reverseTransformedValue($value);
                 }
                 return $value;
             default:
@@ -825,7 +830,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /**
      * @internal
      */
-    public static function coerceValue(mixed &$value, PropertyDescription $property, bool $in = false): bool
+    public static function coerceValue(mixed &$value, PropertyDescription $property, bool $write = false): bool
     {
         if ($value instanceof Nil) {
             $value = $value->value;
@@ -837,12 +842,12 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $isOptional = $property->isOptional;
             if ($value === null) {
                 if (!$isOptional) {
-                    $value = self::coercedValue($property->defaultValue, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $in);
+                    $value = self::coercedValue($property->defaultValue, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $write);
                 }
             } else {
                 $value = match ($type) {
-                    AttributeType::string, AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float, AttributeType::boolean => $isOptional && $value === "" ? null : self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $in),
-                    default => self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $in),
+                    AttributeType::string, AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float, AttributeType::boolean => $isOptional && $value === "" ? null : self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $write),
+                    default => self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $write),
                 };
                 if ($attributeValueClassName !== null) {
                     if ($value && class_exists($attributeValueClassName) && !is_a($value, $attributeValueClassName, true)) {
