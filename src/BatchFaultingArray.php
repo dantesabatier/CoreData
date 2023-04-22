@@ -56,6 +56,7 @@ class BatchFaultingArray extends ArrayClass
         invalid_mutation();
     }
 
+    /** @psalm-suppress InvalidReturnType */
     public function removeAt(int $index): ManagedObject|ManagedObjectID
     {
         invalid_mutation();
