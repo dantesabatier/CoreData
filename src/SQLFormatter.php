@@ -396,6 +396,7 @@ class SQLFormatter extends Formatter
                     $highlighted = preg_replace("/\s+/", " ", $highlighted);
                 }
             } elseif ($token->type === SQLFormatterTokenType::boundary) {
+                /** @psalm-suppress InvalidArrayOffset */
                 if (isset($tokens[$i - 1]) && $tokens[$i - 1]->type === SQLFormatterTokenType::boundary && (isset($originalTokens[$token->index - 1]) && $originalTokens[$token->index - 1]->type !== SQLFormatterTokenType::whitespace)) {
                     $return = rtrim($return, " ");
                 }
@@ -408,6 +409,7 @@ class SQLFormatter extends Formatter
                 $return = rtrim($return, " ");
             }
             if ($token->value === "-" && isset($tokens[$i + 1]) && $tokens[$i + 1]->type === SQLFormatterTokenType::number && isset($tokens[$i - 1])) {
+                /** @psalm-suppress InvalidArrayOffset */
                 $prev = $tokens[$i - 1]->type;
                 if ($prev !== SQLFormatterTokenType::quote && $prev !== SQLFormatterTokenType::backtickQuote && $prev !== SQLFormatterTokenType::word && $prev !== SQLFormatterTokenType::number) {
                     $return = rtrim($return, " ");
