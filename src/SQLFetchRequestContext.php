@@ -60,6 +60,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         ManagedObject::coerceValue($value, $propertyDescription);
                                     }
                                 }
+                                /** @psalm-suppress PossiblyNullReference */
                                 $representation[$key] = $value;
                                 continue;
                             }
@@ -70,6 +71,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 $property = $currentEntity->propertiesByName[$key];
                                 if ($property instanceof SQLRelationship) {
                                     if ($current instanceof Set && !$current->isEmpty()) {
+                                        /** @psalm-suppress UnsupportedReferenceUsage */
                                         $current = &$current[$current->indexBefore($current->endIndex())];
                                     }
                                     if ($current instanceof Dictionary) {
@@ -92,6 +94,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                             $cached[] = new Dictionary();
                                         }
                                         if (!$cached->isEmpty()) {
+                                            /** @psalm-suppress UnsupportedReferenceUsage */
                                             $current = &$cached[$cached->indexBefore($cached->endIndex())];
                                         }
                                     }
