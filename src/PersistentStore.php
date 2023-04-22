@@ -99,6 +99,7 @@ abstract class PersistentStore extends ObjectClass
      * @param ManagedObjectContext $context The managed object context used to execute request.
      * @return ArrayClass<ManagedObject|ManagedObjectID|Dictionary|Number> A value as appropriate for request.
      * @throws Exception If an error occurs, upon return contains an error object that describes the problem.
+     * @psalm-suppress InvalidReturnType
      */
     public function execute(PersistentStoreRequest $request, ManagedObjectContext $context): ArrayClass
     {
@@ -139,10 +140,12 @@ abstract class PersistentStore extends ObjectClass
 
     /**
      * Returns an array containing the object IDs for a given array of newly inserted objects.
-     * @param ArrayClass<ManagedObject> $objects An array of newly inserted objects.
-     * @return ArrayClass<ManagedObjectID> An array containing the object IDs for the objects in array.
+     *
      * The returned array must return the object IDs in the same order as the objects appear in array.
      * This method is called before {@see execute()} with a save request, to assign permanent IDs to newly inserted objects.
+     * @param ArrayClass<ManagedObject> $objects An array of newly inserted objects.
+     * @return ArrayClass<ManagedObjectID> An array containing the object IDs for the objects in array.
+     * @psalm-suppress InvalidReturnType
      */
     public function obtainPermanentIDs(ArrayClass $objects): ArrayClass
     {
