@@ -56,7 +56,7 @@ class BatchFaultingArray extends ArrayClass
         invalid_mutation();
     }
 
-    public function removeAt(int $index)
+    public function removeAt(int $index): ManagedObject|ManagedObjectID
     {
         invalid_mutation();
     }
