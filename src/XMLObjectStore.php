@@ -316,7 +316,7 @@ class XMLObjectStore extends AtomicStore
     {
         $document = new DOMDocument("1.0", "UTF-8");
         $document->preserveWhiteSpace = false;
-        $document->formatOutput = true;
+        $document->formatOutput = false;
         $path = $this->url->path;
         if (FileManager::default()->fileExists($path)) {
             $options = 0;
