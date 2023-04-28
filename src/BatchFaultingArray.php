@@ -46,7 +46,7 @@ class BatchFaultingArray extends ArrayClass
         invalid_mutation();
     }
 
-    public function insert(mixed $newElement): array
+    public function insert(mixed $newElement): never
     {
         invalid_mutation();
     }
@@ -55,9 +55,8 @@ class BatchFaultingArray extends ArrayClass
     {
         invalid_mutation();
     }
-
-    /** @psalm-suppress InvalidReturnType */
-    public function removeAt(int $index): ManagedObject|ManagedObjectID
+    
+    public function removeAt(int $index): never
     {
         invalid_mutation();
     }
