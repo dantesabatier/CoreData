@@ -38,6 +38,17 @@ class FetchIndexDescription extends ObjectClass
     {
     }
 
+    public function __serialize(): array
+    {
+        return ["name" => $this->name, "elements" => $this->elements];
+    }
+
+    public function __unserialize(array $data): void
+    {
+        $this->name = $data["name"];
+        $this->elements = $data["elements"];
+    }
+
     public function __get(string $name)
     {
         return match ($name) {
