@@ -9,7 +9,6 @@
 
 namespace Sabatier\CoreData;
 
-use JetBrains\PhpStorm\ArrayShape;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\URL;
 
@@ -47,7 +46,7 @@ class ManagedObjectID extends ObjectClass implements FetchRequestResult
         };
     }
 
-    #[ArrayShape(["entityName" => "string", "referenceObject" => "int|string", "storeIdentifier" => "string"])] public function __serialize(): array
+    public function __serialize(): array
     {
         $serialization = ["entityName" => $this->entity->name, "referenceObject" => $this->referenceObject];
         if ($persistentStore = $this->persistentStore) {
