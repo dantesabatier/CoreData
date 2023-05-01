@@ -18,6 +18,8 @@ use Sabatier\Foundation\ObjectClass;
  */
 class FetchIndexElementDescription extends ObjectClass
 {
+    /** @var FetchIndexElementType $collationType The type of collation that the index element uses, either binary or R-tree. */
+    public FetchIndexElementType $collationType = FetchIndexElementType::bTree;
     /** @var PropertyDescription A property description. This property may also be an {@see ExpressionDescription} that expresses a function. */
     public readonly PropertyDescription $property;
     public FetchIndexDescription $indexDescription;
@@ -30,21 +32,35 @@ class FetchIndexElementDescription extends ObjectClass
     /**
      * Creates an index element description using the specified property description and collation type.
      * @param PropertyDescription|null $property A property description.
-     * @param FetchIndexElementType $collationType The type of collation that the index element uses, either binary or R-tree.
+     * @param FetchIndexElementType $collationType The type of collation that the index element uses.
      */
-    public function __construct(?PropertyDescription $property = null, public FetchIndexElementType $collationType = FetchIndexElementType::bTree)
+    public function __construct(?PropertyDescription $property = null, FetchIndexElementType $collationType = FetchIndexElementType::bTree)
     {
         unset($this->property);
         if ($property) {
             $this->property = $property;
+            $this->propertyName = $property->name;
         }
+        $this->collationType = $collationType;
+    }
+
+    public function __serialize(): array
+    {
+        return ["propertyName" => $this->propertyName, "collationType" => $this->collationType];
+    }
+
+    public function __unserialize(array $data): void
+    {
+        unset($this->property);
+        $this->propertyName = $data["propertyName"];
+        $this->collationType = $data["collationType"];
     }
 
     public function __get(string $name)
     {
         $propertyName = $this->propertyName ?? throw new InvalidArgumentException("Property name cannot be null");
         return $this->$name = match ($name) {
-            "property" => $this->indexDescription->entity->propertiesByName[$propertyName] ?? throw new InvalidArgumentException(sprintf("Property \"%s\" does not exists", $propertyName)),
+            "property" => $this->indexDescription->entity->propertiesByName[$propertyName] ?? throw new InvalidArgumentException(sprintf("Entity \"%s\" does not contains a property named \"%s\"", $this->indexDescription->entity->name, $propertyName)),
             default => $this->valueForUndefinedKey($name)
         };
     }
