@@ -46,14 +46,18 @@ class FetchIndexElementDescription extends ObjectClass
 
     public function __serialize(): array
     {
-        return ["propertyName" => $this->propertyName, "collationType" => $this->collationType];
+        $data = ["propertyName" => $this->propertyName];
+        if ($this->collationType !== FetchIndexElementType::bTree) {
+            $data["collationType"] = $this->collationType;
+        }
+        return $data;
     }
 
     public function __unserialize(array $data): void
     {
         unset($this->property);
         $this->propertyName = $data["propertyName"];
-        $this->collationType = $data["collationType"];
+        $this->collationType = $data["collationType"] ?? FetchIndexElementType::bTree;
     }
 
     public function __get(string $name)
