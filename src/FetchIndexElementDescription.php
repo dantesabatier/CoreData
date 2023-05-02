@@ -50,6 +50,12 @@ class FetchIndexElementDescription extends ObjectClass
         if ($this->collationType !== FetchIndexElementType::bTree) {
             $data["collationType"] = $this->collationType;
         }
+        if (!$this->isAscending) {
+            $data["isAscending"] = $this->isAscending;
+        }
+        if ($this->isUnique) {
+            $data["isUnique"] = $this->isUnique;
+        }
         return $data;
     }
 
@@ -58,6 +64,8 @@ class FetchIndexElementDescription extends ObjectClass
         unset($this->property);
         $this->propertyName = $data["propertyName"];
         $this->collationType = $data["collationType"] ?? FetchIndexElementType::bTree;
+        $this->isAscending = $data["isAscending"];
+        $this->isUnique = $data["isUnique"];
     }
 
     public function __get(string $name)
@@ -93,6 +101,12 @@ class FetchIndexElementDescription extends ObjectClass
         $dictionary["propertyName"] = $this->property->name;
         if ($this->collationType !== FetchIndexElementType::bTree) {
             $dictionary["collationType"] = $this->collationType->value;
+        }
+        if (!$this->isAscending) {
+            $dictionary["isAscending"] = $this->isAscending;
+        }
+        if ($this->isUnique) {
+            $dictionary["isUnique"] = $this->isUnique;
         }
         return $dictionary;
     }
