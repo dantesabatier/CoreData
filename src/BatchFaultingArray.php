@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Range;
 use function Sabatier\Foundation\invalid_mutation;
@@ -33,8 +34,10 @@ class BatchFaultingArray extends ArrayClass
         $this->fetchLimit = $fetchRequest->fetchBatchSize;
         $this->context = $context;
         $this->objectIDs = new ArrayClass();
-        /** @noinspection PhpUnhandledExceptionInspection */
-        $this->count = $context->count($this->request);
+        try {
+            $this->count = $context->count($this->request);
+        } catch (Exception) {
+        }
         $this->indices = parent::indices();
     }
 
