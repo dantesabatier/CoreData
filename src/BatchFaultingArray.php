@@ -34,10 +34,8 @@ class BatchFaultingArray extends ArrayClass
         $this->fetchLimit = $fetchRequest->fetchBatchSize;
         $this->context = $context;
         $this->objectIDs = new ArrayClass();
-        try {
-            $this->count = $context->count($this->request);
-        } catch (Exception) {
-        }
+        /** @noinspection PhpUnhandledExceptionInspection */
+        $this->count = $context->count($this->request);
         $this->indices = parent::indices();
     }
 
