@@ -5,6 +5,7 @@ namespace Sabatier\CoreData;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\InternalInconsistencyException;
+use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\absolute_time_get_current;
@@ -60,8 +61,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         ManagedObject::coerceValue($value, $propertyDescription);
                                     }
                                 }
-                                /** @psalm-suppress PossiblyNullReference */
-                                $representation[$key] = $value;
+                                $representation[$key] = $value ?? Nil::nil();
                                 continue;
                             }
                             $relationship = null;
