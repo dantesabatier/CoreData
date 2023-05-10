@@ -2,7 +2,6 @@
 
 namespace Sabatier\CoreData;
 
-use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Range;
 use function Sabatier\Foundation\invalid_mutation;
