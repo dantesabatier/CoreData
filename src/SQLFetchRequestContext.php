@@ -5,7 +5,6 @@ namespace Sabatier\CoreData;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\InternalInconsistencyException;
-use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\absolute_time_get_current;
@@ -56,12 +55,13 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 if ($property instanceof SQLProperty) {
                                     $propertyDescription = $property->propertyDescription;
                                     if ($propertyDescription instanceof ExpressionDescription) {
-                                        $value = ManagedObject::coercedValue($value, $propertyDescription->expressionResultType);
+                                        $value = ManagedObject::coercedValue($value, $propertyDescription->expressionResultType, isOptional: false);
                                     } elseif ($propertyDescription instanceof AttributeDescription) {
                                         ManagedObject::coerceValue($value, $propertyDescription);
                                     }
                                 }
-                                $representation[$key] = $value ?? Nil::nil();
+                                /** @psalm-suppress PossiblyNullReference */
+                                $representation[$key] = $value;
                                 continue;
                             }
                             $relationship = null;
