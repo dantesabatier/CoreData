@@ -275,8 +275,8 @@ abstract class AtomicStore extends PersistentStore
                 } else {
                     return $this->nodeCache->filter(fn(AtomicStoreCacheNode $node): bool => $node->objectID->entity->isKindOf($destinationEntity) && $node->valueForKey($inverseRelationship->name)?->isEqual($objectID))->map(fn(AtomicStoreCacheNode $node): ManagedObjectID => $node->objectID);
                 }
-            } else {
-                return $this->nodeCache->filter(fn(AtomicStoreCacheNode $node): bool => !$inverseRelationship->isToMany && $node->objectID->entity->isKindOf($destinationEntity) && $node->valueForKey($inverseRelationship->name)?->isEqual($objectID))->first()?->objectID;
+            } elseif (!$inverseRelationship->isToMany) {
+                return $this->nodeCache->first(fn(AtomicStoreCacheNode $node): bool => $node->objectID->entity->isKindOf($destinationEntity) && $node->valueForKey($inverseRelationship->name)?->isEqual($objectID))?->objectID;
             }
         }
         if ($relationship->isToMany) {
