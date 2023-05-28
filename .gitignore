@@ -4,4 +4,3 @@
 *.cache
 vendor
 composer.lock
-psalm.xml
