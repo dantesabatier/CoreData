@@ -28,6 +28,7 @@ class BatchDeleteResult extends PersistentStoreResult
     public function __construct(ArrayClass $subresults, public readonly BatchDeleteRequestResultType $resultType = BatchDeleteRequestResultType::statusOnly)
     {
         $sequence = $subresults->joined();
+        /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
         $this->result = match ($this->resultType) {
             BatchDeleteRequestResultType::statusOnly => new Number(!$sequence->containsElement(false)),
             BatchDeleteRequestResultType::count => new Number($sequence->sum()),

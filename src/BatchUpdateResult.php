@@ -28,6 +28,7 @@ class BatchUpdateResult extends PersistentStoreResult
     public function __construct(ArrayClass $subresults, public readonly BatchUpdateRequestResultType $resultType = BatchUpdateRequestResultType::statusOnly)
     {
         $sequence = $subresults->joined();
+        /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
         $this->result = match ($this->resultType) {
             BatchUpdateRequestResultType::statusOnly => new Number(!$sequence->containsElement(false)),
             BatchUpdateRequestResultType::count => new Number($sequence->sum()),

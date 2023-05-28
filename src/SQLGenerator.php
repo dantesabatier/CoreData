@@ -1144,6 +1144,7 @@ class SQLGenerator extends ObjectClass
         $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
         $this->raisesForNotApplicableKeys = false;
         $expressions = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate());
+        /** @psalm-suppress InvalidArgument */
         $descriptors->appendContentsOf($expressions->flatMap(fn(Expression $expression): iterable => $this->relationshipsFromKeyPathExpression($expression)->compactMap(fn(SQLRelationship $relationship): ?SortDescriptor => $relationship instanceof SQLToMany && $relationship->isOrdered ? new SortDescriptor(sprintf("%s.%s", $expression->keyPath(), $relationship->inverseToOne->foreignOrderKey->columnName)) : null)));
         $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
         if (!$descriptors->isEmpty()) {

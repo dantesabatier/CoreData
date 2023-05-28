@@ -27,6 +27,7 @@ class PersistentHistoryResult extends PersistentStoreResult
     public function __construct(ArrayClass $subresults, public readonly PersistentHistoryResultType $resultType = PersistentHistoryResultType::statusOnly)
     {
         $sequence = $subresults->joined();
+        /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
         $this->result = match ($this->resultType) {
             PersistentHistoryResultType::statusOnly => new Number(!$sequence->containsElement(false)),
             PersistentHistoryResultType::count => new Number((int)$sequence->sum()),

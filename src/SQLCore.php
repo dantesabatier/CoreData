@@ -276,6 +276,7 @@ class SQLCore extends IncrementalStore
                 }
             } elseif ($requestContext instanceof SQLSaveChangesRequestContext) {
                 if (($deletedObjects = $requestContext->request->deletedObjects) && !$deletedObjects->isEmpty()) {
+                    /** @psalm-suppress InvalidArgument */
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass($deletedObjects->compactMap(fn(ManagedObject $object): ?SQLEntity => $this->model->entitiesByName[$object->entity->name])));
                 }
             }
