@@ -19,5 +19,13 @@
         <MissingConstructor errorLevel="suppress"/>
         <RedundantPropertyInitializationCheck errorLevel="suppress"/>
         <InaccessibleProperty errorLevel="suppress"/>
+        <InvalidArgument>
+            <errorLevel type="suppress">
+                <file name="src/FaultingMutableSetMutationMethods.php" />
+                <file name="src/ManagedObject.php" />
+                <file name="src/ManagedObjectModel.php" />
+                <file name="src/PersistentStoreCoordinator.php" />
+            </errorLevel>
+        </InvalidArgument>
     </issueHandlers>
 </psalm>
