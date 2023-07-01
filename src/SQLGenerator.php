@@ -96,7 +96,7 @@ class SQLGenerator extends ObjectClass
             return $this->newSQLStatementForPersistentStoreRequest();
         } elseif ($this->requestContext instanceof SQLSaveChangesRequestContext) {
             return $this->newSQLStatementForSaveChangesRequestContext();
-        } else {
+        } else { 
             return null;
         }
     }
