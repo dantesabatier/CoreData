@@ -65,21 +65,21 @@ class SQLGenerator extends ObjectClass
         unset($this->arguments);
     }
 
+    /** @suppress PHP0416 */
     public function __get(string $name)
     {
-        $requestContext = $this->requestContext;
         if ($name == "request") {
-            if ($requestContext instanceof SQLBatchUpdateRequestContext || $requestContext instanceof SQLBatchDeleteRequestContext) {
-                $this->$name = $requestContext->fetchContext->request;
-            } elseif ($requestContext instanceof SQLFetchRequestContext) {
-                $this->$name = $requestContext->request;
+            if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext) {
+                $this->$name = $this->requestContext->fetchContext->request;
+            } elseif ($this->requestContext instanceof SQLFetchRequestContext) {
+                $this->$name = $this->requestContext->request;
             }
             return $this->$name;
         } elseif ($name == "entity") {
-            if ($requestContext instanceof SQLBatchUpdateRequestContext || $requestContext instanceof SQLBatchDeleteRequestContext) {
-                $this->$name = $requestContext->fetchContext->sqlEntityForFetchRequest;
-            } elseif ($requestContext instanceof SQLFetchRequestContext) {
-                $this->$name = $requestContext->sqlEntityForFetchRequest;
+            if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext) {
+                $this->$name = $this->requestContext->fetchContext->sqlEntityForFetchRequest;
+            } elseif ($this->requestContext instanceof SQLFetchRequestContext) {
+                $this->$name = $this->requestContext->sqlEntityForFetchRequest;
             }
             return $this->$name;
         } elseif ($name == "arguments") {
@@ -96,7 +96,7 @@ class SQLGenerator extends ObjectClass
             return $this->newSQLStatementForPersistentStoreRequest();
         } elseif ($this->requestContext instanceof SQLSaveChangesRequestContext) {
             return $this->newSQLStatementForSaveChangesRequestContext();
-        } else { 
+        } else {
             return null;
         }
     }
