@@ -67,18 +67,19 @@ class SQLGenerator extends ObjectClass
 
     public function __get(string $name)
     {
+        $requestContext = $this->requestContext;
         if ($name == "request") {
-            if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext) {
-                $this->$name = $this->requestContext->fetchContext->request;
-            } elseif ($this->requestContext instanceof SQLFetchRequestContext) {
-                $this->$name = $this->requestContext->request;
+            if ($requestContext instanceof SQLBatchUpdateRequestContext || $requestContext instanceof SQLBatchDeleteRequestContext) {
+                $this->$name = $requestContext->fetchContext->request;
+            } elseif ($requestContext instanceof SQLFetchRequestContext) {
+                $this->$name = $requestContext->request;
             }
             return $this->$name;
         } elseif ($name == "entity") {
-            if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext) {
-                $this->$name = $this->requestContext->fetchContext->sqlEntityForFetchRequest;
-            } elseif ($this->requestContext instanceof SQLFetchRequestContext) {
-                $this->$name = $this->requestContext->sqlEntityForFetchRequest;
+            if ($requestContext instanceof SQLBatchUpdateRequestContext || $requestContext instanceof SQLBatchDeleteRequestContext) {
+                $this->$name = $requestContext->fetchContext->sqlEntityForFetchRequest;
+            } elseif ($requestContext instanceof SQLFetchRequestContext) {
+                $this->$name = $requestContext->sqlEntityForFetchRequest;
             }
             return $this->$name;
         } elseif ($name == "arguments") {
@@ -92,13 +93,18 @@ class SQLGenerator extends ObjectClass
     public function statement(): ?SQLStatement
     {
         if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext || $this->requestContext instanceof SQLFetchRequestContext) {
-            $this->startSQL($this->requestContext->persistentStoreRequest);
-            return new SQLStatement($this->string, $this->arguments);
+            return $this->newSQLStatementForPersistentStoreRequest();
         } elseif ($this->requestContext instanceof SQLSaveChangesRequestContext) {
             return $this->newSQLStatementForSaveChangesRequestContext();
         } else {
             return null;
         }
+    }
+
+    private function newSQLStatementForPersistentStoreRequest(): SQLStatement
+    {
+        $this->startSQL($this->requestContext->persistentStoreRequest);
+        return new SQLStatement($this->string, $this->arguments);
     }
 
     private function newSQLStatementForSaveInsertChanges(SQLEntity $entity, ArrayClass $insertedObjects): SQLStatement
