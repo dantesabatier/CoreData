@@ -86,7 +86,7 @@ class SQLConnection extends ObjectClass
             if ($timeout = $this->sqlCore?->options?->valueForKey(PersistentStoreTimeoutOption)) {
                 $options[PDO::ATTR_TIMEOUT] = $timeout;
             }
-            $this->pdo = new PDO("mysql:host={$this->schema->host};charset={$this->schema->charset}", $this->schema->credential->user, $this->schema->credential->password, $options);
+            $this->pdo = new PDO("mysql:host={$this->schema->host};charset={$this->schema->charset};unix_socket={$this->schema->socket};", $this->schema->credential->user, $this->schema->credential->password, $options);
         }
         return $this->pdo;
     }
