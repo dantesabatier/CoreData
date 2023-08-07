@@ -524,10 +524,10 @@ class SQLGenerator extends ObjectClass
                             $attributeDescription = $property->attributeDescription;
                             if ($attributeDescription instanceof DerivedAttributeDescription && str_contains((string)$attributeDescription->derivationExpression, "@")) {
                                 $propertyName = "{$destination}_$attributeDescription->name";
-                                return (function () use ($entity, $propertyName, $attributeDescription): string {
+                                return (function () use ($entity, $propertyName, $attributeDescription, $destination): string {
                                     $bk = $this->entity;
                                     $this->entity = $entity;
-                                    $result = $this->buildDerivedAttributeDescription($attributeDescription);
+                                    $result = $this->buildDerivedAttributeDescription($attributeDescription, $destination);
                                     $this->entity = $bk;
                                     return "$result AS $propertyName";
                                 })();
@@ -947,7 +947,7 @@ class SQLGenerator extends ObjectClass
         $clause .= ")";
     }
 
-    public function buildDerivedAttributeDescription(DerivedAttributeDescription $description): string
+    public function buildDerivedAttributeDescription(DerivedAttributeDescription $description, ?string $destination = null): string
     {
         if ($expression = $description->derivationExpression) {
             switch ($expression->expressionType) {
@@ -986,7 +986,8 @@ class SQLGenerator extends ObjectClass
                                 $statement = $generator->statement() ?? throw new InvalidArgumentException();
                                 $string = "($statement->string WHERE ";
                                 if ($relationship instanceof SQLToMany) {
-                                    $string .= "{$destinationEntity->tableName}_$inverseRelationship->name.{$entity->primaryKey->columnName} = $entity->tableName";
+                                    $destination ??= $entity->tableName;
+                                    $string .= "{$destinationEntity->tableName}_$inverseRelationship->name.{$entity->primaryKey->columnName} = $destination";
                                     if ($destinationEntity->isKindOfSQLEntity($entity)) {
                                         $string .= ".{$relationship->inverseToOne->foreignKey->columnName}";
                                     } else {
