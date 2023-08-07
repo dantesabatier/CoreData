@@ -668,7 +668,7 @@ class SQLGenerator extends ObjectClass
     private function buildKeyPathExpression(Expression $expression): string
     {
         $tableName = $this->entity->tableName;
-        $alias = $tableName;
+        $destination = $tableName;
         $keyPath = $expression->description();
         $isToManyCountKeyPath = $this->isToManyCountKeyPath($expression);
         $properties = $this->propertiesFromKeyPathExpression($expression);
@@ -678,22 +678,22 @@ class SQLGenerator extends ObjectClass
                 if ($propertyDescription instanceof DerivedAttributeDescription && str_contains((string)$propertyDescription->derivationExpression, "@")) {
                     return $this->buildDerivedAttributeDescription($propertyDescription);
                 }
-                $alias .= ".";
-                $alias .= $property->columnName;
+                $destination .= ".";
+                $destination .= $property->columnName;
             }
             if ($property instanceof SQLRelationship) {
-                $alias .= "_";
-                $alias .= $property->name;
+                $destination .= "_";
+                $destination .= $property->name;
                 if ($property instanceof SQLToOne && !$isToManyCountKeyPath) {
-                    $alias .= ".";
-                    $alias .= $property->destinationEntity->primaryKey->columnName;
+                    $destination .= ".";
+                    $destination .= $property->destinationEntity->primaryKey->columnName;
                 }
             }
         }
-        if ($alias === $tableName) {
-            throw new InvalidArgumentException("Failed to generate alias for entity \"$tableName\", invalid key path \"$keyPath\"");
+        if ($destination === $tableName) {
+            throw new InvalidArgumentException("Failed to generate an alias for entity \"$tableName\", invalid key path \"$keyPath\"");
         }
-        return $alias;
+        return $destination;
     }
 
     private function buildClauseWithSimplePredicate(ComparisonPredicate $predicate, string &$clause): void
