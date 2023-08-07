@@ -919,8 +919,8 @@ class SQLGenerator extends ObjectClass
         if (!($expression = $expressions->first(fn(Expression $expression): bool => $expression->expressionType == ExpressionType::keyPath))) {
             throw new InvalidArgumentException();
         }
-        $preparedExpression = $this->buildKeyPathExpression($expression);
-        [$entityAlias, $columnName] = explode(".", $preparedExpression);
+        $keyPath = $this->buildKeyPathExpression($expression);
+        [$entityAlias, $columnName] = explode(".", $keyPath);
         $relationship = (function () use ($expression): ?SQLRelationship {
             $relationship = null;
             $entity = $this->entity;
@@ -935,7 +935,7 @@ class SQLGenerator extends ObjectClass
             return $relationship;
         })() ?? throw new InvalidArgumentException();
         $destinationEntity = $relationship->destinationEntity;
-        $clause .= "$preparedExpression = ";
+        $clause .= "$keyPath = ";
         $clause .= match ($predicate->comparisonPredicateModifier) {
             ComparisonPredicateModifier::direct => "",
             ComparisonPredicateModifier::all => "ALL ",
