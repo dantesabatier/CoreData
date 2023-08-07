@@ -507,7 +507,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         $fn = function (CompoundPredicate|ComparisonPredicate $predicate) use (&$fn, $property): CompoundPredicate|ComparisonPredicate {
                             if ($predicate instanceof ComparisonPredicate) {
                                 $expression = function (Expression $expression) use ($property): Expression {
-                                    if (($expression->expressionType == ExpressionType::keyPath) && $expression->operand()?->expressionType == ExpressionType::variable) {
+                                    if (($expression->expressionType == ExpressionType::variable) || (($expression->expressionType == ExpressionType::keyPath) && $expression->operand()?->expressionType == ExpressionType::variable)) {
                                         $expression = Expression::expressionForConstantValue($expression->expressionValue($this, new Dictionary(["\$FETCH_SOURCE" => $this, "\$FETCHED_PROPERTY" => $property])));
                                     }
                                     return $expression;

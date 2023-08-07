@@ -185,7 +185,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                     /** @var string $name */
                     $name = $description["name"] ?? throw new InternalInconsistencyException(sprintf("%s name cannot be null", FetchedPropertyDescription::class));
                     /** @var string $fetchRequestEntityName */
-                    $fetchRequestEntityName = $description["fetchRequestEntityName"] ?? throw new InternalInconsistencyException(sprintf("%s entity name cannot be null", FetchRequest::class));
+                    $fetchRequestEntityName = $description["fetchRequestEntityName"] ?? throw new InternalInconsistencyException(sprintf("%s entity name cannot be null (%s:%s)", FetchRequest::class, $entity->name, $name));
                     $fetchRequest = new FetchRequest($fetchRequestEntityName);
                     /** @var string|null $fetchRequestPredicateFormat */
                     $fetchRequestPredicateFormat = $description["fetchRequestPredicateFormat"];
