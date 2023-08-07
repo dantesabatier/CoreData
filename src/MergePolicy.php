@@ -166,7 +166,7 @@ class MergePolicy extends ObjectClass
             $sourceObject->setValuesForKeys($persistedSnapshot->merging($cachedSnapshot));
         } elseif ($this->mergeType === MergePolicyType::overwriteMergePolicyType) {
             $sourceObject->setValuesForKeys($cachedSnapshot);
-        } elseif ($this->mergeType === MergePolicyType::rollbackMergePolicyType) {
+        } else {
             $sourceObject->setValuesForKeys($persistedSnapshot);
         }
     }

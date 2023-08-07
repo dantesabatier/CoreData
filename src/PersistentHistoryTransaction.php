@@ -90,7 +90,7 @@ class PersistentHistoryTransaction extends ObjectClass
                     $insertedObjectIDs->append($change->changedObjectID);
                 } elseif ($change->changeType === PersistentHistoryChangeType::update) {
                     $updatedObjectIDs->append($change->changedObjectID);
-                } elseif ($change->changeType === PersistentHistoryChangeType::delete) {
+                } else {
                     $deletedObjectIDs->append($change->changedObjectID);
                 }
             }
