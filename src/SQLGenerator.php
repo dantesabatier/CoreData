@@ -668,8 +668,8 @@ class SQLGenerator extends ObjectClass
     private function buildKeyPathExpression(Expression $expression): string
     {
         $tableName = $this->entity->tableName;
-        $destination = $tableName;
-        $keyPath = $expression->description();
+        $keyPath = $tableName;
+        $description = $expression->description();
         $isToManyCountKeyPath = $this->isToManyCountKeyPath($expression);
         $properties = $this->propertiesFromKeyPathExpression($expression);
         foreach ($properties as $property) {
@@ -678,22 +678,22 @@ class SQLGenerator extends ObjectClass
                 if ($propertyDescription instanceof DerivedAttributeDescription && str_contains((string)$propertyDescription->derivationExpression, "@")) {
                     return $this->buildDerivedAttributeDescription($propertyDescription);
                 }
-                $destination .= ".";
-                $destination .= $property->columnName;
+                $keyPath .= ".";
+                $keyPath .= $property->columnName;
             }
             if ($property instanceof SQLRelationship) {
-                $destination .= "_";
-                $destination .= $property->name;
+                $keyPath .= "_";
+                $keyPath .= $property->name;
                 if ($property instanceof SQLToOne && !$isToManyCountKeyPath) {
-                    $destination .= ".";
-                    $destination .= $property->destinationEntity->primaryKey->columnName;
+                    $keyPath .= ".";
+                    $keyPath .= $property->destinationEntity->primaryKey->columnName;
                 }
             }
         }
-        if ($destination === $tableName) {
-            throw new InvalidArgumentException("Failed to generate an alias for entity \"$tableName\", invalid key path \"$keyPath\"");
+        if ($keyPath === $tableName) {
+            throw new InvalidArgumentException("Failed to generate an alias for entity \"$tableName\", invalid key path \"$description\"");
         }
-        return $destination;
+        return $keyPath;
     }
 
     private function buildClauseWithSimplePredicate(ComparisonPredicate $predicate, string &$clause): void
