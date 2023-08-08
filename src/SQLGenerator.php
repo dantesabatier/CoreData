@@ -669,6 +669,7 @@ class SQLGenerator extends ObjectClass
     {
         $tableName = $this->entity->tableName;
         $keyPath = $tableName;
+        $destination = $tableName;
         $description = $expression->description();
         $isToManyCountKeyPath = $this->isToManyCountKeyPath($expression);
         $properties = $this->propertiesFromKeyPathExpression($expression);
@@ -676,7 +677,7 @@ class SQLGenerator extends ObjectClass
             if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
                 $propertyDescription = $property->propertyDescription;
                 if ($propertyDescription instanceof DerivedAttributeDescription && str_contains((string)$propertyDescription->derivationExpression, "@")) {
-                    return $this->buildDerivedAttributeDescription($propertyDescription);
+                    return $this->buildDerivedAttributeDescription($propertyDescription, $destination);
                 }
                 $keyPath .= ".";
                 $keyPath .= $property->columnName;
@@ -684,6 +685,8 @@ class SQLGenerator extends ObjectClass
             if ($property instanceof SQLRelationship) {
                 $keyPath .= "_";
                 $keyPath .= $property->name;
+                $destination .= "_";
+                $destination .= $property->name;
                 if ($property instanceof SQLToOne && !$isToManyCountKeyPath) {
                     $keyPath .= ".";
                     $keyPath .= $property->destinationEntity->primaryKey->columnName;
@@ -947,9 +950,9 @@ class SQLGenerator extends ObjectClass
         $clause .= ")";
     }
 
-    public function buildDerivedAttributeDescription(DerivedAttributeDescription $description, ?string $destination = null): string
+    public function buildDerivedAttributeDescription(DerivedAttributeDescription $derivedAttributeDescription, ?string $destination = null): string
     {
-        if ($expression = $description->derivationExpression) {
+        if ($expression = $derivedAttributeDescription->derivationExpression) {
             switch ($expression->expressionType) {
                 case ExpressionType::keyPath:
                     $keyPath = (string)$expression;
@@ -1010,7 +1013,7 @@ class SQLGenerator extends ObjectClass
                     throw new InvalidArgumentException("Invalid argument: unsupported expression \"$expression\"");
             }
         }
-        throw new InvalidArgumentException("Invalid argument: invalid attribute \"$description\"");
+        throw new InvalidArgumentException("Invalid argument: invalid attribute \"$derivedAttributeDescription\"");
     }
 
     private function buildFunctionExpression(Expression $expression): string
