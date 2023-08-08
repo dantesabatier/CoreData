@@ -53,6 +53,7 @@ class SQLGenerator extends ObjectClass
     private SQLEntity $entity;
     /** @var ArrayClass */
     public ArrayClass $arguments;
+    private SQLAliasGenerator $aliasGenerator;
     private bool $useDistinct = false;
     private string $keyValueOperator = KeyValueOperator::countKeyValueOperator;
     public bool $autoDistinct = true;
@@ -63,6 +64,7 @@ class SQLGenerator extends ObjectClass
         unset($this->request);
         unset($this->entity);
         unset($this->arguments);
+        unset($this->aliasGenerator);
     }
 
     /** @suppress PHP0416 */
@@ -84,6 +86,9 @@ class SQLGenerator extends ObjectClass
             return $this->$name;
         } elseif ($name == "arguments") {
             $this->$name = new ArrayClass();
+            return $this->$name;
+        } elseif ($name == "aliasGenerator") {
+            $this->$name = new SQLAliasGenerator();
             return $this->$name;
         } else {
             return $this->valueForUndefinedKey($name);
