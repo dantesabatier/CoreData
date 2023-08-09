@@ -197,26 +197,26 @@ class XMLObjectStore extends AtomicStore
         foreach ($object->entity->relationshipsByName as $key => $relationship) {
             $value = $object->primitiveValueForKey($key);
             $relationshipNode = $this->createRelationshipChildOnNode($node, $relationship);
-            /** @var DOMAttr $destinationNode */
             $destinationNode = $relationshipNode->getAttributeNode("destination");
-            /** @var DOMAttr $referencesNode */
             $referencesNode = $relationshipNode->getAttributeNode("references");
+            /** @psalm-suppress UndefinedPropertyAssignment */
             $referencesNode->value = $this->getIDRefString($value, $relationship);
             $inverseRelationship = $relationship->inverseRelationship;
             /** @var Set<ManagedObjectID> $managedObjectIDs */
             $managedObjectIDs = $value instanceof Set ? $value->map(fn(ManagedObject|ManagedObjectID $e): ManagedObjectID => $e instanceof ManagedObject ? $e->objectID : $e) : ($value instanceof ManagedObjectID ? new Set([$value]) : new Set());
             foreach ($managedObjectIDs as $managedObjectID) {
+                /** @psalm-suppress UndefinedPropertyAssignment */
                 $destinationNode->value = $managedObjectID->entityName;
                 $cacheNode = $this->cacheNode($managedObjectID);
                 if ($cacheNode instanceof XMLObjectStoreCacheNode) {
                     $relationshipNode = $this->createRelationshipChildOnNode($cacheNode->data, $inverseRelationship);
-                    /** @var DOMAttr $referencesNode */
                     $referencesNode = $relationshipNode->getAttributeNode("references");
                     $references = new Set(explode(" ", $relationshipNode->getAttribute("references")));
                     $references->formUnion(new Set(explode(" ", $this->getIDRefString($object, $inverseRelationship))));
+                    /** @psalm-suppress UndefinedPropertyAssignment */
                     $referencesNode->value = trim($references->join(" "));
-                    /** @var DOMAttr $destinationNode */
                     $destinationNode = $relationshipNode->getAttributeNode("destination");
+                    /** @psalm-suppress UndefinedPropertyAssignment */
                     $destinationNode->value = $object->entity->name;
                 }
             }

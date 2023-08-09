@@ -490,10 +490,8 @@ class SQLGenerator extends ObjectClass
     private function appendJoinsForRelationships(ArrayClass $relationships): void
     {
         $source = "";
-        /** @var SQLEntity $entity */
         $entity = $this->entity;
         $cursor = $entity->tableName;
-        /** @var FetchRequest $request */
         $request = $this->request;
         $resultType = $request->resultType;
         $serialization = $request->serialization;
@@ -576,7 +574,6 @@ class SQLGenerator extends ObjectClass
         if ($parent !== null) {
             $parent = "$parent.";
         }
-        /** @var FetchRequest $request */
         $request = $this->request;
         $serialization ??= $request->serialization;
         foreach ($serialization as $key => $value) {
@@ -782,7 +779,7 @@ class SQLGenerator extends ObjectClass
 
     private function prepareClauseWithSimplePredicate(ComparisonPredicate $predicate, string &$clause, string $operator, string $prefix = "", string $suffix = ""): void
     {
-        /** @var ArrayClass $arguments */
+        /** @var ArrayClass<mixed> $arguments */
         $arguments = new ArrayClass();
         $left = $this->buildComparisonExpression($predicate->leftExpression, $arguments, $prefix, $suffix);
         $right = $this->buildComparisonExpression($predicate->rightExpression, $arguments, $prefix, $suffix);
@@ -1181,7 +1178,7 @@ class SQLGenerator extends ObjectClass
      */
     private function prepareInsertStatement(SQLEntity $entity, ArrayClass $insertedObjects): void
     {
-        /** @var ArrayClass $arguments */
+        /** @var ArrayClass<mixed> $arguments */
         $arguments = new ArrayClass();
         /** @var Set<string> $columnNames */
         $columnNames = new Set();
@@ -1230,7 +1227,7 @@ class SQLGenerator extends ObjectClass
      */
     private function prepareUpdateStatement(SQLEntity $entity, ArrayClass $updatedObjects): void
     {
-        /** @var ArrayClass $arguments */
+        /** @var ArrayClass<mixed> $arguments */
         $arguments = new ArrayClass();
         /** @var Set<string> $columnNames */
         $columnNames = new Set();
@@ -1276,7 +1273,7 @@ class SQLGenerator extends ObjectClass
 
     private function appendSetStatementForBatchUpdateRequest(BatchUpdateRequest $request): void
     {
-        /** @var ArrayClass $arguments */
+        /** @var ArrayClass<mixed> $arguments */
         $arguments = new ArrayClass();
         /** @var Dictionary $propertiesToUpdate */
         $propertiesToUpdate = $request->propertiesToUpdate;

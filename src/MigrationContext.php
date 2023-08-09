@@ -66,30 +66,32 @@ class MigrationContext
         $this->byMappingByDestinationAssociationTable->removeAll();
     }
 
+    /**
+     * @param EntityMapping|null $entityMapping
+     * @param ManagedObject|null $sourceInstance
+     * @return ArrayClass<ManagedObject>
+     */
     public function destinationInstances(?EntityMapping $entityMapping = null, ?ManagedObject $sourceInstance = null): ArrayClass
     {
-        if ($sourceInstance) {
-            if ($destinationInstance = $this->byDestinationAssociationTable[(string)$sourceInstance->objectID]) {
-                return new ArrayClass([$destinationInstance]);
-            }
-        } elseif ($entityMapping) {
-            if (($destinationEntityName = $entityMapping->destinationEntityName) && ($destinationInstances = $this->byMappingByDestinationAssociationTable[$destinationEntityName])) {
-                return $destinationInstances;
-            }
+        if ($sourceInstance && ($destinationInstance = $this->byDestinationAssociationTable[(string)$sourceInstance->objectID])) {
+            return new ArrayClass([$destinationInstance]);
+        } elseif ($entityMapping && ($destinationEntityName = $entityMapping->destinationEntityName) && ($destinationInstances = $this->byMappingByDestinationAssociationTable[$destinationEntityName])) {
+            return $destinationInstances;
         }
         return new ArrayClass();
     }
 
+    /**
+     * @param EntityMapping|null $entityMapping
+     * @param ManagedObject|null $destinationInstance
+     * @return ArrayClass<ManagedObject>
+     */
     public function sourceInstances(?EntityMapping $entityMapping = null, ?ManagedObject $destinationInstance = null): ArrayClass
     {
-        if ($destinationInstance) {
-            if ($sourceInstance = $this->bySourceAssociationTable[(string)$destinationInstance->objectID]) {
-                return new ArrayClass([$sourceInstance]);
-            }
-        } elseif ($entityMapping) {
-            if (($sourceEntityName = $entityMapping->sourceEntityName) && ($sourceInstances = $this->byMappingBySourceAssociationTable[$sourceEntityName])) {
-                return $sourceInstances;
-            }
+        if ($destinationInstance && ($sourceInstance = $this->bySourceAssociationTable[(string)$destinationInstance->objectID])) {
+            return new ArrayClass([$sourceInstance]);
+        } elseif ($entityMapping && ($sourceEntityName = $entityMapping->sourceEntityName) && ($sourceInstances = $this->byMappingBySourceAssociationTable[$sourceEntityName])) {
+            return $sourceInstances;
         }
         return new ArrayClass();
     }

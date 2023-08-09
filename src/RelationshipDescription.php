@@ -95,7 +95,7 @@ class RelationshipDescription extends PropertyDescription
 
     public function jsonSerialize(): Dictionary
     {
-        /** @var Dictionary $dictionary */
+        /** @var Dictionary<mixed> $dictionary */
         $dictionary = parent::jsonSerialize();
         if ($this->isToMany) {
             $dictionary["isToMany"] = $this->isToMany;

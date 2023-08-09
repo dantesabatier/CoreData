@@ -252,7 +252,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     /** @internal */
     public function versionHashInStyle(VersionHashStyle $style): string
     {
-        /** @var Dictionary $dictionary */
+        /** @var Dictionary<mixed> $dictionary */
         $dictionary = new Dictionary();
         $dictionary["name"] = $this->name;
         if ($this->isAbstract) {
@@ -339,7 +339,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
 
     public function jsonSerialize(): Dictionary
     {
-        /** @var Dictionary $dictionary */
+        /** @var Dictionary<mixed> $dictionary */
         $dictionary = new Dictionary();
         $dictionary["name"] = $this->name;
         $dictionary["managedObjectClassName"] = $this->managedObjectClassName;

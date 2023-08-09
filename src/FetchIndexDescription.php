@@ -104,7 +104,7 @@ class FetchIndexDescription extends ObjectClass
 
     public function jsonSerialize(): Dictionary
     {
-        /** @var Dictionary $dictionary */
+        /** @var Dictionary<mixed> $dictionary */
         $dictionary = new Dictionary();
         $dictionary["name"] = $this->name;
         $dictionary["elements"] = $this->elements->map(fn(FetchIndexElementDescription $element): Dictionary => $element->jsonSerialize());

@@ -37,7 +37,6 @@ class FetchedPropertyDescription extends PropertyDescription
 
     public function jsonSerialize(): Dictionary
     {
-        /** @var Dictionary $dictionary */
         $dictionary = parent::jsonSerialize();
         if ($fetchRequest = $this->fetchRequest) {
             $dictionary["fetchRequestEntityName"] = $fetchRequest->entityName;

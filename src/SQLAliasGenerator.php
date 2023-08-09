@@ -8,7 +8,6 @@ use Sabatier\Foundation\Dictionary;
 class SQLAliasGenerator
 {
     private int $nextTableAlias = 0;
-    private int $nextVariableAlias = 0;
     public string $tableBase;
     public string $variableBase;
     /** @var Dictionary<string> */
@@ -33,12 +32,6 @@ class SQLAliasGenerator
 
     public function generateSubqueryVariableAlias(): string
     {
-        $this->nextVariableAlias = max($this->nestingLevel, $this->nextVariableAlias);
-        if (!($alias = $this->byBaseAssociationTable[$this->variableBase])) {
-            $alias = "{$this->generateTableAlias()}.$this->variableBase.$this->nextVariableAlias";
-            $this->nextVariableAlias += 1;
-            $this->byBaseAssociationTable[$this->variableBase] = $alias;
-        }
-        return $alias;
+        return "";
     }
 }

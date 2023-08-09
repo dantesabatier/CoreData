@@ -96,7 +96,7 @@ class FetchIndexElementDescription extends ObjectClass
 
     public function jsonSerialize(): Dictionary
     {
-        /** @var Dictionary $dictionary */
+        /** @var Dictionary<mixed> $dictionary */
         $dictionary = new Dictionary();
         $dictionary["propertyName"] = $this->property->name;
         if ($this->collationType !== FetchIndexElementType::bTree) {
