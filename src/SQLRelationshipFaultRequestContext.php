@@ -60,7 +60,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
             $fetchRequest->entity = $entity->entityDescription;
             $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($this->objectID));
             /** @psalm-suppress InvalidPropertyAssignmentValue */
-            $fetchRequest->propertiesToFetch = new ArrayClass([$relationship->relationshipDescription]); // @phpstan-ignore-line
+            $fetchRequest->propertiesToFetch = new ArrayClass([$relationship->relationshipDescription]);
             $first = $this->sqlCore->execute($fetchRequest, $this->context)->first();
             if ($first instanceof ManagedObject) {
                 $this->result = $first->primitiveValueForKey($relationship->name) ?? new ArrayClass();

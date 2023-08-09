@@ -87,7 +87,7 @@ class FetchRequest extends PersistentStoreRequest
             $this->$name = ($this->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $this->entity->propertiesByName[$property]) ?? $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient && (!$attribute instanceof DerivedAttributeDescription || !str_contains($attribute->derivationExpression, "@")))->values)->reduce(new Dictionary(), function (Dictionary $result, PropertyDescription $propertyDescription): Dictionary {
                 if ($propertyDescription instanceof AttributeDescription) {
                     $result[$propertyDescription->name] = $propertyDescription->type;
-                } elseif (/** @phpstan-ignore-line */ $propertyDescription instanceof RelationshipDescription) {
+                } elseif ($propertyDescription instanceof RelationshipDescription) {
                     $destinationEntity = $propertyDescription->destinationEntity;
                     $result[$propertyDescription->name] = $destinationEntity->attributesByName->reduce(new Dictionary(), function (Dictionary $result, AttributeDescription $attribute): Dictionary {
                         if (!$attribute->isTransient && !$attribute instanceof DerivedAttributeDescription) {

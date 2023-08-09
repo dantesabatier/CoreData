@@ -45,7 +45,7 @@ class SQLManyToMany extends SQLRelationship
     {
         if ($name == "inverseManyToMany") {
             /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->inverseRelationship; // @phpstan-ignore-line
+            $this->$name = $this->inverseRelationship;
             return $this->$name;
         } elseif ($name == "correlationTableName") {
             $this->$name = (new ArrayClass([$this->destinationEntity, $this->inverseRelationship->destinationEntity]))->sorted([new SortDescriptor("tableName")])->valueForKey("tableName")->join("");

@@ -216,7 +216,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             }
             /** @var ArrayClass<ArrayClass<string>> $uniquenessConstraints */
             $uniquenessConstraints = $dictionary["uniquenessConstraints"] ?? new ArrayClass();
-            $entity->uniquenessConstraints = $uniquenessConstraints; // @phpstan-ignore-line
+            $entity->uniquenessConstraints = $uniquenessConstraints;
             /** @var ArrayClass<Dictionary> $indexes */
             $indexes = $dictionary["indexes"] ?? new ArrayClass();
             $entity->indexes = $indexes->map(function (Dictionary $description) use ($entity): FetchIndexDescription {

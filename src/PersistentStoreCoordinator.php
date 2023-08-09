@@ -82,7 +82,7 @@ class PersistentStoreCoordinator extends ObjectClass
     public static function registeredStoreTypes(): Dictionary
     {
         if (static::$registeredStoreTypes === null) {
-            static::$registeredStoreTypes = new Dictionary([SQLStoreType => SQLCore::class, XMLStoreType => XMLObjectStore::class, BinaryStoreType => BinaryObjectStore::class, InMemoryStoreType => MemoryObjectStore::class]); // @phpstan-ignore-line
+            static::$registeredStoreTypes = new Dictionary([SQLStoreType => SQLCore::class, XMLStoreType => XMLObjectStore::class, BinaryStoreType => BinaryObjectStore::class, InMemoryStoreType => MemoryObjectStore::class]);
         }
         return static::$registeredStoreTypes;
     }

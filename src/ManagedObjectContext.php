@@ -572,7 +572,7 @@ class ManagedObjectContext extends ObjectClass
                 $fetchRequest = new FetchRequest();
                 $fetchRequest->entity = $object->entity;
                 $fetchRequest->predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([new ComparisonPredicate(Expression::expressionForKeyPath($key), Expression::expressionForConstantValue($value)), new ComparisonPredicate(Expression::expressionForKeyPath("objectID"), Expression::expressionForConstantValue($object->objectID), PredicateOperatorType::notEqualTo)]));
-                $fetchRequest->propertiesToFetch = $attributeKeys; // @phpstan-ignore-line
+                $fetchRequest->propertiesToFetch = $attributeKeys;
                 if ($store = $object->objectID->persistentStore) {
                     $fetchRequest->affectedStores = new ArrayClass([$store]);
                 }

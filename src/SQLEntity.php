@@ -175,30 +175,30 @@ class SQLEntity extends StoreMapping
             return $this->$name;
         } elseif ($name == "attributes") {
             /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute); // @phpstan-ignore-line
+            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute);
             return $this->$name;
         } elseif ($name == "derivedAttributes") {
             $this->$name = $this->attributes->filter(fn(SQLAttribute $attribute): bool => $attribute->attributeDescription instanceof DerivedAttributeDescription);
             return $this->$name;
         } elseif ($name == "entitySpecificAttributes") {
             /** @psalm-suppress all */
-            $this->$name = $this->entityDescription->attributesByName->map(fn(AttributeDescription $attributeDescription): SQLAttribute => $this->propertiesByName[$attributeDescription->name]); // @phpstan-ignore-line
+            $this->$name = $this->entityDescription->attributesByName->map(fn(AttributeDescription $attributeDescription): SQLAttribute => $this->propertiesByName[$attributeDescription->name]);
             return $this->$name;
         } elseif ($name == "entitySpecificRelationships") {
             /** @psalm-suppress all */
-            $this->$name = $this->entityDescription->relationshipsByName->map(fn(RelationshipDescription $relationshipDescription): SQLRelationship => $this->propertiesByName[$relationshipDescription->name]); // @phpstan-ignore-line
+            $this->$name = $this->entityDescription->relationshipsByName->map(fn(RelationshipDescription $relationshipDescription): SQLRelationship => $this->propertiesByName[$relationshipDescription->name]);
             return $this->$name;
         } elseif ($name == "toManyRelationships") {
             /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLToMany); // @phpstan-ignore-line
+            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLToMany);
             return $this->$name;
         } elseif ($name == "manyToManyRelationships") {
             /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLManyToMany); // @phpstan-ignore-line
+            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLManyToMany);
             return $this->$name;
         } elseif ($name == "foreignKeyColumns") {
             /** @psalm-suppress all */
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLRelationship)->compactMap(fn(SQLRelationship $relationship): ?SQLForeignKey => $relationship instanceof SQLToOne ? $relationship->foreignKey : null); // @phpstan-ignore-line
+            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLRelationship)->compactMap(fn(SQLRelationship $relationship): ?SQLForeignKey => $relationship instanceof SQLToOne ? $relationship->foreignKey : null);
             return $this->$name;
         } elseif ($name == "virtualForeignKeyColumns") {
             $this->$name = $this->foreignKeyColumns->filter(fn(SQLForeignKey $foreignKey): bool => $foreignKey->toOneRelationship->isVirtual);
@@ -226,15 +226,15 @@ class SQLEntity extends StoreMapping
             return $this->$name;
         } elseif ($name == "rTreeIndexes") {
             /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->indexes->filter(fn(SQLIndex $index): bool => $index instanceof SQLRTreeIndex); // @phpstan-ignore-line
+            $this->$name = $this->indexes->filter(fn(SQLIndex $index): bool => $index instanceof SQLRTreeIndex);
             return $this->$name;
         } elseif ($name == "columnsToFetch") {
             /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute ? ($property->attributeDescription instanceof DerivedAttributeDescription && !str_contains((string)$property->attributeDescription->derivationExpression, "@") || !$property->attributeDescription instanceof DerivedAttributeDescription) : !$property instanceof SQLRelationship && !$property instanceof SQLForeignKey); // @phpstan-ignore-line
+            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute ? ($property->attributeDescription instanceof DerivedAttributeDescription && !str_contains((string)$property->attributeDescription->derivationExpression, "@") || !$property->attributeDescription instanceof DerivedAttributeDescription) : !$property instanceof SQLRelationship && !$property instanceof SQLForeignKey);
             return $this->$name;
         } elseif ($name == "columnsToCreate") {
             /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute ? ($property->attributeDescription instanceof DerivedAttributeDescription && !str_contains((string)$property->attributeDescription->derivationExpression, "@") || !$property->attributeDescription instanceof DerivedAttributeDescription) : !$property instanceof SQLRelationship); // @phpstan-ignore-line
+            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute ? ($property->attributeDescription instanceof DerivedAttributeDescription && !str_contains((string)$property->attributeDescription->derivationExpression, "@") || !$property->attributeDescription instanceof DerivedAttributeDescription) : !$property instanceof SQLRelationship);
             return $this->$name;
         } elseif ($name == "entityID") {
             $this->$name = 0;

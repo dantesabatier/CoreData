@@ -126,7 +126,7 @@ class MigrationManager extends ObjectClass
                 if ($sourceAttributes) {
                     $destinationAttributes->merge($sourceAttributes);
                 }
-                $request->propertiesToFetch = $destinationAttributes->keys; // @phpstan-ignore-line
+                $request->propertiesToFetch = $destinationAttributes->keys;
             }
         }
         $request->includesSubentities = false;

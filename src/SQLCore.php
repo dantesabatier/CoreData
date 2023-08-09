@@ -52,8 +52,7 @@ class SQLCore extends IncrementalStore
             $entityDescription->name = "PersistentHistoryTransaction";
             $entityDescription->isPersistentHistoryEntity = true;
             /** @psalm-suppress InvalidPropertyAssignmentValue */
-            $entityDescription->properties = /** @phpstan-ignore-line */
-                (new ArrayClass($reflectionClass->getProperties()))->compactMap(function (ReflectionProperty $property) use ($entityDescription): ?PropertyDescription {
+            $entityDescription->properties = (new ArrayClass($reflectionClass->getProperties()))->compactMap(function (ReflectionProperty $property) use ($entityDescription): ?PropertyDescription {
                     if ($property->isStatic()) {
                         return null;
                     }
@@ -101,8 +100,7 @@ class SQLCore extends IncrementalStore
             $entityDescription->name = "PersistentHistoryChange";
             $entityDescription->isPersistentHistoryEntity = true;
             /** @psalm-suppress InvalidPropertyAssignmentValue */
-            $entityDescription->properties = /** @phpstan-ignore-line */
-                (new ArrayClass($reflectionClass->getProperties()))->compactMap(function (ReflectionProperty $property) use ($entityDescription): ?PropertyDescription {
+            $entityDescription->properties = (new ArrayClass($reflectionClass->getProperties()))->compactMap(function (ReflectionProperty $property) use ($entityDescription): ?PropertyDescription {
                     if ($property->isStatic()) {
                         return null;
                     }

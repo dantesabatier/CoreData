@@ -57,8 +57,7 @@ class PersistentContainer extends ObjectClass
         /** @var ArrayClass<string> $types */
         $types = $bundle->infoDictionary?->valueForKeyPath("CFBundleDocumentTypes.CFBundleTypeName") ?? new ArrayClass([SQLStoreType]);
         /** @psalm-suppress InvalidPropertyAssignmentValue */
-        $this->persistentStoreDescriptions = /** @phpstan-ignore-line */
-            $types->compactMap(function (string $type): ?PersistentStoreDescription {
+        $this->persistentStoreDescriptions = $types->compactMap(function (string $type): ?PersistentStoreDescription {
                 if (!($url = match ($type) {
                     SQLStoreType => new URL("sql://$this->name"),
                     XMLStoreType => static::defaultDirectoryURL()->appendingPathComponent($this->name)->appendingPathComponent($this->name)->appendingPathExtension("xml"),

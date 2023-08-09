@@ -163,7 +163,7 @@ class SQLGenerator extends ObjectClass
         }
         if (!$statements->isEmpty()) {
             /** @psalm-suppress RedundantCondition, TypeDoesNotContainType */
-            if (/** @phpstan-ignore-line */ SS_COREDATA_DISABLE_FOREIGN_KEY_CHECKS) :
+            if (SS_COREDATA_DISABLE_FOREIGN_KEY_CHECKS) :
                 if ($statements->contains(fn(SQLStatement $statement): bool => str_starts_with($statement->string, "INSERT"))) {
                     $statements->insertAt(new SQLStatement("/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */"), 0);
                     $statements->append(new SQLStatement("/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */"));
@@ -191,7 +191,6 @@ class SQLGenerator extends ObjectClass
             $this->prepareSelectStatementWithFetchRequest($request);
             $this->prepareJoinStatementsForPredicateAndRelationships();
             $predicate = $request->predicate;
-            /** @phpstan-ignore-next-line */
             if (!$request->includesSubentities || (!$request->entity->isPersistentHistoryEntity && !$request->entity->isRootEntity && ($request->entity->subentities->isEmpty() || !$request->entity->superentity?->isRootEntity || $request->entity->superentity?->subentities->count() > 1))) {
                 $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($request->entity->name));
                 if ($predicate) {
@@ -647,7 +646,7 @@ class SQLGenerator extends ObjectClass
      */
     private function relationshipsFromKeyPathExpression(Expression $expression): ArrayClass
     {
-        return $this->propertiesFromKeyPathExpression($expression)->filter(fn(SQLProperty $property): bool => $property instanceof SQLRelationship); // @phpstan-ignore-line
+        return $this->propertiesFromKeyPathExpression($expression)->filter(fn(SQLProperty $property): bool => $property instanceof SQLRelationship);
     }
 
     private function isNullExpression(Expression $expression): bool

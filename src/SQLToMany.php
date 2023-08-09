@@ -24,7 +24,7 @@ class SQLToMany extends SQLRelationship
     {
         if ($name === "inverseToOne") {
             /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->inverseRelationship; // @phpstan-ignore-line
+            $this->$name = $this->inverseRelationship;
             return $this->$name;
         } else {
             return parent::__get($name);

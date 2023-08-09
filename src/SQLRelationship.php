@@ -36,7 +36,7 @@ abstract class SQLRelationship extends SQLProperty
             return $this->$name;
         } elseif ($name == "inverseRelationship") {
             /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->destinationEntity->propertiesByName[$this->lazyInverseRelationshipName]; // @phpstan-ignore-line
+            $this->$name = $this->destinationEntity->propertiesByName[$this->lazyInverseRelationshipName];
             return $this->$name;
         } else {
             return parent::__get($name);

@@ -340,13 +340,13 @@ class XMLObjectStore extends AtomicStore
     }
 
     /** @noinspection PhpUnusedPrivateMethodInspection */
-    private function retainedXmlInfoForRelationship(RelationshipDescription $relationship): mixed // @phpstan-ignore-line
+    private function retainedXmlInfoForRelationship(RelationshipDescription $relationship): mixed
     {
         return $this->xmlInfo->valueForKey($relationship->entity->name)?->valueForKey($relationship->name);
     }
 
     /** @noinspection PhpUnusedPrivateMethodInspection */
-    private function xmlInfoForAttribute(AttributeDescription $attribute): mixed // @phpstan-ignore-line
+    private function xmlInfoForAttribute(AttributeDescription $attribute): mixed
     {
         return $this->xmlInfo->valueForKey($attribute->entity->name)?->valueForKey($attribute->name);
     }
