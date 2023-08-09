@@ -30,10 +30,10 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         $time = absolute_time_get_current();
         $execute = $this->connection->execute($this->fetchStatement);
         $resultType = $this->request->resultType;
-        /** @var ArrayClass<Dictionary|Number> $values */
+        /** @var ArrayClass<Dictionary<mixed>|Number> $values */
         $values = match ($resultType) {
             FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType, FetchRequestResultType::dictionaryResultType => (function () use ($execute): ArrayClass {
-                /** @var Dictionary<Dictionary> $map */
+                /** @var Dictionary<Dictionary<mixed>> $map */
                 $map = new Dictionary();
                 do {
                     /** @var array<string, mixed> $data */
@@ -43,7 +43,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         $entity = $this->sqlModel->entitiesByName[$entityName];
                         $currentEntity = $entity;
                         $referenceObject = (string)$data[$entity->primaryKey->columnName];
-                        /** @var Dictionary $representation */
+                        /** @var Dictionary<mixed> $representation */
                         $representation = $map[$referenceObject] ?? new Dictionary();
                         foreach ($data as $key => $value) {
                             if ($value === null) {

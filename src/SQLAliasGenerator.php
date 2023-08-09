@@ -11,7 +11,6 @@ class SQLAliasGenerator
     public string $tableBase;
     public string $variableBase;
     /** @var Dictionary<string> */
-
     private Dictionary $byBaseAssociationTable;
 
     public function __construct(public readonly int $nestingLevel = 1)
