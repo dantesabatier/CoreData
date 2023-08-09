@@ -54,7 +54,7 @@ class SQLGenerator extends ObjectClass
     /** @var ArrayClass<mixed> */
     public ArrayClass $arguments;
     private SQLAliasGenerator $aliasGenerator;
-    /** @var Dictionary<SQLEntity> */
+    /** @var Dictionary<string> */
     public Dictionary $byMappingByTableAliasAssociationTable;
     private bool $useDistinct = false;
     private string $keyValueOperator = KeyValueOperator::countKeyValueOperator;
@@ -98,17 +98,6 @@ class SQLGenerator extends ObjectClass
             return $this->$name;
         } else {
             return $this->valueForUndefinedKey($name);
-        }
-    }
-
-    public function statement(): ?SQLStatement
-    {
-        if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext || $this->requestContext instanceof SQLFetchRequestContext) {
-            return $this->newSQLStatementForPersistentStoreRequest();
-        } elseif ($this->requestContext instanceof SQLSaveChangesRequestContext) {
-            return $this->newSQLStatementForSaveChangesRequestContext();
-        } else {
-            return null;
         }
     }
 
@@ -178,6 +167,17 @@ class SQLGenerator extends ObjectClass
             return SQLStatement::merging($statements);
         }
         return null;
+    }
+
+    public function statement(): ?SQLStatement
+    {
+        if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext || $this->requestContext instanceof SQLFetchRequestContext) {
+            return $this->newSQLStatementForPersistentStoreRequest();
+        } elseif ($this->requestContext instanceof SQLSaveChangesRequestContext) {
+            return $this->newSQLStatementForSaveChangesRequestContext();
+        } else {
+            return null;
+        }
     }
 
     private function startSQL(PersistentStoreRequest $request): void
@@ -568,7 +568,7 @@ class SQLGenerator extends ObjectClass
     }
 
     /**
-     * @param Dictionary|null $serialization
+     * @param Dictionary<mixed>|null $serialization
      * @param string|null $parent
      * @return Set<Expression>
      */
