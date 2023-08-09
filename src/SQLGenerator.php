@@ -582,6 +582,7 @@ class SQLGenerator extends ObjectClass
         $request = $this->request;
         $serialization ??= $request->serialization;
         foreach ($serialization as $key => $value) {
+            // FIXME: this should stops when a relationship is parsed before an attribute
             if ($value instanceof Dictionary) {
                 /** @psalm-suppress PossiblyNullOperand */
                 $current = $parent . $key;
@@ -1163,11 +1164,11 @@ class SQLGenerator extends ObjectClass
         $expressions = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate());
         /** @psalm-suppress InvalidArgument */
         $descriptors->appendContentsOf($expressions->flatMap(fn(Expression $expression): iterable => $this->relationshipsFromKeyPathExpression($expression)->compactMap(fn(SQLRelationship $relationship): ?SortDescriptor => $relationship instanceof SQLToMany && $relationship->isOrdered ? new SortDescriptor(sprintf("%s.%s", $expression->keyPath(), $relationship->inverseToOne->foreignOrderKey->columnName)) : null)));
-        $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
         if (!$descriptors->isEmpty()) {
             $this->appendOrderByClauseToSQL();
-            $this->orderByClause .= $descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? "ASC" : "DESC"))->join(", ");
+            $this->orderByClause .= $descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? "ASC" : "DESC"))->filter(fn(string $description): bool => str_contains($description, "."))->join(", ");
         }
+        $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
     }
 
     private function coercedValue(ManagedObject|Dictionary $object, AttributeDescription $attribute): mixed
