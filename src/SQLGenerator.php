@@ -51,9 +51,11 @@ class SQLGenerator extends ObjectClass
     private string $orderByClause = "";
     private FetchRequest $request;
     private SQLEntity $entity;
-    /** @var ArrayClass */
+    /** @var ArrayClass<mixed> */
     public ArrayClass $arguments;
     private SQLAliasGenerator $aliasGenerator;
+    /** @var Dictionary<SQLEntity> */
+    public Dictionary $byMappingByTableAliasAssociationTable;
     private bool $useDistinct = false;
     private string $keyValueOperator = KeyValueOperator::countKeyValueOperator;
     public bool $autoDistinct = true;
@@ -65,6 +67,7 @@ class SQLGenerator extends ObjectClass
         unset($this->entity);
         unset($this->arguments);
         unset($this->aliasGenerator);
+        unset($this->byMappingByTableAliasAssociationTable);
     }
 
     /** @suppress PHP0416 */
@@ -86,6 +89,9 @@ class SQLGenerator extends ObjectClass
             return $this->$name;
         } elseif ($name == "arguments") {
             $this->$name = new ArrayClass();
+            return $this->$name;
+        } elseif ($name == "byMappingByTableAliasAssociationTable") {
+            $this->$name = new Dictionary();
             return $this->$name;
         } elseif ($name == "aliasGenerator") {
             $this->$name = new SQLAliasGenerator();
