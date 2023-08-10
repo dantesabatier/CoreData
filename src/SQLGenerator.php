@@ -1129,16 +1129,19 @@ class SQLGenerator extends ObjectClass
         return "IF($predicate, $true, $false)";
     }
 
+    private function buildConstantExpression(Expression $expression): string
+    {
+        $value = $expression->constantValue();
+        if ($value instanceof ArrayClass) {
+            return $value->join(", ");
+        }
+        return $expression->description();
+    }
+
     private function buildExpression(Expression $expression): string
     {
         return match ($expression->expressionType) {
-            ExpressionType::constantValue => (function () use ($expression): string {
-                $value = $expression->constantValue();
-                if ($value instanceof ArrayClass) {
-                    return $value->join(", ");
-                }
-                return $expression->description();
-            })(),
+            ExpressionType::constantValue => $this->buildConstantExpression($expression),
             ExpressionType::keyPath => $this->buildKeyPathExpression($expression),
             ExpressionType::function => $this->buildFunctionExpression($expression),
             ExpressionType::conditional => $this->buildConditionalExpression($expression),
