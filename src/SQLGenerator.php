@@ -570,9 +570,10 @@ class SQLGenerator extends ObjectClass
     /**
      * @param Dictionary<mixed>|null $serialization
      * @param string|null $parent
+     * @param EntityDescription|null $entity
      * @return Set<Expression>
      */
-    private function keyPathExpressionsForFetchRequestSerialization(?Dictionary $serialization = null, ?string $parent = null): Set
+    private function keyPathExpressionsForFetchRequestSerialization(?Dictionary $serialization = null, ?string $parent = null, ?EntityDescription $entity = null): Set
     {
         /** @var Set<Expression> $expressions */
         $expressions = new Set();
@@ -580,6 +581,7 @@ class SQLGenerator extends ObjectClass
             $parent = "$parent.";
         }
         $request = $this->request;
+        $entity ??= $request->entity;
         $serialization ??= $request->serialization;
         foreach ($serialization as $key => $value) {
             // FIXME: this should stops when a relationship is parsed before an attribute
@@ -587,7 +589,9 @@ class SQLGenerator extends ObjectClass
                 /** @psalm-suppress PossiblyNullOperand */
                 $current = $parent . $key;
                 $expressions->append(Expression::expressionForKeyPath($current));
-                $expressions->appendContentsOf($this->keyPathExpressionsForFetchRequestSerialization($value, $current));
+                if ($entity->relationshipsByName[$key]) {
+                    $expressions->appendContentsOf($this->keyPathExpressionsForFetchRequestSerialization($value, $current, $entity));
+                }
             }
         }
         return $expressions;
@@ -1040,19 +1044,7 @@ class SQLGenerator extends ObjectClass
                 case ExpressionOperatorType::bitwiseXorWith:
                 case ExpressionOperatorType::leftshiftBy:
                 case ExpressionOperatorType::rightshiftBy:
-                    return "({$arguments->map(fn(Expression $argument): mixed => match ($argument->expressionType) {
-                        ExpressionType::constantValue => (function () use ($argument): mixed {
-                            $value = $argument->constantValue();
-                            if ($value instanceof ArrayClass) {
-                                return $value->sum();
-                            }
-                            return $value;
-                        })(),
-                        ExpressionType::function => $this->buildFunctionExpression($argument),
-                        ExpressionType::conditional => $this->buildConditionalExpression($argument),
-                        ExpressionType::aggregate => $argument->collection()->sum(),
-                        default => $argument->description(),
-                    })->join(" {$operator->operatorSymbol()} ")})";
+                    return "({$arguments->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(" {$operator->operatorSymbol()} ")})";
                 case ExpressionOperatorType::sum:
                 case ExpressionOperatorType::count:
                 case ExpressionOperatorType::min:
@@ -1109,20 +1101,7 @@ class SQLGenerator extends ObjectClass
             }
             $column = strtoupper($function);
             $column .= "(";
-            $column .= $arguments->map(fn(Expression $expression): string => match ($expression->expressionType) {
-                ExpressionType::constantValue => (function () use ($expression): string {
-                    $value = $expression->constantValue();
-                    if ($value instanceof ArrayClass) {
-                        return $value->join(", ");
-                    }
-                    return $expression->description();
-                })(),
-                ExpressionType::keyPath => $this->buildKeyPathExpression($expression),
-                ExpressionType::function => $this->buildFunctionExpression($expression),
-                ExpressionType::conditional => $this->buildConditionalExpression($expression),
-                ExpressionType::aggregate => $expression->collection()->join(", "),
-                default => $expression->description(),
-            })->join(match ($operator->operatorType()) {
+            $column .= $arguments->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(match ($operator->operatorType()) {
                 ExpressionOperatorType::cast => " AS ",
                 default => ", ",
             });
@@ -1150,6 +1129,29 @@ class SQLGenerator extends ObjectClass
         return "IF($predicate, $true, $false)";
     }
 
+    private function buildExpression(Expression $expression): string
+    {
+        return match ($expression->expressionType) {
+            ExpressionType::constantValue => (function () use ($expression): string {
+                $value = $expression->constantValue();
+                if ($value instanceof ArrayClass) {
+                    return $value->join(", ");
+                }
+                return $expression->description();
+            })(),
+            ExpressionType::keyPath => $this->buildKeyPathExpression($expression),
+            ExpressionType::function => $this->buildFunctionExpression($expression),
+            ExpressionType::conditional => $this->buildConditionalExpression($expression),
+            ExpressionType::aggregate => $this->buildAggregateExpression($expression),
+            default => $expression->description(),
+        };
+    }
+
+    private function buildAggregateExpression(Expression $expression): string
+    {
+        return $expression->collection()->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(", ");
+    }
+
     private function buildGroupByClause(ArrayClass $propertiesToGroupBy): void
     {
         $this->appendGroupByClauseToSQL();
@@ -1166,7 +1168,7 @@ class SQLGenerator extends ObjectClass
         $descriptors->appendContentsOf($expressions->flatMap(fn(Expression $expression): iterable => $this->relationshipsFromKeyPathExpression($expression)->compactMap(fn(SQLRelationship $relationship): ?SortDescriptor => $relationship instanceof SQLToMany && $relationship->isOrdered ? new SortDescriptor(sprintf("%s.%s", $expression->keyPath(), $relationship->inverseToOne->foreignOrderKey->columnName)) : null)));
         if (!$descriptors->isEmpty()) {
             $this->appendOrderByClauseToSQL();
-            $this->orderByClause .= $descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? "ASC" : "DESC"))->filter(fn(string $description): bool => str_contains($description, "."))->join(", ");
+            $this->orderByClause .= $descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? "ASC" : "DESC"))->join(", ");
         }
         $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
     }
