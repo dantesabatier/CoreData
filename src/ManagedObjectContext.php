@@ -645,9 +645,7 @@ class ManagedObjectContext extends ObjectClass
                     }
                 }
             } else {
-                foreach ($insertions as $insertion) {
-                    $insertion->setPrimitiveValueForKey($object->objectID, $inverseRelationship->name);
-                }
+                $insertions->setValueForKey($object->objectID, $inverseRelationship->name);
             }
         } else {
             if ($inverseRelationship->isToMany) {
