@@ -514,9 +514,8 @@ class SQLGenerator extends ObjectClass
             $entity = $relationship->destinationEntity;
             if ($resultType !== FetchRequestResultType::countResultType) {
                 $columnNames = $entity->columnsToFetch->map(fn(SQLColumn $column): string => "$destination.$column->columnName AS {$destination}_$column->columnName");
-                /** @var Dictionary|null $dictionary */
                 $dictionary = $serialization[$name];
-                if ($dictionary) {
+                if ($dictionary instanceof Dictionary) {
                     $serialization = clone $dictionary;
                     $serializationKeys = $serialization->keys;
                     $serializationKeys->insertAt($entity->primaryKey->columnName, 0);
@@ -589,9 +588,7 @@ class SQLGenerator extends ObjectClass
                 /** @psalm-suppress PossiblyNullOperand */
                 $current = $parent . $key;
                 $expressions->append(Expression::expressionForKeyPath($current));
-                if ($entity->relationshipsByName[$key]) {
-                    $expressions->appendContentsOf($this->keyPathExpressionsForFetchRequestSerialization($value, $current, $entity));
-                }
+                $expressions->appendContentsOf($this->keyPathExpressionsForFetchRequestSerialization($value, $current, $entity));
             }
         }
         return $expressions;
