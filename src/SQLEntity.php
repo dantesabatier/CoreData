@@ -98,7 +98,9 @@ class SQLEntity extends StoreMapping
     public function __get(string $name)
     {
         if ($name == "tableName") {
-            $this->$name = $this->entityDescription->name;
+            /** @var SQLEntity $entity */
+            $entity = $this->isRootEntity ? $this : $this->rootEntity;
+            $this->$name = $entity->entityDescription->name;
             return $this->$name;
         } elseif ($name == "superentity") {
             $this->$name = ($superentity = $this->entityDescription->superentity) ? $this->model->entitiesByName[$superentity->name] : null;
@@ -288,6 +290,12 @@ class SQLEntity extends StoreMapping
             $this->properties->formIndexAfter($start);
         }
         return $this->entityKey;
+    }
+
+    public function asRootEntity(): SQLEntity
+    {
+        /** @var SQLEntity $entity */
+        return $this->isRootEntity ? $this : $this->rootEntity;
     }
 
     public function isKindOfSQLEntity(SQLEntity $entity): bool

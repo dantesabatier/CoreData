@@ -30,15 +30,6 @@ class SQLAdapter extends ObjectClass
         };
     }
 
-    private function root(SQLEntity $entity): SQLEntity
-    {
-        if (!$entity->isRootEntity) {
-            /** @var SQLEntity $entity */
-            $entity = $entity->rootEntity;
-        }
-        return $entity;
-    }
-
     private function generatedAlwaysColumnExpression(SQLAttribute $attribute): ?string
     {
         $attributeDescription = $attribute->attributeDescription;
@@ -146,7 +137,7 @@ class SQLAdapter extends ObjectClass
      */
     public function newDropIndexStatementsForForeignKey(SQLForeignKey $foreignKey, ?SQLEntity $entity = null): ArrayClass
     {
-        $entity = $this->root($entity ?? $foreignKey->entity);
+        $entity = $entity ?? $foreignKey->entity;
         /** @var ArrayClass<SQLStatement> $statements */
         $statements = new ArrayClass();
         $toOneRelationship = $foreignKey->toOneRelationship;
@@ -160,13 +151,13 @@ class SQLAdapter extends ObjectClass
 
     public function newDropIndexStatementForForeignKey(SQLForeignKey $foreignKey, ?SQLEntity $entity = null): SQLStatement
     {
-        $entity = $this->root($entity ?? $foreignKey->entity);
+        $entity = $entity ?? $foreignKey->entity;
         return new SQLStatement("ALTER TABLE IF EXISTS `$entity->tableName` DROP FOREIGN KEY IF EXISTS FK_{$entity->tableName}_{$foreignKey->toOneRelationship->foreignEntityKey->name}");
     }
 
     public function newCreateIndexStatementForForeignKey(SQLForeignKey $foreignKey, ?SQLEntity $entity = null): SQLStatement
     {
-        $entity = $this->root($entity ?? $foreignKey->entity);
+        $entity = $entity ?? $foreignKey->entity;
         $toOneRelationship = $foreignKey->toOneRelationship;
         $destinationEntity = $toOneRelationship->destinationEntity;
         $primaryKey = $destinationEntity->primaryKey;
@@ -202,13 +193,13 @@ class SQLAdapter extends ObjectClass
 
     public function newDropColumnStatement(SQLColumn $column): SQLStatement
     {
-        $entity = $this->root($column->entity);
+        $entity = $column->entity;
         return new SQLStatement("ALTER TABLE `$entity->tableName` DROP COLUMN IF EXISTS `$column->columnName`");
     }
 
     public function newRenameColumnStatement(SQLColumn $new, ?SQLColumn $old = null): ?SQLStatement
     {
-        $entity = $this->root($new->entity);
+        $entity = $new->entity;
         if ($old) {
             /** @noinspection SqlIdentifier */
             return new SQLStatement("ALTER TABLE `$entity->tableName` RENAME COLUMN IF EXISTS `$old->columnName` TO `$new->columnName`");
@@ -222,7 +213,7 @@ class SQLAdapter extends ObjectClass
     public function newCreateColumnStatement(SQLColumn $column, SQLColumn $after): ?SQLStatement
     {
         if ($string = $this->typeStringForColumn($column)) {
-            $entity = $this->root($column->entity);
+            $entity = $column->entity;
             return new SQLStatement("ALTER TABLE `$entity->tableName` ADD COLUMN IF NOT EXISTS $string AFTER `$after->columnName`");
         }
         return null;
