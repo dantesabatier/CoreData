@@ -292,12 +292,6 @@ class SQLEntity extends StoreMapping
         return $this->entityKey;
     }
 
-    public function asRootEntity(): SQLEntity
-    {
-        /** @var SQLEntity $entity */
-        return $this->isRootEntity ? $this : $this->rootEntity;
-    }
-
     public function isKindOfSQLEntity(SQLEntity $entity): bool
     {
         return $this->entityDescription->isKindOf($entity->entityDescription);
