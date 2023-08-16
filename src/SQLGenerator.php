@@ -199,11 +199,7 @@ class SQLGenerator extends ObjectClass
             $predicate = $request->predicate;
             if (!$request->includesSubentities || (!$request->entity->isPersistentHistoryEntity && !$request->entity->isRootEntity && ($request->entity->subentities->isEmpty() || !$request->entity->superentity?->isRootEntity || $request->entity->superentity?->subentities->count() > 1))) {
                 $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($request->entity->name));
-                if ($predicate) {
-                    $predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory]));
-                } else {
-                    $predicate = $mandatory;
-                }
+                $predicate = $predicate ? CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory])) : $mandatory;
             }
             if ($predicate) {
                 $this->appendWhereClauseToSQL();
@@ -405,14 +401,11 @@ class SQLGenerator extends ObjectClass
 
     private function appendJoinDestinationEntity(SQLEntity $destinationEntity, string $destinationPath): void
     {
-        if (!$destinationEntity->isRootEntity) {
-            $this->joinClause .= " AND ";
-            if (!$this->request->includesSubentities || $destinationEntity->subentities->isEmpty()) {
-                $this->joinClause .= "$destinationPath.{$destinationEntity->entityKey->columnName} = '$destinationEntity->tableName'";
-            } else {
-                $this->joinClause .= "({$destinationEntity->subentities->map(fn(SQLEntity $subentity): string => "$destinationPath.{$destinationEntity->entityKey->columnName} = '$subentity->tableName'")->join(" OR ")})";
-            }
+        if ($destinationEntity->isRootEntity || ((int)$destinationEntity->rootEntity?->subentities?->count() < 2)) {
+            return;
         }
+        $this->joinClause .= " AND ";
+        $this->joinClause .= !$this->request->includesSubentities || $destinationEntity->subentities->isEmpty() ? "$destinationPath.{$destinationEntity->entityKey->columnName} = '{$destinationEntity->entityDescription->name}'" : "({$destinationEntity->subentities->map(fn(SQLEntity $subentity): string => "$destinationPath.{$destinationEntity->entityKey->columnName} = '{$subentity->entityDescription->name}'")->join(" OR ")})";
     }
 
     private function addJoinForToOneRelationship(SQLToOne $toOne, string $sourcePath = "", string $destinationPath = ""): void
@@ -420,11 +413,7 @@ class SQLGenerator extends ObjectClass
         $sourceEntity = $toOne->entity;
         $inverseRelationship = $toOne->inverseRelationship;
         $destinationEntity = $toOne->destinationEntity;
-        if ($inverseRelationship instanceof SQLToOne) {
-            $columnName = $inverseRelationship->foreignKey->columnName;
-        } else {
-            $columnName = $destinationEntity->primaryKey->columnName;
-        }
+        $columnName = $inverseRelationship instanceof SQLToOne ? $inverseRelationship->foreignKey->columnName : $destinationEntity->primaryKey->columnName;
         if (empty($sourcePath)) {
             $sourcePath = $sourceEntity->tableName;
         }
@@ -433,11 +422,7 @@ class SQLGenerator extends ObjectClass
         }
         $this->appendJoinClauseToSQL();
         $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $destinationPath.$columnName = ";
-        if ($inverseRelationship instanceof SQLToOne) {
-            $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
-        } else {
-            $this->joinClause .= "$sourcePath.{$toOne->foreignKey->columnName}";
-        }
+        $this->joinClause .= $inverseRelationship instanceof SQLToOne ? "$sourcePath.{$sourceEntity->primaryKey->columnName}" : "$sourcePath.{$toOne->foreignKey->columnName}";
         if (!$sourceEntity->entityDescription->isPersistentHistoryEntity) {
             $this->appendJoinDestinationEntity($destinationEntity, $destinationPath);
         }
@@ -1000,11 +985,7 @@ class SQLGenerator extends ObjectClass
                                 if ($relationship instanceof SQLToMany) {
                                     $destination ??= $entity->tableName;
                                     $string .= "{$destinationEntity->tableName}_$inverseRelationship->name.{$entity->primaryKey->columnName} = $destination";
-                                    if ($destinationEntity->isKindOfSQLEntity($entity)) {
-                                        $string .= ".{$relationship->inverseToOne->foreignKey->columnName}";
-                                    } else {
-                                        $string .= ".{$entity->primaryKey->columnName}";
-                                    }
+                                    $string .= $destinationEntity->isKindOfSQLEntity($entity) ? ".{$relationship->inverseToOne->foreignKey->columnName}" : ".{$entity->primaryKey->columnName}";
                                 } else {
                                     $string .= "{$destinationEntity->tableName}_$relationship->correlationTableName.$relationship->inverseColumnName = $entity->tableName.{$entity->primaryKey->columnName}";
                                 }
