@@ -401,7 +401,7 @@ class SQLGenerator extends ObjectClass
 
     private function appendJoinDestinationEntity(SQLEntity $destinationEntity, string $destinationPath): void
     {
-        if ($destinationEntity->isRootEntity || ((int)$destinationEntity->rootEntity?->subentities?->count() < 2)) {
+        if ($destinationEntity->isRootEntity || (int)$destinationEntity->rootEntity?->subentities?->count() < 2) {
             return;
         }
         $this->joinClause .= " AND ";
