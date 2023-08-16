@@ -183,22 +183,23 @@ class SQLGenerator extends ObjectClass
     private function startSQL(PersistentStoreRequest $request): void
     {
         if ($request instanceof FetchRequest) {
+            $entity = $request->entity;
             /** @var ArrayClass<PropertyDescription> $propertiesToGroupBy */
-            $propertiesToGroupBy = $request->propertiesToGroupBy?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $request->entity->propertiesByName[$property]) ?? new ArrayClass();
+            $propertiesToGroupBy = $request->propertiesToGroupBy?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $entity->propertiesByName[$property]) ?? new ArrayClass();
             if (!$propertiesToGroupBy->isEmpty() && $request->resultType !== FetchRequestResultType::dictionaryResultType) {
                 throw new InvalidArgumentException(sprintf("Invalid fetch request: GROUP BY requires %s, %s given", human_readable_value(FetchRequestResultType::dictionaryResultType), human_readable_value($request->resultType)));
             }
             $this->useDistinct = $request->returnsDistinctResults;
             if (!$this->useDistinct && $this->autoDistinct) {
                 /** @psalm-suppress all */
-                $this->useDistinct = ($request->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $request->entity->propertiesByName[$property])?->contains(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription)) || ($request->serialization->contains(fn(mixed $e): bool => $e instanceof Dictionary));
+                $this->useDistinct = ($request->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $entity->propertiesByName[$property])?->contains(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription)) || ($request->serialization->contains(fn(mixed $e): bool => $e instanceof Dictionary));
             }
             $this->resetSQL();
             $this->prepareSelectStatementWithFetchRequest($request);
             $this->prepareJoinStatementsForPredicateAndRelationships();
             $predicate = $request->predicate;
-            if (!$request->includesSubentities && !$request->entity->isPersistentHistoryEntity && $request->entity->rootEntity?->subentities->count() > 1) {
-                $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($request->entity->name));
+            if ((!$request->includesSubentities && $entity->subentities->count() > 1) || (!$entity->isPersistentHistoryEntity && !$entity->rootEntity?->isRootEntity || $entity->superentity?->subentities->count() > 1)) {
+                $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($entity->name));
                 $predicate = $predicate ? CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory])) : $mandatory;
             }
             if ($predicate) {
