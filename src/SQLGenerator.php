@@ -991,7 +991,7 @@ class SQLGenerator extends ObjectClass
                                 } else {
                                     $string .= "{$destinationEntity->tableName}_$relationship->correlationTableName.$relationship->inverseColumnName = $entity->tableName.{$entity->primaryKey->columnName}";
                                 }
-                                return $string . ")";
+                                return "$string)";
                             }
                         }
                         throw new InvalidArgumentException("Invalid argument: unsupported expression \"$expression\"");
