@@ -198,7 +198,7 @@ class SQLGenerator extends ObjectClass
             $this->prepareSelectStatementWithFetchRequest($request);
             $this->prepareJoinStatementsForPredicateAndRelationships();
             $predicate = $request->predicate;
-            if ((!$request->includesSubentities && $entity->subentities->count() > 1) || (!$entity->isPersistentHistoryEntity && !$entity->isRootEntity && !$entity->superentity?->isEqual($entity->rootEntity))) {
+            if ((!$request->includesSubentities && $entity->subentities->count() > 1) || (!$entity->isPersistentHistoryEntity && !$entity->isRootEntity && (!$entity->superentity?->isRootEntity || $entity->superentity?->subentities->count() > 1))) {
                 $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($entity->name));
                 $predicate = $predicate ? CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory])) : $mandatory;
             }
@@ -982,7 +982,8 @@ class SQLGenerator extends ObjectClass
                                 $generator->raisesForNotApplicableKeys = false;
                                 $generator->keyValueOperator = $collectionOperator;
                                 $statement = $generator->statement() ?? throw new InvalidArgumentException();
-                                $string = "($statement->string WHERE ";
+                                $string = "($statement->string";
+                                $string .= str_contains($statement->string, "WHERE") ? " AND " : " WHERE ";
                                 if ($relationship instanceof SQLToMany) {
                                     $destination ??= $entity->tableName;
                                     $string .= "{$destinationEntity->tableName}_$inverseRelationship->name.{$entity->primaryKey->columnName} = $destination";
