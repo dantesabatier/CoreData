@@ -983,7 +983,7 @@ class SQLGenerator extends ObjectClass
                                 $generator->keyValueOperator = $collectionOperator;
                                 $statement = $generator->statement() ?? throw new InvalidArgumentException();
                                 $string = "($statement->string";
-                                $string .= str_contains($statement->string, "WHERE") ? " AND " : " WHERE ";
+                                $string .= str_contains($string, "WHERE") ? " AND " : " WHERE ";
                                 if ($relationship instanceof SQLToMany) {
                                     $destination ??= $entity->tableName;
                                     $string .= "{$destinationEntity->tableName}_$inverseRelationship->name.{$entity->primaryKey->columnName} = $destination";
