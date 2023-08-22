@@ -569,12 +569,12 @@ class SQLGenerator extends ObjectClass
         $entity ??= $request->entity;
         $serialization ??= $request->serialization;
         foreach ($serialization as $key => $value) {
-            // FIXME: this should stops when a relationship is parsed before an attribute
-            if ($value instanceof Dictionary) {
+            $property = $entity->propertiesByName[$key];
+            if ($property instanceof RelationshipDescription) {
                 /** @psalm-suppress PossiblyNullOperand */
                 $current = $parent . $key;
                 $expressions->append(Expression::expressionForKeyPath($current));
-                $expressions->appendContentsOf($this->keyPathExpressionsForFetchRequestSerialization($value, $current, $entity));
+                $expressions->appendContentsOf($this->keyPathExpressionsForFetchRequestSerialization($value, $current, $property->destinationEntity));
             }
         }
         return $expressions;
