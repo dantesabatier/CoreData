@@ -175,7 +175,7 @@ readonly class SQLStoreMigrator
             $rootEntity = $destinationEntity->isRootEntity ? $destinationEntity : $destinationEntity->rootEntity;
             foreach (clone $rootEntity->properties as $index => $property) {
                 if (($property instanceof SQLAttribute || $property instanceof SQLForeignKey) && $destinationEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) && !$sourceEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier)) {
-                    $position = $index - 1;
+                    $position = $rootEntity->properties->indexBefore($index);
                     if ($property instanceof SQLForeignKey) {
                         /** @var SQLEntity $rootEntity */
                         $comparator = $sourceEntity->isRootEntity ? $sourceEntity : $sourceEntity->rootEntity;
