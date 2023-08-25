@@ -174,10 +174,20 @@ readonly class SQLStoreMigrator
             /** @var SQLEntity $rootEntity */
             $rootEntity = $destinationEntity->isRootEntity ? $destinationEntity : $destinationEntity->rootEntity;
             foreach (clone $rootEntity->properties as $index => $property) {
-                if (($property instanceof SQLAttribute || $property instanceof SQLForeignKey) && $destinationEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) && !$sourceEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) && ($statement = $adapter->newCreateColumnStatement($property, $rootEntity->columnAfter($index - 1)))) {
-                    $connection->execute($statement);
-                    if ($statement = $adapter->newCreateIndexStatement($property)) {
+                if (($property instanceof SQLAttribute || $property instanceof SQLForeignKey) && $destinationEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) && !$sourceEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier)) {
+                    $position = $index - 1;
+                    if ($property instanceof SQLForeignKey) {
+                        /** @var SQLEntity $rootEntity */
+                        $comparator = $sourceEntity->isRootEntity ? $sourceEntity : $sourceEntity->rootEntity;
+                        if (!$comparator->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier)) {
+                            $position = $rootEntity->attributes->indexAfter($rootEntity->attributes->endIndex());
+                        }
+                    }
+                    if ($statement = $adapter->newCreateColumnStatement($property, $rootEntity->columnAfter($position))) {
                         $connection->execute($statement);
+                        if ($statement = $adapter->newCreateIndexStatement($property)) {
+                            $connection->execute($statement);
+                        }
                     }
                 }
             }
