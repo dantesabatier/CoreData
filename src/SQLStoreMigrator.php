@@ -74,9 +74,9 @@ readonly class SQLStoreMigrator
             if (($destinationEntityName = $mapping->destinationEntityName) && !$sourceModel->entitiesByName[$destinationEntityName]) {
                 /** @var SQLEntity $destinationEntity */
                 $destinationEntity = $destinationModel->entitiesByName[$destinationEntityName];
-                /** @var SQLEntity $destinationEntityRootEntity */
-                $destinationEntityRootEntity = $destinationEntity->isRootEntity ? $destinationEntity : $destinationEntity->rootEntity;
-                $statement = $adapter->newCreateTableStatement($destinationEntityRootEntity);
+                /** @var SQLEntity $destinationRootEntity */
+                $destinationRootEntity = $destinationEntity->isRootEntity ? $destinationEntity : $destinationEntity->rootEntity;
+                $statement = $adapter->newCreateTableStatement($destinationRootEntity);
                 $connection->execute($statement);
                 if ($statement = $adapter->newCreateIndexesStatement($destinationEntity)) {
                     $createIndexStatements->append($statement);
@@ -171,14 +171,14 @@ readonly class SQLStoreMigrator
                     $connection->execute($statement);
                 }
             }
-            /** @var SQLEntity $sourceEntityRootEntity */
-            $sourceEntityRootEntity = $sourceEntity->isRootEntity ? $sourceEntity : $sourceEntity->rootEntity;
-            /** @var SQLEntity $destinationEntityRootEntity */
-            $destinationEntityRootEntity = $destinationEntity->isRootEntity ? $destinationEntity : $destinationEntity->rootEntity;
-            foreach (clone $destinationEntityRootEntity->properties as $index => $property) {
+            /** @var SQLEntity $sourceRootEntity */
+            $sourceRootEntity = $sourceEntity->isRootEntity ? $sourceEntity : $sourceEntity->rootEntity;
+            /** @var SQLEntity $destinationRootEntity */
+            $destinationRootEntity = $destinationEntity->isRootEntity ? $destinationEntity : $destinationEntity->rootEntity;
+            foreach (clone $destinationRootEntity->properties as $index => $property) {
                 if (($property instanceof SQLAttribute || $property instanceof SQLForeignKey) && $destinationEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) && !$sourceEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier)) {
-                    $position = $property instanceof SQLForeignKey && !$sourceEntityRootEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) ? $destinationEntityRootEntity->attributes->indexAfter($destinationEntityRootEntity->attributes->endIndex()) : $destinationEntityRootEntity->properties->indexBefore($index);
-                    if ($statement = $adapter->newCreateColumnStatement($property, $destinationEntityRootEntity->columnAfter($position))) {
+                    $position = $property instanceof SQLForeignKey && !$sourceRootEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) ? $destinationRootEntity->attributes->indexAfter($destinationRootEntity->attributes->endIndex()) : $destinationRootEntity->properties->indexBefore($index);
+                    if ($statement = $adapter->newCreateColumnStatement($property, $destinationRootEntity->columnAfter($position))) {
                         $connection->execute($statement);
                         if ($statement = $adapter->newCreateIndexStatement($property)) {
                             $connection->execute($statement);
