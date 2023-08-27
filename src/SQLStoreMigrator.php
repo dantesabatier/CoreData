@@ -176,13 +176,10 @@ readonly class SQLStoreMigrator
             /** @var SQLEntity $destinationRootEntity */
             $destinationRootEntity = $destinationEntity->isRootEntity ? $destinationEntity : $destinationEntity->rootEntity;
             foreach (clone $destinationRootEntity->properties as $index => $property) {
-                if (($property instanceof SQLAttribute || $property instanceof SQLForeignKey) && $destinationEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) && !$sourceEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier)) {
-                    $position = $property instanceof SQLForeignKey && !$sourceRootEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) ? $destinationRootEntity->attributes->indexAfter($destinationRootEntity->attributes->endIndex()) : $destinationRootEntity->properties->indexBefore($index);
-                    if ($statement = $adapter->newCreateColumnStatement($property, $destinationRootEntity->columnAfter($position))) {
+                if (($property instanceof SQLAttribute || $property instanceof SQLForeignKey) && $destinationEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) && !$sourceEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) && ($statement = $adapter->newCreateColumnStatement($property, $destinationRootEntity->columnAfter($property instanceof SQLForeignKey && !$sourceRootEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) ? $destinationRootEntity->attributes->indexAfter($destinationRootEntity->attributes->endIndex()) : $destinationRootEntity->properties->indexBefore($index))))) {
+                    $connection->execute($statement);
+                    if ($statement = $adapter->newCreateIndexStatement($property)) {
                         $connection->execute($statement);
-                        if ($statement = $adapter->newCreateIndexStatement($property)) {
-                            $connection->execute($statement);
-                        }
                     }
                 }
             }
