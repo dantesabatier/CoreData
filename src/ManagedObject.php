@@ -668,14 +668,16 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     throw new InvalidArgumentException("Unsupported store $store");
                 }
             };
-            if ($objectID) {
-                if (($entityName = $object["entityName"]) && ($entityDescription = $this->managedObjectContext->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[$entityName])) {
-                    $entity = $entityDescription;
+            if (!$objectID instanceof Nil) {
+                if ($objectID) {
+                    if (($entityName = $object["entityName"]) && !$entityName instanceof Nil && ($entityDescription = $this->managedObjectContext->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[$entityName])) {
+                        $entity = $entityDescription;
+                    }
+                    return $newObjectID($entity, $objectID);
                 }
-                return $newObjectID($entity, $objectID);
-            }
-            if (!$object->isEmpty()) {
-                return $newObjectID($entity, (new UUID())->uuidString);
+                if (!$object->isEmpty()) {
+                    return $newObjectID($entity, (new UUID())->uuidString);
+                }
             }
             return null;
         };
