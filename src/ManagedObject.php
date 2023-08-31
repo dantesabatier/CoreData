@@ -659,20 +659,20 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             if ($objectID instanceof ManagedObjectID) {
                 return $objectID;
             }
-            $newObjectID = function (EntityDescription $entity, int|string $referenceObject) use ($store): ManagedObjectID {
-                if ($store instanceof AtomicStore) {
-                    return $store->objectID($entity, $referenceObject);
-                } elseif ($store instanceof IncrementalStore) {
-                    return $store->newObjectID($entity, $referenceObject);
-                } else {
-                    throw new InvalidArgumentException("Unsupported store $store");
-                }
-            };
             if (!$objectID instanceof Nil) {
-                if ($objectID) {
-                    if (($entityName = $object[SQLEntity::entityKeyName]) && !$entityName instanceof Nil && ($entityDescription = $this->managedObjectContext->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[$entityName])) {
-                        $entity = $entityDescription;
+                $newObjectID = function (EntityDescription $entity, int|string $referenceObject) use ($store): ManagedObjectID {
+                    if ($store instanceof AtomicStore) {
+                        return $store->objectID($entity, $referenceObject);
+                    } elseif ($store instanceof IncrementalStore) {
+                        return $store->newObjectID($entity, $referenceObject);
+                    } else {
+                        throw new InvalidArgumentException("Unsupported store $store");
                     }
+                };
+                if (($entityName = $object[SQLEntity::entityKeyName]) && !$entityName instanceof Nil && ($entityDescription = $this->managedObjectContext->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[$entityName])) {
+                    $entity = $entityDescription;
+                }
+                if ($objectID) {
                     return $newObjectID($entity, $objectID);
                 }
                 if (!$object->isEmpty()) {
