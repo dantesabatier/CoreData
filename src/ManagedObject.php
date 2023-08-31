@@ -151,7 +151,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 })->keys,
                 default => new ArrayClass(),
             };
-            $serializationKeys->insertAt("objectID", 0);
+            $serializationKeys->insertAt(SQLEntity::primaryKeyName, 0);
             $this->$name = $serializationKeys;
             return $this->$name;
         } elseif ($name == "hasPersistentChangedValues") {
@@ -655,7 +655,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     {
         $store = $this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? throw new InternalInconsistencyException("Persistent store coordinator cannot be null");
         $managedObjectID = function (EntityDescription $entity, mixed $object) use ($store): ?ManagedObjectID {
-            $objectID = $object["objectID"];
+            $objectID = $object[SQLEntity::primaryKeyName];
             if ($objectID instanceof ManagedObjectID) {
                 return $objectID;
             }
@@ -670,7 +670,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             };
             if (!$objectID instanceof Nil) {
                 if ($objectID) {
-                    if (($entityName = $object["entityName"]) && !$entityName instanceof Nil && ($entityDescription = $this->managedObjectContext->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[$entityName])) {
+                    if (($entityName = $object[SQLEntity::entityKeyName]) && !$entityName instanceof Nil && ($entityDescription = $this->managedObjectContext->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[$entityName])) {
                         $entity = $entityDescription;
                     }
                     return $newObjectID($entity, $objectID);
@@ -694,12 +694,12 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             return null;
         };
         $representation = clone $keyedValues;
-        if ($representation["objectID"]) {
+        if ($representation[SQLEntity::primaryKeyName]) {
             $objectID = $managedObjectID($this->entity, $representation);
             if ($objectID) {
-                $representation["objectID"] = $objectID;
+                $representation[SQLEntity::primaryKeyName] = $objectID;
             } else {
-                $representation->removeValueForKey("objectID");
+                $representation->removeValueForKey(SQLEntity::primaryKeyName);
             }
         }
         if ($store instanceof SQLCore) {
@@ -712,7 +712,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 }
                 $fetchRequest = new FetchRequest();
                 $fetchRequest->entity = $property->toOneRelationship->destinationEntity->entityDescription;
-                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath("objectID"), Expression::expressionForConstantValue((int)$value));
+                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue((int)$value));
                 /** @noinspection PhpUnhandledExceptionInspection */
                 $representation[$property->toOneRelationship->name] = $this->managedObjectContext->fetch($fetchRequest)->first();
                 $representation->removeValueForKey($key);
@@ -895,7 +895,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             if ($property = $this->entity->propertiesByName[$key]) {
                 return self::coerceValue($value, $property);
             } elseif (property_exists($this, $key)) {
-                if ($key == "objectID" && (is_int($value) || is_string($value))) {
+                if ($key === SQLEntity::primaryKeyName && (is_int($value) || is_string($value))) {
                     $this->objectID->referenceObject = $value;
                     return false;
                 }

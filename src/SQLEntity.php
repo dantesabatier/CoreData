@@ -15,6 +15,8 @@ use Sabatier\Foundation\Dictionary;
 /** @internal */
 class SQLEntity extends StoreMapping
 {
+    public const primaryKeyName = "objectID";
+    public const entityKeyName = "entityName";
     public readonly string $tableName;
     /** @var ArrayClass<SQLEntity> */
     public readonly ArrayClass $subentities;
@@ -126,7 +128,7 @@ class SQLEntity extends StoreMapping
         } elseif ($name == "entityKey") {
             $attribute = new AttributeDescription();
             $attribute->entity = $this->entityDescription;
-            $attribute->name = "entityName";
+            $attribute->name = self::entityKeyName;
             $attribute->type = AttributeType::string;
             $attribute->isOptional = false;
             $this->$name = new SQLEntityKey($this, $attribute);
@@ -135,9 +137,9 @@ class SQLEntity extends StoreMapping
             $attribute = new AttributeDescription();
             $attribute->entity = $this->entityDescription;
             $attribute->name = match ($this->entityDescription->name) {
-                "PersistentHistoryTransaction" => "transactionID",
-                "PersistentHistoryChange" => "changeID",
-                default => "objectID",
+                PersistentHistoryTransaction::className() => "transactionID",
+                PersistentHistoryChange::className() => "changeID",
+                default => self::primaryKeyName,
             };
             $attribute->type = AttributeType::integer32;
             $attribute->isOptional = false;

@@ -387,7 +387,7 @@ class ManagedObjectContext extends ObjectClass
             /** @var FetchRequest<ManagedObject> $fetchRequest */
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $objectID->entity;
-            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath("objectID"), Expression::expressionForConstantValue($objectID));
+            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($objectID));
             $object = $this->fetch($fetchRequest)->first();
         }
         return $object;
@@ -543,7 +543,7 @@ class ManagedObjectContext extends ObjectClass
                     /** @var FetchRequest<ManagedObject> $fetchRequest */
                     $fetchRequest = new FetchRequest();
                     $fetchRequest->entity = $object->entity;
-                    $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath("objectID"), Expression::expressionForConstantValue($object->objectID));
+                    $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($object->objectID));
                     if ($store = $object->objectID->persistentStore) {
                         $fetchRequest->affectedStores = new ArrayClass([$store]);
                     }
@@ -571,7 +571,7 @@ class ManagedObjectContext extends ObjectClass
                 /** @var FetchRequest<ManagedObject> $fetchRequest */
                 $fetchRequest = new FetchRequest();
                 $fetchRequest->entity = $object->entity;
-                $fetchRequest->predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([new ComparisonPredicate(Expression::expressionForKeyPath($key), Expression::expressionForConstantValue($value)), new ComparisonPredicate(Expression::expressionForKeyPath("objectID"), Expression::expressionForConstantValue($object->objectID), PredicateOperatorType::notEqualTo)]));
+                $fetchRequest->predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([new ComparisonPredicate(Expression::expressionForKeyPath($key), Expression::expressionForConstantValue($value)), new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($object->objectID), PredicateOperatorType::notEqualTo)]));
                 $fetchRequest->propertiesToFetch = $attributeKeys;
                 if ($store = $object->objectID->persistentStore) {
                     $fetchRequest->affectedStores = new ArrayClass([$store]);
@@ -882,7 +882,7 @@ class ManagedObjectContext extends ObjectClass
             /** @var FetchRequest<Number> $fetchRequest */
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $insertedObject->entity;
-            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath("objectID"), Expression::expressionForConstantValue($insertedObject->objectID));
+            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($insertedObject->objectID));
             /** @var PersistentStore $persistentStore */
             $persistentStore = $insertedObject->objectID->persistentStore;
             $fetchRequest->affectedStores = new ArrayClass([$persistentStore]);
