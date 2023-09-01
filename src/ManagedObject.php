@@ -700,17 +700,19 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if ($store instanceof SQLCore) {
             /** @var SQLEntity $entity */
             $entity = $store->model->entitiesByName[$this->entity->name];
-            foreach ($keyedValues as $key => $value) {
+            foreach ($representation as $key => $value) {
                 $property = $entity->propertiesByName[$key];
-                if (!$property instanceof SQLForeignKey || $value instanceof Nil) {
-                    continue;
+                if ($property instanceof SQLForeignKey) {
+                    if (!$value instanceof Nil) {
+                        $fetchRequest = new FetchRequest();
+                        $fetchRequest->entity = $property->toOneRelationship->destinationEntity->entityDescription;
+                        $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue((int)$value));
+                        /** @noinspection PhpUnhandledExceptionInspection */
+                        $value = $this->managedObjectContext->fetch($fetchRequest)->first();
+                    }
+                    $representation[$property->toOneRelationship->name] = $value;
+                    $representation->removeValueForKey($key);
                 }
-                $fetchRequest = new FetchRequest();
-                $fetchRequest->entity = $property->toOneRelationship->destinationEntity->entityDescription;
-                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue((int)$value));
-                /** @noinspection PhpUnhandledExceptionInspection */
-                $representation[$property->toOneRelationship->name] = $this->managedObjectContext->fetch($fetchRequest)->first();
-                $representation->removeValueForKey($key);
             }
         }
         foreach ($representation as $key => $value) {
