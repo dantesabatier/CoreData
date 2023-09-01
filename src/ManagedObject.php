@@ -629,7 +629,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 assert($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null, sprintf("invalid argument: %s(%s) expecting \"%s|%s|null\", \"%s\" given", $this->entity->name, $key, ManagedObject::class, ManagedObjectID::class, typeof($value)));
                 $change = $value;
                 $current = $this->primitiveValueForKey($key);
-                if (!$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications && !$this->objectID->isTemporaryID && !$this->entity->isKindOf($property->inverseRelationship->destinationEntity) && !isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
+                if (!$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications && !$this->objectID->isTemporaryID && !isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
                     $this->reserved[$key] = true;
                     $current = $this->valueForKey($key);
                     //unset($this->reserved[$key]);
