@@ -797,7 +797,7 @@ class ManagedObjectContext extends ObjectClass
                     if ($value instanceof ManagedObjectID) {
                         $value = $this->object($value);
                     }
-                    $value = new Set([$value]);
+                    $value = $value instanceof ManagedObject ? new Set([$value]) : new Set();
                 }
                 foreach ($value as $managedObject) {
                     assert($managedObject instanceof ManagedObject, sprintf("invalid argument: expecting \"%s\", \"%s\" given", ManagedObject::class, typeof($managedObject)));
