@@ -701,7 +701,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if ($store instanceof SQLCore) {
             /** @var SQLEntity $entity */
             $entity = $store->model->entitiesByName[$this->entity->name];
-            foreach ($representation as $key => $value) {
+            foreach ($keyedValues as $key => $value) {
                 $property = $entity->propertiesByName[$key];
                 if ($property instanceof SQLForeignKey) {
                     if (!$value instanceof Nil) {
@@ -716,7 +716,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 }
             }
         }
-        foreach ($representation as $key => $value) {
+        foreach ($keyedValues as $key => $value) {
             $property = $this->entity->propertiesByName[$key];
             if (!$property instanceof RelationshipDescription) {
                 continue;
