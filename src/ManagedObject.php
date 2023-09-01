@@ -654,7 +654,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     final public function setValuesForKeys(Dictionary $keyedValues): void
     {
         $store = $this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? throw new InternalInconsistencyException("Persistent store coordinator cannot be null");
-        $managedObjectID = function (EntityDescription $entity, mixed $object) use ($store): ?ManagedObjectID {
+        $managedObjectID = function (EntityDescription $entity, Dictionary $object) use ($store): ?ManagedObjectID {
             $objectID = $object[SQLEntity::primaryKeyName];
             if ($objectID instanceof ManagedObjectID) {
                 return $objectID;

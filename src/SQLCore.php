@@ -395,9 +395,8 @@ class SQLCore extends IncrementalStore
             /** @noinspection PhpUnhandledExceptionInspection */
             $this->maxPrimaryKeys[$entityName] = $this->queryGenerationTrackingConnection->fetchMaxPrimaryKey($entityName);
         }
-        $primaryKey = max($this->maxPrimaryKeys[$entityName], 1);
         $this->maxPrimaryKeys[$entityName] += 1;
-        return $primaryKey;
+        return $this->maxPrimaryKeys[$entityName];
     }
 
     public function load(): bool
