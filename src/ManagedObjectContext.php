@@ -799,9 +799,6 @@ class ManagedObjectContext extends ObjectClass
                     }
                     $value = new Set([$value]);
                 }
-                if ($value->isEmpty()) {
-                    return;
-                }
                 foreach ($value as $managedObject) {
                     assert($managedObject instanceof ManagedObject, sprintf("invalid argument: expecting \"%s\", \"%s\" given", ManagedObject::class, typeof($managedObject)));
                     $this->obtainPermanentID($managedObject);

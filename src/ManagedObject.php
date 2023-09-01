@@ -695,12 +695,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         };
         $representation = clone $keyedValues;
         if ($representation[SQLEntity::primaryKeyName]) {
-            $objectID = $managedObjectID($this->entity, $representation);
-            if ($objectID) {
-                $representation[SQLEntity::primaryKeyName] = $objectID;
-            } else {
-                $representation->removeValueForKey(SQLEntity::primaryKeyName);
-            }
+            $representation[SQLEntity::primaryKeyName] = $managedObjectID($this->entity, $representation);
         }
         if ($store instanceof SQLCore) {
             /** @var SQLEntity $entity */
@@ -718,26 +713,18 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $representation->removeValueForKey($key);
             }
         }
-        foreach ($this->entity as $property) {
+        foreach ($representation as $key => $value) {
+            $property = $this->entity->propertiesByName[$key];
             if (!$property instanceof RelationshipDescription) {
-                continue;
-            }
-            $key = $property->name;
-            if (!($value = $representation[$key])) {
                 continue;
             }
             $destinationEntity = $property->destinationEntity;
             if ($value instanceof Set || $value instanceof ArrayClass) {
-                $representation->setValueForKey($value->compactMap(fn(ManagedObject|ManagedObjectID|Dictionary $object): ?ManagedObject => $managedObject($destinationEntity, $object)), $key);
+                $representation[$key] = $value->compactMap(fn(ManagedObject|ManagedObjectID|Dictionary $object): ?ManagedObject => $managedObject($destinationEntity, $object));
             } elseif ($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value instanceof Dictionary) {
-                $object = $managedObject($destinationEntity, $value);
-                if ($object) {
-                    $representation->setValueForKey($object, $key);
-                } else {
-                    $representation->removeValueForKey($key);
-                }
+                $representation[$key] = $managedObject($destinationEntity, $value);
             } elseif ($value instanceof Nil) {
-                $representation->setValueForKey($value, $key);
+                $representation[$key] = $value;
             } else {
                 throw new InvalidArgumentException(sprintf("Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", typeof($value), $key));
             }
