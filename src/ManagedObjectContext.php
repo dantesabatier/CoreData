@@ -645,19 +645,11 @@ class ManagedObjectContext extends ObjectClass
                     }
                 }
             } else {
-                $insertions->setValueForKey($object->objectID, $inverseRelationship->name);
+                $insertions->setValueForKey($object, $inverseRelationship->name);
             }
         } else {
-            if ($inverseRelationship->isToMany) {
-                $object->setPrimitiveValueForKey($insertions->first()?->objectID, $relationship->name);
-            } else {
-                foreach ($insertions as $insertion) {
-                    $insertion->setPrimitiveValueForKey($object->objectID, $inverseRelationship->name);
-                    if (!$object->primitiveValueForKey($relationship->name)) {
-                        $object->setPrimitiveValueForKey($insertion->objectID, $relationship->name);
-                    }
-                }
-            }
+            $insertions->setValueForKey($object, $inverseRelationship->name);
+            $object->setValueForKey($insertions->first(), $relationship->name);
             $this->updatedObjects->append($object);
             $object->isPendingUpdate = true;
         }
@@ -797,7 +789,7 @@ class ManagedObjectContext extends ObjectClass
                     if ($value instanceof ManagedObjectID) {
                         $value = $this->object($value);
                     }
-                    $value = $value instanceof ManagedObject ? new Set([$value]) : new Set();
+                    $value = new Set([$value]);
                 }
                 if ($change->kind !== KeyValueChange::removal && $value->isEmpty()) {
                     return;
