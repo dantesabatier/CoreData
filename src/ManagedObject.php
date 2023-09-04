@@ -630,7 +630,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 if (!$inverseRelationship->isToMany) {
                     /** @var ManagedObject $managedObject */
                     foreach ($change as $managedObject) {
-                        $managedObject->setPrimitiveValueForKey($this, $inverseRelationship->name);
+                        $managedObject->setPrimitiveValueForKey($this->objectID, $inverseRelationship->name);
                     }
                 }
             } else {
@@ -650,11 +650,13 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 } else {
                     $changeKind = KeyValueChange::replacement;
                 }
-                if ($change instanceof ManagedObjectID) {
-                    $change = $this->managedObjectContext->object($change);
-                }
-                if ($change instanceof ManagedObject) {
-                    $change->setPrimitiveValueForKey($this, $inverseRelationship->name);
+                if (!$inverseRelationship->isToMany) {
+                    if ($change instanceof ManagedObjectID) {
+                        $change = $this->managedObjectContext->object($change);
+                    }
+                    if ($change instanceof ManagedObject) {
+                        $change->setPrimitiveValueForKey($this->objectID, $inverseRelationship->name);
+                    }
                 }
             }
             $this->willChangeValueForKey($key, $changeKind, $change);
