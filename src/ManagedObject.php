@@ -718,18 +718,19 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         }
         foreach ($keyedValues as $key => $value) {
             $property = $this->entity->propertiesByName[$key];
-            if (!$property instanceof RelationshipDescription) {
-                continue;
-            }
-            $destinationEntity = $property->destinationEntity;
-            if ($value instanceof Set || $value instanceof ArrayClass) {
-                $representation[$key] = $value->compactMap(fn(ManagedObject|ManagedObjectID|Dictionary $object): ?ManagedObject => $managedObject($destinationEntity, $object));
-            } elseif ($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value instanceof Dictionary) {
-                $representation[$key] = $managedObject($destinationEntity, $value);
-            } elseif ($value instanceof Nil) {
-                $representation[$key] = $value;
-            } else {
-                throw new InvalidArgumentException(sprintf("Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", typeof($value), $key));
+            if ($property instanceof RelationshipDescription) {
+                $destinationEntity = $property->destinationEntity;
+                if ($value instanceof Set || $value instanceof ArrayClass) {
+                    if ($property->isToMany) {
+                        $representation[$key] = $value->compactMap(fn(ManagedObject|ManagedObjectID|Dictionary $object): ?ManagedObject => $managedObject($destinationEntity, $object));
+                    }
+                } elseif ($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value instanceof Dictionary) {
+                    $representation[$key] = $managedObject($destinationEntity, $value);
+                } elseif ($value instanceof Nil) {
+                    $representation[$key] = $value;
+                } else {
+                    throw new InvalidArgumentException(sprintf("Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", typeof($value), $key));
+                }
             }
         }
         parent::setValuesForKeys($representation);
