@@ -161,7 +161,7 @@ class SQLAdapter extends ObjectClass
         $toOneRelationship = $foreignKey->toOneRelationship;
         $destinationEntity = $toOneRelationship->destinationEntity;
         $primaryKey = $destinationEntity->primaryKey;
-        return new SQLStatement("ALTER TABLE `$entity->tableName` ADD CONSTRAINT FK_{$entity->tableName}_{$toOneRelationship->foreignEntityKey->name} FOREIGN KEY IF NOT EXISTS (`$foreignKey->columnName`) REFERENCES `$destinationEntity->tableName` (`$primaryKey->columnName`) ON UPDATE CASCADE ON DELETE " . match ($foreignKey->relationshipDescription->deleteRule) {
+        return new SQLStatement("ALTER TABLE `$entity->tableName` ADD CONSTRAINT FK_{$entity->tableName}_{$toOneRelationship->foreignEntityKey->name} FOREIGN KEY IF NOT EXISTS (`$foreignKey->columnName`) REFERENCES `$destinationEntity->tableName` (`$primaryKey->columnName`) ON UPDATE CASCADE ON DELETE " . match ($foreignKey->relationshipDescription->inverseRelationship->deleteRule) {
                 DeleteRule::noActionDeleteRule => "NO ACTION",
                 DeleteRule::nullifyDeleteRule => "SET NULL",
                 DeleteRule::cascadeDeleteRule => "CASCADE",
