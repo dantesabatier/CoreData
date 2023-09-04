@@ -198,7 +198,10 @@ class SQLGenerator extends ObjectClass
             $this->prepareSelectStatementWithFetchRequest($request);
             $this->prepareJoinStatementsForPredicateAndRelationships();
             $predicate = $request->predicate;
-            if ((!$request->includesSubentities && $entity->subentities->count() > 1) || (!$entity->isPersistentHistoryEntity && !$entity->isRootEntity && (!$entity->superentity?->isRootEntity || $entity->superentity?->subentities->count() > 1))) {
+            /** @var  EntityDescription $rootEntity */
+            $rootEntity = $entity->isRootEntity ? $entity : $entity->rootEntity;
+            $subentities = $entity->managedObjectModel->flatten($rootEntity->subentities);
+            if ((!$request->includesSubentities && $subentities->count() > 1) || (!$entity->isPersistentHistoryEntity && !$entity->isRootEntity && (!$entity->superentity?->isRootEntity || $subentities->count() > 1))) {
                 $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($entity->name));
                 $predicate = $predicate ? CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory])) : $mandatory;
             }
