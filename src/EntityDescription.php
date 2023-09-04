@@ -174,6 +174,9 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
                 }
             }
             $properties->appendContentsOf($this->properties);
+            foreach ($this->subentities as $subentity) {
+                $properties->appendContentsOf($subentity->properties);
+            }
             $this->rootEntity = $rootEntity;
             $this->isRootEntity = $rootEntity === null;
             $properties->sort(fn(PropertyDescription $e0, PropertyDescription $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);

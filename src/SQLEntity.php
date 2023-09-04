@@ -258,10 +258,9 @@ class SQLEntity extends StoreMapping
         if (!$this->entityDescription->isPersistentHistoryEntity) {
             $propertiesByName[$this->entityKey->columnName] = $this->entityKey;
         }
-        $properties = $this->properties;
         foreach ($this->foreignKeyColumns as $foreignKeyColumn) {
             $propertiesByName[$foreignKeyColumn->columnName] = $foreignKeyColumn;
-            $properties->append($foreignKeyColumn);
+            $this->properties->append($foreignKeyColumn);
         }
     }
 
