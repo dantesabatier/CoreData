@@ -1187,6 +1187,14 @@ class SQLGenerator extends ObjectClass
                     }
                 } elseif ($property instanceof SQLToOne) {
                     $columnNames->append($property->foreignKey->columnName);
+                } elseif ($property instanceof SQLToMany) {
+                    if ($insertedObject->entity->propertiesByName[$property->name]) {
+                        /** @var Set<ManagedObject> $mutableSet */
+                        $mutableSet = $insertedObject->mutableSetValueForKey($property->name);
+                        foreach ($mutableSet as $managedObject) {
+                            $managedObject->setPrimitiveValueForKey($insertedObject->objectID, $property->inverseToOne->foreignKey->columnName);
+                        }
+                    }
                 }
             }
         }

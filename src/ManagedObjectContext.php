@@ -648,7 +648,6 @@ class ManagedObjectContext extends ObjectClass
                 $insertions->setValueForKey($object, $inverseRelationship->name);
             }
         } else {
-            $insertions->setValueForKey($object, $inverseRelationship->name);
             $object->setValueForKey($insertions->first(), $relationship->name);
             $this->updatedObjects->append($object);
             $object->isPendingUpdate = true;
