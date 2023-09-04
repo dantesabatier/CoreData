@@ -588,6 +588,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->setPrimitiveValueForKey($value, $key);
             $this->didChangeValueForKey($key, KeyValueChange::replacement, $value);
         } elseif ($property instanceof RelationshipDescription) {
+            $inverseRelationship = $property->inverseRelationship;
             if ($property->isToMany) {
                 assert($value instanceof Set, sprintf("invalid argument: expecting \"%s\", \"%s\" given", Set::class, typeof($value)));
                 $set = new FaultingMutableSet($this, $property);
@@ -598,10 +599,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     $this->reserved[$key] = true;
                     /** @var FaultingMutableSet $change */
                     $change = $this->valueForKey($key);
-                    /** @var ManagedObject $object */
-                    foreach ($change as $object) {
-                        if ($member = $value->member($object)) {
-                            $object->setValuesForKeys($member->dictionaryWithValues($member->persistentProperties->valueForKey("name")));
+                    /** @var ManagedObject $managedObject */
+                    foreach ($change as $managedObject) {
+                        if ($member = $value->member($managedObject)) {
+                            $managedObject->setValuesForKeys($member->dictionaryWithValues($member->persistentProperties->valueForKey("name")));
                         }
                     }
                     //unset($this->reserved[$key]);
@@ -626,6 +627,12 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         $changeKind = KeyValueChange::replacement;
                     }
                 }
+                if (!$inverseRelationship->isToMany) {
+                    /** @var ManagedObject $managedObject */
+                    foreach ($change as $managedObject) {
+                        $managedObject->setPrimitiveValueForKey($this, $inverseRelationship->name);
+                    }
+                }
             } else {
                 assert($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null, sprintf("invalid argument: %s(%s) expecting \"%s|%s|null\", \"%s\" given", $this->entity->name, $key, ManagedObject::class, ManagedObjectID::class, typeof($value)));
                 $change = $value;
@@ -642,6 +649,12 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     $change = $current;
                 } else {
                     $changeKind = KeyValueChange::replacement;
+                }
+                if ($change instanceof ManagedObjectID) {
+                    $change = $this->managedObjectContext->object($change);
+                }
+                if ($change instanceof ManagedObject) {
+                    $change->setPrimitiveValueForKey($this, $inverseRelationship->name);
                 }
             }
             $this->willChangeValueForKey($key, $changeKind, $change);
