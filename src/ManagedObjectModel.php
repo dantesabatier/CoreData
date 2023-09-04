@@ -360,8 +360,9 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     /**
      * @param ArrayClass<EntityDescription> $entities
      * @return ArrayClass<EntityDescription>
+     * @internal
      */
-    private function flatten(ArrayClass $entities): ArrayClass
+    public function flatten(ArrayClass $entities): ArrayClass
     {
         /** @var ArrayClass<EntityDescription> $array */
         $array = new ArrayClass();
