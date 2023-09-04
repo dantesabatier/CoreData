@@ -137,7 +137,7 @@ class SQLAdapter extends ObjectClass
      */
     public function newDropIndexStatementsForForeignKey(SQLForeignKey $foreignKey, ?SQLEntity $entity = null): ArrayClass
     {
-        $entity = $entity ?? $foreignKey->entity;
+        $entity ??= $foreignKey->entity;
         /** @var ArrayClass<SQLStatement> $statements */
         $statements = new ArrayClass();
         $toOneRelationship = $foreignKey->toOneRelationship;
@@ -151,17 +151,17 @@ class SQLAdapter extends ObjectClass
 
     public function newDropIndexStatementForForeignKey(SQLForeignKey $foreignKey, ?SQLEntity $entity = null): SQLStatement
     {
-        $entity = $entity ?? $foreignKey->entity;
+        $entity ??= $foreignKey->entity;
         return new SQLStatement("ALTER TABLE IF EXISTS `$entity->tableName` DROP FOREIGN KEY IF EXISTS FK_{$entity->tableName}_{$foreignKey->toOneRelationship->foreignEntityKey->name}");
     }
 
     public function newCreateIndexStatementForForeignKey(SQLForeignKey $foreignKey, ?SQLEntity $entity = null): SQLStatement
     {
-        $entity = $entity ?? $foreignKey->entity;
+        $entity ??= $foreignKey->entity;
         $toOneRelationship = $foreignKey->toOneRelationship;
         $destinationEntity = $toOneRelationship->destinationEntity;
         $primaryKey = $destinationEntity->primaryKey;
-        return new SQLStatement("ALTER TABLE `$entity->tableName` ADD CONSTRAINT FK_{$entity->tableName}_{$toOneRelationship->foreignEntityKey->name} FOREIGN KEY IF NOT EXISTS (`$foreignKey->columnName`) REFERENCES `$destinationEntity->tableName` (`$primaryKey->columnName`) ON UPDATE CASCADE ON DELETE " . match ($foreignKey->relationshipDescription->inverseRelationship->deleteRule) {
+        return new SQLStatement("ALTER TABLE `$entity->tableName` ADD CONSTRAINT FK_{$entity->tableName}_{$toOneRelationship->foreignEntityKey->name} FOREIGN KEY IF NOT EXISTS (`$foreignKey->columnName`) REFERENCES `$destinationEntity->tableName` (`$primaryKey->columnName`) ON UPDATE CASCADE ON DELETE " . match ($foreignKey->relationshipDescription->deleteRule) {
                 DeleteRule::noActionDeleteRule => "NO ACTION",
                 DeleteRule::nullifyDeleteRule => "SET NULL",
                 DeleteRule::cascadeDeleteRule => "CASCADE",
