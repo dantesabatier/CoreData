@@ -918,11 +918,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     private function validateChangedValues(): void
     {
         foreach ($this->changedValues as $key => $value) {
-            /** @var PropertyDescription $property */
-            $property = $this->entity->propertiesByName[$key];
-            foreach ($property->validationPredicates as $validationPredicate) {
-                if (!$value instanceof Nil && !$validationPredicate->evaluate($this)) {
-                    throw new Exception((new Error(CocoaErrorDomain, KeyValueValidationError, new Dictionary([ValidationObjectErrorKey => $this, ValidationValueErrorKey => $value, ValidationKeyErrorKey => $key, ValidationPredicateErrorKey => $validationPredicate])))->description());
+            if (!$value instanceof Nil && ($property = $this->entity->propertiesByName[$key])) {
+                foreach ($property->validationPredicates as $validationPredicate) {
+                    if (!$validationPredicate->evaluate($this)) {
+                        throw new Exception((new Error(CocoaErrorDomain, KeyValueValidationError, new Dictionary([ValidationObjectErrorKey => $this, ValidationValueErrorKey => $value, ValidationKeyErrorKey => $key, ValidationPredicateErrorKey => $validationPredicate])))->description());
+                    }
                 }
             }
         }
