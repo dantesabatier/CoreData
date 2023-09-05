@@ -553,7 +553,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             } elseif ($value instanceof ManagedObjectID) {
                 return $context->object($value);
             } else {
-                if ($property->isToMany) {
+                if ($property->isToMany && !$property->isOptional) {
                     return new Set();
                 }
                 return null;
@@ -1041,7 +1041,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         } elseif ($value instanceof Set) {
             return $value->map(fn(ManagedObject $object): Dictionary => $this->serializedObject($object, $relationship));
         }
-        if ($relationship->isToMany) {
+        if ($relationship->isToMany && !$relationship->isOptional) {
             return new Set();
         }
         return null;
