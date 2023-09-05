@@ -921,7 +921,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             /** @var PropertyDescription $property */
             $property = $this->entity->propertiesByName[$key];
             foreach ($property->validationPredicates as $validationPredicate) {
-                if ($value !== null && !$validationPredicate->evaluate($this)) {
+                if (!$value instanceof Nil && !$validationPredicate->evaluate($this)) {
                     throw new Exception((new Error(CocoaErrorDomain, KeyValueValidationError, new Dictionary([ValidationObjectErrorKey => $this, ValidationValueErrorKey => $value, ValidationKeyErrorKey => $key, ValidationPredicateErrorKey => $validationPredicate])))->description());
                 }
             }

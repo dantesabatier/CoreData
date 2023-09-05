@@ -11,6 +11,7 @@ use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\Predicate;
+use Sabatier\Foundation\Value;
 
 /**
  * A description of a property of a Core Data entity.
@@ -65,6 +66,9 @@ abstract class PropertyDescription extends ObjectClass
             /** @var ArrayClass<Predicate> $validationPredicates */
             $validationPredicates = new ArrayClass();
             $minValue = $this->minValue;
+            if ($minValue instanceof Value) {
+                $minValue = $minValue->value;
+            }
             if ($minValue !== null) {
                 /** @psalm-suppress InternalClass */
                 $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class ($minValue) extends Validator {
@@ -78,6 +82,9 @@ abstract class PropertyDescription extends ObjectClass
                 }), Expression::expressionForKeyPath($this->name), selector: "validate"));
             }
             $maxValue = $this->maxValue;
+            if ($maxValue instanceof Value) {
+                $maxValue = $maxValue->value;
+            }
             if ($maxValue !== null) {
                 /** @psalm-suppress InternalClass */
                 $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class ($maxValue) extends Validator {
