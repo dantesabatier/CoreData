@@ -1052,9 +1052,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         return $this->serializationKeys->reduce(new Dictionary(), function (Dictionary &$dictionary, string $key): Dictionary {
             if ($property = $this->entity->propertiesByName[$key]) {
                 if ($property instanceof AttributeDescription) {
-                    $dictionary[$key] = $this->valueForKey($key);
+                    $dictionary[$key] = $this->valueForKey($key) ?? Nil::nil();
                 } elseif ($property instanceof RelationshipDescription) {
-                    $dictionary[$key] = $this->serializedRelationshipValueForRelationship($property);
+                    $dictionary[$key] = $this->serializedRelationshipValueForRelationship($property) ?? Nil::nil();
                 } else {
                     $dictionary[$key] = $this->valueForKey($key);
                 }
