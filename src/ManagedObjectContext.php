@@ -47,7 +47,7 @@ class ManagedObjectContext extends ObjectClass
     final public const didSaveObjectsNotification = ManagedObjectContextDidSave;
     final public const didSaveObjectIDsNotification = ManagedObjectContextDidSaveObjectIDs;
     /** @var PersistentStoreCoordinator|null The persistent store coordinator of the context.
-     * The coordinator provides the managed object model and handles persistency.
+     * The coordinator provides the managed object model and handles persistence.
      * Note that multiple contexts can share a coordinator. May not be nil. */
     public ?PersistentStoreCoordinator $persistentStoreCoordinator = null;
     /** @var ManagedObjectContext|null The parent of the context. */
@@ -96,7 +96,7 @@ class ManagedObjectContext extends ObjectClass
     /** @var UndoManager|null The object that provides undo support for the context. Enable undo support for a context by setting this property to an instance of UndoManager. This can be an undo manager that’s exclusive to the context, or an existing undo manager if you want to integrate the context’s undo operations with those of the rest of your app. If your context uses an undo manager, you can realize a performance benefit by temporarily setting this property to nil when performing expensive operations on that context, such as importing a large number of objects. */
     public ?UndoManager $undoManager = null;
     /** @var float The maximum length of time that may have elapsed since the store previously fetched data before fulfilling a fault issues a new fetch. The staleness interval controls whether fulfilling a fault uses data previously fetched by the application, or issues a new fetch (see also {@see refresh()}). The staleness interval does not affect objects currently in use (that is, it is not used to automatically update property values from a persistent store after a certain period of time).
-     * The expiration value is applied on a per object basis. It is the relative time until cached data (snapshots) should be considered stale. For example, a value of 300.0 informs the context to utilize cached information for no more than 5 minutes after an object was originally fetched.
+     * The expiration value is applied on a per-object basis. It is the relative time until cached data (snapshots) should be considered stale. For example, a value of 300.0 informs the context to utilize cached information for no more than 5 minutes after an object was originally fetched.
      * Note that the staleness interval is a hint and may not be supported by all persistent store types. It is not used by XML and binary stores, because these stores maintain all current values in memory.
      * The default is a negative value, which represents infinite staleness allowed. 0.0 represents "no staleness acceptable". */
     public float $stalenessInterval = -1.0;
@@ -958,7 +958,7 @@ class ManagedObjectContext extends ObjectClass
     /**
      * Returns the context to its base state.
      *
-     * All the receiver's managed objects are “forgotten.” If you use this method, you should ensure that you also discard references to any managed objects fetched using the receiver, since they will be invalid afterwards.
+     * All the receiver's managed objects are “forgotten.” If you use this method, you should ensure that you also discard references to any managed objects fetched using the receiver, since they will be invalid afterward.
      */
     public function reset(): void
     {
