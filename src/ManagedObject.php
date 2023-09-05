@@ -1054,7 +1054,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 if ($property instanceof AttributeDescription) {
                     $dictionary[$key] = $this->valueForKey($key) ?? Nil::nil();
                 } elseif ($property instanceof RelationshipDescription) {
-                    $dictionary[$key] = $this->serializedRelationshipValueForRelationship($property) ?? Nil::nil();
+                    if (!($value = $this->serializedRelationshipValueForRelationship($property))) {
+                        $value = $property->isOptional ? Nil::nil() : ($property->isToMany ? new Set() : throw new InternalInconsistencyException());
+                    }
+                    $dictionary[$key] = $value;
                 } else {
                     $dictionary[$key] = $this->valueForKey($key);
                 }
