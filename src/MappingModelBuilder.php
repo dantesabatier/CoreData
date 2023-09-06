@@ -105,15 +105,7 @@ class MappingModelBuilder
         if ($destination) {
             $mapping->destinationEntityName = $destination->name;
             $mapping->destinationEntityVersionHash = $destination->versionHash;
-            if ($source) {
-                if ($destination->versionHash === $source->versionHash) {
-                    $mapping->mappingType = EntityMappingType::copyEntityMappingType;
-                } else {
-                    $mapping->mappingType = EntityMappingType::transformEntityMappingType;
-                }
-            } else {
-                $mapping->mappingType = EntityMappingType::addEntityMappingType;
-            }
+            $mapping->mappingType = $source ? ($destination->versionHash === $source->versionHash ? EntityMappingType::copyEntityMappingType : EntityMappingType::transformEntityMappingType) : EntityMappingType::addEntityMappingType;
         } elseif ($source) {
             $mapping->mappingType = EntityMappingType::removeEntityMappingType;
         }
