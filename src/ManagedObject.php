@@ -117,7 +117,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public function __get(string $name)
     {
         if ($name == "objectID") {
-            $this->$name = new ManagedObjectID($this->entity, (new UUID())->uuidString);
+            $this->$name = new ManagedObjectID($this->entity, uuid_generate());
             return $this->$name;
         } elseif ($name == "changedValues" || $name == "changedValuesForCurrentEvent") {
             $this->$name = new Dictionary();
