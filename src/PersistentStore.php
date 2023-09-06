@@ -28,6 +28,8 @@ abstract class PersistentStore extends ObjectClass
     public bool $isReadOnly = false;
     /** @internal */
     public readonly FaultHandler $faultHandler;
+    /** @var Dictionary<Dictionary<ManagedObjectID>> */
+    protected Dictionary $cacheEntities;
 
     /**
      * Returns a store initialized with the given arguments.
@@ -45,6 +47,7 @@ abstract class PersistentStore extends ObjectClass
         unset($this->metadata);
         unset($this->isReadOnly);
         unset($this->faultHandler);
+        unset($this->cacheEntities);
     }
 
     public function __get(string $name)
@@ -54,6 +57,7 @@ abstract class PersistentStore extends ObjectClass
             "metadata" => new Dictionary([StoreTypeKey => $this->type, StoreUUIDKey => $this->identifier]),
             "isReadOnly" => (bool)$this->options?->valueForKey(ReadOnlyPersistentStoreOption),
             "faultHandler" => new FaultHandler($this),
+            "cacheEntities" => new Dictionary(),
             default => $this->valueForUndefinedKey($name)
         };
     }
@@ -104,6 +108,29 @@ abstract class PersistentStore extends ObjectClass
     public function execute(PersistentStoreRequest $request, ManagedObjectContext $context): ArrayClass
     {
         request_concrete_implementation($this, __FUNCTION__);
+    }
+
+    /**
+     * Returns a managed object ID from the reference data for a specified entity.
+     *
+     * You use this method to create managed object IDs which are then used to create cache nodes for information being loaded into the store.
+     * You should not override this method.
+     * @param EntityDescription $entity An entity description object.
+     * @param int|string $referenceObject Reference data for which the managed object ID is required.
+     * @return ManagedObjectID The managed object ID from the reference data for a specified entity
+     */
+    final public function objectID(EntityDescription $entity, int|string $referenceObject): ManagedObjectID
+    {
+        $key = (string)$referenceObject;
+        /** @var Dictionary<ManagedObjectID> $table */
+        $table = $this->cacheEntities[$entity->name] ?? new Dictionary();
+        if (!($objectID = $table[$key])) {
+            $objectID = new ManagedObjectID($entity, $referenceObject);
+            $objectID->persistentStore = $this;
+            $table[$key] = $objectID;
+            $this->cacheEntities[$entity->name] = $table;
+        }
+        return $objectID;
     }
 
     /**

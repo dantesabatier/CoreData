@@ -330,7 +330,7 @@ class SQLConnection extends ObjectClass
             $managedObjectIDs = new ArrayClass();
             do {
                 while ($data = $execute->fetch()) {
-                    $managedObjectIDs->append($requestContext->sqlCore->newObjectID($entity->entityDescription, $data[$entity->primaryKey->columnName]));
+                    $managedObjectIDs->append($requestContext->sqlCore->objectID($entity->entityDescription, $data[$entity->primaryKey->columnName]));
                 }
             } while ($execute->nextRowset() && $execute->columnCount());
             return $managedObjectIDs;

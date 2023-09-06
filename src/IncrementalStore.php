@@ -11,7 +11,6 @@ namespace Sabatier\CoreData;
 
 use InvalidArgumentException;
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\URL;
 
 /**
@@ -19,15 +18,6 @@ use Sabatier\Foundation\URL;
  */
 abstract class IncrementalStore extends PersistentStore
 {
-    /** @var Dictionary<Dictionary<ManagedObjectID>> */
-    private Dictionary $cacheEntities;
-
-    public function __construct(PersistentStoreCoordinator $coordinator, string $configurationName, URL $url, ?Dictionary $options = null)
-    {
-        parent::__construct($coordinator, $configurationName, $url, $options);
-        $this->cacheEntities = new Dictionary();
-    }
-
     public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): ?IncrementalStoreNode
     {
         return null;
@@ -40,23 +30,14 @@ abstract class IncrementalStore extends PersistentStore
      * @param int|string $referenceObject An object of type string or int to use as the key.
      * @return ManagedObjectID A new object ID for an instance of the entity specified by entity and that uses data as the key.
      */
-    public function newObjectID(EntityDescription $entity, int|string $referenceObject): ManagedObjectID
+    final public function newObjectID(EntityDescription $entity, int|string $referenceObject): ManagedObjectID
     {
-        $key = (string)$referenceObject;
-        /** @var Dictionary<ManagedObjectID> $table */
-        $table = $this->cacheEntities[$entity->name] ?? new Dictionary();
-        if (!($objectID = $table[$key])) {
-            $objectID = new ManagedObjectID($entity, $referenceObject);
-            $objectID->persistentStore = $this;
-            $table[$key] = $objectID;
-            $this->cacheEntities[$entity->name] = $table;
-        }
-        return $objectID;
+        return parent::objectID($entity, $referenceObject);
     }
 
     public function obtainPermanentIDs(ArrayClass $objects): ArrayClass
     {
-        return $objects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID->isTemporaryID ? $this->newObjectID($object->entity, $this->newReferenceObject($object)) : $object->objectID);
+        return $objects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID->isTemporaryID ? $this->objectID($object->entity, $this->newReferenceObject($object)) : $object->objectID);
     }
 
     /**

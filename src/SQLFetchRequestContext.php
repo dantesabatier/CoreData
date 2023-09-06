@@ -118,7 +118,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
             $objects = fn(): ArrayClass => $values->map(function (Dictionary $dictionary) use ($entity): ManagedObject {
                 /** @var SQLEntity $entity */
                 $entity = $this->sqlModel->entitiesByName[$dictionary[$entity->entityKey->name]];
-                $object = $this->context->object($this->sqlCore->newObjectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
+                $object = $this->context->object($this->sqlCore->objectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
                 $object->isSuppressingKVO = true;
                 $object->isFault = $this->request->returnsObjectsAsFaults;
                 $object->setValuesForKeys($dictionary);
@@ -133,7 +133,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                 }
             } else {
                 /** @psalm-suppress InvalidArgument */
-                $values = $resultType === FetchRequestResultType::managedObjectResultType ? $objects() : $values->map(fn(Dictionary $dictionary): ManagedObjectID => $this->sqlCore->newObjectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
+                $values = $resultType === FetchRequestResultType::managedObjectResultType ? $objects() : $values->map(fn(Dictionary $dictionary): ManagedObjectID => $this->sqlCore->objectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
             }
         }
         $this->result = $values;

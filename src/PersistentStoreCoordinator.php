@@ -390,11 +390,7 @@ class PersistentStoreCoordinator extends ObjectClass
     public function managedObjectID(URL $uriRepresentation): ?ManagedObjectID
     {
         if (($entity = $this->managedObjectModel->entitiesByName[$uriRepresentation->deletingLastPathComponent()->lastPathComponent]) && ($store = $this->persistentStores->first(fn(PersistentStore $store): bool => $store->identifier === $uriRepresentation->host))) {
-            if ($store instanceof AtomicStore) {
-                return $store->objectID($entity, $uriRepresentation->lastPathComponent);
-            } elseif ($store instanceof IncrementalStore) {
-                return $store->newObjectID($entity, $uriRepresentation->lastPathComponent);
-            }
+            return $store->objectID($entity, $uriRepresentation->lastPathComponent);
         }
         return null;
     }

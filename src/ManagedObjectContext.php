@@ -517,12 +517,7 @@ class ManagedObjectContext extends ObjectClass
     private function obtainPermanentID(ManagedObject $object): void
     {
         if ($object->objectID->isTemporaryID && (($persistentStore = $this->persistentStoreCoordinator?->persistentStoreForObject($object)))) {
-            $referenceObject = $persistentStore->newReferenceObject($object);
-            if ($persistentStore instanceof AtomicStore) {
-                $object->objectID = $persistentStore->objectID($object->entity, $referenceObject);
-            } elseif ($persistentStore instanceof IncrementalStore) {
-                $object->objectID = $persistentStore->newObjectID($object->entity, $referenceObject);
-            }
+            $object->objectID = $persistentStore->objectID($object->entity, $persistentStore->newReferenceObject($object));
             $this->register($object);
         }
     }

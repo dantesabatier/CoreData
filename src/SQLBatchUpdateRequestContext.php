@@ -53,7 +53,7 @@ class SQLBatchUpdateRequestContext extends SQLStoreRequestContext
             $managedObjectIDs = new ArrayClass();
             do {
                 while ($data = $execute->fetch()) {
-                    $managedObjectIDs->append($this->sqlCore->newObjectID($entity->entityDescription, $data[$entity->primaryKey->columnName]));
+                    $managedObjectIDs->append($this->sqlCore->objectID($entity->entityDescription, $data[$entity->primaryKey->columnName]));
                 }
             } while ($execute->nextRowset() && $execute->columnCount());
             return $managedObjectIDs;

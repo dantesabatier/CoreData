@@ -25,6 +25,7 @@ use Sabatier\Foundation\UUID;
 use Sabatier\Foundation\Value;
 use Sabatier\Foundation\ValueTransformer;
 use function Sabatier\Foundation\typeof;
+use function Sabatier\Foundation\uuid_generate;
 use const Sabatier\Foundation\CocoaErrorDomain;
 use const Sabatier\Foundation\KeyValueValidationError;
 use const Sabatier\Foundation\NotFound;
@@ -676,23 +677,14 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 return $objectID;
             }
             if (!$objectID instanceof Nil) {
-                $newObjectID = function (EntityDescription $entity, int|string $referenceObject) use ($store): ManagedObjectID {
-                    if ($store instanceof AtomicStore) {
-                        return $store->objectID($entity, $referenceObject);
-                    } elseif ($store instanceof IncrementalStore) {
-                        return $store->newObjectID($entity, $referenceObject);
-                    } else {
-                        throw new InvalidArgumentException("Unsupported store $store");
-                    }
-                };
                 if (($entityName = $object[SQLEntity::entityKeyName]) && !$entityName instanceof Nil && ($entityDescription = $this->managedObjectContext->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[$entityName])) {
                     $entity = $entityDescription;
                 }
                 if ($objectID) {
-                    return $newObjectID($entity, $objectID);
+                    return $store->objectID($entity, $objectID);
                 }
                 if (!$object->isEmpty()) {
-                    return $newObjectID($entity, (new UUID())->uuidString);
+                    return $store->objectID($entity, uuid_generate());
                 }
             }
             return null;

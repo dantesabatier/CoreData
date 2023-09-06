@@ -29,14 +29,11 @@ abstract class AtomicStore extends PersistentStore
 {
     /** @var Dictionary<AtomicStoreCacheNode> */
     private Dictionary $nodeCache;
-    /** @var Dictionary<Dictionary<ManagedObjectID>> */
-    private Dictionary $cacheEntities;
     private int $nextReference = NotFound;
 
     public function __construct(PersistentStoreCoordinator $coordinator, string $configurationName, URL $url, ?Dictionary $options = null)
     {
         parent::__construct($coordinator, $configurationName, $url, $options);
-        $this->cacheEntities = new Dictionary();
         $this->nodeCache = new Dictionary();
     }
 
@@ -321,29 +318,6 @@ abstract class AtomicStore extends PersistentStore
     public function load(): bool
     {
         request_concrete_implementation($this, __FUNCTION__);
-    }
-
-    /**
-     * Returns a managed object ID from the reference data for a specified entity.
-     *
-     * You use this method to create managed object IDs which are then used to create cache nodes for information being loaded into the store.
-     * You should not override this method.
-     * @param EntityDescription $entity An entity description object.
-     * @param int|string $referenceObject Reference data for which the managed object ID is required.
-     * @return ManagedObjectID The managed object ID from the reference data for a specified entity
-     */
-    public function objectID(EntityDescription $entity, int|string $referenceObject): ManagedObjectID
-    {
-        $key = (string)$referenceObject;
-        /** @var Dictionary<ManagedObjectID> $table */
-        $table = $this->cacheEntities[$entity->name] ?? new Dictionary();
-        if (!($objectID = $table[$key])) {
-            $objectID = new ManagedObjectID($entity, $referenceObject);
-            $objectID->persistentStore = $this;
-            $table[$key] = $objectID;
-            $this->cacheEntities[$entity->name] = $table;
-        }
-        return $objectID;
     }
 
     /**
