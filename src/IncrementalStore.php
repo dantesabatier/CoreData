@@ -9,7 +9,6 @@
 
 namespace Sabatier\CoreData;
 
-use InvalidArgumentException;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\URL;
 
@@ -38,21 +37,6 @@ abstract class IncrementalStore extends PersistentStore
     public function obtainPermanentIDs(ArrayClass $objects): ArrayClass
     {
         return $objects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID->isTemporaryID ? $this->objectID($object->entity, $this->newReferenceObject($object)) : $object->objectID);
-    }
-
-    /**
-     * Returns the reference data used to construct a given object ID.
-     *
-     * This method raises an {@see InvalidArgumentException} if the object ID was not created by the receiving store.
-     * You should not override this method.
-     * @param ManagedObjectID $objectID An object ID created by the receiver.
-     * @return int|string The reference data used to construct objectID.
-     */
-    public function referenceObject(ManagedObjectID $objectID): int|string
-    {
-        /** @var ManagedObjectID $managedObjectID */
-        $managedObjectID = $this->cacheEntities[$objectID->entity->name][(string)$objectID] ?? throw new InvalidArgumentException("Object id wasn't created by this store.");
-        return $managedObjectID->referenceObject;
     }
 
     /**

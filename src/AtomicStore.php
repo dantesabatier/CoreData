@@ -287,13 +287,6 @@ abstract class AtomicStore extends PersistentStore
         return $objects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID->isTemporaryID ? $this->objectID($object->entity, $this->newReferenceObject($object)) : $object->objectID);
     }
 
-    public function referenceObject(ManagedObjectID $objectID): int|string
-    {
-        /** @var ManagedObjectID $managedObjectID */
-        $managedObjectID = $this->cacheEntities[$objectID->entity->name][(string)$objectID] ?? throw new InvalidArgumentException("Object id wasn't created by this store.");
-        return $managedObjectID->referenceObject;
-    }
-
     public function newReferenceObject(ManagedObject $managedObject): int|string
     {
         if ($this->nextReference === NotFound) {
