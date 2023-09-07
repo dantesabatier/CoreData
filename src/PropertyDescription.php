@@ -66,9 +66,6 @@ abstract class PropertyDescription extends ObjectClass
             /** @var ArrayClass<Predicate> $validationPredicates */
             $validationPredicates = new ArrayClass();
             $minValue = $this->minValue;
-            if ($minValue instanceof Value) {
-                $minValue = $minValue->value;
-            }
             if ($minValue !== null) {
                 /** @psalm-suppress InternalClass */
                 $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class ($minValue) extends Validator {
@@ -82,9 +79,6 @@ abstract class PropertyDescription extends ObjectClass
                 }), Expression::expressionForKeyPath($this->name), selector: "validate"));
             }
             $maxValue = $this->maxValue;
-            if ($maxValue instanceof Value) {
-                $maxValue = $maxValue->value;
-            }
             if ($maxValue !== null) {
                 /** @psalm-suppress InternalClass */
                 $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class ($maxValue) extends Validator {
