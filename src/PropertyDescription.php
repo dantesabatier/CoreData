@@ -11,7 +11,6 @@ use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\Predicate;
-use Sabatier\Foundation\Value;
 
 /**
  * A description of a property of a Core Data entity.
