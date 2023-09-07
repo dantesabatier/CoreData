@@ -5,7 +5,6 @@ namespace Sabatier\CoreData;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\InternalInconsistencyException;
-use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\absolute_time_get_current;
@@ -47,7 +46,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         /** @var Dictionary<mixed> $representation */
                         $representation = $map[$referenceObject] ?? new Dictionary();
                         foreach ($data as $key => $value) {
-                            $value ??= Nil::nil();
                             $keys = new ArrayClass(explode("_", $key));
                             if ($keys->count() < 3) {
                                 $property = $currentEntity->propertiesByName[$key];
