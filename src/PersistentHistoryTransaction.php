@@ -112,11 +112,12 @@ class PersistentHistoryTransaction extends ObjectClass
 
     /**
      * A fetch request that has the persistent history transaction as the entity.
-     * @return FetchRequest<static>|null
+     * @return FetchRequest<PersistentHistoryTransaction>|null
      */
     public static function fetchRequest(): ?FetchRequest
     {
         if ($entity = self::$entityDescription) {
+            /** @var FetchRequest<PersistentHistoryTransaction> $fetchRequest */
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $entity;
             return $fetchRequest;

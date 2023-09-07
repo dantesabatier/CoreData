@@ -70,11 +70,12 @@ class PersistentHistoryChange extends ObjectClass
 
     /**
      * A fetch request that has the persistent history change as the entity.
-     * @return FetchRequest<static>|null
+     * @return FetchRequest<PersistentHistoryChange>|null
      */
     public static function fetchRequest(): ?FetchRequest
     {
         if ($entity = self::$entityDescription) {
+            /** @var FetchRequest<PersistentHistoryChange> $fetchRequest */
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $entity;
             return $fetchRequest;
