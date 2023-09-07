@@ -21,7 +21,7 @@ use Sabatier\Foundation\NotificationCenter;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
-use Sabatier\Foundation\UUID;
+use function Sabatier\Foundation\uuid_generate;
 
 /** @internal */
 class SQLCore extends IncrementalStore
@@ -203,7 +203,7 @@ class SQLCore extends IncrementalStore
 
     public static function setMetadata(?Dictionary $metadata, URL $url): bool
     {
-        $metadata ??= new Dictionary([StoreTypeKey => SQLStoreType, StoreUUIDKey => (new UUID())->uuidString]);
+        $metadata ??= new Dictionary([StoreTypeKey => SQLStoreType, StoreUUIDKey => uuid_generate()]);
         $connection = new SQLConnection();
         $connection->saveMetadata($metadata);
         return true;
