@@ -710,18 +710,17 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $entity = $store->model->entitiesByName[$this->entity->name];
             foreach ($entity->foreignKeyColumns as $foreignKeyColumn) {
                 $key = $foreignKeyColumn->columnName;
-                if (!($value = $keyedValues[$key])) {
-                    continue;
+                if ($value = $keyedValues[$key]) {
+                    $representation[$foreignKeyColumn->toOneRelationship->name] = $value instanceof Nil ? $value : (function () use ($value, $foreignKeyColumn): ?ManagedObject {
+                        /** @var FetchRequest<ManagedObject> $fetchRequest */
+                        $fetchRequest = new FetchRequest();
+                        $fetchRequest->entity = $foreignKeyColumn->toOneRelationship->destinationEntity->entityDescription;
+                        $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue((int)$value));
+                        /** @noinspection PhpUnhandledExceptionInspection */
+                        return $this->managedObjectContext->fetch($fetchRequest)->first();
+                    })();
+                    $representation->removeValueForKey($key);
                 }
-                $representation[$foreignKeyColumn->toOneRelationship->name] = $value instanceof Nil ? $value : (function () use ($value, $foreignKeyColumn): ?ManagedObject {
-                    /** @var FetchRequest<ManagedObject> $fetchRequest */
-                    $fetchRequest = new FetchRequest();
-                    $fetchRequest->entity = $foreignKeyColumn->toOneRelationship->destinationEntity->entityDescription;
-                    $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue((int)$value));
-                    /** @noinspection PhpUnhandledExceptionInspection */
-                    return $this->managedObjectContext->fetch($fetchRequest)->first();
-                })();
-                $representation->removeValueForKey($key);
             }
         }
         foreach ($keyedValues as $key => $value) {
