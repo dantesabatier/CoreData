@@ -10,9 +10,9 @@
 namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Set;
+use Sabatier\Foundation\Value;
 use Sabatier\Foundation\ValueTransformer;
 use function Sabatier\Foundation\human_readable_value;
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
@@ -46,11 +46,11 @@ class PersistentHistoryChange extends ObjectClass
         /** @var ValueTransformer $valueTransformer */
         $valueTransformer = ValueTransformer::valueTransformerForName(SecureUnarchiveFromDataTransformerName);
         foreach ($dictionary as $key => $value) {
-            if ($value instanceof Nil) {
+            if ($value instanceof Value) {
                 $value = $value->value;
             }
             if ($key === "changeType") {
-                $value = PersistentHistoryChangeType::from($value);
+                $value = PersistentHistoryChangeType::from((int)$value);
             } elseif ($key === "tombstone") {
                 $value = $valueTransformer->reverseTransformedValue($value);
             } elseif ($key === "updatedProperties") {
