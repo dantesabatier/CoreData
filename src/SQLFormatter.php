@@ -65,10 +65,7 @@ class SQLFormatter extends Formatter
 
     private function quoted(string $string): ?string
     {
-        if (preg_match('/^(((`[^`]*($|`))+)|((\[[^]]*($|]))(][^]]*($|]))*)|(("[^"\\\\]*(?:\\\\.[^"\\\\]*)*("|$))+)|((\'[^\'\\\\]*(?:\\\\.[^\'\\\\]*)*(\'|$))+))/s', $string, $matches)) {
-            return $matches[1];
-        }
-        return null;
+        return preg_match("/^(((`[^`]*(\$|`))+)|((\\[[^]]*(\$|]))(][^]]*(\$|]))*)|((\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*(\"|\$))+)|(('[^'\\\\]*(?:\\\\.[^'\\\\]*)*('|\$))+))/s", $string, $matches) ? $matches[1] : null;
     }
 
     private function token(string $string, ?SQLFormatterToken $previous = null): SQLFormatterToken
@@ -108,7 +105,7 @@ class SQLFormatter extends Formatter
                 return $ret;
             }
         }
-        if (preg_match('/^(\d+(\.\d+)?|0x[\da-fA-F]+|0b[01]+)($|\s|"\'`|' . self::$regexBoundaries . ")/", $string, $matches)) {
+        if (preg_match("/^(\\d+(\\.\\d+)?|0x[\\da-fA-F]+|0b[01]+)(\$|\\s|\"'`|" . self::$regexBoundaries . ")/", $string, $matches)) {
             return new SQLFormatterToken($matches[1], SQLFormatterTokenType::number);
         }
         if (preg_match("/^(" . self::$regexBoundaries . ")/", $string, $matches)) {
@@ -130,7 +127,7 @@ class SQLFormatter extends Formatter
         if (preg_match("/^(" . self::$regexFunction . "[(]|\s|[)])/", $upper, $matches)) {
             return new SQLFormatterToken(substr($string, 0, strlen($matches[1]) - 1), SQLFormatterTokenType::function);
         }
-        preg_match('/^(.*?)($|\s|["\'`]|' . self::$regexBoundaries . ")/", $string, $matches);
+        preg_match("/^(.*?)(\$|\\s|[\"'`]|" . self::$regexBoundaries . ")/", $string, $matches);
         if ($previous && $previous->value === ".") {
             return new SQLFormatterToken($matches[1], SQLFormatterTokenType::column);
         }
