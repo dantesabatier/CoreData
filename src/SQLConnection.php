@@ -40,7 +40,7 @@ class SQLConnection extends ObjectClass
     private SQLStoreRequestContext $requestContext;
     private readonly string $bundleID;
     private ?PDO $pdo = null;
-    private bool $open = false;
+    private bool $isOpen = false;
 
     public function __construct(public readonly ?SQLAdapter $adapter = null)
     {
@@ -96,10 +96,10 @@ class SQLConnection extends ObjectClass
      */
     public function connect(): bool
     {
-        if ($this->isOpen()) {
+        if ($this->isOpen) {
             return true;
         }
-        $this->open = true;
+        $this->isOpen = true;
         $schemaName = $this->schema->name;
         if (SQLCore::$debugDefault) {
             error_log(sprintf("CoreData: annotation: Connecting to %s database \"%s\"", SQLStoreType, $schemaName));
@@ -116,14 +116,14 @@ class SQLConnection extends ObjectClass
      */
     public function disconnect(): bool
     {
-        if (!$this->isOpen()) {
+        if (!$this->isOpen) {
             return true;
         }
         if (SQLCore::$debugDefault) {
             error_log("CoreData: annotation: Disconnecting from sql database \"{$this->schema->name}\"");
         }
         $this->pdo = null;
-        $this->open = false;
+        $this->isOpen = false;
         return true;
     }
 
@@ -742,10 +742,5 @@ class SQLConnection extends ObjectClass
     {
         $this->execute(new SQLStatement("DROP DATABASE IF EXISTS `{$this->schema->name}`"));
         return true;
-    }
-
-    public function isOpen(): bool
-    {
-        return $this->open;
     }
 }
