@@ -12,6 +12,7 @@ namespace Sabatier\CoreData;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Notification;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
@@ -55,6 +56,9 @@ class PersistentHistoryTransaction extends ObjectClass
         unset($this->token);
         unset($this->transactionNumber);
         foreach ($dictionary as $key => $value) {
+            if ($value instanceof Nil) {
+                $value = $value->value;
+            }
             if ($key === "transactionID") {
                 $key = "transactionNumber";
             } elseif ($key === "timestamp") {
