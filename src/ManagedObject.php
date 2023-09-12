@@ -606,7 +606,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                             $managedObject->setValuesForKeys($member->dictionaryWithValues($member->persistentProperties->valueForKey("name")));
                         }
                     }
-                    //unset($this->reserved[$key]);
+                    unset($this->reserved[$key]);
                 }
                 $comparisonResult = $change->compare($value);
                 if ($comparisonResult == ComparisonResult::orderedDescending) {
@@ -630,8 +630,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 }
                 if (!$inverseRelationship->isToMany) {
                     /** @var ManagedObject $managedObject */
-                    foreach ($change as $managedObject) {
-                        $managedObject->setPrimitiveValueForKey($changeKind === KeyValueChange::removal ? null : $this->objectID, $inverseRelationship->name);
+                    foreach ($value as $managedObject) {
+                        $managedObject->setPrimitiveValueForKey($this->objectID, $inverseRelationship->name);
                     }
                 }
             } else {
@@ -651,13 +651,13 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 } else {
                     $changeKind = KeyValueChange::replacement;
                 }
-                if (!$inverseRelationship->isToMany) {
-                    if ($change instanceof ManagedObjectID) {
-                        $change = $this->managedObjectContext->object($change);
-                    }
-                    if ($change instanceof ManagedObject) {
-                        $change->setPrimitiveValueForKey($this->objectID, $inverseRelationship->name);
-                    }
+                if ($value instanceof ManagedObjectID) {
+                    $value = $this->managedObjectContext->object($change);
+                }
+                if ($inverseRelationship->isToMany) {
+                    $this->setPrimitiveValueForKey($value->objectID, $property->name);
+                } elseif ($value instanceof ManagedObject) {
+                    $value->setPrimitiveValueForKey($this->objectID, $inverseRelationship->name);
                 }
             }
             $this->willChangeValueForKey($key, $changeKind, $change);
