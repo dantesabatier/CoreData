@@ -631,7 +631,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 if (!$inverseRelationship->isToMany) {
                     /** @var ManagedObject $managedObject */
                     foreach ($change as $managedObject) {
-                        $managedObject->setPrimitiveValueForKey($this->objectID, $inverseRelationship->name);
+                        $managedObject->setPrimitiveValueForKey($changeKind === KeyValueChange::removal ? null : $this->objectID, $inverseRelationship->name);
                     }
                 }
             } else {
