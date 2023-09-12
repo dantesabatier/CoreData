@@ -655,7 +655,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     $value = $this->managedObjectContext->object($change);
                 }
                 if ($inverseRelationship->isToMany) {
-                    $this->setPrimitiveValueForKey($value->objectID, $property->name);
+                    $this->setPrimitiveValueForKey($value?->objectID, $property->name);
                 } elseif ($value instanceof ManagedObject) {
                     $value->setPrimitiveValueForKey($this->objectID, $inverseRelationship->name);
                 }
