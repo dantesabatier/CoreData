@@ -874,7 +874,7 @@ class ManagedObjectContext extends ObjectClass
             $fetchRequest->affectedStores = new ArrayClass([$persistentStore]);
             if ($this->count($fetchRequest)) {
                 $this->insertedObjects->remove($insertedObject);
-                $insertedObject->isPendingInsertion = true;
+                $insertedObject->isPendingInsertion = false;
                 if (!$insertedObject->changedValuesForCurrentEvent()->isEmpty()) {
                     $this->updatedObjects->append($insertedObject);
                     $insertedObject->isPendingUpdate = true;
