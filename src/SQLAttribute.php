@@ -59,6 +59,15 @@ class SQLAttribute extends SQLColumn
         }
     }
 
+    public function __set(string $name, mixed $value): void
+    {
+        if ($name == "triggerKeys" || $name == "isBackedByTrigger" || $name == "isDerivedAttribute") {
+            $this->$name = $value;
+        } else {
+            parent::__set($name, $value);
+        }
+    }
+
     public function addKeyForTriggerOnRelationship(SQLRelationship $relationship): void
     {
     }
