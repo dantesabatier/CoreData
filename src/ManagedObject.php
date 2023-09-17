@@ -34,9 +34,6 @@ use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 /**
  * A base class that implements the behavior required of a Core Data model object.
  *
- * @property-read bool $isInserted A Boolean value that indicates whether the managed object has been inserted in a managed object context.
- * @property-read bool $isUpdated A Boolean value that indicates whether the managed object has unsaved changes.
- * @property-read bool $isDeleted A Boolean value that indicates whether the managed object will be deleted during the next save.
  * @property-read bool $hasChanges A Boolean value that indicates whether the managed object has been inserted, has been deleted, or has unsaved changes.
  * @property-read bool $hasPersistentChangedValues A Boolean value that indicates whether the managed object has persistent changes.
  */
@@ -50,6 +47,12 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public readonly EntityDescription $entity;
     /** @var ManagedObjectID The object ID of the managed object. If the receiver is a fault, accessing this property does not cause it to fire. If the receiver has not yet been saved, the object ID is a temporary value that will change when the object is saved. */
     public ManagedObjectID $objectID;
+    /** @var bool A Boolean value that indicates whether the managed object has been inserted in a managed object context. */
+    public readonly bool $isInserted;
+    /** @var bool A Boolean value that indicates whether the managed object has unsaved changes. */
+    public readonly bool $isUpdated;
+    /** @var bool A Boolean value that indicates whether the managed object will be deleted during the next save. */
+    public readonly bool $isDeleted;
     public readonly ManagedObjectContext $managedObjectContext;
     private Dictionary $changedValues;
     private Dictionary $changedValuesForCurrentEvent;
@@ -71,18 +74,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public readonly ArrayClass $persistentProperties;
     /** @internal */
     public readonly ArrayClass $transientProperties;
-    /** @internal */
-    public bool $isUnprocessedUpdate = false;
-    /** @internal */
-    public bool $isUnprocessedInsertion = false;
-    /** @internal */
-    public bool $isUnprocessedDeletion = false;
-    /** @internal */
-    public bool $isPendingUpdate = false;
-    /** @internal */
-    public bool $isPendingInsertion = false;
-    /** @internal */
-    public bool $isPendingDeletion = false;
     /** @internal */
     public bool $isSuppressingKVO = false;
     /** @internal */
@@ -109,6 +100,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         unset($this->changedValues);
         unset($this->changedValuesForCurrentEvent);
         unset($this->objectID);
+        unset($this->isInserted);
+        unset($this->isUpdated);
+        unset($this->isDeleted);
         $this->managedObjectContext = $managedObjectContext;
         $this->entity = $entity ?? throw new InvalidArgumentException("Invalid argument: entity cannot be null");
         $this->managedObjectContext->insert($this);
@@ -160,11 +154,22 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         } elseif ($name == "hasChanges") {
             return $this->isInserted || $this->isUpdated || $this->isDeleted;
         } elseif ($name == "isInserted") {
-            return $this->isPendingInsertion;
+            /** @var FetchRequest<Number> $fetchRequest */
+            $fetchRequest = new FetchRequest();
+            $fetchRequest->entity = $this->entity;
+            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($this->objectID));
+            /** @var PersistentStore $persistentStore */
+            $persistentStore = $this->objectID->persistentStore;
+            $fetchRequest->affectedStores = new ArrayClass([$persistentStore]);
+            /** @noinspection PhpUnhandledExceptionInspection */
+            $this->$name = (bool)$this->managedObjectContext->count($fetchRequest);
+            return $this->$name;
         } elseif ($name == "isUpdated") {
-            return $this->isPendingUpdate;
+            $this->$name = !$this->isInserted && !$this->changedValuesForCurrentEvent()->isEmpty();
+            return $this->$name;
         } elseif ($name == "isDeleted") {
-            return $this->isPendingDeletion;
+            $this->$name = $this->managedObjectContext->deletedObjects->containsElement($this);
+            return $this->$name;
         } else {
             return $this->valueForKey($name);
         }
@@ -172,7 +177,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == "changedValues" || $name == "changedValuesForCurrentEvent" || $name == "serializationKeys" || $name == "allProperties" || $name == "modeledProperties" || $name == "persistentProperties" || $name == "transientProperties" || $name == "faultHandler") {
+        if ($name == "isInserted" || $name == "isUpdated" || $name == "isDeleted" || $name == "changedValues" || $name == "changedValuesForCurrentEvent" || $name == "serializationKeys" || $name == "allProperties" || $name == "modeledProperties" || $name == "persistentProperties" || $name == "transientProperties" || $name == "faultHandler") {
             $this->$name = $value;
         } else {
             $this->setValueForKey($value, $name);
@@ -663,6 +668,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willChangeValueForKey($key, $changeKind, $change);
             $this->setPrimitiveValueForKey($value, $key);
             $this->didChangeValueForKey($key, $changeKind, $value);
+        } elseif (property_exists($this, $key)) {
+            $this->$key = $value;
         } else {
             parent::setValueForKey($value, $key);
         }
