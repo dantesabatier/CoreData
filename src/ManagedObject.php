@@ -669,7 +669,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->setPrimitiveValueForKey($value, $key);
             $this->didChangeValueForKey($key, $changeKind, $value);
         } elseif (property_exists($this, $key)) {
-            $this->$key = $value;
+            if (!isset($this->$key)) {
+                $this->$key = $value;
+            }
         } else {
             parent::setValueForKey($value, $key);
         }
