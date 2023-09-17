@@ -170,9 +170,6 @@ class ManagedObjectContext extends ObjectClass
                             $this->insertedObjects->remove($registeredObject);
                             $this->updatedObjects->remove($registeredObject);
                             $this->deletedObjects->remove($registeredObject);
-                            $registeredObject->isPendingInsertion = false;
-                            $registeredObject->isPendingUpdate = false;
-                            $registeredObject->isPendingDeletion = false;
                         }
                     }
                 }
@@ -459,7 +456,6 @@ class ManagedObjectContext extends ObjectClass
         if (!$this->processingChanges) {
             $this->hasChanges = true;
             $this->insertedObjects->append($object);
-            $object->isPendingInsertion = true;
         }
         $this->register($object);
     }
@@ -475,9 +471,6 @@ class ManagedObjectContext extends ObjectClass
         $this->insertedObjects->remove($object);
         $this->updatedObjects->remove($object);
         $object->prepareForDeletion();
-        $object->isPendingDeletion = true;
-        $object->isPendingInsertion = false;
-        $object->isPendingUpdate = false;
         $this->unregister($object);
         $this->refault($object);
     }
@@ -645,7 +638,6 @@ class ManagedObjectContext extends ObjectClass
         } else {
             $object->setValueForKey($insertions->first(), $relationship->name);
             $this->updatedObjects->append($object);
-            $object->isPendingUpdate = true;
         }
         $this->insertedObjects->formUnion($insertions);
     }
@@ -680,17 +672,11 @@ class ManagedObjectContext extends ObjectClass
                     $this->deletedObjects->remove($object);
                     $this->insertedObjects->remove($object);
                     $this->updatedObjects->append($object);
-                    $object->isPendingUpdate = true;
-                    $object->isPendingDeletion = false;
-                    $object->isPendingInsertion = false;
                     foreach ($deletions as $deletion) {
                         $deletion->setPrimitiveValueForKey(null, $inverseRelationship->name);
                         $this->deletedObjects->remove($deletion);
                         $this->insertedObjects->remove($deletion);
                         $this->updatedObjects->append($deletion);
-                        $deletion->isPendingDeletion = false;
-                        $deletion->isPendingInsertion = false;
-                        $deletion->isPendingUpdate = true;
                     }
                 }
             } else {
@@ -698,9 +684,6 @@ class ManagedObjectContext extends ObjectClass
                 $this->deletedObjects->remove($object);
                 $this->insertedObjects->remove($object);
                 $this->updatedObjects->append($object);
-                $object->isPendingUpdate = true;
-                $object->isPendingDeletion = false;
-                $object->isPendingInsertion = false;
             }
         } elseif ($deleteRule == DeleteRule::cascadeDeleteRule) {
             foreach ($deletions as $deletion) {
@@ -757,7 +740,6 @@ class ManagedObjectContext extends ObjectClass
                 }
                 if ($attributesChanged && !$object->isInserted) {
                     $this->updatedObjects->append($object);
-                    $object->isPendingUpdate = true;
                 }
             }
             $this->resetAllChanges();
@@ -865,19 +847,10 @@ class ManagedObjectContext extends ObjectClass
         $this->obtainPermanentIDs(new ArrayClass($this->insertedObjects)) ?: throw new InternalInconsistencyException("Unable to obtain permanent ids for inserted objects");
         $insertedObjects = clone $this->insertedObjects;
         foreach ($insertedObjects as $insertedObject) {
-            /** @var FetchRequest<Number> $fetchRequest */
-            $fetchRequest = new FetchRequest();
-            $fetchRequest->entity = $insertedObject->entity;
-            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($insertedObject->objectID));
-            /** @var PersistentStore $persistentStore */
-            $persistentStore = $insertedObject->objectID->persistentStore;
-            $fetchRequest->affectedStores = new ArrayClass([$persistentStore]);
-            if ($this->count($fetchRequest)) {
+            if ($insertedObject->isInserted) {
                 $this->insertedObjects->remove($insertedObject);
-                $insertedObject->isPendingInsertion = false;
-                if (!$insertedObject->changedValuesForCurrentEvent()->isEmpty()) {
+                if ($insertedObject->isUpdated) {
                     $this->updatedObjects->append($insertedObject);
-                    $insertedObject->isPendingUpdate = true;
                 }
                 continue;
             }
@@ -886,9 +859,8 @@ class ManagedObjectContext extends ObjectClass
         }
         $updatedObjects = clone $this->updatedObjects;
         foreach ($updatedObjects as $updatedObject) {
-            if ($updatedObject->changedValuesForCurrentEvent()->isEmpty()) {
+            if (!$updatedObject->isUpdated) {
                 $this->updatedObjects->remove($updatedObject);
-                $updatedObject->isPendingUpdate = false;
                 continue;
             }
             $updatedObject->validateForUpdate();
