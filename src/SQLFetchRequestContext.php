@@ -45,7 +45,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         $currentEntity = $entity;
                         $referenceObject = (string)$data[$entity->primaryKey->columnName];
                         /** @var Dictionary<mixed> $representation */
-                        $representation = $map[$referenceObject] ?? new Dictionary();
+                        $representation = $map[$referenceObject] ?? new Dictionary(["isInserted" => true]);
                         foreach ($data as $key => $value) {
                             $value ??= Nil::nil();
                             $keys = new ArrayClass(explode("_", $key));
@@ -76,7 +76,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     if ($current instanceof Dictionary) {
                                         if ($current[$key] === null) {
                                             if ($property instanceof SQLToOne) {
-                                                $current[$key] = new Dictionary();
+                                                $current[$key] = new Dictionary(["isInserted" => true]);
                                             } else {
                                                 $current[$key] = new Set();
                                             }
@@ -90,7 +90,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     if (($relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany) && $current instanceof Set) {
                                         $cached = $current;
                                         if ($property instanceof SQLPrimaryKey && !$cached->contains(fn(Dictionary $dictionary): bool => $dictionary[$property->name] === $value)) {
-                                            $cached[] = new Dictionary();
+                                            $cached[] = new Dictionary(["isInserted" => true]);
                                         }
                                         if (!$cached->isEmpty()) {
                                             /** @psalm-suppress UnsupportedReferenceUsage */
