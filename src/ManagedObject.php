@@ -165,7 +165,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->$name = (bool)$this->managedObjectContext->count($fetchRequest);
             return $this->$name;
         } elseif ($name == "isUpdated") {
-            $this->$name = !$this->isInserted && !$this->changedValuesForCurrentEvent()->isEmpty();
+            $this->$name = $this->isInserted && !$this->changedValuesForCurrentEvent()->isEmpty();
             return $this->$name;
         } elseif ($name == "isDeleted") {
             $this->$name = $this->managedObjectContext->deletedObjects->containsElement($this);
