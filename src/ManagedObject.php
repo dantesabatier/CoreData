@@ -88,9 +88,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function __construct(ManagedObjectContext $managedObjectContext, ?EntityDescription $entity = null)
     {
-        if ($this->isSubclass(ManagedObject::class)) {
-            $entity ??= static::entity();
-        }
         unset($this->serializationKeys);
         unset($this->faultHandler);
         unset($this->allProperties);
@@ -103,6 +100,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         unset($this->isInserted);
         unset($this->isUpdated);
         unset($this->isDeleted);
+        if ($this->isSubclass(ManagedObject::class)) {
+            $entity ??= static::entity();
+        }
         $this->managedObjectContext = $managedObjectContext;
         $this->entity = $entity ?? throw new InvalidArgumentException("Invalid argument: entity cannot be null");
         $this->managedObjectContext->insert($this);
