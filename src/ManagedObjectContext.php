@@ -699,7 +699,7 @@ class ManagedObjectContext extends ObjectClass
      */
     private function processPendingUpdates(/** @noinspection PhpUnusedParameterInspection */ Set $updates, RelationshipDescription $relationship, ManagedObject $object): void
     {
-        $this->updatedObjects->formUnion($updates->filter(fn(ManagedObject $object): bool => !$object->isInserted && !$object->isDeleted));
+        $this->updatedObjects->formUnion($updates->filter(fn(ManagedObject $managedObject): bool => !$managedObject->isDeleted));
     }
 
     /**
@@ -738,7 +738,7 @@ class ManagedObjectContext extends ObjectClass
                         }
                     }
                 }
-                if ($attributesChanged && !$object->isInserted) {
+                if ($attributesChanged) {
                     $this->updatedObjects->append($object);
                 }
             }
