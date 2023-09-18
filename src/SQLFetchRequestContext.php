@@ -33,7 +33,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         $resultType = $this->request->resultType;
         /** @var ArrayClass<Dictionary<mixed>|Number> $values */
         $values = match ($resultType) {
-            FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType, FetchRequestResultType::dictionaryResultType => (function () use ($execute): ArrayClass {
+            FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType, FetchRequestResultType::dictionaryResultType => (function () use ($resultType, $execute): ArrayClass {
                 /** @var Dictionary<Dictionary<mixed>> $map */
                 $map = new Dictionary();
                 do {
@@ -45,7 +45,10 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         $currentEntity = $entity;
                         $referenceObject = (string)$data[$entity->primaryKey->columnName];
                         /** @var Dictionary<mixed> $representation */
-                        $representation = $map[$referenceObject] ?? new Dictionary(["isInserted" => true]);
+                        $representation = $map[$referenceObject] ?? new Dictionary();
+                        if ($resultType !== FetchRequestResultType::dictionaryResultType) {
+                            $representation["isInserted"] = true;
+                        }
                         foreach ($data as $key => $value) {
                             $value ??= Nil::nil();
                             $keys = new ArrayClass(explode("_", $key));
@@ -76,7 +79,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     if ($current instanceof Dictionary) {
                                         if ($current[$key] === null) {
                                             if ($property instanceof SQLToOne) {
-                                                $current[$key] = new Dictionary(["isInserted" => true]);
+                                                $current[$key] = new Dictionary();
                                             } else {
                                                 $current[$key] = new Set();
                                             }
@@ -90,15 +93,20 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     if (($relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany) && $current instanceof Set) {
                                         $cached = $current;
                                         if ($property instanceof SQLPrimaryKey && !$cached->contains(fn(Dictionary $dictionary): bool => $dictionary[$property->name] === $value)) {
-                                            $cached[] = new Dictionary(["isInserted" => true]);
+                                            $cached[] = new Dictionary();
                                         }
                                         if (!$cached->isEmpty()) {
                                             /** @psalm-suppress UnsupportedReferenceUsage */
                                             $current = &$cached[$cached->indexBefore($cached->endIndex())];
                                         }
                                     }
-                                    if ($current instanceof Dictionary && $current[$key] === null) {
-                                        $current[$key] = $value;
+                                    if ($current instanceof Dictionary) {
+                                        if ($resultType !== FetchRequestResultType::dictionaryResultType) {
+                                            $current["isInserted"] = true;
+                                        }
+                                        if ($current[$key] === null) {
+                                            $current[$key] = $value;
+                                        }
                                     }
                                     $currentEntity = $entity;
                                 }
