@@ -228,7 +228,7 @@ class PersistentStoreCoordinator extends ObjectClass
                 $this->addPersistentStoreWithType(PersistentStoreType::from($description->type), $description->configuration, $description->url, $description->options);
                 $completion($description, null);
             } catch (Throwable $throwable) {
-                $completion($description, new Error(CocoaErrorDomain, (int)$throwable->getCode(), new Dictionary([LocalizedFailureReasonErrorKey => (string)$throwable])));
+                $completion($description, new Error(CocoaErrorDomain, (int)$throwable->getCode(), new Dictionary([LocalizedFailureReasonErrorKey => $throwable->getMessage()])));
             }
         };
         if ($description->shouldAddStoreAsynchronously) {
