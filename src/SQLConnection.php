@@ -41,6 +41,7 @@ class SQLConnection extends ObjectClass
     public readonly bool $hasCachedModelTable;
     public readonly bool $hasPersistentHistoryTables;
     public readonly bool $hasHistoryRows;
+    public readonly ?ManagedObjectModel $cachedModel;
     private SQLStoreRequestContext $requestContext;
     private readonly string $bundleID;
     private ?PDO $pdo = null;
@@ -55,6 +56,7 @@ class SQLConnection extends ObjectClass
         unset($this->hasCachedModelTable);
         unset($this->hasPersistentHistoryTables);
         unset($this->hasHistoryRows);
+        unset($this->cachedModel);
     }
 
     public function __get(string $name)
@@ -68,6 +70,7 @@ class SQLConnection extends ObjectClass
             "hasCachedModelTable" => $this->hasCachedModelTable(),
             "hasPersistentHistoryTables" => $this->hasPersistentHistoryTables(),
             "hasHistoryRows" => $this->hasHistoryRows(),
+            "cachedModel" => $this->fetchCachedModel(),
             default => $this->valueForUndefinedKey($name)
         };
     }
@@ -567,7 +570,7 @@ class SQLConnection extends ObjectClass
     /**
      * @throws Exception
      */
-    public function fetchCachedModel(): ?ManagedObjectModel
+    private function fetchCachedModel(): ?ManagedObjectModel
     {
         $this->connect();
         $this->createCachedModelTable();

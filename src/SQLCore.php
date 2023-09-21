@@ -177,7 +177,7 @@ class SQLCore extends IncrementalStore
     {
         $connection = new SQLConnection();
         if ($connection->hasMetadataTable) {
-            return $connection->fetchCachedModel();
+            return $connection->cachedModel;
         }
         return null;
     }

@@ -25,7 +25,7 @@ readonly class SQLStoreMigrator
     {
         $this->connection = $this->store->schemaValidationConnection;
         $this->adapter = $this->connection->adapter ?? throw new InternalInconsistencyException();
-        $this->sourceModel = new SQLModel($this->connection->fetchCachedModel() ?? throw new InternalInconsistencyException(), $this->store->configurationName);
+        $this->sourceModel = new SQLModel($this->connection->cachedModel ?? throw new InternalInconsistencyException(), $this->store->configurationName);
         $this->removedEntities = new ArrayClass();
         $this->removedManyToMany = new ArrayClass();
     }
