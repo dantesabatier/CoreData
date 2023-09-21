@@ -23,14 +23,23 @@ abstract class SQLRelationship extends SQLProperty
         parent::__construct($entity, $this->relationshipDescription);
         unset($this->destinationEntity);
         unset($this->inverseRelationship);
-        $this->isOrdered = $this->relationshipDescription->isOrdered;
-        $this->lazyInverseRelationshipName = $this->relationshipDescription->inverseRelationship->name;
-        $this->lazyDestinationEntityName = $this->relationshipDescription->destinationEntity->name;
+        unset($this->isOrdered);
+        unset($this->lazyDestinationEntityName);
+        unset($this->lazyInverseRelationshipName);
     }
 
     public function __get(string $name)
     {
-        if ($name == "destinationEntity") {
+        if ($name == "isOrdered") {
+            $this->$name = $this->relationshipDescription->isOrdered;
+            return $this->$name;
+        } elseif ($name == "lazyDestinationEntityName") {
+            $this->$name = $this->relationshipDescription->destinationEntity->name;
+            return $this->$name;
+        } elseif ($name == "lazyInverseRelationshipName") {
+            $this->$name = $this->relationshipDescription->inverseRelationship->name;
+            return $this->$name;
+        } elseif ($name == "destinationEntity") {
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
             $this->$name = $this->entity->model->entitiesByName[$this->lazyDestinationEntityName];
             return $this->$name;
@@ -45,7 +54,7 @@ abstract class SQLRelationship extends SQLProperty
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == "destinationEntity" || $name == "inverseRelationship") {
+        if ($name == "isOrdered" || $name == "lazyDestinationEntityName" || $name == "lazyInverseRelationshipName" || $name == "destinationEntity" || $name == "inverseRelationship") {
             $this->$name = $value;
         } else {
             parent::__set($name, $value);
