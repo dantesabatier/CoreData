@@ -194,28 +194,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         unset($this->changedValues[$name]);
     }
 
-    public function __call(string $name, array $arguments)
-    {
-        if ($method = $this->faultingMutableSetMutationMethods?->valueForKey($name)) {
-            ($method->closure)(...$arguments);
-            return;
-        }
-        $this->doesNotRecognizeSelector($name);
-    }
-
-    public function responds(string $selector): bool
-    {
-        return parent::responds($selector) || $this->faultingMutableSetMutationMethods?->valueForKey($selector);
-    }
-
-    public function perform(string $selector, array $arguments = []): mixed
-    {
-        if ($this->faultingMutableSetMutationMethods?->valueForKey($selector)) {
-            return $this->$selector(...$arguments);
-        }
-        return parent::perform($selector, $arguments);
-    }
-
     /**
      * Returns the entity description that is associated with this subclass.
      *
