@@ -144,12 +144,12 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
                 $context = $this->createDeleteTransactionsRequestContext();
                 $context->executeRequestUsingConnection($connection);
             }
-            if (!$connection->hasHistoryRows()) {
+            if (!$connection->hasHistoryRows) {
                 $connection->dropHistoryTrackingTables();
             }
             return true;
         }
-        if (!$connection->hasHistoryRows()) {
+        if (!$connection->hasHistoryRows) {
             return false;
         }
         $context = $this->fetchRequestContextForChanges();

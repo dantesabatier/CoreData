@@ -37,6 +37,9 @@ class SQLConnection extends ObjectClass
 {
     public readonly SQLSchema $schema;
     public readonly ?SQLCore $sqlCore;
+    public readonly bool $hasMetadataTable;
+    public readonly bool $hasPersistentHistoryTables;
+    public readonly bool $hasHistoryRows;
     private SQLStoreRequestContext $requestContext;
     private readonly string $bundleID;
     private ?PDO $pdo = null;
@@ -47,14 +50,21 @@ class SQLConnection extends ObjectClass
         unset($this->schema);
         unset($this->sqlCore);
         unset($this->bundleID);
+        unset($this->hasMetadataTable);
+        unset($this->hasPersistentHistoryTables);
+        unset($this->hasHistoryRows);
     }
 
     public function __get(string $name)
     {
+        /** @noinspection PhpUnhandledExceptionInspection */
         return $this->$name = match ($name) {
             "schema" => SQLSchema::schema($this->adapter?->sqlCore?->url?->host),
             "sqlCore" => $this->adapter?->sqlCore,
             "bundleID" => Bundle::main()->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString,
+            "hasMetadataTable" => $this->hasMetadataTable(),
+            "hasPersistentHistoryTables" => $this->hasPersistentHistoryTables(),
+            "hasHistoryRows" => $this->hasHistoryRows(),
             default => $this->valueForUndefinedKey($name)
         };
     }
@@ -415,9 +425,9 @@ class SQLConnection extends ObjectClass
     /**
      * @throws Exception
      */
-    public function hasHistoryRows(): bool
+    private function hasHistoryRows(): bool
     {
-        if ($this->hasPersistentHistoryTables()) {
+        if ($this->hasPersistentHistoryTables) {
             return $this->tableHasRows("PersistentHistoryTransaction");
         }
         return false;
@@ -428,7 +438,7 @@ class SQLConnection extends ObjectClass
      */
     public function dropHistoryBeforeTransactionID(int $transactionID): void
     {
-        if ($this->hasPersistentHistoryTables()) {
+        if ($this->hasPersistentHistoryTables) {
             $this->execute(new SQLStatement("DELETE FROM `PersistentHistoryTransaction` WHERE `transactionID` < ?", new ArrayClass([$transactionID])));
         }
     }
@@ -438,7 +448,7 @@ class SQLConnection extends ObjectClass
      */
     public function hasHistoryTransactionWithNumber(Number $transactionNumber): bool
     {
-        if ($transactionNumber->boolValue && $this->hasPersistentHistoryTables()) {
+        if ($transactionNumber->boolValue && $this->hasPersistentHistoryTables) {
             return (bool)$this->execute(new SQLStatement("SELECT COUNT(`transactionID`) FROM `PersistentHistoryTransaction` WHERE `transactionID` = ?", new ArrayClass([$transactionNumber])))->fetchColumn();
         }
         return false;
@@ -457,7 +467,7 @@ class SQLConnection extends ObjectClass
      */
     private function createHistoryTrackingTables(): void
     {
-        if (!$this->hasPersistentHistoryTables()) {
+        if (!$this->hasPersistentHistoryTables) {
             $entities = $this->sqlCore?->model?->entities?->filter(fn(SQLEntity $entity): bool => $entity->entityDescription->isPersistentHistoryEntity) ?? throw new InvalidArgumentException();
             foreach ($entities as $entity) {
                 $this->createTableForEntity($entity);
@@ -473,7 +483,7 @@ class SQLConnection extends ObjectClass
      */
     public function dropHistoryTrackingTables(): void
     {
-        if ($this->hasPersistentHistoryTables()) {
+        if ($this->hasPersistentHistoryTables) {
             $entities = $this->sqlCore?->model?->entities?->filter(fn(SQLEntity $entity): bool => $entity->entityDescription->isPersistentHistoryEntity) ?? throw new InvalidArgumentException();
             foreach ($entities as $entity) {
                 if ($statement = $this->adapter?->newDropIndexesStatement($entity)) {
@@ -590,7 +600,7 @@ class SQLConnection extends ObjectClass
      */
     private function createMetadata(): void
     {
-        if (!$this->hasMetadataTable()) {
+        if (!$this->hasMetadataTable) {
             $this->execute(new SQLStatement("CREATE TABLE `PersistentStoreMetadata` (`metadataID` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT, `data` BLOB NOT NULL, PRIMARY KEY (`metadataID`)) ENGINE={$this->schema->engine} DEFAULT CHARSET={$this->schema->charset} COLLATE={$this->schema->collation}"));
         }
     }
@@ -598,7 +608,7 @@ class SQLConnection extends ObjectClass
     /**
      * @throws Exception
      */
-    public function hasMetadataTable(): bool
+    private function hasMetadataTable(): bool
     {
         return (bool)$this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?", new ArrayClass([$this->schema->name, "PersistentStoreMetadata"])))->fetchColumn();
     }

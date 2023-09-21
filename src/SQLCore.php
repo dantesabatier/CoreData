@@ -176,7 +176,7 @@ class SQLCore extends IncrementalStore
     public static function cachedModelForPersistentStoreWithURL(URL $url, ?Dictionary $options = null): ?ManagedObjectModel
     {
         $connection = new SQLConnection();
-        if ($connection->hasMetadataTable()) {
+        if ($connection->hasMetadataTable) {
             return $connection->fetchCachedModel();
         }
         return null;
@@ -195,7 +195,7 @@ class SQLCore extends IncrementalStore
     public static function metadataForPersistentStore(URL $url): Dictionary
     {
         $connection = new SQLConnection();
-        if ($connection->hasMetadataTable() && ($metadata = $connection->fetchMetadata())) {
+        if ($connection->hasMetadataTable && ($metadata = $connection->fetchMetadata())) {
             return $metadata;
         }
         return new Dictionary([StoreTypeKey => SQLStoreType]);
@@ -211,7 +211,7 @@ class SQLCore extends IncrementalStore
 
     public function loadMetadata(): bool
     {
-        if ($this->queryGenerationTrackingConnection->hasMetadataTable() && ($metadata = $this->queryGenerationTrackingConnection->fetchMetadata())) {
+        if ($this->queryGenerationTrackingConnection->hasMetadataTable && ($metadata = $this->queryGenerationTrackingConnection->fetchMetadata())) {
             $this->metadata = $metadata;
             $this->identifier = $metadata[StoreUUIDKey];
         }
