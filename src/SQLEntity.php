@@ -308,6 +308,6 @@ class SQLEntity extends StoreMapping
 
     public function description(): string
     {
-        return sprintf("<%s %s>", $this->tableName, $this->hash());
+        return sprintf("<%s %s>", $this->entityDescription->name, $this->hash());
     }
 }
