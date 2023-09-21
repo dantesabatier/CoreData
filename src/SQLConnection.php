@@ -38,6 +38,7 @@ class SQLConnection extends ObjectClass
     public readonly SQLSchema $schema;
     public readonly ?SQLCore $sqlCore;
     public readonly bool $hasMetadataTable;
+    public readonly bool $hasCachedModelTable;
     public readonly bool $hasPersistentHistoryTables;
     public readonly bool $hasHistoryRows;
     private SQLStoreRequestContext $requestContext;
@@ -51,6 +52,7 @@ class SQLConnection extends ObjectClass
         unset($this->sqlCore);
         unset($this->bundleID);
         unset($this->hasMetadataTable);
+        unset($this->hasCachedModelTable);
         unset($this->hasPersistentHistoryTables);
         unset($this->hasHistoryRows);
     }
@@ -63,6 +65,7 @@ class SQLConnection extends ObjectClass
             "sqlCore" => $this->adapter?->sqlCore,
             "bundleID" => Bundle::main()->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString,
             "hasMetadataTable" => $this->hasMetadataTable(),
+            "hasCachedModelTable" => $this->hasCachedModelTable(),
             "hasPersistentHistoryTables" => $this->hasPersistentHistoryTables(),
             "hasHistoryRows" => $this->hasHistoryRows(),
             default => $this->valueForUndefinedKey($name)
@@ -531,7 +534,7 @@ class SQLConnection extends ObjectClass
     /**
      * @throws Exception
      */
-    public function hasCachedModelTable(): bool
+    private function hasCachedModelTable(): bool
     {
         return (bool)$this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?", new ArrayClass([$this->schema->name, "ManagedObjectModel"])))->fetchColumn();
     }
@@ -590,7 +593,7 @@ class SQLConnection extends ObjectClass
      */
     private function createCachedModelTable(): void
     {
-        if (!$this->hasCachedModelTable()) {
+        if (!$this->hasCachedModelTable) {
             $this->execute(new SQLStatement("CREATE TABLE `ManagedObjectModel` (`modelID` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT, `data` BLOB NOT NULL, PRIMARY KEY (`modelID`)) ENGINE={$this->schema->engine} DEFAULT CHARSET={$this->schema->charset} COLLATE={$this->schema->collation}"));
         }
     }
