@@ -177,7 +177,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == "isInserted" || $name == "isUpdated" || $name == "isDeleted" || $name == "changedValues" || $name == "changedValuesForCurrentEvent" || $name == "serializationKeys" || $name == "allProperties" || $name == "modeledProperties" || $name == "persistentProperties" || $name == "transientProperties" || $name == "faultHandler") {
+        if ($name == "changedValues" || $name == "changedValuesForCurrentEvent" || $name == "serializationKeys" || $name == "allProperties" || $name == "modeledProperties" || $name == "persistentProperties" || $name == "transientProperties" || $name == "faultHandler" || $name == "isInserted" || $name == "isUpdated" || $name == "isDeleted") {
             $this->$name = $value;
         } else {
             $this->setValueForKey($value, $name);
