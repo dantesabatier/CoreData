@@ -4,11 +4,11 @@ namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\absolute_time_get_current;
+use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
 
 /** @internal */
@@ -22,8 +22,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     {
         parent::__construct($this->request, $context, $sqlCore);
         $this->sqlModel = $this->sqlCore->model;
-        $this->sqlEntityForFetchRequest = $this->sqlModel->entity($this->request->entity->name) ?? throw new InternalInconsistencyException("Entity \"{$this->request->entity->name}\" does not exists");
-        $this->fetchStatement = $this->generator->statement() ?? throw new InternalInconsistencyException();
+        $this->sqlEntityForFetchRequest = $this->sqlModel->entity($this->request->entity->name) ?? fatal_error("Entity \"{$this->request->entity->name}\" does not exists");
+        $this->fetchStatement = $this->generator->statement() ?? fatal_error();
     }
 
     public function executeRequestCore(): bool

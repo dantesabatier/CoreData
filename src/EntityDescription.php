@@ -13,6 +13,7 @@ use Sabatier\Foundation\KeyedUnarchiver;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Set;
 use Traversable;
+use function Sabatier\Foundation\fatal_error;
 
 /**
  * A description of an entity in Core Data.
@@ -93,14 +94,14 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
             return $this->$name;
         } elseif ($name == "attributesByName") {
             if ($this->isEditable) {
-                throw new InternalInconsistencyException(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription(), $name));
+                fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription(), $name));
             }
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
             return $this->$name;
         } elseif ($name == "relationshipsByName") {
             if ($this->isEditable) {
-                throw new InternalInconsistencyException(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription(), $name));
+                fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription(), $name));
             }
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
@@ -154,7 +155,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     private function throwIfNotEditable(): void
     {
         if (!$this->isEditable) {
-            throw new InternalInconsistencyException();
+            fatal_error();
         }
     }
 
@@ -226,7 +227,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
      */
     public static function entity(string $entityName, ManagedObjectContext $context): EntityDescription
     {
-        return $context->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[$entityName] ?? throw new InternalInconsistencyException("Entity \"$entityName\" does not exist");
+        return $context->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[$entityName] ?? fatal_error("Entity \"$entityName\" does not exist");
     }
 
     /**
@@ -272,7 +273,6 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
             }
             return null;
         });
-        /** @noinspection PhpUnhandledExceptionInspection */
         return KeyedArchiver::archivedData($dictionary);
     }
 

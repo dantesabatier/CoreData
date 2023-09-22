@@ -3,13 +3,13 @@
 namespace Sabatier\CoreData;
 
 use Exception;
-use InvalidArgumentException;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\URL;
+use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\request_concrete_implementation;
 use function Sabatier\Foundation\uuid_generate;
 
@@ -190,7 +190,7 @@ abstract class PersistentStore extends ObjectClass
     final public function referenceObject(ManagedObjectID $objectID): int|string
     {
         /** @var ManagedObjectID $managedObjectID */
-        $managedObjectID = $this->cacheEntities[$objectID->entity->name][(string)$objectID] ?? throw new InvalidArgumentException("Object id wasn't created by this store.");
+        $managedObjectID = $this->cacheEntities[$objectID->entity->name][(string)$objectID] ?? fatal_error("Object id wasn't created by this store.");
         return $managedObjectID->referenceObject;
     }
 

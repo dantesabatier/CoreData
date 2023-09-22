@@ -5,12 +5,10 @@ namespace Sabatier\CoreData;
 use ArrayIterator;
 use Countable;
 use Exception;
-use InvalidArgumentException;
 use IteratorAggregate;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Bundle;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\KeyedUnarchiver;
 use Sabatier\Foundation\ObjectClass;
@@ -20,6 +18,7 @@ use Sabatier\Foundation\PropertyListSerialization;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Traversable;
+use function Sabatier\Foundation\fatal_error;
 use const Sabatier\Foundation\kCFBundleNameKey;
 
 /**
@@ -80,7 +79,6 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             $this->$name = new Dictionary();
             return $this->$name;
         } elseif ($name == "versionHash") {
-            /** @noinspection PhpUnhandledExceptionInspection */
             $this->$name = KeyedArchiver::archivedData($this->entityVersionHashesByName);
             return $this->$name;
         } elseif ($name == "configurations") {
@@ -122,7 +120,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     private function newEntity(Dictionary $dictionary): EntityDescription
     {
         /** @var string $name */
-        $name = $dictionary["name"] ?? throw new InvalidArgumentException("Entity name cannot be null");
+        $name = $dictionary["name"] ?? fatal_error("Entity name cannot be null");
         $entity = $this->entitiesByName[$name];
         if (!$entity instanceof EntityDescription) {
             $entity = new EntityDescription();
@@ -183,9 +181,9 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             if ($fetchedProperties) {
                 $properties->appendContentsOf($fetchedProperties->map(function (Dictionary $description) use ($entity): FetchedPropertyDescription {
                     /** @var string $name */
-                    $name = $description["name"] ?? throw new InternalInconsistencyException(sprintf("%s name cannot be null", FetchedPropertyDescription::class));
+                    $name = $description["name"] ?? fatal_error(sprintf("%s name cannot be null", FetchedPropertyDescription::class));
                     /** @var string $fetchRequestEntityName */
-                    $fetchRequestEntityName = $description["fetchRequestEntityName"] ?? throw new InternalInconsistencyException(sprintf("%s entity name cannot be null (%s:%s)", FetchRequest::class, $entity->name, $name));
+                    $fetchRequestEntityName = $description["fetchRequestEntityName"] ?? fatal_error(sprintf("%s entity name cannot be null (%s:%s)", FetchRequest::class, $entity->name, $name));
                     $fetchRequest = new FetchRequest($fetchRequestEntityName);
                     /** @var string|null $fetchRequestPredicateFormat */
                     $fetchRequestPredicateFormat = $description["fetchRequestPredicateFormat"];
@@ -221,7 +219,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             $indexes = $dictionary["indexes"] ?? new ArrayClass();
             $entity->indexes = $indexes->map(function (Dictionary $description) use ($entity): FetchIndexDescription {
                 /** @var string $name */
-                $name = $description["name"] ?? throw new InternalInconsistencyException(sprintf("%s name cannot be null", FetchIndexDescription::class));
+                $name = $description["name"] ?? fatal_error(sprintf("%s name cannot be null", FetchIndexDescription::class));
                 $description->removeValueForKey("name");
                 /** @var ArrayClass<Dictionary> $elements */
                 $elements = $description["elements"] ?? new ArrayClass();
@@ -353,7 +351,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     private function throwIfNotEditable(): void
     {
         if (!$this->isEditable) {
-            throw new InternalInconsistencyException();
+            fatal_error();
         }
     }
 

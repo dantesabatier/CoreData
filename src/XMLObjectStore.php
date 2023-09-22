@@ -17,12 +17,11 @@ use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\FileManager;
-use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Set;
-use Sabatier\Foundation\UnknownKeyException;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
+use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
 class XMLObjectStore extends AtomicStore
@@ -124,7 +123,7 @@ class XMLObjectStore extends AtomicStore
             foreach ($attributeElements as $attributeElement) {
                 $key = $attributeElement->getAttribute("name");
                 if (!($attribute = $entity->attributesByName[$key])) {
-                    throw new UnknownKeyException(sprintf("Entity \"%s\" does not contains an attribute named \"%s\"", $entity->name, $key));
+                    fatal_error(sprintf("Entity \"%s\" does not contains an attribute named \"%s\"", $entity->name, $key));
                 }
                 $info[$attribute->name] = $attributeElement->attributes;
                 $value = $attributeElement->nodeValue;
@@ -139,7 +138,7 @@ class XMLObjectStore extends AtomicStore
             foreach ($relationshipElements as $relationshipElement) {
                 $key = $relationshipElement->getAttribute("name");
                 if (!($relationship = $entity->relationshipsByName[$key])) {
-                    throw new UnknownKeyException(sprintf("Entity \"%s\" does not contains a relationship named \"%s\"", $entity->name, $key));
+                    fatal_error(sprintf("Entity \"%s\" does not contains a relationship named \"%s\"", $entity->name, $key));
                 }
                 $info[$relationship->name] = $relationshipElement->attributes;
                 if (($references = $relationshipElement->getAttribute("references")) && ($destination = $relationshipElement->getAttribute("destination")) && ($destinationEntity = $this->entitiesForConfiguration[$destination])) {
@@ -398,7 +397,7 @@ class XMLObjectStore extends AtomicStore
                     foreach ($relationshipElements as $relationshipElement) {
                         /** @var string $name */
                         $name = $relationshipElement->getAttribute("name");
-                        $relationship = $entity->relationshipsByName[$name] ?? throw new InternalInconsistencyException();
+                        $relationship = $entity->relationshipsByName[$name] ?? fatal_error();
                         /** @psalm-suppress PossiblyNullPropertyFetch */
                         if ($relationship->deleteRule === DeleteRule::cascadeDeleteRule) {
                             /** @var string $destination */

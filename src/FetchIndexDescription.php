@@ -9,12 +9,12 @@
 
 namespace Sabatier\CoreData;
 
-use InvalidArgumentException;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\Set;
+use function Sabatier\Foundation\fatal_error;
 
 /**
  * Class FetchIndexDescription
@@ -61,7 +61,7 @@ class FetchIndexDescription extends ObjectClass
     {
         if ($name == "elements") {
             if ((new Set($value->map(fn(FetchIndexElementDescription $element): FetchIndexElementType => $element->collationType)))->count() > 1) {
-                throw new InvalidArgumentException("Invalid argument: elements must be of the same collation type");
+                fatal_error("Invalid argument: elements must be of the same collation type");
             }
             $this->$name = $value;
             $this->$name->setValueForKey($this, "indexDescription");

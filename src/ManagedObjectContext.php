@@ -11,10 +11,8 @@ namespace Sabatier\CoreData;
 
 use Closure;
 use Exception;
-use InvalidArgumentException;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyValueChange;
 use Sabatier\Foundation\KeyValueObservedChange;
 use Sabatier\Foundation\KeyValueObservingOptions;
@@ -30,6 +28,7 @@ use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\UndoManager;
 use Sabatier\Foundation\URL;
+use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\typeof;
 
@@ -183,7 +182,7 @@ class ManagedObjectContext extends ObjectClass
 
     private function executePersistentStoreRequest(PersistentStoreRequest $request): UnknownRequestTypeResult
     {
-        $stores = $request->affectedStores ?? $this->persistentStoreCoordinator?->persistentStores ?? throw new InternalInconsistencyException("Affected stores cannot be null");
+        $stores = $request->affectedStores ?? $this->persistentStoreCoordinator?->persistentStores ?? fatal_error("Affected stores cannot be null");
         $this->processingChanges = true;
         $result = new UnknownRequestTypeResult($stores->map(fn(PersistentStore $store): ArrayClass => $store->execute($request, $this)));
         $this->processingChanges = false;
@@ -209,7 +208,7 @@ class ManagedObjectContext extends ObjectClass
         if ($request->fetchBatchSize) {
             return match ($request->resultType) {
                 FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType => new UnknownRequestTypeResult(new BatchFaultingArray($request, $this)),
-                default => throw new InvalidArgumentException(sprintf("Invalid fetch request: %s->fetchBatchSize cannot be used with %s", FetchRequest::class, human_readable_value($request->resultType))),
+                default => fatal_error(sprintf("Invalid fetch request: %s->fetchBatchSize cannot be used with %s", FetchRequest::class, human_readable_value($request->resultType))),
             };
         }
         return $this->executePersistentStoreRequest($request);
@@ -443,7 +442,7 @@ class ManagedObjectContext extends ObjectClass
             $this->delete($fault);
             return true;
         }
-        throw new InternalInconsistencyException(sprintf("Inaccessible fault <%s %s:objectID=%s property=%s>", $fault::class, $fault->hash(), $oid->description(), $property->description()));
+        fatal_error(sprintf("Inaccessible fault <%s %s:objectID=%s property=%s>", $fault::class, $fault->hash(), $oid->description(), $property->description()));
     }
 
     /**
@@ -844,7 +843,7 @@ class ManagedObjectContext extends ObjectClass
      */
     private function newSaveRequestForCurrentState(): ?SaveChangesRequest
     {
-        $this->obtainPermanentIDs(new ArrayClass($this->insertedObjects)) ?: throw new InternalInconsistencyException("Unable to obtain permanent ids for inserted objects");
+        $this->obtainPermanentIDs(new ArrayClass($this->insertedObjects)) ?: fatal_error("Unable to obtain permanent ids for inserted objects");
         $insertedObjects = clone $this->insertedObjects;
         foreach ($insertedObjects as $insertedObject) {
             if ($insertedObject->isInserted) {

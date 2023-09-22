@@ -11,7 +11,6 @@
 
 namespace Sabatier\CoreData;
 
-use InvalidArgumentException;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\CompareOptions;
 use Sabatier\Foundation\ComparisonResult;
@@ -31,8 +30,8 @@ use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\SortDescriptor;
-use Sabatier\Foundation\UnknownKeyException;
 use Sabatier\Foundation\Value;
+use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\is_equal;
 use function Sabatier\Foundation\kvc_components;
@@ -187,7 +186,7 @@ class SQLGenerator extends ObjectClass
             /** @var ArrayClass<PropertyDescription> $propertiesToGroupBy */
             $propertiesToGroupBy = $request->propertiesToGroupBy?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $entity->propertiesByName[$property]) ?? new ArrayClass();
             if (!$propertiesToGroupBy->isEmpty() && $request->resultType !== FetchRequestResultType::dictionaryResultType) {
-                throw new InvalidArgumentException(sprintf("Invalid fetch request: GROUP BY requires %s, %s given", human_readable_value(FetchRequestResultType::dictionaryResultType), human_readable_value($request->resultType)));
+                fatal_error(sprintf("Invalid fetch request: GROUP BY requires %s, %s given", human_readable_value(FetchRequestResultType::dictionaryResultType), human_readable_value($request->resultType)));
             }
             $this->useDistinct = $request->returnsDistinctResults;
             if (!$this->useDistinct && $this->autoDistinct) {
@@ -353,13 +352,13 @@ class SQLGenerator extends ObjectClass
                         return "{$this->buildDerivedAttributeDescription($property)} AS $property->name";
                     }
                 } elseif ($property instanceof ExpressionDescription) {
-                    $expression = $property->expression ?? throw new InvalidArgumentException();
+                    $expression = $property->expression ?? fatal_error();
                     if ($expression->expressionType == ExpressionType::function) {
                         return "{$this->buildFunctionExpression($expression)} AS $property->name";
                     } elseif ($expression->expressionType == ExpressionType::conditional) {
                         return "{$this->buildConditionalExpression($expression)} AS $property->name";
                     }
-                    throw new InvalidArgumentException("Invalid argument: unsupported expression $expression");
+                    fatal_error("Invalid argument: unsupported expression $expression");
                 }
                 return "$entity->tableName.$property->name";
             }));
@@ -630,7 +629,7 @@ class SQLGenerator extends ObjectClass
                 continue;
             }
             if ($this->raisesForNotApplicableKeys) {
-                throw new UnknownKeyException(sprintf("%s does not contains a property named \"%s\"", $entity->tableName, $key));
+                fatal_error(sprintf("%s does not contains a property named \"%s\"", $entity->tableName, $key));
             }
         }
         return $properties;
@@ -652,7 +651,7 @@ class SQLGenerator extends ObjectClass
             return $expression->constantValue() === null;
         } elseif ($expression->expressionType == ExpressionType::keyPath) {
             if ((new Value((string)$expression))->isEqual(null)) {
-                throw new InvalidArgumentException("*isNullExpression($expression)*");
+                fatal_error("*isNullExpression($expression)*");
             }
         }
         return false;
@@ -692,7 +691,7 @@ class SQLGenerator extends ObjectClass
             }
         }
         if ($keyPath === $tableName) {
-            throw new InvalidArgumentException("Failed to generate an alias for entity \"$tableName\", invalid key path \"$description\"");
+            fatal_error("Failed to generate an alias for entity \"$tableName\", invalid key path \"$description\"");
         }
         return $keyPath;
     }
@@ -918,7 +917,7 @@ class SQLGenerator extends ObjectClass
     {
         $expressions = new ArrayClass([$predicate->leftExpression, $predicate->rightExpression]);
         if (!($expression = $expressions->first(fn(Expression $expression): bool => $expression->expressionType == ExpressionType::keyPath))) {
-            throw new InvalidArgumentException();
+            fatal_error();
         }
         $keyPath = $this->buildKeyPathExpression($expression);
         [$entityAlias, $columnName] = explode(".", $keyPath);
@@ -934,7 +933,7 @@ class SQLGenerator extends ObjectClass
                 }
             }
             return $relationship;
-        })() ?? throw new InvalidArgumentException();
+        })() ?? fatal_error();
         $destinationEntity = $relationship->destinationEntity;
         $clause .= "$keyPath = ";
         $clause .= match ($predicate->comparisonPredicateModifier) {
@@ -964,7 +963,7 @@ class SQLGenerator extends ObjectClass
                                 $inverseRelationship = $relationship->inverseRelationship;
                                 $destinationEntity = $relationship->destinationEntity;
                                 if (($collectionOperator === KeyValueOperator::countKeyValueOperator && $keyPathToProperty) || ($collectionOperator !== KeyValueOperator::countKeyValueOperator && !$keyPathToProperty)) {
-                                    throw new InvalidArgumentException("Invalid expression \"$expression\"");
+                                    fatal_error("Invalid expression \"$expression\"");
                                 }
                                 /** @var ArrayClass<string|PropertyDescription> $propertiesToFetch */
                                 $propertiesToFetch = new ArrayClass([$inverseRelationship->relationshipDescription]);
@@ -984,7 +983,7 @@ class SQLGenerator extends ObjectClass
                                 $generator->autoDistinct = false;
                                 $generator->raisesForNotApplicableKeys = false;
                                 $generator->keyValueOperator = $collectionOperator;
-                                $statement = $generator->statement() ?? throw new InvalidArgumentException();
+                                $statement = $generator->statement() ?? fatal_error();
                                 $string = "($statement->string";
                                 $string .= $generator->whereClause ? " AND " : " WHERE ";
                                 if ($relationship instanceof SQLToMany) {
@@ -997,7 +996,7 @@ class SQLGenerator extends ObjectClass
                                 return "$string)";
                             }
                         }
-                        throw new InvalidArgumentException("Invalid argument: unsupported expression \"$expression\"");
+                        fatal_error("Invalid argument: unsupported expression \"$expression\"");
                     }
                     return $this->buildKeyPathExpression($expression);
                 case ExpressionType::function:
@@ -1005,15 +1004,15 @@ class SQLGenerator extends ObjectClass
                 case ExpressionType::conditional:
                     return $this->buildConditionalExpression($expression);
                 default:
-                    throw new InvalidArgumentException("Invalid argument: unsupported expression \"$expression\"");
+                    fatal_error("Invalid argument: unsupported expression \"$expression\"");
             }
         }
-        throw new InvalidArgumentException("Invalid argument: invalid attribute \"$derivedAttributeDescription\"");
+        fatal_error("Invalid argument: invalid attribute \"$derivedAttributeDescription\"");
     }
 
     private function buildFunctionExpression(Expression $expression): string
     {
-        $arguments = $expression->arguments() ?? throw new InvalidArgumentException();
+        $arguments = $expression->arguments() ?? fatal_error();
         $operator = $expression->operand();
         if ($operator instanceof ExpressionOperator) {
             switch ($operator->operatorType()) {
@@ -1077,10 +1076,10 @@ class SQLGenerator extends ObjectClass
                     $function = "CONCAT_WS";
                     break;
                 default:
-                    throw new InvalidArgumentException("Unsupported expression \"$expression\"");
+                    fatal_error("Unsupported expression \"$expression\"");
             }
             if (empty($function)) {
-                throw new InvalidArgumentException("Invalid function");
+                fatal_error("Invalid function");
             }
             $column = strtoupper($function);
             $column .= "(";
@@ -1090,7 +1089,7 @@ class SQLGenerator extends ObjectClass
             });
             return $column . ")";
         }
-        throw new InvalidArgumentException("Invalid argument: unsupported expression $expression");
+        fatal_error("Invalid argument: unsupported expression $expression");
     }
 
     private function buildConditionalExpression(Expression $expression): string

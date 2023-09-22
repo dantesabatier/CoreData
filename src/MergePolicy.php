@@ -14,6 +14,7 @@ use JetBrains\PhpStorm\Pure;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Error;
+use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\ObjectClass;
 use const Sabatier\Foundation\CocoaErrorDomain;
 
@@ -60,7 +61,7 @@ class MergePolicy extends ObjectClass
             $this->process($conflictList, $mergeConflict, $sourceObject, $cachedSnapshot, $persistedSnapshot);
         }
         if (!$conflictList->isEmpty()) {
-            throw new Exception((new Error(CocoaErrorDomain, 133021, new Dictionary(["conflictList" => $conflictList->join(", ")])))->description());
+            throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, 133021, new Dictionary(["conflictList" => $conflictList->join(", ")])));
         }
     }
 
@@ -85,7 +86,7 @@ class MergePolicy extends ObjectClass
             }
         }
         if (!$conflictList->isEmpty()) {
-            throw new Exception((new Error(CocoaErrorDomain, 133021, new Dictionary(["conflictList" => $conflictList->join(", ")])))->description());
+            throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, 133021, new Dictionary([ConflictListErrorKey => $conflictList->join(", ")])));
         }
     }
 

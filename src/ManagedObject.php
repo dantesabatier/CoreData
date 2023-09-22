@@ -3,7 +3,6 @@
 namespace Sabatier\CoreData;
 
 use Exception;
-use InvalidArgumentException;
 use JetBrains\PhpStorm\ExpectedValues;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\ComparisonResult;
@@ -24,6 +23,7 @@ use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
 use Sabatier\Foundation\Value;
 use Sabatier\Foundation\ValueTransformer;
+use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\typeof;
 use function Sabatier\Foundation\uuid_generate;
 use const Sabatier\Foundation\CocoaErrorDomain;
@@ -104,7 +104,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $entity ??= static::entity();
         }
         $this->managedObjectContext = $managedObjectContext;
-        $this->entity = $entity ?? throw new InvalidArgumentException("Invalid argument: entity cannot be null");
+        $this->entity = $entity ?? fatal_error("Invalid argument: entity cannot be null");
         $this->managedObjectContext->insert($this);
     }
 
@@ -117,7 +117,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->$name = new Dictionary();
             return $this->$name;
         } elseif ($name == "faultHandler") {
-            $this->$name = ($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? throw new InternalInconsistencyException("Persistent store coordinator cannot be null"))->faultHandler;
+            $this->$name = ($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null"))->faultHandler;
             return $this->$name;
         } elseif ($name == "allProperties") {
             $this->$name = $this->entity->properties;
@@ -202,7 +202,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public static function entity(): EntityDescription
     {
-        return static::staticAssociatedValueForKey(__FUNCTION__) ?? throw new InternalInconsistencyException(sprintf("Entity \"%s\" does not exists", static::className()));
+        return static::staticAssociatedValueForKey(__FUNCTION__) ?? fatal_error(sprintf("Entity \"%s\" does not exists", static::className()));
     }
 
     /**
@@ -217,7 +217,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if ($this->entity->relationshipsByName[$key]) {
             return $this->isRelationshipForKeyFault($key);
         }
-        throw new InternalInconsistencyException(sprintf("This class does not contains a relationship named \"%s\"", $key));
+        fatal_error(sprintf("This class does not contains a relationship named \"%s\"", $key));
     }
 
     /**
@@ -388,7 +388,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             return $this->valueForUndefinedKey($key);
         }
         if (!$relationship->isToMany) {
-            throw new InvalidArgumentException(sprintf("%s does not contains a to many relationship named \"%s\"", $this->debugDescription(), $key));
+            fatal_error(sprintf("%s does not contains a to many relationship named \"%s\"", $this->debugDescription(), $key));
         }
         $mutableSet = $this->primitiveValueForKey($key);
         if (!$mutableSet instanceof FaultingMutableSet) {
@@ -521,7 +521,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->didAccessValueForKey($key);
             if (!isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
                 $this->reserved[$key] = true;
-                $store = $context->persistentStoreCoordinator?->persistentStoreForObject($this) ?? throw new InternalInconsistencyException("Persistent store coordinator cannot be null");
+                $store = $context->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null");
                 $newValue = $store->newValueForRelationship($property, $this->objectID, $context);
                 if ($property->isToMany) {
                     $value ??= new FaultingMutableSet($this, $property);
@@ -657,7 +657,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     final public function setValuesForKeys(Dictionary $keyedValues): void
     {
-        $store = $this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? throw new InternalInconsistencyException("Persistent store coordinator cannot be null");
+        $store = $this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null");
         $managedObjectID = function (EntityDescription $entity, Dictionary $object) use ($store): ?ManagedObjectID {
             $objectID = $object[SQLEntity::primaryKeyName];
             if ($objectID instanceof ManagedObjectID) {
@@ -723,7 +723,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 } elseif ($value instanceof Nil) {
                     $representation[$key] = $value;
                 } else {
-                    throw new InvalidArgumentException(sprintf("Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", typeof($value), $key));
+                    fatal_error(sprintf("Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", typeof($value), $key));
                 }
             }
         }
@@ -739,7 +739,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public function objectIDsForRelationshipNamed(string $key): ArrayClass
     {
         if (!($relationship = $this->entity->relationshipsByName[$key])) {
-            throw new InternalInconsistencyException(sprintf("%s %s() does not contains a relationship named \"%s\"", $this->debugDescription(), __FUNCTION__, $key));
+            fatal_error(sprintf("%s %s() does not contains a relationship named \"%s\"", $this->debugDescription(), __FUNCTION__, $key));
         }
         $value = $relationship->isToMany ? $this->mutableSetValueForKey($key) : new Set([$this->primitiveValueForKey($key)]);
         return new ArrayClass($value->map(fn(ManagedObject|ManagedObjectID $e): ManagedObjectID => $e instanceof ManagedObject ? $e->objectID : $e));
@@ -787,20 +787,20 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     Date::class => $value,
                     "string" => $write ? $value : new Date(strtotime((string)$value)),
                     "null" => $isOptional ? null : new Date(),
-                    default => throw new InvalidArgumentException()
+                    default => fatal_error()
                 };
             case AttributeType::uuid:
                 return match (typeof($value)) {
                     UUID::class => $value,
                     "string" => $write ? $value : new UUID($value),
                     "null" => $isOptional ? null : new UUID(),
-                    default => throw new InvalidArgumentException()
+                    default => fatal_error()
                 };
             case AttributeType::uri:
                 return match (typeof($value)) {
                     URL::class => $value,
                     "string" => $write ? $value : new URL((string)$value),
-                    default => throw new InvalidArgumentException()
+                    default => fatal_error()
                 };
             case AttributeType::undefined:
             case AttributeType::transformable:
@@ -838,7 +838,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 };
                 if ($attributeValueClassName !== null) {
                     if ($value && class_exists($attributeValueClassName) && !is_a($value, $attributeValueClassName, true)) {
-                        throw new InvalidArgumentException(sprintf("Invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeValueClassName, typeof($value)));
+                        fatal_error(sprintf("Invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeValueClassName, typeof($value)));
                     }
                 } elseif (!match ($type) {
                         AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => is_int($value) || is_float($value) || $value instanceof Number,
@@ -847,7 +847,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         AttributeType::transformable => true,
                         default => false,
                     } && !$property->isOptional) {
-                    throw new InvalidArgumentException(sprintf("Invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $type->name, typeof($value)));
+                    fatal_error(sprintf("Invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $type->name, typeof($value)));
                 }
             }
         } elseif ($property instanceof FetchedPropertyDescription) {
@@ -899,7 +899,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             if (!$value instanceof Nil && ($property = $this->entity->propertiesByName[$key])) {
                 foreach ($property->validationPredicates as $validationPredicate) {
                     if (!$validationPredicate->evaluate($this)) {
-                        throw new Exception((new Error(CocoaErrorDomain, KeyValueValidationError, new Dictionary([ValidationObjectErrorKey => $this, ValidationValueErrorKey => $value, ValidationKeyErrorKey => $key, ValidationPredicateErrorKey => $validationPredicate])))->description());
+                        throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, KeyValueValidationError, new Dictionary([ValidationObjectErrorKey => $this, ValidationValueErrorKey => $value, ValidationKeyErrorKey => $key, ValidationPredicateErrorKey => $validationPredicate])));
                     }
                 }
             }
@@ -1033,7 +1033,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     $dictionary[$key] = $this->valueForKey($key) ?? Nil::nil();
                 } elseif ($property instanceof RelationshipDescription) {
                     if (!($value = $this->serializedRelationshipValueForRelationship($property))) {
-                        $value = $property->isOptional ? Nil::nil() : ($property->isToMany ? new Set() : throw new InternalInconsistencyException());
+                        /** @noinspection PhpVoidFunctionResultUsedInspection */
+                        $value = $property->isOptional ? Nil::nil() : ($property->isToMany ? new Set() : fatal_error());
                     }
                     $dictionary[$key] = $value;
                 } else {

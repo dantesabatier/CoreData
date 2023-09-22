@@ -9,9 +9,9 @@
 
 namespace Sabatier\CoreData;
 
-use InvalidArgumentException;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
+use function Sabatier\Foundation\fatal_error;
 
 /**
  * Description of an Index Element
@@ -70,9 +70,9 @@ class FetchIndexElementDescription extends ObjectClass
 
     public function __get(string $name)
     {
-        $propertyName = $this->propertyName ?? throw new InvalidArgumentException("Property name cannot be null");
+        $propertyName = $this->propertyName ?? fatal_error("Property name cannot be null");
         return $this->$name = match ($name) {
-            "property" => $this->indexDescription->entity->propertiesByName[$propertyName] ?? throw new InvalidArgumentException(sprintf("Entity \"%s\" does not contains a property named \"%s\"", $this->indexDescription->entity->name, $propertyName)),
+            "property" => $this->indexDescription->entity->propertiesByName[$propertyName] ?? fatal_error(sprintf("Entity \"%s\" does not contains a property named \"%s\"", $this->indexDescription->entity->name, $propertyName)),
             default => $this->valueForUndefinedKey($name)
         };
     }

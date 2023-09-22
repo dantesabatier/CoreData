@@ -4,8 +4,8 @@ namespace Sabatier\CoreData;
 
 use Exception;
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Set;
+use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
 readonly class SQLStoreMigrator
@@ -24,8 +24,8 @@ readonly class SQLStoreMigrator
     public function __construct(public SQLCore $store, public SQLModel $destinationModel, public MappingModel $mappingModel)
     {
         $this->connection = $this->store->schemaValidationConnection;
-        $this->adapter = $this->connection->adapter ?? throw new InternalInconsistencyException();
-        $this->sourceModel = new SQLModel($this->connection->cachedModel ?? throw new InternalInconsistencyException(), $this->store->configurationName);
+        $this->adapter = $this->connection->adapter ?? fatal_error();
+        $this->sourceModel = new SQLModel($this->connection->cachedModel ?? fatal_error(), $this->store->configurationName);
         $this->removedEntities = new ArrayClass();
         $this->removedManyToMany = new ArrayClass();
     }

@@ -10,14 +10,15 @@
 namespace Sabatier\CoreData;
 
 use Exception;
-use InvalidArgumentException;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Error;
+use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use function Sabatier\Foundation\absolute_time_get_current;
+use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
 use function Sabatier\Foundation\typeof;
 
@@ -96,7 +97,7 @@ class MigrationManager extends ObjectClass
     {
         $entityMigrationPolicyClass = EntityMigrationPolicy::class;
         if ($mapping->mappingType === EntityMappingType::customEntityMappingType) {
-            $entityMigrationPolicyClass = $mapping->entityMigrationPolicyClassName ?? throw new InvalidArgumentException();
+            $entityMigrationPolicyClass = $mapping->entityMigrationPolicyClassName ?? fatal_error();
         }
         $this->entityMigrationPolicy = new $entityMigrationPolicyClass();
         if (!$this->entityMigrationPolicy->begin($mapping, $this)) {
@@ -177,7 +178,7 @@ class MigrationManager extends ObjectClass
                 } elseif ($value instanceof ManagedObject) {
                     $destinationInstances->appendContentsOf($expression->expressionValue($source, new Dictionary(["\$manager" => $this, "\$source" => new ArrayClass([$value])])));
                 } elseif ($value) {
-                    throw new InvalidArgumentException(sprintf("Unexpected value \"%s\" for relationship %s->%s", typeof($value), $source->entity->name, $key));
+                    fatal_error(sprintf("Unexpected value \"%s\" for relationship %s->%s", typeof($value), $source->entity->name, $key));
                 }
                 $relationshipsByName[$relationshipKey] = $destinationInstances;
                 $this->byMappingBySourceRelationshipsAssociationTable[$key] = $relationshipsByName;
@@ -222,13 +223,13 @@ class MigrationManager extends ObjectClass
             error_log(sprintf("CoreData: Processing entity mapping \"%s\" (pass %s of %s), elapsed time %s, %s%% completed", $mapping->name, $pass, 3, human_readable_time(absolute_time_get_current() - $this->timestamp), round($this->migrationProgress * 100, 2)));
         }
         if ($migrationCancellationError = $this->migrationCancellationError) {
-            throw new Exception($migrationCancellationError->localizedDescription, $migrationCancellationError->code);
+            throw new InternalInconsistencyException(error: $migrationCancellationError);
         }
         match ($pass) {
             1 => $this->doFirstPassForMapping($mapping),
             2 => $this->doSecondPassForMapping($mapping),
             3 => $this->doThirdPassForMapping($mapping),
-            default => throw new InvalidArgumentException()
+            default => fatal_error()
         };
     }
 
@@ -422,6 +423,6 @@ class MigrationManager extends ObjectClass
     /** @psalm-suppress all */
     private function mapping(string $named): EntityMapping
     {
-        return $this->mappingModel->entityMappingsByName[$named] ?? throw new InvalidArgumentException("Entity mapping name \"$named\" does not exist");
+        return $this->mappingModel->entityMappingsByName[$named] ?? fatal_error("Entity mapping name \"$named\" does not exist");
     }
 }

@@ -3,16 +3,15 @@
 namespace Sabatier\CoreData;
 
 use Exception;
-use InvalidArgumentException;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
+use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\request_concrete_implementation;
 use const Sabatier\Foundation\NotFound;
@@ -50,7 +49,7 @@ abstract class AtomicStore extends PersistentStore
 
     private function updateObject(ManagedObject $object): void
     {
-        $cacheNode = $this->cacheNode($object->objectID) ?? throw new InvalidArgumentException("Invalid argument: object \"$object\" does not exists ");
+        $cacheNode = $this->cacheNode($object->objectID) ?? fatal_error("Invalid argument: object \"$object\" does not exists ");
         foreach ($object->entity as $property) {
             if (!$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription) {
                 $key = $property->name;
@@ -106,7 +105,7 @@ abstract class AtomicStore extends PersistentStore
         /** @var ArrayClass<PropertyDescription|string> $propertiesToGroupBy */
         $propertiesToGroupBy = $request->propertiesToGroupBy ?? new ArrayClass();
         if (!$propertiesToGroupBy->isEmpty() && $resultType !== FetchRequestResultType::dictionaryResultType) {
-            throw new InvalidArgumentException(sprintf("Invalid fetch request: GROUP BY requires %s, %s given", human_readable_value(FetchRequestResultType::dictionaryResultType), human_readable_value($request->resultType)));
+            fatal_error(sprintf("Invalid fetch request: GROUP BY requires %s, %s given", human_readable_value(FetchRequestResultType::dictionaryResultType), human_readable_value($request->resultType)));
         }
         /** @var ArrayClass<ManagedObject> $objects */
         $objects = new ArrayClass();
@@ -213,13 +212,13 @@ abstract class AtomicStore extends PersistentStore
     private function executeSaveChangesRequest(/** @noinspection PhpUnusedParameterInspection */ SaveChangesRequest $request, ManagedObjectContext $context): ArrayClass
     {
         if ($this->isReadOnly) {
-            throw new InternalInconsistencyException("Cannot modify a read only persistent store");
+            fatal_error("Cannot modify a read only persistent store");
         }
         if ($deletedObjects = $request->deletedObjects) {
             /** @var Set<AtomicStoreCacheNode> $deletedNodes */
             $deletedNodes = new Set();
             foreach ($deletedObjects as $deletedObject) {
-                $deletedNodes->append($this->cacheNode($deletedObject->objectID) ?? throw new InternalInconsistencyException("Unable to delete an uncached object $deletedObject"));
+                $deletedNodes->append($this->cacheNode($deletedObject->objectID) ?? fatal_error("Unable to delete an uncached object $deletedObject"));
                 $this->removeObject($deletedObject);
             }
             $this->willRemoveCacheNodes($deletedNodes);
@@ -231,7 +230,7 @@ abstract class AtomicStore extends PersistentStore
         }
         if ($updatedObjects = $request->updatedObjects) {
             foreach ($updatedObjects as $updatedObject) {
-                $this->updateCacheNode($this->cacheNode($updatedObject->objectID) ?? throw new InvalidArgumentException("Unable to update an uncached object $updatedObject"), $updatedObject);
+                $this->updateCacheNode($this->cacheNode($updatedObject->objectID) ?? fatal_error("Unable to update an uncached object $updatedObject"), $updatedObject);
             }
         }
         $this->save();

@@ -12,13 +12,11 @@ namespace Sabatier\CoreData;
 use BackedEnum;
 use Closure;
 use Exception;
-use InvalidArgumentException;
 use PDO;
 use PDOStatement;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Bundle;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\KeyedUnarchiver;
 use Sabatier\Foundation\Nil;
@@ -29,6 +27,7 @@ use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\ValueTransformer;
 use function Sabatier\Foundation\absolute_time_get_current;
+use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
@@ -83,7 +82,7 @@ class SQLConnection extends ObjectClass
 
     public static function destroyPersistentStoreAtURL(URL $url, ?Dictionary $options = null): bool
     {
-        !$options?->valueForKey(ReadOnlyPersistentStoreOption) ?: throw new InternalInconsistencyException("Cannot destroy a read only persistent store");
+        !$options?->valueForKey(ReadOnlyPersistentStoreOption) ?: fatal_error("Cannot destroy a read only persistent store");
         $connection = new SQLConnection();
         $connection->schema = SQLSchema::schema($url->host);
         /** @noinspection PhpUnhandledExceptionInspection */
@@ -322,7 +321,7 @@ class SQLConnection extends ObjectClass
         $columnNames = new ArrayClass();
         $columnNames->appendContentsOf([$entity->entityKey->columnName]);
         /** @var ManagedObject|Dictionary $element */
-        $element = $array->first() ?? throw new InvalidArgumentException();
+        $element = $array->first() ?? fatal_error();
         if ($element instanceof ManagedObject) {
             $columnNames->appendContentsOf($element->changedValuesForCurrentEvent()->keys);
         }
@@ -474,7 +473,7 @@ class SQLConnection extends ObjectClass
     private function createHistoryTrackingTables(): void
     {
         if (!$this->hasPersistentHistoryTables) {
-            $entities = $this->sqlCore?->model?->entities?->filter(fn(SQLEntity $entity): bool => $entity->entityDescription->isPersistentHistoryEntity) ?? throw new InvalidArgumentException();
+            $entities = $this->sqlCore?->model?->entities?->filter(fn(SQLEntity $entity): bool => $entity->entityDescription->isPersistentHistoryEntity) ?? fatal_error();
             foreach ($entities as $entity) {
                 $this->createTableForEntity($entity);
             }
@@ -490,7 +489,7 @@ class SQLConnection extends ObjectClass
     public function dropHistoryTrackingTables(): void
     {
         if ($this->hasPersistentHistoryTables) {
-            $entities = $this->sqlCore?->model?->entities?->filter(fn(SQLEntity $entity): bool => $entity->entityDescription->isPersistentHistoryEntity) ?? throw new InvalidArgumentException();
+            $entities = $this->sqlCore?->model?->entities?->filter(fn(SQLEntity $entity): bool => $entity->entityDescription->isPersistentHistoryEntity) ?? fatal_error();
             foreach ($entities as $entity) {
                 if ($statement = $this->adapter?->newDropIndexesStatement($entity)) {
                     $this->execute($statement);
@@ -530,7 +529,7 @@ class SQLConnection extends ObjectClass
      */
     public function fetchMaxPrimaryKey(string $entityName): int
     {
-        $entity = $this->sqlCore?->model?->entitiesByName[$entityName] ?? throw new InvalidArgumentException("Invalid argument: entity \"$entityName\" does not exists");
+        $entity = $this->sqlCore?->model?->entitiesByName[$entityName] ?? fatal_error("Invalid argument: entity \"$entityName\" does not exists");
         return (int)$this->execute(new SQLStatement("SELECT MAX({$entity->primaryKey->columnName}) FROM `$entity->tableName`"))->fetchColumn();
     }
 
@@ -690,7 +689,7 @@ class SQLConnection extends ObjectClass
      */
     private function createManyToManyTablesForEntities(ArrayClass $entities): void
     {
-        $adapter = $this->adapter ?? throw new InvalidArgumentException();
+        $adapter = $this->adapter ?? fatal_error();
         /** @var Set<SQLStatement> $statements */
         $statements = (new Set($entities))->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->manyToManyRelationships)->map(fn(SQLManyToMany $manyToMany): SQLStatement => $adapter->newCreateTableStatementForManyToMany($manyToMany));
         if (!$statements->isEmpty()) {
@@ -718,7 +717,7 @@ class SQLConnection extends ObjectClass
     public function createSchema(): bool
     {
         $time = absolute_time_get_current();
-        $model = $this->sqlCore?->model ?? throw new InvalidArgumentException();
+        $model = $this->sqlCore?->model ?? fatal_error();
         $database = $this->schema->name;
         if (SQLCore::$debugDefault) {
             error_log("CoreData: annotation: creating database \"$database\"");

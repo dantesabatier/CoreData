@@ -3,9 +3,9 @@
 namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
+use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
 class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
@@ -22,7 +22,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
     {
         /** @var SQLEntity $entity */
         $entity = $this->sqlModel->entitiesByName[$this->objectID->entity->name];
-        $relationship = $entity->entitySpecificRelationships->first(fn(SQLRelationship $relationship): bool => $relationship->relationshipDescription->name === $this->relationship->name) ?? throw new InternalInconsistencyException(sprintf("Unable to find relationship %s in %s", $this->relationship->name, $entity->entitySpecificRelationships->map(fn(SQLRelationship $relationship): string => $relationship->name)->description()));
+        $relationship = $entity->entitySpecificRelationships->first(fn(SQLRelationship $relationship): bool => $relationship->relationshipDescription->name === $this->relationship->name) ?? fatal_error(sprintf("Unable to find relationship %s in %s", $this->relationship->name, $entity->entitySpecificRelationships->map(fn(SQLRelationship $relationship): string => $relationship->name)->description()));
         if ($relationship instanceof SQLToOne) {
             $sourceEntity = $relationship->entity;
             $foreignKey = $relationship->foreignKey;

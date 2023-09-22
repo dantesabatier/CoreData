@@ -5,7 +5,6 @@ namespace Sabatier\CoreData;
 use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\CompoundPredicate;
@@ -13,6 +12,7 @@ use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\ValueTransformer;
+use function Sabatier\Foundation\fatal_error;
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /** @internal */
@@ -61,7 +61,7 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
     private function fetchRequestDescribingChanges(): FetchRequest
     {
         $request = $this->request;
-        $persistentHistoryTransactionEntityDescription = PersistentHistoryTransaction::$entityDescription ?? throw new InternalInconsistencyException();
+        $persistentHistoryTransactionEntityDescription = PersistentHistoryTransaction::$entityDescription ?? fatal_error();
         if (!($fetchRequest = $request->fetchRequest)) {
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $persistentHistoryTransactionEntityDescription;
@@ -158,7 +158,7 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
             PersistentHistoryResultType::statusOnly => new ArrayClass([new Number((bool)$context->result->sum())]),
             PersistentHistoryResultType::count => $context->result,
             default => (function () use ($request, $context): ArrayClass {
-                if ($context->request->entity->isKindOf(PersistentHistoryTransaction::$entityDescription ?? throw new InternalInconsistencyException())) {
+                if ($context->request->entity->isKindOf(PersistentHistoryTransaction::$entityDescription ?? fatal_error())) {
                     $transactions = $context->result->map(fn(Dictionary $dictionary): PersistentHistoryTransaction => $this->transactionFromResult($dictionary));
                     return match ($request->resultType) {
                         PersistentHistoryResultType::objectIDs => $transactions->flatMap(fn(PersistentHistoryTransaction $transaction): iterable => $transaction->changes?->map(fn(PersistentHistoryChange $change): ManagedObjectID => $change->changedObjectID) ?? []),

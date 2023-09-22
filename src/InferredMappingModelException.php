@@ -2,11 +2,11 @@
 
 namespace Sabatier\CoreData;
 
-use Exception;
+use Sabatier\Foundation\InternalInconsistencyException;
 
 /**
  * Exception to denote a problem with the creation of an inferred mapping model.
  */
-class InferredMappingModelException extends Exception
+class InferredMappingModelException extends InternalInconsistencyException
 {
 }

@@ -5,9 +5,9 @@ namespace Sabatier\CoreData;
 use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\IndexPath;
-use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\SortDescriptor;
+use function Sabatier\Foundation\fatal_error;
 use const Sabatier\Foundation\NotFound;
 
 /**
@@ -66,7 +66,7 @@ class FetchedResultsController extends ObjectClass
         $sectionNameKeyPath = $this->sectionNameKeyPath ?? "";
         $this->fetchedObjects = $this->managedObjectContext->fetch($this->fetchRequest);
         if ($sectionNameKeyPath != "" && !$this->fetchRequest->sortDescriptors?->contains(fn(SortDescriptor $sortDescriptor): bool => $sortDescriptor->key == $sectionNameKeyPath)) {
-            throw new InternalInconsistencyException();
+            fatal_error();
         }
         $this->sections = new ArrayClass([new FetchedResultsSectionInfo($sectionNameKeyPath, $this->fetchedObjects, $this->sectionIndexTitle($sectionNameKeyPath))]);
     }

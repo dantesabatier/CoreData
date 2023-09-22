@@ -6,8 +6,8 @@ use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Bundle;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\URL;
+use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
 class StoreMigrationPolicy
@@ -62,11 +62,11 @@ class StoreMigrationPolicy
      */
     public function migrateStoreAtURL(URL $sourceURL, URL $destinationURL, PersistentStoreType $storeType, ?Dictionary $options, MigrationManager $manager): bool
     {
-        $coordinator = $this->persistentStoreCoordinator ?? throw new InternalInconsistencyException();
-        $persistentStore = $coordinator->persistentStore($sourceURL) ?? throw new InternalInconsistencyException();
+        $coordinator = $this->persistentStoreCoordinator ?? fatal_error();
+        $persistentStore = $coordinator->persistentStore($sourceURL) ?? fatal_error();
         $metadata = $coordinator->metadata($persistentStore);
-        $sourceModel = $this->sourceModelForStoreAtURL($sourceURL, $metadata) ?? throw new InternalInconsistencyException();
-        $destinationModel = $this->destinationModel ?? throw new InternalInconsistencyException();
+        $sourceModel = $this->sourceModelForStoreAtURL($sourceURL, $metadata) ?? fatal_error();
+        $destinationModel = $this->destinationModel ?? fatal_error();
         $mappingModel = $this->mappingModel($sourceModel, $destinationModel);
         $this->willPerformMigrationWithManager($manager);
         $ok = $manager->migrateStore($sourceURL, $storeType, $options, $mappingModel, $destinationURL, $storeType, $options);
@@ -90,7 +90,7 @@ class StoreMigrationPolicy
         if ($this->destinationOptions?->valueForKey(InferMappingModelAutomaticallyOption)) {
             return MappingModel::inferredMappingModel($sourceModel, $destinationModel);
         } else {
-            return MappingModel::mappingModel(null, $sourceModel, $destinationModel) ?? throw new InternalInconsistencyException();
+            return MappingModel::mappingModel(null, $sourceModel, $destinationModel) ?? fatal_error();
         }
     }
 }

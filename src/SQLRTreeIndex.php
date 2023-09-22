@@ -2,7 +2,7 @@
 
 namespace Sabatier\CoreData;
 
-use InvalidArgumentException;
+use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
 
 /** @internal */
@@ -18,7 +18,7 @@ class SQLRTreeIndex extends SQLIndex
         $element = $indexDescription->elements->first();
         $property = $element->property;
         if ($property->isOptional) {
-            throw new InvalidArgumentException(sprintf("Invalid argument for index %s, property \"%s\" cannot be optional", human_readable_value($element->collationType), $property->name));
+            fatal_error(sprintf("Invalid argument for index %s, property \"%s\" cannot be optional", human_readable_value($element->collationType), $property->name));
         }
         /** @var SQLEntity $entity */
         $entity = $entity->isRootEntity ? $entity : $entity->rootEntity;

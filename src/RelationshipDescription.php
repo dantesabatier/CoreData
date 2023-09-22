@@ -2,11 +2,10 @@
 
 namespace Sabatier\CoreData;
 
-use InvalidArgumentException;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\KeyedUnarchiver;
+use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
 
 /**
@@ -46,17 +45,17 @@ class RelationshipDescription extends PropertyDescription
     {
         if ($name == "destinationEntity") {
             if ($this->entity->isEditable) {
-                throw new InternalInconsistencyException(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription(), $name));
+                fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription(), $name));
             }
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-            $this->$name = $this->entity->managedObjectModel->entitiesByName[$this->lazyDestinationEntityName] ?? $this->entity->managedObjectModel->entitiesByName->first(fn(EntityDescription $entity): bool => $entity->renamingIdentifier === $this->lazyDestinationEntityName) ?? throw new InvalidArgumentException(sprintf("%s, destination entity \"%s\" does not exists", $this->name, $this->lazyDestinationEntityName));
+            $this->$name = $this->entity->managedObjectModel->entitiesByName[$this->lazyDestinationEntityName] ?? $this->entity->managedObjectModel->entitiesByName->first(fn(EntityDescription $entity): bool => $entity->renamingIdentifier === $this->lazyDestinationEntityName) ?? fatal_error(sprintf("%s, destination entity \"%s\" does not exists", $this->name, $this->lazyDestinationEntityName));
             return $this->$name;
         } elseif ($name == "inverseRelationship") {
             if ($this->entity->isEditable) {
-                throw new InternalInconsistencyException(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription(), $name));
+                fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription(), $name));
             }
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-            $this->$name = $this->destinationEntity->relationshipsByName[$this->lazyInverseRelationshipName] ?? $this->destinationEntity->relationshipsByName->first(fn(RelationshipDescription $relationship): bool => $relationship->renamingIdentifier === $this->lazyInverseRelationshipName) ?? throw new InvalidArgumentException(sprintf("%s, inverse relationship \"%s\" does not exists", $this->name, $this->lazyInverseRelationshipName));
+            $this->$name = $this->destinationEntity->relationshipsByName[$this->lazyInverseRelationshipName] ?? $this->destinationEntity->relationshipsByName->first(fn(RelationshipDescription $relationship): bool => $relationship->renamingIdentifier === $this->lazyInverseRelationshipName) ?? fatal_error(sprintf("%s, inverse relationship \"%s\" does not exists", $this->name, $this->lazyInverseRelationshipName));
             return $this->$name;
         } elseif ($name == "propertyType") {
             $this->$name = PropertyDescriptionType::relationship;

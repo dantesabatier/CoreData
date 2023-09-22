@@ -9,12 +9,12 @@
 
 namespace Sabatier\CoreData;
 
-use InvalidArgumentException;
 use JetBrains\PhpStorm\ExpectedValues;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\CompareOptions;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\SearchMethod;
+use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\string_is_equal;
 use function Sabatier\Foundation\string_search;
@@ -29,12 +29,12 @@ class SQLStatement extends ObjectClass
     public function __construct(public readonly string $string, public readonly ArrayClass $arguments = new ArrayClass())
     {
         if (str_ends_with($this->string, ";")) {
-            throw new InvalidArgumentException("Invalid sql statement: sql string must not end with a semicolon \";\"");
+            fatal_error("Invalid sql statement: sql string must not end with a semicolon \";\"");
         }
         $numberOfArguments = $this->arguments->count();
         $numberOfPlaceholders = string_search($this->string, "?", SearchMethod::contains);
         if ($numberOfArguments !== $numberOfPlaceholders) {
-            throw new InvalidArgumentException(sprintf("Invalid sql statement: number of arguments (%s) does not match the number of placeholders (%s)\n\"%s\"\n%s", $numberOfArguments, $numberOfPlaceholders, $this->string, human_readable_value($this->arguments)));
+            fatal_error(sprintf("Invalid sql statement: number of arguments (%s) does not match the number of placeholders (%s)\n\"%s\"\n%s", $numberOfArguments, $numberOfPlaceholders, $this->string, human_readable_value($this->arguments)));
         }
     }
 
@@ -44,8 +44,9 @@ class SQLStatement extends ObjectClass
      */
     public static function merging(ArrayClass $statements): SQLStatement
     {
+        /** @noinspection PhpVoidFunctionResultUsedInspection */
         return match ($statements->count()) {
-            0 => throw new InvalidArgumentException("Invalid sql statement: statements cannot be empty"),
+            0 => fatal_error("Invalid sql statement: statements cannot be empty"),
             1 => $statements[0],
             default => new SQLStatement($statements->map(fn(SQLStatement $statement): string => $statement->string)->join(";\n"), $statements->flatMap(fn(SQLStatement $statement): ArrayClass => $statement->arguments))
         };

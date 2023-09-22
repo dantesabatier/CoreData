@@ -5,12 +5,12 @@ namespace Sabatier\CoreData;
 use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\Predicate;
+use function Sabatier\Foundation\fatal_error;
 
 /**
  * A description of a property of a Core Data entity.
@@ -135,7 +135,7 @@ abstract class PropertyDescription extends ObjectClass
     private function throwIfNotEditable(): void
     {
         if (!$this->isEditable) {
-            throw new InternalInconsistencyException();
+            fatal_error();
         }
     }
 

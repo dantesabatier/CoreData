@@ -11,19 +11,18 @@ namespace Sabatier\CoreData;
 
 use Closure;
 use Exception;
-use InvalidArgumentException;
 use JetBrains\PhpStorm\Pure;
-use RuntimeException;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Error;
-use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\NotificationCenter;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\OperationQueue;
 use Sabatier\Foundation\URL;
 use Throwable;
+use function Sabatier\Foundation\fatal_error;
+use const Sabatier\Foundation\CocoaErrorDomain;
 use const Sabatier\Foundation\LocalizedFailureReasonErrorKey;
 
 /**
@@ -198,10 +197,10 @@ class PersistentStoreCoordinator extends ObjectClass
         $persistentStoreClass = self::registeredStoreTypes()[$storeType->value] ?? self::registeredStoreTypes()->first(/**
          * @param class-string<PersistentStore> $class
          * @throws Exception
-         */ fn(string $class, string $type): bool => $type === $class::metadataForPersistentStore($storeURL)[StoreTypeKey]) ?? throw new InvalidArgumentException();
+         */ fn(string $class, string $type): bool => $type === $class::metadataForPersistentStore($storeURL)[StoreTypeKey]) ?? fatal_error();
         $persistentStore = new $persistentStoreClass($this, $configuration ?? "Default", $storeURL, $options);
         if (!$persistentStore->load() || !$persistentStore->loadMetadata()) {
-            throw new RuntimeException();
+            fatal_error();
         }
         $userInfo = new Dictionary([AddedPersistentStoresKey => new ArrayClass([$persistentStore])]);
         NotificationCenter::default()->postNotificationName(PersistentStoreCoordinatorStoresWillChange, $this, $userInfo);
@@ -227,7 +226,7 @@ class PersistentStoreCoordinator extends ObjectClass
                 $this->addPersistentStoreWithType(PersistentStoreType::from($description->type), $description->configuration, $description->url, $description->options);
                 $completion($description, null);
             } catch (Throwable $throwable) {
-                $completion($description, new Error(CoreDataErrorDomain, (int)$throwable->getCode(), new Dictionary([LocalizedFailureReasonErrorKey => $throwable->getMessage()])));
+                $completion($description, new Error(CocoaErrorDomain, (int)$throwable->getCode(), new Dictionary([LocalizedFailureReasonErrorKey => $throwable->getMessage()])));
             }
         };
         if ($description->shouldAddStoreAsynchronously) {
@@ -273,7 +272,7 @@ class PersistentStoreCoordinator extends ObjectClass
         if ($store->options?->valueForKey(InferMappingModelAutomaticallyOption)) {
             $mappingModel = MappingModel::inferredMappingModel($sourceModel, $destinationModel);
         } else {
-            $mappingModel = MappingModel::mappingModel(null, $sourceModel, $destinationModel) ?? throw new InternalInconsistencyException();
+            $mappingModel = MappingModel::mappingModel(null, $sourceModel, $destinationModel) ?? fatal_error();
         }
         $sourceType = PersistentStoreType::from($store->type);
         $sourceOptions = $store->options;

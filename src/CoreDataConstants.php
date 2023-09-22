@@ -4,7 +4,6 @@ namespace Sabatier\CoreData;
 
 //Error Domains
 
-const CoreDataErrorDomain = "CoreDataErrorDomain";
 /** @var string Domain for SQL errors. */
 const SQLErrorDomain = "SQLErrorDomain";
 
@@ -102,6 +101,8 @@ const ValidationObjectErrorKey = "ValidationObjectErrorKey";
 const ValidationPredicateErrorKey = "ValidationPredicateErrorKey";
 /** @var string The error key for the value that failed to validate. */
 const ValidationValueErrorKey = "ValidationValueErrorKey";
+
+const ConflictListErrorKey = "conflictList";
 
 // Other
 
