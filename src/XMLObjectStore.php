@@ -123,7 +123,7 @@ class XMLObjectStore extends AtomicStore
             foreach ($attributeElements as $attributeElement) {
                 $key = $attributeElement->getAttribute("name");
                 if (!($attribute = $entity->attributesByName[$key])) {
-                    fatal_error(sprintf("Entity \"%s\" does not contains an attribute named \"%s\"", $entity->name, $key));
+                    fatal_error("Entity \"$entity->name\" does not contains an attribute named \"$key\"");
                 }
                 $info[$attribute->name] = $attributeElement->attributes;
                 $value = $attributeElement->nodeValue;
@@ -138,7 +138,7 @@ class XMLObjectStore extends AtomicStore
             foreach ($relationshipElements as $relationshipElement) {
                 $key = $relationshipElement->getAttribute("name");
                 if (!($relationship = $entity->relationshipsByName[$key])) {
-                    fatal_error(sprintf("Entity \"%s\" does not contains a relationship named \"%s\"", $entity->name, $key));
+                    fatal_error("Entity \"$entity->name\" does not contains a relationship named \"$key\"");
                 }
                 $info[$relationship->name] = $relationshipElement->attributes;
                 if (($references = $relationshipElement->getAttribute("references")) && ($destination = $relationshipElement->getAttribute("destination")) && ($destinationEntity = $this->entitiesForConfiguration[$destination])) {

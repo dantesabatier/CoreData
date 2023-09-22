@@ -629,7 +629,7 @@ class SQLGenerator extends ObjectClass
                 continue;
             }
             if ($this->raisesForNotApplicableKeys) {
-                fatal_error(sprintf("%s does not contains a property named \"%s\"", $entity->tableName, $key));
+                fatal_error("$entity->tableName does not contains a property named \"$key\"");
             }
         }
         return $properties;

@@ -45,17 +45,17 @@ class RelationshipDescription extends PropertyDescription
     {
         if ($name == "destinationEntity") {
             if ($this->entity->isEditable) {
-                fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription(), $name));
+                fatal_error("{$this->debugDescription()} property \"$name\" cannot be accessed before initialization");
             }
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-            $this->$name = $this->entity->managedObjectModel->entitiesByName[$this->lazyDestinationEntityName] ?? $this->entity->managedObjectModel->entitiesByName->first(fn(EntityDescription $entity): bool => $entity->renamingIdentifier === $this->lazyDestinationEntityName) ?? fatal_error(sprintf("%s, destination entity \"%s\" does not exists", $this->name, $this->lazyDestinationEntityName));
+            $this->$name = $this->entity->managedObjectModel->entitiesByName[$this->lazyDestinationEntityName] ?? $this->entity->managedObjectModel->entitiesByName->first(fn(EntityDescription $entity): bool => $entity->renamingIdentifier === $this->lazyDestinationEntityName) ?? fatal_error("$this->name, destination entity \"$this->lazyDestinationEntityName\" does not exists");
             return $this->$name;
         } elseif ($name == "inverseRelationship") {
             if ($this->entity->isEditable) {
-                fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription(), $name));
+                fatal_error("{$this->debugDescription()} property \"$name\" cannot be accessed before initialization");
             }
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-            $this->$name = $this->destinationEntity->relationshipsByName[$this->lazyInverseRelationshipName] ?? $this->destinationEntity->relationshipsByName->first(fn(RelationshipDescription $relationship): bool => $relationship->renamingIdentifier === $this->lazyInverseRelationshipName) ?? fatal_error(sprintf("%s, inverse relationship \"%s\" does not exists", $this->name, $this->lazyInverseRelationshipName));
+            $this->$name = $this->destinationEntity->relationshipsByName[$this->lazyInverseRelationshipName] ?? $this->destinationEntity->relationshipsByName->first(fn(RelationshipDescription $relationship): bool => $relationship->renamingIdentifier === $this->lazyInverseRelationshipName) ?? fatal_error("$this->name, inverse relationship \"$this->lazyInverseRelationshipName\" does not exists");
             return $this->$name;
         } elseif ($name == "propertyType") {
             $this->$name = PropertyDescriptionType::relationship;

@@ -72,7 +72,7 @@ class FetchIndexElementDescription extends ObjectClass
     {
         $propertyName = $this->propertyName ?? fatal_error("Property name cannot be null");
         return $this->$name = match ($name) {
-            "property" => $this->indexDescription->entity->propertiesByName[$propertyName] ?? fatal_error(sprintf("Entity \"%s\" does not contains a property named \"%s\"", $this->indexDescription->entity->name, $propertyName)),
+            "property" => $this->indexDescription->entity->propertiesByName[$propertyName] ?? fatal_error("Entity \"{$this->indexDescription->entity->name}\" does not contains a property named \"$propertyName\""),
             default => $this->valueForUndefinedKey($name)
         };
     }

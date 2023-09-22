@@ -22,7 +22,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
     {
         /** @var SQLEntity $entity */
         $entity = $this->sqlModel->entitiesByName[$this->objectID->entity->name];
-        $relationship = $entity->entitySpecificRelationships->first(fn(SQLRelationship $relationship): bool => $relationship->relationshipDescription->name === $this->relationship->name) ?? fatal_error(sprintf("Unable to find relationship %s in %s", $this->relationship->name, $entity->entitySpecificRelationships->map(fn(SQLRelationship $relationship): string => $relationship->name)->description()));
+        $relationship = $entity->entitySpecificRelationships->first(fn(SQLRelationship $relationship): bool => $relationship->relationshipDescription->name === $this->relationship->name) ?? fatal_error("Unable to find relationship {$this->relationship->name} in {$entity->entitySpecificRelationships->map(fn(SQLRelationship $relationship): string => $relationship->name)->description()}");
         if ($relationship instanceof SQLToOne) {
             $sourceEntity = $relationship->entity;
             $foreignKey = $relationship->foreignKey;

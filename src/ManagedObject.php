@@ -202,7 +202,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public static function entity(): EntityDescription
     {
-        return static::staticAssociatedValueForKey(__FUNCTION__) ?? fatal_error(sprintf("Entity \"%s\" does not exists", static::className()));
+        return static::staticAssociatedValueForKey(__FUNCTION__) ?? fatal_error(sprintf("Entity \"%s\" does not exists", static::class));
     }
 
     /**
@@ -217,7 +217,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if ($this->entity->relationshipsByName[$key]) {
             return $this->isRelationshipForKeyFault($key);
         }
-        fatal_error(sprintf("This class does not contains a relationship named \"%s\"", $key));
+        fatal_error("This class does not contains a relationship named \"$key\"");
     }
 
     /**
@@ -388,7 +388,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             return $this->valueForUndefinedKey($key);
         }
         if (!$relationship->isToMany) {
-            fatal_error(sprintf("%s does not contains a to many relationship named \"%s\"", $this->debugDescription(), $key));
+            fatal_error("{$this->debugDescription()} does not contains a to many relationship named \"$key\"");
         }
         $mutableSet = $this->primitiveValueForKey($key);
         if (!$mutableSet instanceof FaultingMutableSet) {

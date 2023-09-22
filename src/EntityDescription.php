@@ -94,14 +94,14 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
             return $this->$name;
         } elseif ($name == "attributesByName") {
             if ($this->isEditable) {
-                fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription(), $name));
+                fatal_error("{$this->debugDescription()} property \"$name\" cannot be accessed before initialization");
             }
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
             return $this->$name;
         } elseif ($name == "relationshipsByName") {
             if ($this->isEditable) {
-                fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription(), $name));
+                fatal_error("{$this->debugDescription()} property \"$name\" cannot be accessed before initialization");
             }
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
