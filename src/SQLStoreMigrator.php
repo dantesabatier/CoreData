@@ -181,6 +181,10 @@ readonly class SQLStoreMigrator
                     if ($statement = $adapter->newCreateIndexStatement($property)) {
                         $connection->execute($statement);
                     }
+                } elseif ($property instanceof SQLManyToMany) {
+                    $statement = $adapter->newCreateTableStatementForManyToMany($property);
+                    $connection->execute($statement);
+                    $createIndexStatements->append($adapter->newCreateIndexesStatementForManyToMany($property));
                 }
             }
         }
