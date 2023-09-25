@@ -201,6 +201,10 @@ readonly class SQLStoreMigrator
             $connection->execute($statement);
         }
         foreach ($this->removedEntities as $entity) {
+            foreach ($entity->toManyRelationships->flatMap(fn(SQLToMany $many): ArrayClass => $many->destinationEntity->foreignKeyColumns->filter(fn(SQLForeignKey $foreignKey): bool => $foreignKey->toOneRelationship->isEqual($many->inverseToOne))) as $foreignKey) {
+                $statement = $adapter->newDropIndexStatementForForeignKey($foreignKey);
+                $connection->execute($statement);
+            }
             foreach ($entity->manyToManyRelationships as $manyToManyRelationship) {
                 $statement = $adapter->newDropIndexesStatementForManyToMany($manyToManyRelationship);
                 $connection->execute($statement);
