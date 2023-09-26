@@ -404,14 +404,13 @@ class SQLGenerator extends ObjectClass
 
     private function appendJoinDestinationEntity(SQLEntity $destinationEntity, string $destinationPath = ""): void
     {
-        $rootEntity = $destinationEntity->isRootEntity ? $destinationEntity->entityDescription : $destinationEntity->rootEntity->entityDescription;
-        $subentities = $destinationEntity->entityDescription->managedObjectModel->flatten($rootEntity->subentities);
-        if (!$destinationEntity->isRootEntity || $subentities->count() > 1) {
-            $this->joinClause .= " AND ";
-            if (!empty($destinationPath)) {
-                $this->joinClause .= "$destinationPath.";
+        if (!empty($destinationPath)) {
+            $rootEntity = $destinationEntity->isRootEntity ? $destinationEntity->entityDescription : $destinationEntity->rootEntity->entityDescription;
+            $subentities = $destinationEntity->entityDescription->managedObjectModel->flatten($rootEntity->subentities);
+            if ($subentities->count() > 1) {
+                $this->joinClause .= " AND ";
+                $this->joinClause .= "$destinationPath.{$destinationEntity->entityKey->columnName} = '{$destinationEntity->entityDescription->name}'";
             }
-            $this->joinClause .= "{$destinationEntity->entityKey->columnName} = '{$destinationEntity->entityDescription->name}'";
         }
     }
 
