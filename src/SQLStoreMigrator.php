@@ -163,12 +163,14 @@ readonly class SQLStoreMigrator
                             }
                         }
                     }
-                } elseif (($source instanceof SQLAttribute || $source instanceof SQLForeignKey) && !$sourceEntity->isRootEntity && !$destinationEntity->isRootEntity && $sourceEntity->rootEntity->isEqual($destinationEntity->rootEntity) &&  !$destinationEntity->properties->containsElement($source)) {
-                    if ($statement = $adapter->newDropIndexStatement($source)) {
+                } elseif ($source instanceof SQLAttribute || $source instanceof SQLForeignKey) {
+                    if (!$sourceEntity->isRootEntity && !$destinationEntity->isRootEntity && $sourceEntity->rootEntity->isEqual($destinationEntity->rootEntity) && !$destinationEntity->properties->containsElement($source)) {
+                        if ($statement = $adapter->newDropIndexStatement($source)) {
+                            $connection->execute($statement);
+                        }
+                        $statement = $adapter->newDropColumnStatement($source);
                         $connection->execute($statement);
                     }
-                    $statement = $adapter->newDropColumnStatement($source);
-                    $connection->execute($statement);
                 } elseif ($source instanceof SQLManyToMany) {
                     $statement = $adapter->newDropIndexesStatementForManyToMany($source);
                     $connection->execute($statement);
