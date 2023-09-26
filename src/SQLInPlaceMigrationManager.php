@@ -19,8 +19,8 @@ class SQLInPlaceMigrationManager extends MigrationManager
         if (!$store instanceof SQLCore) {
             return parent::migrateStore($sourceURL, $sourceType, $sourceOptions, $mappingModel, $destinationURL, $destinationType, $destinationOptions);
         }
-        $model = new SQLModel($this->destinationModel, $store->configurationName);
-        $migrator = new SQLStoreMigrator($store, $model, $mappingModel);
+        $destinationModel = new SQLModel($this->destinationModel, $store->configurationName);
+        $migrator = new SQLStoreMigrator($store, $destinationModel, $mappingModel);
         $migrator->perform();
         $ok = parent::migrateStore($sourceURL, $sourceType, $sourceOptions, $mappingModel, $destinationURL, $destinationType, $destinationOptions);
         $migrator->disconnect();
