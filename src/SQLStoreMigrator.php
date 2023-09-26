@@ -71,7 +71,7 @@ readonly class SQLStoreMigrator
         /** @var ArrayClass<SQLStatement> $createIndexStatements */
         $createIndexStatements = new ArrayClass();
         foreach ($addedEntityMappings as $mapping) {
-            if (($destinationEntityName = $mapping->destinationEntityName) && !$sourceModel->entitiesByName[$destinationEntityName]) {
+            if ($destinationEntityName = $mapping->destinationEntityName) {
                 /** @var SQLEntity $destinationEntity */
                 $destinationEntity = $destinationModel->entitiesByName[$destinationEntityName];
                 /** @var SQLEntity $destinationRootEntity */

@@ -256,14 +256,15 @@ class SQLAdapter extends ObjectClass
     {
         /** @var ArrayClass<SQLStatement> $statements */
         $statements = new ArrayClass();
-        $entity = $manyToMany->entity;
+        $sourceEntity = $manyToMany->entity;
         $correlationTableName = $manyToMany->correlationTableName;
         $destinationEntity = $manyToMany->destinationEntity;
         $primaryKey = $destinationEntity->primaryKey;
-        $statements->append(new SQLStatement("ALTER TABLE `$correlationTableName` ADD CONSTRAINT `FK_{$correlationTableName}__{$entity->tableName}_$destinationEntity->tableName` FOREIGN KEY IF NOT EXISTS (`$manyToMany->columnName`) REFERENCES `$destinationEntity->tableName` (`$primaryKey->columnName`) ON UPDATE CASCADE ON DELETE CASCADE"));
+        $statements->append(new SQLStatement("ALTER TABLE `$correlationTableName` ADD CONSTRAINT `FK_{$correlationTableName}__{$sourceEntity->tableName}_$destinationEntity->tableName` FOREIGN KEY IF NOT EXISTS (`$manyToMany->columnName`) REFERENCES `$destinationEntity->tableName` (`$primaryKey->columnName`) ON UPDATE CASCADE ON DELETE CASCADE"));
+        $sourceEntity = $destinationEntity;
         $destinationEntity = $manyToMany->inverseRelationship->destinationEntity;
         $primaryKey = $destinationEntity->primaryKey;
-        $statements->append(new SQLStatement("ALTER TABLE `$correlationTableName` ADD CONSTRAINT `FK_{$correlationTableName}__{$entity->tableName}_$destinationEntity->tableName` FOREIGN KEY IF NOT EXISTS (`$manyToMany->inverseColumnName`) REFERENCES `$destinationEntity->tableName` (`$primaryKey->columnName`) ON UPDATE CASCADE ON DELETE CASCADE"));
+        $statements->append(new SQLStatement("ALTER TABLE `$correlationTableName` ADD CONSTRAINT `FK_{$correlationTableName}__{$sourceEntity->tableName}_$destinationEntity->tableName` FOREIGN KEY IF NOT EXISTS (`$manyToMany->inverseColumnName`) REFERENCES `$destinationEntity->tableName` (`$primaryKey->columnName`) ON UPDATE CASCADE ON DELETE CASCADE"));
         return SQLStatement::merging($statements);
     }
 

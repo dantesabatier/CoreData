@@ -114,8 +114,8 @@ class MappingModelBuilder
 
     public function newInferredMappingModel(): MappingModel
     {
-        $sourceEntities = $this->sourceModel->entities;
-        $destinationEntities = $this->destinationModel->entities;
+        $sourceEntities = $this->sourceModel->entities->filter(fn(EntityDescription $entity): bool => $entity->isRootEntity);
+        $destinationEntities = $this->destinationModel->entities->filter(fn(EntityDescription $entity): bool => $entity->isRootEntity);
         /** @var ArrayClass<EntityMapping> $entityMappings */
         $entityMappings = $sourceEntities->compactMap(fn(EntityDescription $sourceEntity): ?EntityMapping => ($entityMapping = $this->newEntityMapping($sourceEntity, $this->destinationModel->entitiesByName->first(fn(EntityDescription $e): bool => $e->renamingIdentifier === $sourceEntity->renamingIdentifier))) && $this->inferPropertyMappingsForEntityMapping($entityMapping) ? $entityMapping : null);
         /** @psalm-suppress InvalidArgument */
