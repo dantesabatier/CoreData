@@ -170,6 +170,8 @@ readonly class SQLStoreMigrator
                     $statement = $adapter->newDropColumnStatement($source);
                     $connection->execute($statement);
                 } elseif ($source instanceof SQLManyToMany) {
+                    $statement = $adapter->newDropIndexesStatementForManyToMany($source);
+                    $connection->execute($statement);
                     $this->removedManyToMany->append($source);
                 }
             }
