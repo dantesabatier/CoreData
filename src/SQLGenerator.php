@@ -464,7 +464,7 @@ class SQLGenerator extends ObjectClass
         $correlationTableName = $manyToMany->correlationTableName;
         $inverseManyToMany = $manyToMany->inverseManyToMany;
         $sourceEntity = $inverseManyToMany->destinationEntity;
-        if (!$sourcePath) {
+        if (empty($sourcePath)) {
             $sourcePath = $sourceEntity->tableName;
         }
         $correlationTableAlias = "{$sourcePath}_$correlationTableName";
