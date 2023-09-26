@@ -402,13 +402,17 @@ class SQLGenerator extends ObjectClass
         $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
     }
 
-    private function appendJoinDestinationEntity(SQLEntity $destinationEntity, string $destinationPath): void
+    private function appendJoinDestinationEntity(SQLEntity $destinationEntity, string $destinationPath = ""): void
     {
-        if ($destinationEntity->isRootEntity || $destinationEntity->subentities->count() < 2) {
-            return;
+        $rootEntity = $destinationEntity->isRootEntity ? $destinationEntity->entityDescription : $destinationEntity->rootEntity->entityDescription;
+        $subentities = $destinationEntity->entityDescription->managedObjectModel->flatten($rootEntity->subentities);
+        if (!$destinationEntity->isRootEntity || $subentities->count() > 1) {
+            $this->joinClause .= " AND ";
+            if (!empty($destinationPath)) {
+                $this->joinClause .= "$destinationPath.";
+            }
+            $this->joinClause .= "{$destinationEntity->entityKey->columnName} = '{$destinationEntity->entityDescription->name}'";
         }
-        $this->joinClause .= " AND ";
-        $this->joinClause .= !$this->request->includesSubentities || $destinationEntity->subentities->isEmpty() ? "$destinationPath.{$destinationEntity->entityKey->columnName} = '{$destinationEntity->entityDescription->name}'" : "({$destinationEntity->subentities->map(fn(SQLEntity $subentity): string => "$destinationPath.{$destinationEntity->entityKey->columnName} = '{$subentity->entityDescription->name}'")->join(" OR ")})";
     }
 
     private function addJoinForToOneRelationship(SQLToOne $toOne, string $sourcePath = "", string $destinationPath = ""): void
@@ -471,7 +475,7 @@ class SQLGenerator extends ObjectClass
         $this->joinClause .= "$correlationTableAlias.$manyToMany->inverseColumnName";
         $this->joinClause .= " = ";
         $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
-        $this->appendJoinDestinationEntity($destinationEntity, $destinationPath);
+        $this->appendJoinDestinationEntity($destinationEntity);
         $this->appendJoinClauseToSQL();
         $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $correlationTableAlias.$manyToMany->columnName = $destinationPath.{$destinationEntity->primaryKey->columnName}";
         $this->appendJoinDestinationEntity($destinationEntity, $destinationPath);
