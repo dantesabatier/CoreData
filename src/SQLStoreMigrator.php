@@ -152,8 +152,6 @@ readonly class SQLStoreMigrator
                             }
                         } else {
                             if ($source instanceof SQLManyToMany) {
-                                $statement = $adapter->newDropIndexesStatementForManyToMany($source);
-                                $connection->execute($statement);
                                 $this->removedManyToMany->append($source);
                             }
                             if ($destination instanceof SQLManyToMany) {
@@ -172,8 +170,6 @@ readonly class SQLStoreMigrator
                         $connection->execute($statement);
                     }
                 } elseif ($source instanceof SQLManyToMany) {
-                    $statement = $adapter->newDropIndexesStatementForManyToMany($source);
-                    $connection->execute($statement);
                     $this->removedManyToMany->append($source);
                 }
             }
