@@ -145,7 +145,7 @@ readonly class SQLStoreMigrator
                     } elseif ($source instanceof SQLRelationship && $destination instanceof SQLRelationship) {
                         if ($source instanceof $destination) {
                             if ($source instanceof SQLToMany && $destination instanceof SQLToMany) {
-                                if ( $source->relationshipDescription->deleteRule !== $destination->relationshipDescription->deleteRule) {
+                                if ($source->relationshipDescription->deleteRule !== $destination->relationshipDescription->deleteRule) {
                                     $statement = $adapter->newDropIndexStatementForForeignKey($source->inverseToOne->foreignKey);
                                     $connection->execute($statement);
                                     $statement = $adapter->newCreateIndexStatementForForeignKey($destination->inverseToOne->foreignKey);
