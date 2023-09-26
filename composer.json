@@ -21,6 +21,7 @@
     "ext-libxml": "*",
     "ext-pdo": "*",
     "ext-zlib": "*",
+    "ext-mbstring": "*",
     "sabatier/foundation": "@dev"
   },
   "config": {
