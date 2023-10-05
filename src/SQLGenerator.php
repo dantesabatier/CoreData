@@ -622,7 +622,7 @@ class SQLGenerator extends ObjectClass
             return $properties;
         }
         $entity = $this->entity;
-        $keys = explode(".", $expression->description());
+        $keys = new Set(explode(".", $expression->description()));
         foreach ($keys as $key) {
             $property = $entity->propertiesByName[$key];
             if ($property) {
