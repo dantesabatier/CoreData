@@ -74,9 +74,7 @@ readonly class SQLStoreMigrator
             if ($destinationEntityName = $mapping->destinationEntityName) {
                 /** @var SQLEntity $destinationEntity */
                 $destinationEntity = $destinationModel->entitiesByName[$destinationEntityName];
-                /** @var SQLEntity $destinationRootEntity */
-                $destinationRootEntity = $destinationEntity->isRootEntity ? $destinationEntity : $destinationEntity->rootEntity;
-                $statement = $adapter->newCreateTableStatement($destinationRootEntity);
+                $statement = $adapter->newCreateTableStatement($destinationEntity);
                 $connection->execute($statement);
                 if ($statement = $adapter->newCreateIndexesStatement($destinationEntity)) {
                     $createIndexStatements->append($statement);
@@ -122,7 +120,7 @@ readonly class SQLStoreMigrator
             $sourceEntity = $sourceModel->entitiesByName[$sourceEntityName];
             /** @var SQLEntity $destinationEntity */
             $destinationEntity = $destinationModel->entitiesByName[$destinationEntityName];
-            if ($sourceEntity->isRootEntity && $destinationEntity->isRootEntity && $sourceEntityName !== $destinationEntityName && !$sourceModel->entitiesByName[$destinationEntityName]) {
+            if ($sourceEntityName !== $destinationEntityName && !$sourceModel->entitiesByName[$destinationEntityName]) {
                 $statement = $adapter->newRenameTableStatement($sourceEntity, $destinationEntity);
                 $connection->execute($statement);
             }
@@ -175,13 +173,9 @@ readonly class SQLStoreMigrator
                     $this->removedManyToMany->append($source);
                 }
             }
-            /** @var SQLEntity $sourceRootEntity */
-            $sourceRootEntity = $sourceEntity->isRootEntity ? $sourceEntity : $sourceEntity->rootEntity;
-            /** @var SQLEntity $destinationRootEntity */
-            $destinationRootEntity = $destinationEntity->isRootEntity ? $destinationEntity : $destinationEntity->rootEntity;
-            foreach (clone $destinationRootEntity->properties as $index => $property) {
+            foreach (clone $destinationEntity->properties as $index => $property) {
                 if ($property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
-                    if ($destinationEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) && !$sourceEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) && ($statement = $adapter->newCreateColumnStatement($property, $destinationRootEntity->columnAfter($property instanceof SQLForeignKey && !$sourceRootEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) ? $destinationRootEntity->attributes->indexAfter($destinationRootEntity->attributes->endIndex()) : $destinationRootEntity->properties->indexBefore($index))))) {
+                    if ($destinationEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) && !$sourceEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) && ($statement = $adapter->newCreateColumnStatement($property, $destinationEntity->columnAfter($property instanceof SQLForeignKey && !$sourceEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) ? $destinationEntity->attributes->indexAfter($destinationEntity->attributes->endIndex()) : $destinationEntity->properties->indexBefore($index))))) {
                         $connection->execute($statement);
                         if ($statement = $adapter->newCreateIndexStatement($property)) {
                             $connection->execute($statement);
