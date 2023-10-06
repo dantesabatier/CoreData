@@ -499,19 +499,19 @@ class ManagedObjectContext extends ObjectClass
      */
     public function obtainPermanentIDs(ArrayClass $objects): bool
     {
-        foreach ($objects as $object) {
-            $this->obtainPermanentID($object);
-        }
+        $results = $objects->map(fn(ManagedObject $object): bool => $this->obtainPermanentID($object));
         NotificationCenter::default()->postNotificationName(self::didSaveObjectIDsNotification, $this);
-        return true;
+        return !$results->containsElement(false);
     }
 
-    private function obtainPermanentID(ManagedObject $object): void
+    private function obtainPermanentID(ManagedObject $object): bool
     {
         if ($object->objectID->isTemporaryID && (($persistentStore = $this->persistentStoreCoordinator?->persistentStoreForObject($object)))) {
             $object->objectID = $persistentStore->objectID($object->entity, $persistentStore->newReferenceObject($object));
             $this->register($object);
+            return true;
         }
+        return false;
     }
 
     /**
@@ -843,7 +843,7 @@ class ManagedObjectContext extends ObjectClass
      */
     private function newSaveRequestForCurrentState(): ?SaveChangesRequest
     {
-        $this->obtainPermanentIDs(new ArrayClass($this->insertedObjects)) ?: fatal_error("Unable to obtain permanent ids for inserted objects");
+        $this->obtainPermanentIDs(new ArrayClass($this->insertedObjects));
         $insertedObjects = clone $this->insertedObjects;
         foreach ($insertedObjects as $insertedObject) {
             if ($insertedObject->isInserted) {
