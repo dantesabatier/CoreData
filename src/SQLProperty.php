@@ -56,4 +56,12 @@ abstract class SQLProperty extends ObjectClass
     {
         return sprintf("<%s %s>", $this->name, $this->hash());
     }
+
+    public function isEqual(mixed $other): bool
+    {
+        if ($other instanceof SQLProperty) {
+            return $this->propertyDescription->isEqual($other->propertyDescription);
+        }
+        return false;
+    }
 }

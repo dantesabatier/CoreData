@@ -164,7 +164,7 @@ readonly class SQLStoreMigrator
                         }
                     }
                 } elseif ($source instanceof SQLAttribute || $source instanceof SQLForeignKey) {
-                    if (!$sourceEntity->isRootEntity && !$destinationEntity->isRootEntity && $sourceEntity->rootEntity?->isEqual($destinationEntity->rootEntity) && !$destinationEntity->properties->containsElement($source)) {
+                    if ($sourceEntity->isEqual($destinationEntity) && !$destinationEntity->properties->containsElement($source)) {
                         if ($statement = $adapter->newDropIndexStatement($source)) {
                             $connection->execute($statement);
                         }
