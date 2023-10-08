@@ -352,13 +352,13 @@ class SQLGenerator extends ObjectClass
                         return "{$this->buildDerivedAttributeDescription($property)} AS $property->name";
                     }
                 } elseif ($property instanceof ExpressionDescription) {
-                    $expression = $property->expression ?? fatal_error();
-                    if ($expression->expressionType == ExpressionType::function) {
-                        return "{$this->buildFunctionExpression($expression)} AS $property->name";
-                    } elseif ($expression->expressionType == ExpressionType::conditional) {
-                        return "{$this->buildConditionalExpression($expression)} AS $property->name";
-                    }
-                    fatal_error("Invalid argument: unsupported expression $expression");
+                    /** @var Expression $expression */
+                    $expression = $property->expression ?? fatal_error("Invalid argument: invalid property $property");
+                    return match ($expression->expressionType) {
+                        ExpressionType::function => "{$this->buildFunctionExpression($expression)} AS $property->name",
+                        ExpressionType::conditional => "{$this->buildConditionalExpression($expression)} AS $property->name",
+                        default => fatal_error("Invalid argument: unsupported expression $expression")
+                    };
                 }
                 return "$entity->tableName.$property->name";
             }));
@@ -651,14 +651,12 @@ class SQLGenerator extends ObjectClass
 
     private function isNullExpression(Expression $expression): bool
     {
-        if ($expression->expressionType == ExpressionType::constantValue) {
-            return $expression->constantValue() === null;
-        } elseif ($expression->expressionType == ExpressionType::keyPath) {
-            if ((new Value((string)$expression))->isEqual(null)) {
-                fatal_error("*isNullExpression($expression)*");
-            }
-        }
-        return false;
+        /** @noinspection PhpVoidFunctionResultUsedInspection */
+        return match ($expression->expressionType) {
+            ExpressionType::constantValue => $expression->constantValue() === null,
+            ExpressionType::keyPath => (new Value((string)$expression))->isEqual(null) ? fatal_error("Invalid argument: invalid expression $expression") : false,
+            default => false
+        };
     }
 
     private function isToManyCountKeyPath(Expression $expression): bool
@@ -747,33 +745,28 @@ class SQLGenerator extends ObjectClass
 
     private function buildComparisonExpression(Expression $expression, ArrayClass &$arguments, string $prefix = "", string $suffix = ""): mixed
     {
-        if ($expression->expressionType == ExpressionType::keyPath) {
-            return $this->buildKeyPathExpression($expression);
-        } elseif ($expression->expressionType == ExpressionType::function) {
-            return $this->buildFunctionExpression($expression);
-        } elseif ($expression->expressionType == ExpressionType::conditional) {
-            return $this->buildConditionalExpression($expression);
-        } elseif ($expression->expressionType == ExpressionType::constantValue) {
-            $constantValue = $expression->constantValue();
-            if (is_string($constantValue)) {
-                $constantValue = addcslashes($constantValue, "%_");
-            } elseif (is_bool($constantValue)) {
-                $constantValue = (int)$constantValue;
-            } elseif ($constantValue instanceof ManagedObject) {
-                $constantValue = $constantValue->objectID;
-            }
-            $argument = $constantValue;
-            if (is_string($argument)) {
-                $argument = "$prefix$argument$suffix";
-                if (str_contains($argument, "\%") || str_contains($argument, "\_")) {
-                    $constantValue = "?";
+        return match ($expression->expressionType) {
+            ExpressionType::constantValue => (function () use ($expression, &$arguments, $prefix, $suffix): mixed {
+                $constantValue = $expression->constantValue();
+                if (is_string($constantValue)) {
+                    $constantValue = addcslashes($constantValue, "%_");
+                } elseif (is_bool($constantValue)) {
+                    $constantValue = (int)$constantValue;
+                } elseif ($constantValue instanceof ManagedObject) {
+                    $constantValue = $constantValue->objectID;
                 }
-            }
-            $arguments[] = $argument;
-            return $constantValue;
-        } else {
-            return $expression->description();
-        }
+                $argument = $constantValue;
+                if (is_string($argument)) {
+                    $argument = "$prefix$argument$suffix";
+                    if (str_contains($argument, "\%") || str_contains($argument, "\_")) {
+                        $constantValue = "?";
+                    }
+                }
+                $arguments[] = $argument;
+                return $constantValue;
+            })(),
+            default => $this->buildExpression($expression)
+        };
     }
 
     private function prepareClauseWithSimplePredicate(ComparisonPredicate $predicate, string &$clause, string $operator, string $prefix = "", string $suffix = ""): void
