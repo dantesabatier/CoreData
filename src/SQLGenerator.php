@@ -1149,8 +1149,11 @@ class SQLGenerator extends ObjectClass
         /** @psalm-suppress InvalidArgument */
         $descriptors->appendContentsOf($expressions->flatMap(fn(Expression $expression): iterable => $this->relationshipsFromKeyPathExpression($expression)->compactMap(fn(SQLRelationship $relationship): ?SortDescriptor => $relationship instanceof SQLToMany && $relationship->isOrdered ? new SortDescriptor(sprintf("%s.%s", $expression->keyPath(), $relationship->inverseToOne->foreignOrderKey->columnName)) : null)));
         if (!$descriptors->isEmpty()) {
-            $this->appendOrderByClauseToSQL();
-            $this->orderByClause .= $descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? "ASC" : "DESC"))->join(", ");
+            $clauses = new Set($descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? "ASC" : "DESC")));
+            if (!$clauses->isEmpty()) {
+                $this->appendOrderByClauseToSQL();
+                $this->orderByClause .= $clauses->join(", ");
+            }
         }
         $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
     }
