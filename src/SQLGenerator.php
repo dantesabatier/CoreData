@@ -661,7 +661,7 @@ class SQLGenerator extends ObjectClass
 
     private function isToManyCountKeyPath(Expression $expression): bool
     {
-        return ($expression->expressionType === ExpressionType::keyPath) && count(explode(".", (string)$expression)) > 1;
+        return ($expression->expressionType === ExpressionType::keyPath) && (new Set(explode(".", (string)$expression)))->count() > 1;
     }
 
     private function buildKeyPathExpression(Expression $expression): string
@@ -921,7 +921,7 @@ class SQLGenerator extends ObjectClass
         $relationship = (function () use ($expression): ?SQLRelationship {
             $relationship = null;
             $entity = $this->entity;
-            $keys = explode(".", $expression->keyPath());
+            $keys = new Set(explode(".", $expression->keyPath()));
             foreach ($keys as $key) {
                 $property = $entity->propertiesByName[$key];
                 if ($property instanceof SQLRelationship) {
