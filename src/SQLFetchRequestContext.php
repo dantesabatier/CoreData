@@ -72,6 +72,9 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             foreach ($keys as $key) {
                                 $property = $currentEntity->propertiesByName[$key];
                                 if ($property instanceof SQLRelationship) {
+                                    if ($value instanceof Nil) {
+                                        continue;
+                                    }
                                     if ($current instanceof Set) {
                                         /** @psalm-suppress UnsupportedReferenceUsage */
                                         $current = &$current[$current->indexBefore($current->endIndex())];
@@ -98,7 +101,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         if ($resultType !== FetchRequestResultType::dictionaryResultType) {
                                             $current["isInserted"] = true;
                                         }
-                                        $current[$key] ??= $value;
+                                        $current[$property->name] ??= $value;
                                     }
                                     $currentEntity = $entity;
                                 }
