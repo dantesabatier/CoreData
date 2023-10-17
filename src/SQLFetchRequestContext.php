@@ -72,30 +72,24 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             foreach ($keys as $key) {
                                 $property = $currentEntity->propertiesByName[$key];
                                 if ($property instanceof SQLRelationship) {
-                                    if ($current instanceof Set && !$current->isEmpty()) {
+                                    if ($current instanceof Set) {
                                         /** @psalm-suppress UnsupportedReferenceUsage */
                                         $current = &$current[$current->indexBefore($current->endIndex())];
                                     }
                                     if ($current instanceof Dictionary) {
-                                        if ($current[$key] === null) {
-                                            if ($property instanceof SQLToOne) {
-                                                $current[$key] = new Dictionary();
-                                            } else {
-                                                $current[$key] = new Set();
-                                            }
-                                        }
+                                        $current[$key] ??= $property instanceof SQLToOne ? new Dictionary() : new Set();
                                         $current = &$current[$key];
                                     }
                                     $relationship = $property;
                                     $currentEntity = $relationship->destinationEntity;
                                 }
                                 if ($property instanceof SQLColumn) {
-                                    if (($relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany) && $current instanceof Set) {
+                                    if ($current instanceof Set) {
                                         $cached = $current;
                                         if ($property instanceof SQLPrimaryKey && !$cached->contains(fn(Dictionary $dictionary): bool => $dictionary[$property->name] === $value)) {
                                             $cached[] = new Dictionary();
                                         }
-                                        if (!$cached->isEmpty()) {
+                                        if (!$current->isEmpty()) {
                                             /** @psalm-suppress UnsupportedReferenceUsage */
                                             $current = &$cached[$cached->indexBefore($cached->endIndex())];
                                         }
@@ -104,9 +98,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         if ($resultType !== FetchRequestResultType::dictionaryResultType) {
                                             $current["isInserted"] = true;
                                         }
-                                        if ($current[$key] === null) {
-                                            $current[$key] = $value;
-                                        }
+                                        $current[$key] ??= $value;
                                     }
                                     $currentEntity = $entity;
                                 }
