@@ -75,7 +75,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     if ($value instanceof Nil) {
                                         continue;
                                     }
-                                    if ($current instanceof Set) {
+                                    if ($current instanceof Set && !$current->isEmpty()) {
                                         /** @psalm-suppress UnsupportedReferenceUsage */
                                         $current = &$current[$current->indexBefore($current->endIndex())];
                                     }
@@ -89,7 +89,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 if ($property instanceof SQLColumn) {
                                     if ($current instanceof Set) {
                                         $cached = $current;
-                                        if ($property instanceof SQLPrimaryKey && !$cached->contains(fn(Dictionary $dictionary): bool => $dictionary[$property->name] === $value)) {
+                                        if ($property instanceof SQLPrimaryKey && !$cached->contains(fn(Dictionary $dictionary): bool => $dictionary[$key] === $value)) {
+                                            error_log("$relationship->name: $value");
                                             $cached[] = new Dictionary();
                                         }
                                         if (!$current->isEmpty()) {
@@ -101,7 +102,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         if ($resultType !== FetchRequestResultType::dictionaryResultType) {
                                             $current["isInserted"] = true;
                                         }
-                                        $current[$property->name] ??= $value;
+                                        $current[$key] ??= $value;
                                     }
                                     $currentEntity = $entity;
                                 }
