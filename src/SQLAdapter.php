@@ -208,26 +208,20 @@ class SQLAdapter extends ObjectClass
 
     public function newRenameColumnStatement(SQLColumn $new, ?SQLColumn $old = null): ?SQLStatement
     {
-        $entity = $new->entity;
-        $defaultValue = (function () use ($new): mixed {
-            if ($new instanceof SQLAttribute) {
-                $attributeDescription = $new->attributeDescription;
-                $defaultValue = ManagedObject::coercedValue($attributeDescription->defaultValue, $attributeDescription->type, $attributeDescription->attributeValueClassName, $attributeDescription->valueTransformerName, $attributeDescription->isOptional, true);
-                if (is_string($defaultValue)) {
-                    return "'$defaultValue'";
-                }
-                return $defaultValue;
-            }
-            return null;
-        })();
-        if ($defaultValue !== null) {
-            $request = new BatchUpdateRequest($entity->entityDescription);
-            $request->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($new->columnName), Expression::expressionForConstantValue(null));
-            $request->propertiesToUpdate = new Dictionary([$new->columnName => $defaultValue]);
-            $requestContext = new SQLBatchUpdateRequestContext($request, new ManagedObjectContext(), $this->sqlCore);
-            /** @noinspection PhpUnhandledExceptionInspection */
-            $requestContext->executeRequestUsingConnection($this->sqlCore->schemaValidationConnection);
+        /** @var SQLAttribute $attribute */
+        $attribute = $new;
+        $attributeDescription = $attribute->attributeDescription;
+        $defaultValue = ManagedObject::coercedValue($attributeDescription->defaultValue, $attributeDescription->type, $attributeDescription->attributeValueClassName, $attributeDescription->valueTransformerName, $attributeDescription->isOptional, true);
+        if (is_string($defaultValue)) {
+            $defaultValue = "'$defaultValue'";
         }
+        $entity = $new->entity;
+        $request = new BatchUpdateRequest($entity->entityDescription);
+        $request->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($new->columnName), Expression::expressionForConstantValue(null));
+        $request->propertiesToUpdate = new Dictionary([$new->columnName => $defaultValue]);
+        $requestContext = new SQLBatchUpdateRequestContext($request, new ManagedObjectContext(), $this->sqlCore);
+        /** @noinspection PhpUnhandledExceptionInspection */
+        $requestContext->executeRequestUsingConnection($this->sqlCore->schemaValidationConnection);
         if ($old) {
             /** @noinspection SqlIdentifier */
             return new SQLStatement("ALTER TABLE `$entity->tableName` RENAME COLUMN IF EXISTS `$old->columnName` TO `$new->columnName`");
