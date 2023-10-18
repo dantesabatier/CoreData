@@ -17,6 +17,8 @@ class SQLColumn extends SQLProperty
     public readonly int $scale;
     public readonly string $length;
 
+    public readonly mixed $defaultValue;
+
     public function __construct(SQLEntity $entity, PropertyDescription $propertyDescription)
     {
         parent::__construct($entity, $propertyDescription);
@@ -24,6 +26,7 @@ class SQLColumn extends SQLProperty
         unset($this->precision);
         unset($this->scale);
         unset($this->length);
+        unset($this->defaultValue);
     }
 
     public function __get(string $name)
@@ -57,6 +60,16 @@ class SQLColumn extends SQLProperty
                 $length .= ",$this->scale";
             }
             $this->$name = $length;
+            return $this->$name;
+        } elseif ($name == "defaultValue") {
+            $this->name = match ($this->sqlType) {
+                SQLType::tinyint, SQLType::smallint, SQLType::mediumint, SQLType::int, SQLType::bigint => 0,
+                SQLType::decimal, SQLType::float, SQLType::double => 0.0,
+                SQLType::binary, SQLType::blob, SQLType::bit, SQLType::text, SQLType::char, SQLType::varchar, SQLType::varbinary => "",
+                SQLType::timestamp => "CURRENT_TIMESTAMP",
+                SQLType::uuid => "UUID()",
+                SQLType::unknown => null,
+            };
             return $this->$name;
         } else {
             return parent::__get($name);
