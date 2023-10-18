@@ -84,28 +84,28 @@ class SQLAdapter extends ObjectClass
                 switch ($sqlType) {
                     case SQLType::tinyint:
                     case SQLType::smallint:
+                    case SQLType::mediumint:
                     case SQLType::int:
                     case SQLType::bigint:
                     case SQLType::decimal:
-                    case SQLType::double:
                     case SQLType::float:
+                    case SQLType::double:
+                    case SQLType::binary:
+                    case SQLType::blob:
+                    case SQLType::bit:
+                    case SQLType::text:
+                    case SQLType::char:
                     case SQLType::varchar:
                     case SQLType::varbinary:
-                        $defaultValue = ManagedObject::coercedValue($attributeDescription->defaultValue, $attributeDescription->type, $attributeDescription->attributeValueClassName, $attributeDescription->valueTransformerName, $attributeDescription->isOptional, true);
+                    case SQLType::unknown:
+                        $defaultValue = $column->defaultValue;
                         if ($defaultValue !== null) {
-                            if (is_string($defaultValue)) {
-                                $defaultValue = "'$defaultValue'";
-                            }
                             $string .= " DEFAULT $defaultValue";
                         }
                         break;
-                    case SQLType::timestamp:
-                        $string .= " DEFAULT CURRENT_TIMESTAMP";
-                        break;
                     case SQLType::uuid:
-                        $string .= " DEFAULT UUID()";
-                        break;
-                    default:
+                    case SQLType::timestamp:
+                        $string .= " DEFAULT $column->defaultValue";
                         break;
                 }
             }
@@ -208,17 +208,10 @@ class SQLAdapter extends ObjectClass
 
     public function newRenameColumnStatement(SQLColumn $new, ?SQLColumn $old = null): ?SQLStatement
     {
-        /** @var SQLAttribute $attribute */
-        $attribute = $new;
-        $attributeDescription = $attribute->attributeDescription;
-        $defaultValue = ManagedObject::coercedValue($attributeDescription->defaultValue, $attributeDescription->type, $attributeDescription->attributeValueClassName, $attributeDescription->valueTransformerName, $attributeDescription->isOptional, true);
-        if (is_string($defaultValue)) {
-            $defaultValue = "'$defaultValue'";
-        }
         $entity = $new->entity;
         $request = new BatchUpdateRequest($entity->entityDescription);
         $request->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($new->columnName), Expression::expressionForConstantValue(null));
-        $request->propertiesToUpdate = new Dictionary([$new->columnName => $defaultValue]);
+        $request->propertiesToUpdate = new Dictionary([$new->columnName => $new->defaultValue]);
         $requestContext = new SQLBatchUpdateRequestContext($request, new ManagedObjectContext(), $this->sqlCore);
         /** @noinspection PhpUnhandledExceptionInspection */
         $requestContext->executeRequestUsingConnection($this->sqlCore->schemaValidationConnection);
