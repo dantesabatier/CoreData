@@ -78,7 +78,7 @@ class SQLColumn extends SQLProperty
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == "columnName" || $name == "precision" || $name == "scale" || $name == "length") {
+        if ($name == "columnName" || $name == "precision" || $name == "scale" || $name == "length" || $name == "defaultValue") {
             $this->$name = $value;
         } else {
             parent::__set($name, $value);
