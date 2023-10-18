@@ -54,6 +54,13 @@ class SQLAttribute extends SQLColumn
         } elseif ($name == "isDerivedAttribute") {
             $this->$name = $this->attributeDescription instanceof DerivedAttributeDescription;
             return $this->$name;
+        } elseif ($name == "defaultValue") {
+            $defaultValue = ManagedObject::coercedValue($this->attributeDescription->defaultValue, $this->attributeDescription->type, $this->attributeDescription->attributeValueClassName, $this->attributeDescription->valueTransformerName, $this->attributeDescription->isOptional, true);
+            if (is_string($defaultValue)) {
+                $defaultValue = "'$defaultValue'";
+            }
+            $this->$name = $defaultValue;
+            return $this->$name;
         } else {
             return parent::__get($name);
         }
