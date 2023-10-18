@@ -81,32 +81,9 @@ class SQLAdapter extends ObjectClass
                 }
             } else {
                 $string .= " NOT NULL";
-                switch ($sqlType) {
-                    case SQLType::tinyint:
-                    case SQLType::smallint:
-                    case SQLType::mediumint:
-                    case SQLType::int:
-                    case SQLType::bigint:
-                    case SQLType::decimal:
-                    case SQLType::float:
-                    case SQLType::double:
-                    case SQLType::binary:
-                    case SQLType::blob:
-                    case SQLType::bit:
-                    case SQLType::text:
-                    case SQLType::char:
-                    case SQLType::varchar:
-                    case SQLType::varbinary:
-                    case SQLType::unknown:
-                        $defaultValue = $column->defaultValue;
-                        if ($defaultValue !== null) {
-                            $string .= " DEFAULT $defaultValue";
-                        }
-                        break;
-                    case SQLType::uuid:
-                    case SQLType::timestamp:
-                        $string .= " DEFAULT $column->defaultValue";
-                        break;
+                $defaultValue = $column->defaultValue;
+                if ($defaultValue !== null) {
+                    $string .= " DEFAULT $defaultValue";
                 }
             }
             return $string;
