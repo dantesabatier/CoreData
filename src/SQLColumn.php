@@ -44,7 +44,7 @@ class SQLColumn extends SQLProperty
                 SQLType::binary, SQLType::char => 80,
                 SQLType::varchar => 255,
                 SQLType::varbinary => 9999,
-                default => 0,
+                default => 0
             };
             return $this->$name;
         } elseif ($name == "scale") {
@@ -68,7 +68,7 @@ class SQLColumn extends SQLProperty
                 SQLType::binary, SQLType::blob, SQLType::bit, SQLType::text, SQLType::char, SQLType::varchar, SQLType::varbinary => "",
                 SQLType::timestamp => "CURRENT_TIMESTAMP",
                 SQLType::uuid => "UUID()",
-                SQLType::unknown => null,
+                SQLType::unknown => null
             };
             return $this->$name;
         } else {

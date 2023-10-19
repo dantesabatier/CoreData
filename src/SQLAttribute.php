@@ -42,7 +42,7 @@ class SQLAttribute extends SQLColumn
                 AttributeType::boolean => SQLType::tinyint,
                 AttributeType::date => SQLType::timestamp,
                 AttributeType::binaryData => SQLType::blob,
-                AttributeType::uuid => SQLType::uuid,
+                AttributeType::uuid => SQLType::uuid
             };
             return $this->$name;
         } elseif ($name == "triggerKeys") {
