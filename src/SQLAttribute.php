@@ -56,8 +56,7 @@ class SQLAttribute extends SQLColumn
             return $this->$name;
         } elseif ($name == "defaultValue") {
             $this->$name = match ($this->sqlType) {
-                SQLType::tinyint, SQLType::smallint, SQLType::mediumint, SQLType::int, SQLType::bigint, SQLType::decimal, SQLType::float, SQLType::double => 0.0,
-                SQLType::binary, SQLType::blob, SQLType::bit, SQLType::text, SQLType::char, SQLType::varchar, SQLType::varbinary, SQLType::unknown => (function (): mixed {
+                SQLType::tinyint, SQLType::smallint, SQLType::mediumint, SQLType::int, SQLType::bigint, SQLType::decimal, SQLType::float, SQLType::double, SQLType::binary, SQLType::blob, SQLType::bit, SQLType::text, SQLType::char, SQLType::varchar, SQLType::varbinary, SQLType::unknown => (function (): mixed {
                     $defaultValue = ManagedObject::coercedValue($this->attributeDescription->defaultValue, $this->attributeDescription->type, $this->attributeDescription->attributeValueClassName, $this->attributeDescription->valueTransformerName, $this->attributeDescription->isOptional, true);
                     if (is_string($defaultValue)) {
                         return "'$defaultValue'";
