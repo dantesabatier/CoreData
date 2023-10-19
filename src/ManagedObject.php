@@ -756,7 +756,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         $coercedValue = fn(string $t): string|int|bool|float|null => match ($t) {
             "string" => (string)$value,
             "int" => (int)$value,
-            "bool" => (function () use ($write, $value): bool|int {
+            "bool" => (function () use ($value, $write): bool|int {
                 if ($value === null) {
                     $value = false;
                 }
@@ -769,49 +769,36 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             "null" => $isOptional ? null : $coercedValue($t),
             default => $coercedValue($t)
         };
-        switch ($type) {
-            case AttributeType::integer16:
-            case AttributeType::integer32:
-            case AttributeType::integer64:
-                return $optionalValue("int");
-            case AttributeType::decimal:
-            case AttributeType::double:
-            case AttributeType::float:
-                return $optionalValue("float");
-            case AttributeType::string:
-                return $optionalValue("string");
-            case AttributeType::boolean:
-                return $optionalValue("bool");
-            case AttributeType::date:
-                return match (typeof($value)) {
-                    Date::class => $value,
-                    "string" => $write ? $value : new Date(strtotime((string)$value)),
-                    "null" => $isOptional ? null : new Date(),
-                    default => fatal_error()
-                };
-            case AttributeType::uuid:
-                return match (typeof($value)) {
-                    UUID::class => $value,
-                    "string" => $write ? $value : new UUID($value),
-                    "null" => $isOptional ? null : new UUID(),
-                    default => fatal_error()
-                };
-            case AttributeType::uri:
-                return match (typeof($value)) {
-                    URL::class => $value,
-                    "string" => $write ? $value : new URL((string)$value),
-                    default => fatal_error()
-                };
-            case AttributeType::undefined:
-            case AttributeType::transformable:
-            case AttributeType::objectID:
+        return match ($type) {
+            AttributeType::integer16, AttributeType::integer32, AttributeType::integer64 => $optionalValue("int"),
+            AttributeType::decimal, AttributeType::double, AttributeType::float => $optionalValue("float"),
+            AttributeType::string => $optionalValue("string"),
+            AttributeType::boolean => $optionalValue("bool"),
+            AttributeType::date => match (typeof($value)) {
+                Date::class => $value,
+                "string" => $write ? $value : new Date(strtotime((string)$value)),
+                "null" => $isOptional ? null : new Date(),
+                default => fatal_error()
+            },
+            AttributeType::uuid => match (typeof($value)) {
+                UUID::class => $value,
+                "string" => $write ? $value : new UUID($value),
+                "null" => $isOptional ? null : new UUID(),
+                default => fatal_error()
+            },
+            AttributeType::uri => match (typeof($value)) {
+                URL::class => $value,
+                "string" => $write ? $value : new URL((string)$value),
+                default => fatal_error()
+            },
+            AttributeType::undefined, AttributeType::transformable, AttributeType::objectID => (function () use ($value, $write): mixed {
                 if ($transformer = ValueTransformer::valueTransformerForName($valueTransformerName ?? SecureUnarchiveFromDataTransformerName)) {
                     return $write ? $transformer->transformedValue($value) : $transformer->reverseTransformedValue($value);
                 }
                 return $value;
-            default:
-                return $value;
-        }
+            })(),
+            default => $value
+        };
     }
 
     /**
