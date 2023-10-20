@@ -1148,7 +1148,7 @@ class SQLGenerator extends ObjectClass
             $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
             $this->raisesForNotApplicableKeys = false;
             /** @psalm-suppress InvalidArgument, ArgumentTypeCoercion */
-            $descriptors->appendContentsOf($this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->flatMap(fn(Expression $expression): iterable => $this->relationshipsFromKeyPathExpression($expression)->filter(fn(SQLRelationship $relationship): bool => $relationship instanceof SQLToMany && $relationship->isOrdered)->flatMap(fn(SQLToMany $relationship): SortDescriptor => new SortDescriptor("{$expression->keyPath()}.{$relationship->inverseToOne->foreignOrderKey->columnName}"))));
+            $descriptors->appendContentsOf($this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->flatMap(fn(Expression $expression): iterable => $this->relationshipsFromKeyPathExpression($expression)->filter(fn(SQLRelationship $relationship): bool => $relationship instanceof SQLToMany && $relationship->isOrdered)->map(fn(SQLToMany $relationship): SortDescriptor => new SortDescriptor("{$expression->keyPath()}.{$relationship->inverseToOne->foreignOrderKey->columnName}"))));
             if (!$descriptors->isEmpty()) {
                 $clauses = new Set($descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? "ASC" : "DESC"))->filter(fn(string $string): bool => str_contains($string, ".")));
                 if (!$clauses->isEmpty()) {
