@@ -10,6 +10,7 @@ use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
+use function Sabatier\Foundation\is_equal;
 
 /** @internal */
 class SQLFetchRequestContext extends SQLStoreRequestContext
@@ -89,8 +90,10 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 if ($property instanceof SQLColumn) {
                                     if ($current instanceof Set) {
                                         $cached = $current;
-                                        if ($property instanceof SQLPrimaryKey && !$cached->contains(fn(Dictionary $dictionary): bool => $dictionary[$key] === $value)) {
-                                            $cached[] = new Dictionary();
+                                        if ($property instanceof SQLPrimaryKey) {
+                                            if (!$cached->contains(fn(Dictionary $dictionary): bool => is_equal($dictionary[$key], $value))) {
+                                                $cached[] = new Dictionary();
+                                            }
                                         }
                                         if (!$current->isEmpty()) {
                                             /** @psalm-suppress UnsupportedReferenceUsage */
