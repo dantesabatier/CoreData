@@ -6,7 +6,6 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
-use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
@@ -76,19 +75,19 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     if ($value instanceof Nil) {
                                         continue;
                                     }
-                                    if ($current instanceof Set && !$current->isEmpty()) {
+                                    if ($current instanceof ArrayClass && !$current->isEmpty()) {
                                         /** @psalm-suppress UnsupportedReferenceUsage */
                                         $current = &$current[$current->indexBefore($current->endIndex())];
                                     }
                                     if ($current instanceof Dictionary) {
-                                        $current[$key] ??= $property instanceof SQLToOne ? new Dictionary() : new Set();
+                                        $current[$key] ??= $property instanceof SQLToOne ? new Dictionary() : new ArrayClass();
                                         $current = &$current[$key];
                                     }
                                     $relationship = $property;
                                     $currentEntity = $relationship->destinationEntity;
                                 }
                                 if ($property instanceof SQLColumn) {
-                                    if ($current instanceof Set) {
+                                    if ($current instanceof ArrayClass) {
                                         $cached = $current;
                                         if ($property instanceof SQLPrimaryKey && !$cached->contains(fn(Dictionary $dictionary): bool => is_equal($dictionary[$key], $value))) {
                                             $cached[] = new Dictionary([$currentEntity->primaryKey->columnName => $value]);
