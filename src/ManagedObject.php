@@ -710,20 +710,23 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 }
             }
         }
+        $entity = $this->entity;
         foreach ($keyedValues as $key => $value) {
-            $property = $this->entity->propertiesByName[$key];
+            $property = $entity->propertiesByName[$key];
             if ($property instanceof RelationshipDescription) {
                 $destinationEntity = $property->destinationEntity;
                 if ($value instanceof ArrayClass) {
                     if ($property->isToMany) {
                         $representation[$key] = $value->compactMap(fn(ManagedObject|ManagedObjectID|Dictionary $object): ?ManagedObject => $managedObject($destinationEntity, $object));
+                    } elseif (!$value->isEmpty()) {
+                        fatal_error(sprintf("%s: Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", $entity->name, ArrayClass::class, $key));
                     }
                 } elseif ($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value instanceof Dictionary) {
                     $representation[$key] = $managedObject($destinationEntity, $value);
                 } elseif ($value instanceof Nil) {
                     $representation[$key] = $value;
                 } else {
-                    fatal_error(sprintf("Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", typeof($value), $key));
+                    fatal_error(sprintf("%s: Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", $entity->name,typeof($value), $key));
                 }
             }
         }
