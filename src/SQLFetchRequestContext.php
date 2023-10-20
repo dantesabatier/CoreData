@@ -68,7 +68,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             }
                             $relationship = null;
                             $current = &$representation;
-                            $keys->popFirst();
+                            $keys->removeAt(0);
                             foreach ($keys as $key) {
                                 $property = $currentEntity->propertiesByName[$key];
                                 if ($property instanceof SQLRelationship) {
@@ -96,7 +96,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                             /** @psalm-suppress UnsupportedReferenceUsage */
                                             $current = &$cached[$cached->indexBefore($cached->endIndex())];
                                             if ($currentEntity !== $entity && $key === $currentEntity->primaryKey->columnName && $current[$currentEntity->primaryKey->columnName] !== $data[$pattern]) {
-                                                $cached->popLast();
+                                                $cached->removeAt($cached->indexBefore($cached->endIndex()));
                                             }
                                         }
                                     }
