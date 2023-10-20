@@ -91,11 +91,14 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     if ($current instanceof Set) {
                                         $cached = $current;
                                         if ($property instanceof SQLPrimaryKey && !$cached->contains(fn(Dictionary $dictionary): bool => is_equal($dictionary[$key], $value))) {
-                                            $cached[] = new Dictionary();
+                                            $cached[] = new Dictionary([$currentEntity->primaryKey->columnName => $value]);
                                         }
                                         if (!$current->isEmpty()) {
                                             /** @psalm-suppress UnsupportedReferenceUsage */
                                             $current = &$cached[$cached->indexBefore($cached->endIndex())];
+                                            if ($currentEntity !== $entity && $key === $currentEntity->primaryKey->columnName && $current[$currentEntity->primaryKey->columnName] !== $data[$pattern]) {
+                                                $cached->popLast();
+                                            }
                                         }
                                     }
                                     if ($current instanceof Dictionary) {
