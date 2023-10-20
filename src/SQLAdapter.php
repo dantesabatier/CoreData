@@ -183,22 +183,22 @@ class SQLAdapter extends ObjectClass
         return new SQLStatement("ALTER TABLE `$entity->tableName` DROP COLUMN IF EXISTS `$column->columnName`");
     }
 
-    public function newRenameColumnStatement(SQLColumn $new, SQLColumn $old): ?SQLStatement
+    public function newRenameColumnStatement(SQLColumn $source, SQLColumn $destination): ?SQLStatement
     {
-        $entity = $new->entity;
-        if ($old->name !== $new->name) {
+        $entity = $destination->entity;
+        if ($source->name !== $destination->name) {
             /** @noinspection SqlIdentifier */
-            return new SQLStatement("ALTER TABLE `$entity->tableName` RENAME COLUMN IF EXISTS `$old->columnName` TO `$new->columnName`");
+            return new SQLStatement("ALTER TABLE `$entity->tableName` RENAME COLUMN IF EXISTS `$source->columnName` TO `$destination->columnName`");
         }
-        if ($old->isOptional && !$new->isOptional) {
+        if ($source->isOptional && !$destination->isOptional) {
             $request = new BatchUpdateRequest($entity->entityDescription);
-            $request->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($new->columnName), Expression::expressionForConstantValue(null));
-            $request->propertiesToUpdate = new Dictionary([$new->columnName => $new->defaultValue]);
+            $request->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($destination->columnName), Expression::expressionForConstantValue(null));
+            $request->propertiesToUpdate = new Dictionary([$destination->columnName => $destination->defaultValue]);
             $requestContext = new SQLBatchUpdateRequestContext($request, new ManagedObjectContext(), $this->sqlCore);
             /** @noinspection PhpUnhandledExceptionInspection */
             $requestContext->executeRequestUsingConnection($this->sqlCore->schemaValidationConnection);
         }
-        if ($string = $this->typeStringForColumn($new)) {
+        if ($string = $this->typeStringForColumn($destination)) {
             return new SQLStatement("ALTER TABLE `$entity->tableName` MODIFY IF EXISTS $string");
         }
         return null;
