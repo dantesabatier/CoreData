@@ -49,11 +49,11 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         if ($resultType !== FetchRequestResultType::dictionaryResultType) {
                             $representation["isInserted"] = true;
                         }
-                        foreach ($data as $key => $value) {
+                        foreach ($data as $pattern => $value) {
                             $value ??= Nil::nil();
-                            $keys = new ArrayClass(explode("_", $key));
+                            $keys = new ArrayClass(explode("_", $pattern));
                             if ($keys->count() < 3) {
-                                $property = $currentEntity->propertiesByName[$key];
+                                $property = $currentEntity->propertiesByName[$pattern];
                                 if ($property instanceof SQLProperty) {
                                     $propertyDescription = $property->propertyDescription;
                                     if ($propertyDescription instanceof ExpressionDescription) {
@@ -63,7 +63,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     }
                                 }
                                 /** @psalm-suppress PossiblyNullReference */
-                                $representation[$key] = $value;
+                                $representation[$pattern] = $value;
                                 continue;
                             }
                             $relationship = null;
