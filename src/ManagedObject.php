@@ -794,7 +794,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 "string" => $write ? $value : new URL((string)$value),
                 default => fatal_error()
             },
-            AttributeType::undefined, AttributeType::transformable, AttributeType::objectID => (function () use ($value, $write): mixed {
+            AttributeType::undefined, AttributeType::transformable, AttributeType::objectID => (function () use ($value, $write, $valueTransformerName): mixed {
                 if ($transformer = ValueTransformer::valueTransformerForName($valueTransformerName ?? SecureUnarchiveFromDataTransformerName)) {
                     return $write ? $transformer->transformedValue($value) : $transformer->reverseTransformedValue($value);
                 }
