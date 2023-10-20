@@ -68,7 +68,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             }
                             $relationship = null;
                             $current = &$representation;
-                            $keys->removeAt(0);
+                            $keys->popFirst();
                             foreach ($keys as $key) {
                                 $property = $currentEntity->propertiesByName[$key];
                                 if ($property instanceof SQLRelationship) {
