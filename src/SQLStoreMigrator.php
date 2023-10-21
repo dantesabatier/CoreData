@@ -125,12 +125,12 @@ readonly class SQLStoreMigrator
                 $connection->execute($statement);
             }
             foreach ($sourceEntity->properties as $source) {
-                if ($destination = $destinationEntity->properties->first(fn(SQLProperty $destination): bool => $destination->propertyDescription->renamingIdentifier === $source->propertyDescription->renamingIdentifier)) {
+                if ($destination = $destinationEntity->properties->first(fn(SQLProperty $destination): bool => $source->propertyDescription->renamingIdentifier === $destination->propertyDescription->renamingIdentifier)) {
                     if ($source instanceof SQLAttribute && $destination instanceof SQLAttribute) {
-                        if ($destination->name !== $source->name && ($statement = $adapter->newRenameColumnStatement($source, $destination))) {
+                        if ($source->name !== $destination->name && ($statement = $adapter->newRenameColumnStatement($source, $destination))) {
                             $connection->execute($statement);
                         }
-                        if (($destination->sqlType !== $source->sqlType || $destination->isOptional !== $source->isOptional || $destination->propertyDescription->maxValue !== $source->propertyDescription->maxValue || $destination->attributeDescription->defaultValue !== $source->attributeDescription->defaultValue || ($destination->attributeDescription instanceof DerivedAttributeDescription && $source->attributeDescription instanceof DerivedAttributeDescription && (string)$destination->attributeDescription->derivationExpression !== (string)$source->attributeDescription->derivationExpression)) && ($statement = $adapter->newRenameColumnStatement($source, $destination))) {
+                        if (($source->sqlType !== $destination->sqlType || $source->isOptional !== $destination->isOptional || $source->maxValue !== $destination->maxValue || $source->defaultValue !== $destination->defaultValue || ($source->isDerivedAttribute && $destination->isDerivedAttribute && (string)$source->derivationExpression !== (string)$destination->derivationExpression)) && ($statement = $adapter->newRenameColumnStatement($source, $destination))) {
                             $connection->execute($statement);
                         }
                     } elseif ($source instanceof SQLForeignKey && $destination instanceof SQLForeignKey) {
