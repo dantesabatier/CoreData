@@ -23,6 +23,8 @@ abstract class SQLProperty extends ObjectClass
     public bool $isUnique = false;
     public bool $isConstrained = false;
     public bool $allowAliasing = false;
+    public readonly mixed $minValue;
+    public readonly mixed $maxValue;
 
     public function __construct(public SQLEntity $entity, public PropertyDescription $propertyDescription)
     {
@@ -30,6 +32,8 @@ abstract class SQLProperty extends ObjectClass
         unset($this->isOptional);
         unset($this->propertyType);
         unset($this->sqlType);
+        unset($this->minValue);
+        unset($this->maxValue);
     }
 
     public function __get(string $name)
@@ -39,13 +43,15 @@ abstract class SQLProperty extends ObjectClass
             "isOptional" => $this->propertyDescription->isOptional,
             "propertyType" => $this->propertyDescription->propertyType,
             "sqlType" => SQLType::unknown,
+            "minValue" => $this->propertyDescription->minValue,
+            "maxValue" => $this->propertyDescription->maxValue,
             default => $this->valueForUndefinedKey($name)
         };
     }
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == "name" || $name == "isOptional" || $name == "propertyType" || $name == "sqlType") {
+        if ($name == "name" || $name == "isOptional" || $name == "propertyType" || $name == "sqlType" || $name == "minValue" || $name == "maxValue") {
             $this->$name = $value;
         } else {
             $this->setValueForUndefinedKey($value, $name);
