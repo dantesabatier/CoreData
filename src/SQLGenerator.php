@@ -348,7 +348,7 @@ class SQLGenerator extends ObjectClass
             /** @psalm-suppress InvalidArgument */
             $columnNames->appendContentsOf($properties->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => is_string($property) ? $request->entity->attributesByName[$property] : ($property instanceof AttributeDescription || $property instanceof ExpressionDescription ? $property : null))->map(function (PropertyDescription $property) use ($entity): string {
                 if ($property instanceof AttributeDescription) {
-                    if ($property instanceof DerivedAttributeDescription && str_contains((string)$property->derivationExpression, "@")) {
+                    if ($property instanceof DerivedAttributeDescription && $property->derivationExpression?->usesKVC) {
                         return "{$this->buildDerivationExpression($property->derivationExpression)} AS $property->name";
                     }
                 } elseif ($property instanceof ExpressionDescription) {
@@ -520,7 +520,7 @@ class SQLGenerator extends ObjectClass
                         if ($property instanceof SQLEntityKey || $property instanceof SQLPrimaryKey) {
                             return "$destination.$property->columnName AS {$destination}_$property->columnName";
                         } elseif ($property instanceof SQLAttribute) {
-                            if (($expression = $property->derivationExpression) && str_contains((string)$expression, "@")) {
+                            if (($expression = $property->derivationExpression) && $expression->usesKVC) {
                                 $bk = $this->entity;
                                 $this->entity = $entity;
                                 $result = $this->buildDerivationExpression($expression, $destination);
@@ -670,7 +670,7 @@ class SQLGenerator extends ObjectClass
         $properties = $this->propertiesFromKeyPathExpression($expression);
         foreach ($properties as $property) {
             if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
-                if ($property instanceof SQLAttribute && ($expression = $property->derivationExpression) && str_contains((string)$expression, "@")) {
+                if ($property instanceof SQLAttribute && ($expression = $property->derivationExpression) && $expression->usesKVC) {
                     return $this->buildDerivationExpression($expression, $destination);
                 }
                 $keyPath .= ".";
@@ -944,7 +944,7 @@ class SQLGenerator extends ObjectClass
         switch ($expression->expressionType) {
             case ExpressionType::keyPath:
                 $keyPath = (string)$expression;
-                if (str_contains($keyPath, "@")) {
+                if ($expression->usesKVC) {
                     $entity = $this->entity;
                     [$keyPathToCollection, $collectionOperator, $keyPathToProperty] = kvc_components($keyPath);
                     if ($keyPathToCollection && $collectionOperator) {

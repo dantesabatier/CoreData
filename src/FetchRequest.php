@@ -1,5 +1,7 @@
 <?php
 
+/** @noinspection PhpInternalEntityUsedInspection */
+
 namespace Sabatier\CoreData;
 
 use Exception;
@@ -85,7 +87,7 @@ class FetchRequest extends PersistentStoreRequest
             return $this->$name;
         } elseif ($name == "serialization") {
             /** @psalm-suppress all */
-            $this->$name = ($this->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $this->entity->propertiesByName[$property]) ?? $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient && (!$attribute instanceof DerivedAttributeDescription || !str_contains($attribute->derivationExpression, "@")))->values)->reduce(new Dictionary(), function (Dictionary $result, PropertyDescription $propertyDescription): Dictionary {
+            $this->$name = ($this->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $this->entity->propertiesByName[$property]) ?? $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient && (!$attribute instanceof DerivedAttributeDescription || !$attribute->derivationExpression?->usesKVC))->values)->reduce(new Dictionary(), function (Dictionary $result, PropertyDescription $propertyDescription): Dictionary {
                 if ($propertyDescription instanceof AttributeDescription) {
                     $result[$propertyDescription->name] = $propertyDescription->type;
                 } elseif ($propertyDescription instanceof RelationshipDescription) {

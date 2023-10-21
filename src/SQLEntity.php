@@ -1,11 +1,6 @@
 <?php
 
-/**
- * Created by PhpStorm.
- * User: dante
- * Date: 14/12/20
- * Time: 13:43
- */
+/** @noinspection PhpInternalEntityUsedInspection */
 
 namespace Sabatier\CoreData;
 
@@ -234,11 +229,11 @@ class SQLEntity extends StoreMapping
             return $this->$name;
         } elseif ($name == "columnsToFetch") {
             /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute ? ($property->attributeDescription instanceof DerivedAttributeDescription && !str_contains((string)$property->attributeDescription->derivationExpression, "@") || !$property->attributeDescription instanceof DerivedAttributeDescription) : !$property instanceof SQLRelationship && !$property instanceof SQLForeignKey);
+            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute ? ($property->isDerivedAttribute && !$property->derivationExpression?->usesKVC || !$property->isDerivedAttribute) : !$property instanceof SQLRelationship && !$property instanceof SQLForeignKey);
             return $this->$name;
         } elseif ($name == "columnsToCreate") {
             /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute ? ($property->attributeDescription instanceof DerivedAttributeDescription && !str_contains((string)$property->attributeDescription->derivationExpression, "@") || !$property->attributeDescription instanceof DerivedAttributeDescription) : !$property instanceof SQLRelationship);
+            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute ? ($property->isDerivedAttribute && !$property->derivationExpression?->usesKVC || !$property->isDerivedAttribute) : !$property instanceof SQLRelationship);
             return $this->$name;
         } elseif ($name == "entityID") {
             $this->$name = 0;
@@ -278,8 +273,8 @@ class SQLEntity extends StoreMapping
         while ($start < $end) {
             $property = $this->properties[$start];
             if ($property instanceof SQLAttribute) {
-                if ($property->attributeDescription instanceof DerivedAttributeDescription) {
-                    if (!str_contains((string)$property->attributeDescription->derivationExpression, "@")) {
+                if ($property->isDerivedAttribute) {
+                    if (!$property->derivationExpression?->usesKVC) {
                         return $property;
                     }
                 } else {

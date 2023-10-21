@@ -1,11 +1,6 @@
 <?php
 
-/**
- * Created by PhpStorm.
- * User: dante
- * Date: 07/08/20
- * Time: 11:08
- */
+/** @noinspection PhpInternalEntityUsedInspection */
 
 namespace Sabatier\CoreData;
 
@@ -35,7 +30,7 @@ class SQLAdapter extends ObjectClass
 
     private function generatedAlwaysColumnExpression(SQLAttribute $attribute): ?string
     {
-        if (($expression = $attribute->derivationExpression) && !str_contains((string)$expression, "@")) {
+        if (($expression = $attribute->derivationExpression) && !$expression->usesKVC) {
             $request = new FetchRequest();
             $request->entity = $attribute->entity->entityDescription;
             $generator = new SQLGenerator(new SQLFetchRequestContext($request, new ManagedObjectContext(), $this->sqlCore));
