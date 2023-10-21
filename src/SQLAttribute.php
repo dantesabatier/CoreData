@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Set;
 
 /** @internal */
@@ -18,6 +19,7 @@ class SQLAttribute extends SQLColumn
     public readonly Set $triggerKeys;
     public readonly bool $isBackedByTrigger;
     public readonly bool $isDerivedAttribute;
+    public readonly ?Expression $derivationExpression;
 
     public function __construct(SQLEntity $entity, public readonly AttributeDescription $attributeDescription)
     {
@@ -25,6 +27,7 @@ class SQLAttribute extends SQLColumn
         unset($this->triggerKeys);
         unset($this->isBackedByTrigger);
         unset($this->isDerivedAttribute);
+        unset($this->derivationExpression);
     }
 
     public function __get(string $name)
@@ -54,6 +57,9 @@ class SQLAttribute extends SQLColumn
         } elseif ($name == "isDerivedAttribute") {
             $this->$name = $this->attributeDescription instanceof DerivedAttributeDescription;
             return $this->$name;
+        } elseif ($name == "derivationExpression") {
+            $this->$name = $this->attributeDescription instanceof DerivedAttributeDescription ? $this->attributeDescription->derivationExpression : null;
+            return $this->$name;
         } elseif ($name == "defaultValue") {
             $this->$name = match ($this->sqlType) {
                 SQLType::tinyint, SQLType::smallint, SQLType::mediumint, SQLType::int, SQLType::bigint, SQLType::decimal, SQLType::float, SQLType::double, SQLType::binary, SQLType::blob, SQLType::bit, SQLType::text, SQLType::char, SQLType::varchar, SQLType::varbinary, SQLType::unknown => (function (): mixed {
@@ -74,7 +80,7 @@ class SQLAttribute extends SQLColumn
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == "triggerKeys" || $name == "isBackedByTrigger" || $name == "isDerivedAttribute") {
+        if ($name == "triggerKeys" || $name == "isBackedByTrigger" || $name == "isDerivedAttribute" || $name == "derivationExpression") {
             $this->$name = $value;
         } else {
             parent::__set($name, $value);
