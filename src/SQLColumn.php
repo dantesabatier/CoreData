@@ -16,7 +16,6 @@ class SQLColumn extends SQLProperty
     public readonly int $precision;
     public readonly int $scale;
     public readonly string $length;
-
     public readonly mixed $defaultValue;
 
     public function __construct(SQLEntity $entity, PropertyDescription $propertyDescription)
