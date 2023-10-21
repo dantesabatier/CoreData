@@ -349,7 +349,7 @@ class SQLGenerator extends ObjectClass
             $columnNames->appendContentsOf($properties->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => is_string($property) ? $request->entity->attributesByName[$property] : ($property instanceof AttributeDescription || $property instanceof ExpressionDescription ? $property : null))->map(function (PropertyDescription $property) use ($entity): string {
                 if ($property instanceof AttributeDescription) {
                     if ($property instanceof DerivedAttributeDescription && str_contains((string)$property->derivationExpression, "@")) {
-                        return "{$this->buildDerivedAttributeDescription($property)} AS $property->name";
+                        return "{$this->buildDerivationExpression($property->derivationExpression)} AS $property->name";
                     }
                 } elseif ($property instanceof ExpressionDescription) {
                     /** @var Expression $expression */
@@ -520,16 +520,12 @@ class SQLGenerator extends ObjectClass
                         if ($property instanceof SQLEntityKey || $property instanceof SQLPrimaryKey) {
                             return "$destination.$property->columnName AS {$destination}_$property->columnName";
                         } elseif ($property instanceof SQLAttribute) {
-                            $attributeDescription = $property->attributeDescription;
-                            if ($attributeDescription instanceof DerivedAttributeDescription && str_contains((string)$attributeDescription->derivationExpression, "@")) {
-                                $propertyName = "{$destination}_$attributeDescription->name";
-                                return (function () use ($entity, $propertyName, $attributeDescription, $destination): string {
-                                    $bk = $this->entity;
-                                    $this->entity = $entity;
-                                    $result = $this->buildDerivedAttributeDescription($attributeDescription, $destination);
-                                    $this->entity = $bk;
-                                    return "$result AS $propertyName";
-                                })();
+                            if (($expression = $property->derivationExpression) && str_contains((string)$expression, "@")) {
+                                $bk = $this->entity;
+                                $this->entity = $entity;
+                                $result = $this->buildDerivationExpression($expression, $destination);
+                                $this->entity = $bk;
+                                return "$result AS {$destination}_$property->columnName";
                             }
                             return "$destination.$property->columnName AS {$destination}_$property->columnName";
                         }
@@ -674,9 +670,8 @@ class SQLGenerator extends ObjectClass
         $properties = $this->propertiesFromKeyPathExpression($expression);
         foreach ($properties as $property) {
             if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
-                $propertyDescription = $property->propertyDescription;
-                if ($propertyDescription instanceof DerivedAttributeDescription && str_contains((string)$propertyDescription->derivationExpression, "@")) {
-                    return $this->buildDerivedAttributeDescription($propertyDescription, $destination);
+                if ($property instanceof SQLAttribute && ($expression = $property->derivationExpression) && str_contains((string)$expression, "@")) {
+                    return $this->buildDerivationExpression($expression, $destination);
                 }
                 $keyPath .= ".";
                 $keyPath .= $property->columnName;
@@ -944,67 +939,64 @@ class SQLGenerator extends ObjectClass
         $clause .= ")";
     }
 
-    public function buildDerivedAttributeDescription(DerivedAttributeDescription $derivedAttributeDescription, ?string $destination = null): string
+    public function buildDerivationExpression(Expression $expression, ?string $destination = null): string
     {
-        if ($expression = $derivedAttributeDescription->derivationExpression) {
-            switch ($expression->expressionType) {
-                case ExpressionType::keyPath:
-                    $keyPath = (string)$expression;
-                    if (str_contains($keyPath, "@")) {
-                        $entity = $this->entity;
-                        [$keyPathToCollection, $collectionOperator, $keyPathToProperty] = kvc_components($keyPath);
-                        if ($keyPathToCollection && $collectionOperator) {
-                            /** @var SQLRelationship|null $relationship */
-                            $relationship = $entity->propertiesByName[$keyPathToCollection];
-                            if ($relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany) {
-                                $inverseRelationship = $relationship->inverseRelationship;
-                                $destinationEntity = $relationship->destinationEntity;
-                                if (($collectionOperator === KeyValueOperator::countKeyValueOperator && $keyPathToProperty) || ($collectionOperator !== KeyValueOperator::countKeyValueOperator && !$keyPathToProperty)) {
-                                    fatal_error("Invalid expression \"$expression\"");
-                                }
-                                /** @var ArrayClass<string|PropertyDescription> $propertiesToFetch */
-                                $propertiesToFetch = new ArrayClass([$inverseRelationship->relationshipDescription]);
-                                if ($collectionOperator !== KeyValueOperator::countKeyValueOperator) {
-                                    $propertiesToFetch->append($keyPathToProperty);
-                                }
-                                $requestContext = $this->requestContext;
-                                $managedObjectModel = $requestContext->sqlCore->persistentStoreCoordinator->managedObjectModel;
-                                /** @var EntityDescription $entityForFetchRequest */
-                                $entityForFetchRequest = $managedObjectModel->entitiesByName[$destinationEntity->tableName];
-                                $fetchRequest = new FetchRequest();
-                                $fetchRequest->entity = $entityForFetchRequest;
-                                $fetchRequest->propertiesToFetch = $propertiesToFetch;
-                                $fetchRequest->resultType = FetchRequestResultType::countResultType;
-                                $generator = new SQLGenerator(new SQLFetchRequestContext($fetchRequest, $requestContext->context, $requestContext->sqlCore));
-                                $generator->request = $fetchRequest;
-                                $generator->autoDistinct = false;
-                                $generator->raisesForNotApplicableKeys = false;
-                                $generator->keyValueOperator = $collectionOperator;
-                                $statement = $generator->statement() ?? fatal_error();
-                                $string = "($statement->string";
-                                $string .= $generator->whereClause ? " AND " : " WHERE ";
-                                if ($relationship instanceof SQLToMany) {
-                                    $destination ??= $entity->tableName;
-                                    $string .= "{$destinationEntity->tableName}_$inverseRelationship->name.{$entity->primaryKey->columnName} = $destination";
-                                    $string .= $destinationEntity->isKindOfSQLEntity($entity) ? ".{$relationship->inverseToOne->foreignKey->columnName}" : ".{$entity->primaryKey->columnName}";
-                                } else {
-                                    $string .= "{$destinationEntity->tableName}_$relationship->correlationTableName.$relationship->inverseColumnName = $entity->tableName.{$entity->primaryKey->columnName}";
-                                }
-                                return "$string)";
+        switch ($expression->expressionType) {
+            case ExpressionType::keyPath:
+                $keyPath = (string)$expression;
+                if (str_contains($keyPath, "@")) {
+                    $entity = $this->entity;
+                    [$keyPathToCollection, $collectionOperator, $keyPathToProperty] = kvc_components($keyPath);
+                    if ($keyPathToCollection && $collectionOperator) {
+                        /** @var SQLRelationship|null $relationship */
+                        $relationship = $entity->propertiesByName[$keyPathToCollection];
+                        if ($relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany) {
+                            $inverseRelationship = $relationship->inverseRelationship;
+                            $destinationEntity = $relationship->destinationEntity;
+                            if (($collectionOperator === KeyValueOperator::countKeyValueOperator && $keyPathToProperty) || ($collectionOperator !== KeyValueOperator::countKeyValueOperator && !$keyPathToProperty)) {
+                                fatal_error("Invalid expression \"$expression\"");
                             }
+                            /** @var ArrayClass<string|PropertyDescription> $propertiesToFetch */
+                            $propertiesToFetch = new ArrayClass([$inverseRelationship->relationshipDescription]);
+                            if ($collectionOperator !== KeyValueOperator::countKeyValueOperator) {
+                                $propertiesToFetch->append($keyPathToProperty);
+                            }
+                            $requestContext = $this->requestContext;
+                            $managedObjectModel = $requestContext->sqlCore->persistentStoreCoordinator->managedObjectModel;
+                            /** @var EntityDescription $entityForFetchRequest */
+                            $entityForFetchRequest = $managedObjectModel->entitiesByName[$destinationEntity->tableName];
+                            $fetchRequest = new FetchRequest();
+                            $fetchRequest->entity = $entityForFetchRequest;
+                            $fetchRequest->propertiesToFetch = $propertiesToFetch;
+                            $fetchRequest->resultType = FetchRequestResultType::countResultType;
+                            $generator = new SQLGenerator(new SQLFetchRequestContext($fetchRequest, $requestContext->context, $requestContext->sqlCore));
+                            $generator->request = $fetchRequest;
+                            $generator->autoDistinct = false;
+                            $generator->raisesForNotApplicableKeys = false;
+                            $generator->keyValueOperator = $collectionOperator;
+                            $statement = $generator->statement() ?? fatal_error();
+                            $string = "($statement->string";
+                            $string .= $generator->whereClause ? " AND " : " WHERE ";
+                            if ($relationship instanceof SQLToMany) {
+                                $destination ??= $entity->tableName;
+                                $string .= "{$destinationEntity->tableName}_$inverseRelationship->name.{$entity->primaryKey->columnName} = $destination";
+                                $string .= $destinationEntity->isKindOfSQLEntity($entity) ? ".{$relationship->inverseToOne->foreignKey->columnName}" : ".{$entity->primaryKey->columnName}";
+                            } else {
+                                $string .= "{$destinationEntity->tableName}_$relationship->correlationTableName.$relationship->inverseColumnName = $entity->tableName.{$entity->primaryKey->columnName}";
+                            }
+                            return "$string)";
                         }
-                        fatal_error("Invalid argument: unsupported expression \"$expression\"");
                     }
-                    return $this->buildKeyPathExpression($expression);
-                case ExpressionType::function:
-                    return $this->buildFunctionExpression($expression);
-                case ExpressionType::conditional:
-                    return $this->buildConditionalExpression($expression);
-                default:
                     fatal_error("Invalid argument: unsupported expression \"$expression\"");
-            }
+                }
+                return $this->buildKeyPathExpression($expression);
+            case ExpressionType::function:
+                return $this->buildFunctionExpression($expression);
+            case ExpressionType::conditional:
+                return $this->buildConditionalExpression($expression);
+            default:
+                fatal_error("Invalid argument: unsupported expression \"$expression\"");
         }
-        fatal_error("Invalid argument: invalid attribute \"$derivedAttributeDescription\"");
     }
 
     private function buildFunctionExpression(Expression $expression): string
