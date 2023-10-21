@@ -35,15 +35,14 @@ class SQLAdapter extends ObjectClass
 
     private function generatedAlwaysColumnExpression(SQLAttribute $attribute): ?string
     {
-        $attributeDescription = $attribute->attributeDescription;
-        if (!$attributeDescription instanceof DerivedAttributeDescription || str_contains((string)$attributeDescription->derivationExpression, "@")) {
-            return null;
+        if (($expression = $attribute->derivationExpression) && !str_contains((string)$expression, "@")) {
+            $request = new FetchRequest();
+            $request->entity = $attribute->entity->entityDescription;
+            $generator = new SQLGenerator(new SQLFetchRequestContext($request, new ManagedObjectContext(), $this->sqlCore));
+            $format = $generator->buildDerivationExpression($expression);
+            return (string)(new SQLStatement($format, $generator->arguments));
         }
-        $request = new FetchRequest();
-        $request->entity = $attribute->entity->entityDescription;
-        $generator = new SQLGenerator(new SQLFetchRequestContext($request, new ManagedObjectContext(), $this->sqlCore));
-        $format = $generator->buildDerivedAttributeDescription($attributeDescription);
-        return (string)(new SQLStatement($format, $generator->arguments));
+        return null;
     }
 
     private function typeStringForColumn(SQLColumn $column): ?string
@@ -190,9 +189,9 @@ class SQLAdapter extends ObjectClass
             /** @noinspection SqlIdentifier */
             return new SQLStatement("ALTER TABLE `$entity->tableName` RENAME COLUMN IF EXISTS `$source->columnName` TO `$destination->columnName`");
         }
-        if ($source->isOptional && !$destination->isOptional) {
+        if ($source->isOptional !== $destination->isOptional || $source->defaultValue !== $destination->defaultValue) {
             $request = new BatchUpdateRequest($entity->entityDescription);
-            $request->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($destination->columnName), Expression::expressionForConstantValue(null));
+            $request->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($destination->columnName), Expression::expressionForConstantValue($source->defaultValue));
             $request->propertiesToUpdate = new Dictionary([$destination->columnName => $destination->defaultValue]);
             $requestContext = new SQLBatchUpdateRequestContext($request, new ManagedObjectContext(), $this->sqlCore);
             /** @noinspection PhpUnhandledExceptionInspection */
