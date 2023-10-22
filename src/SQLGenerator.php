@@ -440,10 +440,6 @@ class SQLGenerator extends ObjectClass
         $sourceEntity = $toMany->entity;
         $inverseToOne = $toMany->inverseToOne;
         $destinationEntity = $toMany->destinationEntity;
-        if (!$destinationEntity->isRootEntity) {
-            /** @var SQLEntity $destinationEntity */
-            $destinationEntity = $destinationEntity->rootEntity;
-        }
         if (empty($sourcePath)) {
             $sourcePath = $sourceEntity->tableName;
         }
@@ -454,7 +450,6 @@ class SQLGenerator extends ObjectClass
         $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $destinationPath.{$inverseToOne->foreignKey->columnName} = ";
         $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
         if (!$sourceEntity->entityDescription->isPersistentHistoryEntity) {
-            $destinationEntity = $toMany->destinationEntity;
             $this->appendJoinDestinationEntity($destinationEntity, $destinationPath);
         }
     }
