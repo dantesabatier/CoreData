@@ -13,12 +13,16 @@ namespace Sabatier\CoreData;
 class SQLForeignOrderKey extends SQLColumn
 {
     public readonly SQLToOne $toOneRelationship;
+    public readonly RelationshipDescription $relationshipDescription;
+    public readonly SQLForeignKey $foreignKey;
 
-    public function __construct(SQLEntity $entity, public readonly RelationshipDescription $relationshipDescription, public readonly SQLForeignKey $foreignKey)
+    public function __construct(SQLEntity $entity, RelationshipDescription $relationshipDescription, SQLForeignKey $foreignKey)
     {
-        parent::__construct($entity, $this->relationshipDescription);
-        $this->toOneRelationship = $this->foreignKey->toOneRelationship;
+        parent::__construct($entity, $relationshipDescription);
+        $this->toOneRelationship = $foreignKey->toOneRelationship;
         /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-        $this->columnName = $this->relationshipDescription->destinationEntity->attributesByName->first()?->name;
+        $this->columnName = $relationshipDescription->destinationEntity->attributesByName->first()?->name;
+        $this->foreignKey = $foreignKey;
+        $this->relationshipDescription = $relationshipDescription;
     }
 }

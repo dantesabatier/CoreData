@@ -15,15 +15,17 @@ use Sabatier\Foundation\Set;
 /** @internal */
 class SQLAttribute extends SQLColumn
 {
+    public readonly AttributeDescription $attributeDescription;
     /** @var Set<string> */
     public readonly Set $triggerKeys;
     public readonly bool $isBackedByTrigger;
     public readonly bool $isDerivedAttribute;
     public readonly ?Expression $derivationExpression;
 
-    public function __construct(SQLEntity $entity, public readonly AttributeDescription $attributeDescription)
+    public function __construct(SQLEntity $entity, AttributeDescription $attributeDescription)
     {
-        parent::__construct($entity, $this->attributeDescription);
+        parent::__construct($entity, $attributeDescription);
+        unset($this->attributeDescription);
         unset($this->triggerKeys);
         unset($this->isBackedByTrigger);
         unset($this->isDerivedAttribute);
@@ -32,7 +34,11 @@ class SQLAttribute extends SQLColumn
 
     public function __get(string $name)
     {
-        if ($name == "sqlType") {
+        if ($name == "attributeDescription") {
+            /** @psalm-suppress PropertyTypeCoercion */
+            $this->$name = $this->propertyDescription;
+            return $this->$name;
+        } elseif ($name == "sqlType") {
             $this->$name = match ($this->attributeDescription->type) {
                 AttributeType::transformable, AttributeType::objectID, AttributeType::undefined => SQLType::varbinary,
                 AttributeType::integer16 => SQLType::smallint,
@@ -80,7 +86,7 @@ class SQLAttribute extends SQLColumn
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == "triggerKeys" || $name == "isBackedByTrigger" || $name == "isDerivedAttribute" || $name == "derivationExpression") {
+        if ($name == "attributeDescription" || $name == "triggerKeys" || $name == "isBackedByTrigger" || $name == "isDerivedAttribute" || $name == "derivationExpression") {
             $this->$name = $value;
         } else {
             parent::__set($name, $value);
