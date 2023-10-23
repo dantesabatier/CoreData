@@ -9,6 +9,8 @@
 
 namespace Sabatier\CoreData;
 
+use function Sabatier\Foundation\fatal_error;
+
 /** @internal */
 abstract class SQLRelationship extends SQLProperty
 {
@@ -47,11 +49,11 @@ abstract class SQLRelationship extends SQLProperty
             return $this->$name;
         } elseif ($name == "destinationEntity") {
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-            $this->$name = $this->entity->model->entitiesByName[$this->lazyDestinationEntityName];
+            $this->$name = $this->entity->model->entitiesByName[$this->lazyDestinationEntityName] ?? fatal_error("$this->name, destination entity \"$this->lazyDestinationEntityName\" does not exists");
             return $this->$name;
         } elseif ($name == "inverseRelationship") {
             /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->destinationEntity->propertiesByName[$this->lazyInverseRelationshipName];
+            $this->$name = $this->destinationEntity->propertiesByName[$this->lazyInverseRelationshipName] ?? fatal_error("$this->name, inverse relationship \"$this->lazyInverseRelationshipName\" does not exists");
             return $this->$name;
         } else {
             return parent::__get($name);
