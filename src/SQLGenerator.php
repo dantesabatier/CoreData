@@ -1129,22 +1129,22 @@ class SQLGenerator extends ObjectClass
 
     private function buildOrderByClause(?ArrayClass $descriptors): void
     {
+        $descriptors ??= new ArrayClass();
+        $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
+        $this->raisesForNotApplicableKeys = false;
         /** @psalm-suppress RedundantCondition, TypeDoesNotContainType */
         if (SS_COREDATA_CAN_USE_SORT_DESCRIPTORS):
-            $descriptors ??= new ArrayClass();
-            $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
-            $this->raisesForNotApplicableKeys = false;
             /** @psalm-suppress InvalidArgument, ArgumentTypeCoercion */
             $descriptors->appendContentsOf($this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->flatMap(fn(Expression $expression): iterable => $this->relationshipsFromKeyPathExpression($expression)->filter(fn(SQLRelationship $relationship): bool => $relationship instanceof SQLToMany && $relationship->isOrdered)->map(fn(SQLToMany $relationship): SortDescriptor => new SortDescriptor("{$expression->keyPath()}.{$relationship->inverseToOne->foreignOrderKey->columnName}"))));
-            if (!$descriptors->isEmpty()) {
-                $clauses = new Set($descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? "ASC" : "DESC"))->filter(fn(string $string): bool => str_contains($string, ".")));
-                if (!$clauses->isEmpty()) {
-                    $this->appendOrderByClauseToSQL();
-                    $this->orderByClause .= $clauses->join(", ");
-                }
-            }
-            $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
         endif;
+        if (!$descriptors->isEmpty()) {
+            $clauses = new Set($descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? "ASC" : "DESC"))->filter(fn(string $string): bool => str_contains($string, ".")));
+            if (!$clauses->isEmpty()) {
+                $this->appendOrderByClauseToSQL();
+                $this->orderByClause .= $clauses->join(", ");
+            }
+        }
+        $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
     }
 
     private function coercedValue(ManagedObject|Dictionary $object, AttributeDescription $attribute): mixed
