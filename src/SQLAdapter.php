@@ -184,7 +184,7 @@ class SQLAdapter extends ObjectClass
             /** @noinspection SqlIdentifier */
             return new SQLStatement("ALTER TABLE `$entity->tableName` RENAME COLUMN IF EXISTS `$source->columnName` TO `$destination->columnName`");
         }
-        if ($source->isOptional !== $destination->isOptional || $source->defaultValue !== $destination->defaultValue) {
+        if (($source->isOptional !== $destination->isOptional) || ($source->defaultValue !== $destination->defaultValue && $destination->defaultValue !== null)) {
             $request = new BatchUpdateRequest($entity->entityDescription);
             $request->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($destination->columnName), Expression::expressionForConstantValue($source->defaultValue));
             $request->propertiesToUpdate = new Dictionary([$destination->columnName => $destination->defaultValue]);
