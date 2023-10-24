@@ -11,7 +11,6 @@ use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
 use function Sabatier\Foundation\is_equal;
-use function Sabatier\Foundation\substring_to_index;
 
 /** @internal */
 class SQLFetchRequestContext extends SQLStoreRequestContext
@@ -36,8 +35,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         /** @var ArrayClass<Dictionary<mixed>|Number> $values */
         $values = match ($resultType) {
             FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType, FetchRequestResultType::dictionaryResultType => (function () use ($resultType, $execute): ArrayClass {
-                /** @var Set<string> $patterns */
-                $patterns = new Set();
+                /** @var Set<string> $keyPaths */
+                $keyPaths = new Set();
                 /** @var Dictionary<Dictionary<mixed>> $map */
                 $map = new Dictionary();
                 do {
@@ -70,15 +69,16 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 $representation[$pattern] = $value;
                                 continue;
                             }
-                            if ($value instanceof Nil && str_ends_with($pattern, $currentEntity->primaryKey->columnName)) {
-                                $patterns[] = substring_to_index($pattern, strlen($pattern) - (strlen($currentEntity->primaryKey->columnName) + 1));
-                            }
-                            if ($patterns->contains(fn(string $needle): bool => str_starts_with($pattern, $needle))) {
-                                continue;
-                            }
                             $relationship = null;
                             $current = &$representation;
                             $keys->removeAt(0);
+                            if ($value instanceof Nil && $keys[$keys->indexBefore($keys->endIndex())] === $currentEntity->primaryKey->columnName) {
+                                $keyPaths[] = (new ArrayClass($keys->dropLast(1)))->join(".");
+                            }
+                            $keyPath = $keys->join(".");
+                            if ($keyPaths->contains(fn(string $prefix): bool => str_starts_with($keyPath, $prefix))) {
+                                continue;
+                            }
                             foreach ($keys as $key) {
                                 $property = $currentEntity->propertiesByName[$key];
                                 if ($property instanceof SQLRelationship) {
