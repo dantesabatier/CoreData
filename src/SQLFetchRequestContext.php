@@ -118,7 +118,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         if ($resultType !== FetchRequestResultType::dictionaryResultType) {
                                             $current["isInserted"] = true;
                                         }
-                                        error_log("**********************************$keyPath : $key");
                                         $current[$key] = $value;
                                     }
                                     $currentEntity = $entity;
