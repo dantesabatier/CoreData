@@ -46,7 +46,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         /** @var SQLEntity $entity */
                         $entity = $this->sqlModel->entitiesByName[$entityName];
                         $currentEntity = $entity;
-                        $referenceObject = (string)$data[SQLEntity::primaryKeyName];
+                        $referenceObject = (string)$data[$entity->primaryKey->columnName];
                         /** @var Dictionary<mixed> $representation */
                         $representation = $map[$referenceObject] ?? new Dictionary();
                         if ($resultType !== FetchRequestResultType::dictionaryResultType) {
@@ -68,7 +68,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 continue;
                             }
                             $keys->removeAt(0);
-                            if ($keys[$keys->indexBefore($keys->endIndex())] === SQLEntity::primaryKeyName) {
+                            if ($keys[$keys->indexBefore($keys->endIndex())] === $currentEntity->primaryKey->columnName) {
                                 $copy = clone $keys;
                                 $copy->removeAt($copy->indexBefore($copy->endIndex()));
                                 $keyPath = $copy->join(".");
@@ -102,12 +102,12 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     if ($current instanceof ArrayClass) {
                                         $cached = $current;
                                         if ($property instanceof SQLPrimaryKey && !$cached->contains(fn(Dictionary $dictionary): bool => is_equal($dictionary[$key], $value))) {
-                                            $cached[] = new Dictionary([SQLEntity::primaryKeyName => $value]);
+                                            $cached[] = new Dictionary([$currentEntity->primaryKey->columnName => $value]);
                                         }
                                         if (!$current->isEmpty()) {
                                             /** @psalm-suppress UnsupportedReferenceUsage */
                                             $current = &$cached[$cached->indexBefore($cached->endIndex())];
-                                            if ($currentEntity !== $entity && $key === SQLEntity::primaryKeyName && $current[SQLEntity::primaryKeyName] !== $data[$pattern]) {
+                                            if ($currentEntity !== $entity && $key === $currentEntity->primaryKey->columnName && $current[$currentEntity->primaryKey->columnName] !== $data[$pattern]) {
                                                 $cached->removeAt($cached->indexBefore($cached->endIndex()));
                                             }
                                         }
@@ -135,8 +135,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
             /** @psalm-suppress InvalidArgument */
             $objects = fn(): ArrayClass => $values->map(function (Dictionary $dictionary) use ($entity): ManagedObject {
                 /** @var SQLEntity $entity */
-                $entity = $this->sqlModel->entitiesByName[$dictionary[SQLEntity::entityKeyName]];
-                $object = $this->context->object($this->sqlCore->objectID($entity->entityDescription, $dictionary[SQLEntity::primaryKeyName]));
+                $entity = $this->sqlModel->entitiesByName[$dictionary[$entity->entityKey->name]];
+                $object = $this->context->object($this->sqlCore->objectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
                 $object->isSuppressingKVO = true;
                 $object->isFault = $this->request->returnsObjectsAsFaults;
                 $object->setValuesForKeys($dictionary);
@@ -151,7 +151,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                 }
             } else {
                 /** @psalm-suppress InvalidArgument */
-                $values = $resultType === FetchRequestResultType::managedObjectResultType ? $objects() : $values->map(fn(Dictionary $dictionary): ManagedObjectID => $this->sqlCore->objectID($entity->entityDescription, $dictionary[SQLEntity::primaryKeyName]));
+                $values = $resultType === FetchRequestResultType::managedObjectResultType ? $objects() : $values->map(fn(Dictionary $dictionary): ManagedObjectID => $this->sqlCore->objectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
             }
         }
         $this->result = $values;
