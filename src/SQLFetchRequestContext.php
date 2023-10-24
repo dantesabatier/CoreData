@@ -71,7 +71,9 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             }
                             $keys->removeAt(0);
                             if ($value instanceof Nil && $keys[$keys->indexBefore($keys->endIndex())] === $currentEntity->primaryKey->columnName) {
-                                $keyPaths[] = (new ArrayClass($keys->dropLast(1)))->join(".");
+                                $copy = clone $keys;
+                                $copy->removeAt($copy->indexBefore($copy->endIndex()));
+                                $keyPaths[] = $copy->join(".");
                             }
                             $keyPath = $keys->join(".");
                             if ($keyPaths->contains(fn(string $prefix): bool => str_starts_with($keyPath, $prefix))) {
