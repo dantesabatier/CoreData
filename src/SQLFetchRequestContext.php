@@ -69,8 +69,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 $representation[$pattern] = $value;
                                 continue;
                             }
-                            $relationship = null;
-                            $current = &$representation;
                             $keys->removeAt(0);
                             if ($value instanceof Nil && $keys[$keys->indexBefore($keys->endIndex())] === $currentEntity->primaryKey->columnName) {
                                 $keyPaths[] = (new ArrayClass($keys->dropLast(1)))->join(".");
@@ -79,6 +77,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             if ($keyPaths->contains(fn(string $prefix): bool => str_starts_with($keyPath, $prefix))) {
                                 continue;
                             }
+                            $relationship = null;
+                            $current = &$representation;
                             foreach ($keys as $key) {
                                 $property = $currentEntity->propertiesByName[$key];
                                 if ($property instanceof SQLRelationship) {
