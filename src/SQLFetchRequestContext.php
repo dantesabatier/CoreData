@@ -70,10 +70,15 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 continue;
                             }
                             $keys->removeAt(0);
-                            if ($value instanceof Nil && $keys[$keys->indexBefore($keys->endIndex())] === $currentEntity->primaryKey->columnName) {
+                            if ($keys[$keys->indexBefore($keys->endIndex())] === $currentEntity->primaryKey->columnName) {
                                 $copy = clone $keys;
                                 $copy->removeAt($copy->indexBefore($copy->endIndex()));
-                                $keyPaths[] = $copy->join(".");
+                                $keyPath = $copy->join(".");
+                                if ($value instanceof Nil) {
+                                    $keyPaths->append($keyPath);
+                                } else {
+                                    $keyPaths->remove($keyPath);
+                                }
                             }
                             $keyPath = $keys->join(".");
                             if ($keyPaths->contains(fn(string $prefix): bool => str_starts_with($keyPath, $prefix))) {
@@ -113,6 +118,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         if ($resultType !== FetchRequestResultType::dictionaryResultType) {
                                             $current["isInserted"] = true;
                                         }
+                                        error_log("**********************************$keyPath : $key");
                                         $current[$key] = $value;
                                     }
                                     $currentEntity = $entity;
