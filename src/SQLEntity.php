@@ -170,7 +170,7 @@ class SQLEntity extends StoreMapping
             $this->$name = $this->propertiesByName->values;
             return $this->$name;
         } elseif ($name == "uniqueProperties") {
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $this->entityDescription->hasUniquedPropertyNamed($property->name));
+            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property->isUnique);
             return $this->$name;
         } elseif ($name == "attributes") {
             /** @psalm-suppress PropertyTypeCoercion */
