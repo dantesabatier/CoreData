@@ -6,7 +6,6 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
-use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
@@ -35,8 +34,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         /** @var ArrayClass<Dictionary<mixed>|Number> $values */
         $values = match ($resultType) {
             FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType, FetchRequestResultType::dictionaryResultType => (function () use ($resultType, $execute): ArrayClass {
-                /** @var Set<string> $keyPaths */
-                $keyPaths = new Set();
                 /** @var Dictionary<Dictionary<mixed>> $map */
                 $map = new Dictionary();
                 do {
@@ -68,20 +65,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 continue;
                             }
                             $keys->removeAt(0);
-                            if ($keys[$keys->indexBefore($keys->endIndex())] === $currentEntity->primaryKey->columnName) {
-                                $copy = clone $keys;
-                                $copy->removeAt($copy->indexBefore($copy->endIndex()));
-                                $keyPath = $copy->join(".");
-                                if ($value instanceof Nil) {
-                                    $keyPaths->append($keyPath);
-                                } else {
-                                    $keyPaths->remove($keyPath);
-                                }
-                            }
-                            $keyPath = $keys->join(".");
-                            if ($keyPaths->contains(fn(string $prefix): bool => str_starts_with($keyPath, $prefix))) {
-                                continue;
-                            }
                             $relationship = null;
                             $current = &$representation;
                             foreach ($keys as $key) {
@@ -100,16 +83,12 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 }
                                 if ($property instanceof SQLColumn) {
                                     if ($current instanceof ArrayClass) {
-                                        $cached = $current;
-                                        if ($property instanceof SQLPrimaryKey && !$cached->contains(fn(Dictionary $dictionary): bool => is_equal($dictionary[$key], $value))) {
-                                            $cached[] = new Dictionary([$currentEntity->primaryKey->columnName => $value]);
+                                        if ($property instanceof SQLPrimaryKey && !$current->contains(fn(Dictionary $dictionary): bool => is_equal($dictionary[$key], $value))) {
+                                            $current[] = new Dictionary([$currentEntity->primaryKey->columnName => $value]);
                                         }
                                         if (!$current->isEmpty()) {
                                             /** @psalm-suppress UnsupportedReferenceUsage */
-                                            $current = &$cached[$cached->indexBefore($cached->endIndex())];
-                                            if ($currentEntity !== $entity && $key === $currentEntity->primaryKey->columnName && $current[$currentEntity->primaryKey->columnName] !== $data[$pattern]) {
-                                                $cached->removeAt($cached->indexBefore($cached->endIndex()));
-                                            }
+                                            $current = &$current[$current->indexBefore($current->endIndex())];
                                         }
                                     }
                                     if ($current instanceof Dictionary) {
@@ -121,6 +100,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     $currentEntity = $entity;
                                 }
                             }
+                            unset($current);
                         }
                         $map[$referenceObject] = $representation;
                     }
