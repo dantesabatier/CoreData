@@ -219,6 +219,7 @@ class SQLEntity extends StoreMapping
             /** @var Dictionary<SQLIndex> $indexes */
             $indexes = $this->entityDescription->indexes->reduce(new Dictionary(), $updateAccumulatingResult);
             foreach ($this->entityDescription->subentities as $subentity) {
+                /** @psalm-suppress PossiblyInvalidArgument */
                 $indexes->merge($subentity->indexes->reduce(new Dictionary(), $updateAccumulatingResult));
             }
             $this->$name = $indexes;
