@@ -8,13 +8,8 @@ use const Sabatier\Foundation\NotFound;
 /** @internal */
 readonly class FaultHandler
 {
-    public function __construct(private PersistentStore $persistentStore)
+    public function __construct(public PersistentStore $persistentStore)
     {
-    }
-
-    public function persistentStore(): PersistentStore
-    {
-        return $this->persistentStore;
     }
 
     /**
