@@ -28,15 +28,14 @@ readonly class FaultHandler
             $object->isSuppressingKVO = true;
             $committedValues = $object->committedValuesForKeys(null);
             foreach ($entity as $property) {
-                $key = $property->name;
                 if ($property instanceof AttributeDescription) {
-                    $value = $newValues->valueForKey($key);
+                    $value = $newValues->valueForKey($property->name);
                     if ($value !== null) {
-                        $object->setValueForKey($value, $key);
+                        $object->setValueForKey($value, $property->name);
                     }
                 } elseif ($property instanceof RelationshipDescription) {
-                    if ($committedValues[$key]) {
-                        $object->valueForKey($key);
+                    if ($committedValues[$property->name]) {
+                        $object->valueForKey($property->name);
                     }
                 }
             }
@@ -56,11 +55,10 @@ readonly class FaultHandler
         $object->willTurnIntoFault();
         $properties = $object->persistentProperties;
         foreach ($properties as $property) {
-            $key = $property->name;
             if ($property instanceof AttributeDescription) {
-                $object->setValueForKey(null, $key);
+                $object->setValueForKey(null, $property->name);
             } elseif ($property instanceof FetchedPropertyDescription || $property instanceof RelationshipDescription) {
-                if (($value = $object->primitiveValueForKey($key)) && ($value instanceof FaultingMutableSet || $value instanceof FaultingMutableArray)) {
+                if (($value = $object->primitiveValueForKey($property->name)) && ($value instanceof FaultingMutableSet || $value instanceof FaultingMutableArray)) {
                     $value->turnIntoFault();
                 }
             }
