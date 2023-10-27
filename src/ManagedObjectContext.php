@@ -586,14 +586,14 @@ class ManagedObjectContext extends ObjectClass
     }
 
     /** @noinspection PhpUnhandledExceptionInspection */
-    private function refault(ManagedObject $object, bool $boolean = false): void
+    private function refault(ManagedObject $object, bool $mergeChanges = false): void
     {
-        if ($boolean) {
+        if ($mergeChanges) {
             $this->save();
         }
         $faultHandler = $object->faultHandler;
         $faultHandler->turnObjectIntoFault($object, $this);
-        if ($boolean) {
+        if ($mergeChanges) {
             $faultHandler->fulfillFault($object, $this);
         }
     }
