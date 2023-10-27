@@ -585,7 +585,7 @@ class ManagedObjectContext extends ObjectClass
         $this->refault($object, $mergeChanges);
     }
 
-    /** @noinspection PhpUnhandledExceptionInspection */
+    /** @noinspection PhpUnhandledExceptionInspection, SpellCheckingInspection */
     private function refault(ManagedObject $object, bool $mergeChanges = false): void
     {
         if ($mergeChanges) {
