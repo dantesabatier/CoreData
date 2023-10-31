@@ -173,8 +173,7 @@ class SQLAdapter extends ObjectClass
 
     public function newDropColumnStatement(SQLColumn $column): SQLStatement
     {
-        $entity = $column->entity;
-        return new SQLStatement("ALTER TABLE `$entity->tableName` DROP COLUMN IF EXISTS `$column->columnName`");
+        return new SQLStatement("ALTER TABLE `{$column->entity->tableName}` DROP COLUMN IF EXISTS `$column->columnName`");
     }
 
     public function newRenameColumnStatement(SQLColumn $source, SQLColumn $destination): ?SQLStatement
@@ -201,8 +200,7 @@ class SQLAdapter extends ObjectClass
     public function newCreateColumnStatement(SQLColumn $column, SQLColumn $after): ?SQLStatement
     {
         if ($string = $this->typeStringForColumn($column)) {
-            $entity = $column->entity;
-            return new SQLStatement("ALTER TABLE `$entity->tableName` ADD COLUMN IF NOT EXISTS $string AFTER `$after->columnName`");
+            return new SQLStatement("ALTER TABLE `{$column->entity->tableName}` ADD COLUMN IF NOT EXISTS $string AFTER `$after->columnName`");
         }
         return null;
     }
