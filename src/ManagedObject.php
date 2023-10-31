@@ -566,7 +566,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->changedValuesForCurrentEvent[$key] = $value ?? Nil::nil();
         }
         if ($property instanceof AttributeDescription || $property instanceof FetchedPropertyDescription) {
-            $value ??= $this->changedValuesForCurrentEvent[$key];
             $current = $this->primitiveValueForKey($key);
             $this->willChangeValueForKey($key, KeyValueChange::replacement, $current);
             $this->setPrimitiveValueForKey($value, $key);
@@ -726,7 +725,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 } elseif ($value instanceof Nil) {
                     $representation[$key] = $value;
                 } else {
-                    fatal_error(sprintf("%s: Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", $entity->name,typeof($value), $key));
+                    fatal_error(sprintf("%s: Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", $entity->name, typeof($value), $key));
                 }
             }
         }
