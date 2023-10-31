@@ -109,13 +109,11 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
             })(),
             FetchRequestResultType::countResultType => new ArrayClass([new Number((int)$execute->fetchColumn())]),
         };
-        /** @var SQLEntity $entity */
-        $entity = $this->sqlModel->entitiesByName[$this->request->entity->name];
         if ($resultType === FetchRequestResultType::managedObjectResultType || $resultType === FetchRequestResultType::managedObjectIDResultType) {
             /** @psalm-suppress InvalidArgument */
-            $objects = fn(): ArrayClass => $values->map(function (Dictionary $dictionary) use ($entity): ManagedObject {
+            $objects = fn(): ArrayClass => $values->map(function (Dictionary $dictionary): ManagedObject {
                 /** @var SQLEntity $entity */
-                $entity = $this->sqlModel->entitiesByName[$dictionary[$entity->entityKey->name]];
+                $entity = $this->sqlModel->entitiesByName[$dictionary[$this->sqlEntityForFetchRequest->entityKey->columnName]];
                 $object = $this->context->object($this->sqlCore->objectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
                 $object->isSuppressingKVO = true;
                 $object->isFault = $this->request->returnsObjectsAsFaults;
@@ -131,7 +129,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                 }
             } else {
                 /** @psalm-suppress InvalidArgument */
-                $values = $resultType === FetchRequestResultType::managedObjectResultType ? $objects() : $values->map(fn(Dictionary $dictionary): ManagedObjectID => $this->sqlCore->objectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
+                $values = $resultType === FetchRequestResultType::managedObjectResultType ? $objects() : $values->map(fn(Dictionary $dictionary): ManagedObjectID => $this->sqlCore->objectID($this->sqlEntityForFetchRequest->entityDescription, $dictionary[$this->sqlEntityForFetchRequest->primaryKey->columnName]));
             }
         }
         $this->result = $values;
