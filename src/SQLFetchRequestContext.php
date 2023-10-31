@@ -30,10 +30,9 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     {
         $time = absolute_time_get_current();
         $execute = $this->connection->execute($this->fetchStatement);
-        $resultType = $this->request->resultType;
         /** @var ArrayClass<Dictionary<mixed>|Number> $values */
-        $values = match ($resultType) {
-            FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType, FetchRequestResultType::dictionaryResultType => (function () use ($resultType, $execute): ArrayClass {
+        $values = match ($this->request->resultType) {
+            FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType, FetchRequestResultType::dictionaryResultType => (function () use ($execute): ArrayClass {
                 /** @var Dictionary<Dictionary<mixed>> $map */
                 $map = new Dictionary();
                 do {
@@ -46,7 +45,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         $referenceObject = (string)$data[$entity->primaryKey->columnName];
                         /** @var Dictionary<mixed> $representation */
                         $representation = $map[$referenceObject] ?? new Dictionary();
-                        if ($resultType !== FetchRequestResultType::dictionaryResultType) {
+                        if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
                             $representation["isInserted"] = true;
                         }
                         foreach ($data as $pattern => $value) {
@@ -92,7 +91,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         }
                                     }
                                     if ($current instanceof Dictionary) {
-                                        if ($resultType !== FetchRequestResultType::dictionaryResultType) {
+                                        if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
                                             $current["isInserted"] = true;
                                         }
                                         $current[$key] = $value;
@@ -109,7 +108,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
             })(),
             FetchRequestResultType::countResultType => new ArrayClass([new Number((int)$execute->fetchColumn())]),
         };
-        if ($resultType === FetchRequestResultType::managedObjectResultType || $resultType === FetchRequestResultType::managedObjectIDResultType) {
+        if ($this->request->resultType === FetchRequestResultType::managedObjectResultType || $this->request->resultType === FetchRequestResultType::managedObjectIDResultType) {
             /** @psalm-suppress InvalidArgument */
             $objects = fn(): ArrayClass => $values->map(function (Dictionary $dictionary): ManagedObject {
                 /** @var SQLEntity $entity */
@@ -124,12 +123,12 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
             });
             if ($this->request->includesPropertyValues) {
                 $values = $objects();
-                if ($resultType === FetchRequestResultType::managedObjectIDResultType) {
+                if ($this->request->resultType === FetchRequestResultType::managedObjectIDResultType) {
                     $values = $values->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID);
                 }
             } else {
                 /** @psalm-suppress InvalidArgument */
-                $values = $resultType === FetchRequestResultType::managedObjectResultType ? $objects() : $values->map(fn(Dictionary $dictionary): ManagedObjectID => $this->sqlCore->objectID($this->sqlEntityForFetchRequest->entityDescription, $dictionary[$this->sqlEntityForFetchRequest->primaryKey->columnName]));
+                $values = $this->request->resultType === FetchRequestResultType::managedObjectResultType ? $objects() : $values->map(fn(Dictionary $dictionary): ManagedObjectID => $this->sqlCore->objectID($this->sqlEntityForFetchRequest->entityDescription, $dictionary[$this->sqlEntityForFetchRequest->primaryKey->columnName]));
             }
         }
         $this->result = $values;
