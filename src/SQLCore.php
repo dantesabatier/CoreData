@@ -71,6 +71,7 @@ class SQLCore extends IncrementalStore
                     $relationship->name = $name;
                     $relationship->entity = $entityDescription;
                     $relationship->isToMany = true;
+                    $relationship->deleteRule = DeleteRule::cascadeDeleteRule;
                     $relationship->lazyInverseRelationshipName = "transaction";
                     $relationship->lazyDestinationEntityName = "PersistentHistoryChange";
                     return $relationship;
