@@ -505,8 +505,10 @@ class SQLGenerator extends ObjectClass
                 if ($dictionary instanceof Dictionary) {
                     $serialization = clone $dictionary;
                     $serializationKeys = $serialization->keys;
-                    $serializationKeys->insertAt($entity->primaryKey->columnName, 0);
-                    if (!$entity->entityDescription->isPersistentHistoryEntity) {
+                    if (!$serializationKeys->containsElement($entity->primaryKey->columnName)) {
+                        $serializationKeys->insertAt($entity->primaryKey->columnName, 0);
+                    }
+                    if (!$entity->entityDescription->isPersistentHistoryEntity && !$serializationKeys->containsElement($entity->entityKey->columnName)) {
                         $serializationKeys->insertAt($entity->entityKey->columnName, 1);
                     }
                     /** @var ArrayClass<string> $columnNames */
