@@ -144,7 +144,9 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
                 $context = $this->createDeleteTransactionsRequestContext();
                 $context->executeRequestUsingConnection($connection);
             }
-            $this->sqlCore->recomputePrimaryKeyMaxForEntities($this->sqlCore->model->entities->filter(fn(SQLEntity $entity): bool => $entity->entityDescription->isPersistentHistoryEntity));
+            if ($connection->hasPersistentHistoryTables) {
+                $this->sqlCore->recomputePrimaryKeyMaxForEntities($this->sqlCore->model->entities->filter(fn(SQLEntity $entity): bool => $entity->entityDescription->isPersistentHistoryEntity));
+            }
             if (!$connection->hasHistoryRows()) {
                 $connection->dropHistoryTrackingTables();
             }
