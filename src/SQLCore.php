@@ -57,7 +57,7 @@ class SQLCore extends IncrementalStore
                     return null;
                 }
                 $name = $property->name;
-                if ($name == "token"  || $name == "transactionNumber") {
+                if ($name == "token" || $name == "transactionNumber") {
                     return null;
                 }
                 /** @var ReflectionNamedType $reflectionType */
