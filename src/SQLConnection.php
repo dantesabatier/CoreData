@@ -39,7 +39,6 @@ class SQLConnection extends ObjectClass
     public readonly bool $hasMetadataTable;
     public readonly bool $hasCachedModelTable;
     public readonly bool $hasPersistentHistoryTables;
-    public readonly bool $hasHistoryRows;
     public readonly ?ManagedObjectModel $cachedModel;
     private SQLStoreRequestContext $requestContext;
     private readonly string $bundleID;
@@ -54,7 +53,6 @@ class SQLConnection extends ObjectClass
         unset($this->hasMetadataTable);
         unset($this->hasCachedModelTable);
         unset($this->hasPersistentHistoryTables);
-        unset($this->hasHistoryRows);
         unset($this->cachedModel);
     }
 
@@ -68,7 +66,6 @@ class SQLConnection extends ObjectClass
             "hasMetadataTable" => $this->hasMetadataTable(),
             "hasCachedModelTable" => $this->hasCachedModelTable(),
             "hasPersistentHistoryTables" => $this->hasPersistentHistoryTables(),
-            "hasHistoryRows" => $this->hasHistoryRows(),
             "cachedModel" => $this->fetchCachedModel(),
             default => $this->valueForUndefinedKey($name)
         };
@@ -430,7 +427,7 @@ class SQLConnection extends ObjectClass
     /**
      * @throws Exception
      */
-    private function hasHistoryRows(): bool
+    public function hasHistoryRows(): bool
     {
         if ($this->hasPersistentHistoryTables) {
             return $this->tableHasRows("PersistentHistoryTransaction");

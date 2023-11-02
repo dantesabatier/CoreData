@@ -57,11 +57,8 @@ class SQLCore extends IncrementalStore
                     return null;
                 }
                 $name = $property->name;
-                if ($name == "token") {
+                if ($name == "token"  || $name == "transactionNumber") {
                     return null;
-                }
-                if ($name == "transactionNumber") {
-                    $name = "transactionID";
                 }
                 /** @var ReflectionNamedType $reflectionType */
                 $reflectionType = $property->getType();
@@ -106,6 +103,9 @@ class SQLCore extends IncrementalStore
                     return null;
                 }
                 $name = $property->name;
+                if ($name == "changeID") {
+                    return null;
+                }
                 /** @var ReflectionNamedType $reflectionType */
                 $reflectionType = $property->getType();
                 $type = $reflectionType->getName();
@@ -227,7 +227,7 @@ class SQLCore extends IncrementalStore
      * @param ArrayClass<SQLEntity> $entities
      * @throws Exception
      */
-    private function recomputePrimaryKeyMaxForEntities(ArrayClass $entities): void
+    public function recomputePrimaryKeyMaxForEntities(ArrayClass $entities): void
     {
         if (!$entities->isEmpty()) {
             $entities->appendContentsOf($entities->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->entitySpecificRelationships->filter(fn(SQLRelationship $relationship): bool => $relationship->relationshipDescription->deleteRule == DeleteRule::cascadeDeleteRule))->map(fn(SQLRelationship $relationship): SQLEntity => $relationship->destinationEntity));
