@@ -430,10 +430,7 @@ class SQLConnection extends ObjectClass
      */
     public function hasHistoryRows(): bool
     {
-        if ($this->hasPersistentHistoryTables) {
-            return $this->tableHasRows("PersistentHistoryTransaction");
-        }
-        return false;
+        return $this->hasPersistentHistoryTables && $this->tableHasRows("PersistentHistoryTransaction");
     }
 
     /**
@@ -451,10 +448,7 @@ class SQLConnection extends ObjectClass
      */
     public function hasHistoryTransactionWithNumber(Number $transactionNumber): bool
     {
-        if ($transactionNumber->boolValue && $this->hasPersistentHistoryTables) {
-            return (bool)$this->execute(new SQLStatement("SELECT COUNT(`transactionID`) FROM `PersistentHistoryTransaction` WHERE `transactionID` = ?", new ArrayClass([$transactionNumber])))->fetchColumn();
-        }
-        return false;
+        return $transactionNumber->boolValue && $this->hasPersistentHistoryTables && $this->execute(new SQLStatement("SELECT COUNT(`transactionID`) FROM `PersistentHistoryTransaction` WHERE `transactionID` = ?", new ArrayClass([$transactionNumber])))->fetchColumn();
     }
 
     /**
@@ -742,10 +736,7 @@ class SQLConnection extends ObjectClass
      */
     public function createSchemaIfNeeded(): bool
     {
-        if (!$this->hasSchema()) {
-            return $this->createSchema();
-        }
-        return false;
+        return !$this->hasSchema() && $this->createSchema();
     }
 
     /**
