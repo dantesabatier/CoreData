@@ -132,8 +132,8 @@ class SQLEntity extends StoreMapping
             $attribute = new AttributeDescription();
             $attribute->entity = $this->entityDescription;
             $attribute->name = match ($this->entityDescription->name) {
-                PersistentHistoryTransaction::className() => "transactionID",
-                PersistentHistoryChange::className() => "changeID",
+                "PersistentHistoryTransaction" => "transactionID",
+                "PersistentHistoryChange" => "changeID",
                 default => self::primaryKeyName,
             };
             $attribute->type = AttributeType::integer32;
