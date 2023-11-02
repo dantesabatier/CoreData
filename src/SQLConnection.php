@@ -331,8 +331,9 @@ class SQLConnection extends ObjectClass
                 $value = $object->valueForKey($column->name);
                 ManagedObject::coerceValue($value, $column->attributeDescription, true);
                 return $value;
+            } else {
+                return $object->valueForKey($column->name);
             }
-            return $object->valueForKey($column->name);
         }));
         $statement = new SQLStatement($string, $arguments);
         $execute = $this->execute($statement);
