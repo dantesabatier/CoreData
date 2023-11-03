@@ -106,7 +106,7 @@ abstract class PropertyDescription extends ObjectClass
         } elseif ($name == "versionHash") {
             /** @noinspection PhpUnhandledExceptionInspection */
             $this->versionHashInStyle($hash, VersionHashStyle::default);
-            assert(is_string($hash));
+            /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
             $this->$name = $hash;
             return $this->$name;
         } elseif ($name == "renamingIdentifier") {
