@@ -51,19 +51,9 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         foreach ($data as $pattern => $value) {
                             $value ??= Nil::nil();
                             $keys = new ArrayClass(explode("_", $pattern));
-                            if ($keys->count() < 3) {
-                                $property = $currentEntity->propertiesByName[$pattern];
-                                if ($property instanceof SQLProperty) {
-                                    $propertyDescription = $property->propertyDescription;
-                                    if ($propertyDescription instanceof ExpressionDescription) {
-                                        $value = ManagedObject::coercedValue($value, $propertyDescription->expressionResultType, isOptional: $propertyDescription->isOptional);
-                                    }
-                                }
-                                /** @psalm-suppress PossiblyNullReference */
-                                $representation[$pattern] = $value;
-                                continue;
+                            if (str_starts_with($pattern, $entity->tableName)) {
+                                $keys->removeAt(0);
                             }
-                            $keys->removeAt(0);
                             $relationship = null;
                             $current = &$representation;
                             foreach ($keys as $key) {
@@ -93,6 +83,10 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     if ($current instanceof Dictionary) {
                                         if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
                                             $current["isInserted"] = true;
+                                        }
+                                        $propertyDescription = $property->propertyDescription;
+                                        if ($propertyDescription instanceof ExpressionDescription) {
+                                            $value = ManagedObject::coercedValue($value, $propertyDescription->expressionResultType, isOptional: $propertyDescription->isOptional);
                                         }
                                         $current[$key] = $value;
                                     }
