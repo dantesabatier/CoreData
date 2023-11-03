@@ -45,9 +45,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         $referenceObject = (string)$data[$entity->primaryKey->columnName];
                         /** @var Dictionary<mixed> $representation */
                         $representation = $map[$referenceObject] ?? new Dictionary();
-                        if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
-                            $representation["isInserted"] = true;
-                        }
                         foreach ($data as $pattern => $value) {
                             $value ??= Nil::nil();
                             $keys = new ArrayClass(explode("_", $pattern));
@@ -81,19 +78,22 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         }
                                     }
                                     if ($current instanceof Dictionary) {
-                                        if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
-                                            $current["isInserted"] = true;
-                                        }
                                         $propertyDescription = $property->propertyDescription;
                                         if ($propertyDescription instanceof ExpressionDescription) {
                                             $value = ManagedObject::coercedValue($value, $propertyDescription->expressionResultType, isOptional: $propertyDescription->isOptional);
                                         }
                                         $current[$key] = $value;
+                                        if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
+                                            $current["isInserted"] = true;
+                                        }
                                     }
                                     $currentEntity = $entity;
                                 }
                             }
                             unset($current);
+                        }
+                        if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
+                            $representation["isInserted"] = true;
                         }
                         $map[$referenceObject] = $representation;
                     }
