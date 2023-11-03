@@ -51,7 +51,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         foreach ($data as $pattern => $value) {
                             $value ??= Nil::nil();
                             $keys = new ArrayClass(explode("_", $pattern));
-                            if (str_starts_with($pattern, $entity->tableName)) {
+                            if ($keys->count() >= 3) {
                                 $keys->removeAt(0);
                             }
                             $relationship = null;
