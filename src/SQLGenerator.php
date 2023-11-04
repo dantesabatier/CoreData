@@ -1062,10 +1062,10 @@ class SQLGenerator extends ObjectClass
                     $function = "CONCAT_WS";
                     break;
                 default:
-                    fatal_error("Unsupported expression \"$expression\"");
+                    fatal_error("Invalid argument: unsupported expression \"$expression\"");
             }
             if (empty($function)) {
-                fatal_error("Invalid function");
+                fatal_error("Invalid argument: unknown function");
             }
             $column = strtoupper($function);
             $column .= "(";
@@ -1075,7 +1075,7 @@ class SQLGenerator extends ObjectClass
             });
             return $column . ")";
         }
-        fatal_error("Invalid argument: unsupported expression $expression");
+        fatal_error("Invalid argument: unsupported expression \"$expression\"");
     }
 
     private function buildConditionalExpression(Expression $expression): string
