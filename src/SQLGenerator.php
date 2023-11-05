@@ -1065,7 +1065,7 @@ class SQLGenerator extends ObjectClass
                     fatal_error("Invalid argument: unsupported expression \"$expression\"");
             }
             if (empty($function)) {
-                fatal_error("Invalid argument: unknown function");
+                fatal_error("Invalid argument: unsupported expression \"$expression\"");
             }
             $column = strtoupper($function);
             $column .= "(";
