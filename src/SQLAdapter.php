@@ -76,7 +76,7 @@ class SQLAdapter extends ObjectClass
             } else {
                 $string .= " NOT NULL";
                 $defaultValue = $column->defaultValue;
-                if ($defaultValue !== null) {
+                if ($defaultValue !== null && $defaultValue !== "") {
                     $string .= " DEFAULT $defaultValue";
                 }
             }
