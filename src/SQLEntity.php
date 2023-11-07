@@ -27,7 +27,7 @@ class SQLEntity extends StoreMapping
     public readonly ArrayClass $attributes;
     /** @var ArrayClass<SQLAttribute> */
     public readonly ArrayClass $derivedAttributes;
-    /** @var ArrayClass<ArrayClass<AttributeDescription|string>> */
+    /** @var ArrayClass<ArrayClass<SQLAttribute>> */
     public readonly ArrayClass $multiColumnUniquenessConstraints;
     /** @var Dictionary<SQLIndex> */
     public readonly Dictionary $indexes;
@@ -203,7 +203,7 @@ class SQLEntity extends StoreMapping
             $this->$name = $this->foreignKeyColumns->filter(fn(SQLForeignKey $foreignKey): bool => $foreignKey->toOneRelationship->isVirtual);
             return $this->$name;
         } elseif ($name == "multiColumnUniquenessConstraints") {
-            $this->$name = $this->entityDescription->uniquenessConstraints;
+            $this->$name = $this->entityDescription->uniquenessConstraints->map(fn(ArrayClass $uniquenessConstraints): ArrayClass => $uniquenessConstraints->compactMap(fn(AttributeDescription|string $description): ?SQLAttribute => $this->attributes->first(fn(SQLAttribute $attribute): bool => $attribute->name === ($description instanceof AttributeDescription ? $description->name : $description))));
             return $this->$name;
         } elseif ($name == "indexes") {
             $updateAccumulatingResult = function (Dictionary $result, FetchIndexDescription $indexDescription): Dictionary {
