@@ -46,7 +46,7 @@ abstract class SQLProperty extends ObjectClass
             "propertyType" => $this->propertyDescription->propertyType,
             "sqlType" => SQLType::unknown,
             "isUnique" => $this->entity->indexes->contains(fn(SQLIndex $index, string $key): bool => $index->isUnique && $key === $this->name),
-            "isConstrained" => $this->entity->multiColumnUniquenessConstraints->joined()->contains(fn(SQLAttribute $attribute): bool => $attribute->name === $this->name),
+            "isConstrained" => $this->entity->indexes->contains(fn(SQLIndex $index, string $key): bool => $key === $this->name),
             "minValue" => $this->propertyDescription->minValue,
             "maxValue" => $this->propertyDescription->maxValue,
             default => $this->valueForUndefinedKey($name)
