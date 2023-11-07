@@ -21,7 +21,7 @@ abstract class SQLProperty extends ObjectClass
     public int $fetchIndex;
     public int $slot;
     public readonly bool $isUnique;
-    public bool $isConstrained = false;
+    public readonly bool $isConstrained;
     public bool $allowAliasing = false;
     public readonly mixed $minValue;
     public readonly mixed $maxValue;
@@ -31,6 +31,7 @@ abstract class SQLProperty extends ObjectClass
         unset($this->name);
         unset($this->isOptional);
         unset($this->isUnique);
+        unset($this->isConstrained);
         unset($this->propertyType);
         unset($this->sqlType);
         unset($this->minValue);
@@ -45,6 +46,7 @@ abstract class SQLProperty extends ObjectClass
             "propertyType" => $this->propertyDescription->propertyType,
             "sqlType" => SQLType::unknown,
             "isUnique" => $this->entity->indexes->contains(fn(SQLIndex $index, string $key): bool => $index->isUnique && $key === $this->name),
+            "isConstrained" => $this->entity->multiColumnUniquenessConstraints->joined()->contains(fn(SQLAttribute $attribute): bool => $attribute->name === $this->name),
             "minValue" => $this->propertyDescription->minValue,
             "maxValue" => $this->propertyDescription->maxValue,
             default => $this->valueForUndefinedKey($name)
@@ -53,7 +55,7 @@ abstract class SQLProperty extends ObjectClass
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == "name" || $name == "isOptional" || $name == "isUnique" || $name == "propertyType" || $name == "sqlType" || $name == "minValue" || $name == "maxValue") {
+        if ($name == "name" || $name == "isOptional" || $name == "isUnique" || $name == "isConstrained" || $name == "propertyType" || $name == "sqlType" || $name == "minValue" || $name == "maxValue") {
             $this->$name = $value;
         } else {
             $this->setValueForUndefinedKey($value, $name);
