@@ -133,6 +133,12 @@ readonly class SQLStoreMigrator
                         if (($source->sqlType !== $destination->sqlType || $source->isOptional !== $destination->isOptional || $source->isUnique !== $destination->isUnique || $source->maxValue !== $destination->maxValue || $source->defaultValue !== $destination->defaultValue || ($source->isDerivedAttribute && $destination->isDerivedAttribute && (string)$source->derivationExpression !== (string)$destination->derivationExpression)) && ($statement = $adapter->newRenameColumnStatement($source, $destination))) {
                             $connection->execute($statement);
                         }
+                        if ($source->isConstrained !== $destination->isConstrained) {
+                            $statement = $adapter->newDropIndexStatement($destination);
+                            $connection->execute($statement);
+                            $statement = $adapter->newCreateIndexStatement($destination);
+                            $connection->execute($statement);
+                        }
                     } elseif ($source instanceof SQLForeignKey && $destination instanceof SQLForeignKey) {
                         if ($source->toOneRelationship->relationshipDescription->deleteRule !== $destination->toOneRelationship->relationshipDescription->deleteRule) {
                             $statement = $adapter->newDropIndexStatementForForeignKey($source);
