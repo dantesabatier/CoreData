@@ -214,7 +214,7 @@ class MigrationManager extends ObjectClass
         $migrationContext->currentEntityMapping = $mapping;
         $migrationContext->currentMigrationStep = $step;
         $this->willChangeValueForKey("migrationProgress");
-        $this->migrationProgress = $this->migrationContext->currentMigrationStep / ($this->mappingModel->entityMappings->count() * 3);
+        $this->migrationProgress = $this->migrationContext->currentMigrationStep / ($this->mappingModel->entityMappingsByName->count() * 3);
         $this->didChangeValueForKey("migrationProgress");
         if (!($destinationEntity = $this->destinationEntity($mapping)) || $destinationEntity->isAbstract) {
             return;
