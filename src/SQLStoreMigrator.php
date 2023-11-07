@@ -134,7 +134,7 @@ readonly class SQLStoreMigrator
                             $connection->execute($statement);
                         }
                         if ($source->isConstrained !== $destination->isConstrained) {
-                            if ($statement = $adapter->newDropIndexStatement($destination)) {
+                            if ($statement = $adapter->newDropIndexStatement($source)) {
                                 $connection->execute($statement);
                             }
                             if ($statement = $adapter->newCreateIndexStatement($destination)) {
