@@ -134,10 +134,12 @@ readonly class SQLStoreMigrator
                             $connection->execute($statement);
                         }
                         if ($source->isConstrained !== $destination->isConstrained) {
-                            $statement = $adapter->newDropIndexStatement($destination);
-                            $connection->execute($statement);
-                            $statement = $adapter->newCreateIndexStatement($destination);
-                            $connection->execute($statement);
+                            if ($statement = $adapter->newDropIndexStatement($destination)) {
+                                $connection->execute($statement);
+                            }
+                            if ($statement = $adapter->newCreateIndexStatement($destination)) {
+                                $connection->execute($statement);
+                            }
                         }
                     } elseif ($source instanceof SQLForeignKey && $destination instanceof SQLForeignKey) {
                         if ($source->toOneRelationship->relationshipDescription->deleteRule !== $destination->toOneRelationship->relationshipDescription->deleteRule) {
