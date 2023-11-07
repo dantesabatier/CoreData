@@ -203,6 +203,7 @@ class SQLEntity extends StoreMapping
             $this->$name = $this->foreignKeyColumns->filter(fn(SQLForeignKey $foreignKey): bool => $foreignKey->toOneRelationship->isVirtual);
             return $this->$name;
         } elseif ($name == "multiColumnUniquenessConstraints") {
+            /** @psalm-suppress InvalidPropertyAssignmentValue */
             $this->$name = $this->entityDescription->uniquenessConstraints->map(fn(ArrayClass $uniquenessConstraints): ArrayClass => $uniquenessConstraints->compactMap(fn(AttributeDescription|string $description): ?SQLAttribute => $this->attributes->first(fn(SQLAttribute $attribute): bool => $attribute->name === ($description instanceof AttributeDescription ? $description->name : $description))));
             return $this->$name;
         } elseif ($name == "indexes") {
