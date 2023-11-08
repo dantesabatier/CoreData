@@ -4,7 +4,6 @@ namespace Sabatier\CoreData;
 
 use Exception;
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
@@ -40,15 +39,15 @@ readonly class SQLStoreMigrator
         $sourceModel = $this->sourceModel;
         $destinationModel = $this->destinationModel;
         $mappingModel = $this->mappingModel;
-        /** @var Set<EntityMapping> $addedEntityMappings */
-        $addedEntityMappings = new Set();
-        /** @var Set<EntityMapping> $removedEntityMappings */
-        $removedEntityMappings = new Set();
-        /** @var Set<EntityMapping> $copiedEntityMappings */
-        $copiedEntityMappings = new Set();
-        /** @var Set<EntityMapping> $transformedEntityMappings */
-        $transformedEntityMappings = new Set();
-        foreach ($mappingModel->entityMappings as $mapping) {
+        /** @var ArrayClass<EntityMapping> $addedEntityMappings */
+        $addedEntityMappings = new ArrayClass();
+        /** @var ArrayClass<EntityMapping> $removedEntityMappings */
+        $removedEntityMappings = new ArrayClass();
+        /** @var ArrayClass<EntityMapping> $copiedEntityMappings */
+        $copiedEntityMappings = new ArrayClass();
+        /** @var ArrayClass<EntityMapping> $transformedEntityMappings */
+        $transformedEntityMappings = new ArrayClass();
+        foreach ($mappingModel->entityMappingsByName as $mapping) {
             if ($mapping->mappingType === EntityMappingType::addEntityMappingType) {
                 $addedEntityMappings->append($mapping);
             } elseif ($mapping->mappingType === EntityMappingType::removeEntityMappingType) {
