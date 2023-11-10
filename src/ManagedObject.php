@@ -24,6 +24,7 @@ use Sabatier\Foundation\UUID;
 use Sabatier\Foundation\Value;
 use Sabatier\Foundation\ValueTransformer;
 use function Sabatier\Foundation\fatal_error;
+use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\typeof;
 use function Sabatier\Foundation\uuid_generate;
 use const Sabatier\Foundation\CocoaErrorDomain;
@@ -776,22 +777,22 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             AttributeType::decimal, AttributeType::double, AttributeType::float => $optionalValue("float"),
             AttributeType::string => $optionalValue("string"),
             AttributeType::boolean => $optionalValue("bool"),
-            AttributeType::date => match (typeof($value)) {
-                Date::class => $value,
-                "string" => $write ? $value : new Date(strtotime((string)$value)),
-                "null" => $isOptional ? null : new Date(),
-                default => fatal_error()
+            AttributeType::date => match (true) {
+                $value instanceof Date => $value,
+                is_string($value) => $write ? $value : new Date(strtotime($value)),
+                is_null($value) => $isOptional ? null : ($write ? "CURRENT_TIMESTAMP" : new Date()),
+                default => fatal_error(sprintf("Invalid argument: invalid value %s(%s) for type %s", human_readable_value($value), typeof($value), human_readable_value($type)))
             },
-            AttributeType::uuid => match (typeof($value)) {
-                UUID::class => $value,
-                "string" => $write ? $value : new UUID($value),
-                "null" => $isOptional ? null : new UUID(),
-                default => fatal_error()
+            AttributeType::uuid => match (true) {
+                $value instanceof UUID => $value,
+                is_string($value) => $write ? $value : new UUID($value),
+                is_null($value) => $isOptional ? null : ($write ? "UUID()" : new UUID()),
+                default => fatal_error(sprintf("Invalid argument: invalid value %s(%s) for type %s", human_readable_value($value), typeof($value), human_readable_value($type)))
             },
-            AttributeType::uri => match (typeof($value)) {
-                URL::class => $value,
-                "string" => $write ? $value : new URL((string)$value),
-                default => fatal_error()
+            AttributeType::uri => match (true) {
+                $value instanceof URL => $value,
+                is_string($value) => $write ? $value : new URL($value),
+                default => fatal_error(sprintf("Invalid argument: invalid value %s(%s) for type %s", human_readable_value($value), typeof($value), human_readable_value($type)))
             },
             AttributeType::undefined, AttributeType::transformable, AttributeType::objectID => (function () use ($value, $write, $valueTransformerName): mixed {
                 if ($transformer = ValueTransformer::valueTransformerForName($valueTransformerName ?? SecureUnarchiveFromDataTransformerName)) {
