@@ -793,7 +793,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             AttributeType::uri => match (true) {
                 $value instanceof URL => $value,
                 is_string($value) => $write ? $value : new URL($value),
-                is_null($value) => $isOptional ? null : fatal_error(sprintf("Invalid argument: attribute type \"%s\" cannot be initialized with an null argument", human_readable_value($type))),
+                is_null($value) => $isOptional ? null : fatal_error(sprintf("Invalid argument: attribute type \"%s\" cannot be initialized with a null argument", human_readable_value($type))),
                 default => fatal_error(sprintf("Invalid argument: invalid value %s(%s) for type %s", human_readable_value($value), typeof($value), human_readable_value($type)))
             },
             AttributeType::undefined, AttributeType::transformable, AttributeType::objectID => (function () use ($value, $write, $valueTransformerName): mixed {
