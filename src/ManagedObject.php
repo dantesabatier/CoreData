@@ -772,6 +772,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             "null" => $isOptional ? null : $coercedValue($t),
             default => $coercedValue($t)
         };
+        /** @noinspection PhpVoidFunctionResultUsedInspection */
         return match ($type) {
             AttributeType::integer16, AttributeType::integer32, AttributeType::integer64 => $optionalValue("int"),
             AttributeType::decimal, AttributeType::double, AttributeType::float => $optionalValue("float"),
@@ -792,6 +793,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             AttributeType::uri => match (true) {
                 $value instanceof URL => $value,
                 is_string($value) => $write ? $value : new URL($value),
+                is_null($value) => $isOptional ? null : fatal_error(sprintf("Invalid argument: attribute type \"%s\" cannot be initialized with an null argument", human_readable_value($type))),
                 default => fatal_error(sprintf("Invalid argument: invalid value %s(%s) for type %s", human_readable_value($value), typeof($value), human_readable_value($type)))
             },
             AttributeType::undefined, AttributeType::transformable, AttributeType::objectID => (function () use ($value, $write, $valueTransformerName): mixed {
