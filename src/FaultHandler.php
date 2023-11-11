@@ -55,7 +55,7 @@ readonly class FaultHandler
         $object->willTurnIntoFault();
         $properties = $object->persistentProperties;
         foreach ($properties as $property) {
-            if ($property instanceof AttributeDescription) {
+            if ($property instanceof AttributeDescription && !$property->preservesValueInHistoryOnDeletion) {
                 $object->setValueForKey(null, $property->name);
             } elseif ($property instanceof FetchedPropertyDescription || $property instanceof RelationshipDescription) {
                 if (($value = $object->primitiveValueForKey($property->name)) && ($value instanceof FaultingMutableSet || $value instanceof FaultingMutableArray)) {
