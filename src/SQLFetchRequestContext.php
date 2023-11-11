@@ -6,10 +6,10 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
+use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
-use function Sabatier\Foundation\is_equal;
 
 /** @internal */
 class SQLFetchRequestContext extends SQLStoreRequestContext
@@ -35,6 +35,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
             FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType, FetchRequestResultType::dictionaryResultType => (function () use ($execute): ArrayClass {
                 /** @var Dictionary<Dictionary<mixed>> $map */
                 $map = new Dictionary();
+                /** @var Set<string> $keyPaths */
+                $keyPaths = new Set();
                 do {
                     /** @var array<string, mixed> $data */
                     while ($data = $execute->fetch()) {
@@ -50,6 +52,20 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             $keys = new ArrayClass(explode("_", $pattern));
                             if ($keys->count() >= 3) {
                                 $keys->removeAt(0);
+                            }
+                            if ($keys[$keys->indexBefore($keys->endIndex())] === $currentEntity->primaryKey->columnName) {
+                                $copy = clone $keys;
+                                $copy->removeAt($copy->indexBefore($copy->endIndex()));
+                                $keyPath = $copy->join(".");
+                                if ($value instanceof Nil) {
+                                    $keyPaths->append($keyPath);
+                                } else {
+                                    $keyPaths->remove($keyPath);
+                                }
+                            }
+                            $keyPath = $keys->join(".");
+                            if ($keyPaths->contains(fn(string $prefix): bool => str_starts_with($keyPath, $prefix))) {
+                                continue;
                             }
                             $relationship = null;
                             $current = &$representation;
@@ -69,7 +85,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 }
                                 if ($property instanceof SQLColumn) {
                                     if ($current instanceof ArrayClass) {
-                                        if ($property instanceof SQLPrimaryKey && !$current->contains(fn(Dictionary $dictionary): bool => is_equal($dictionary[$key], $value))) {
+                                        if ($property instanceof SQLPrimaryKey && !$value instanceof Nil && !$current->contains(fn(Dictionary $dictionary): bool => $dictionary[$key] === $value)) {
                                             $current[] = new Dictionary([$currentEntity->primaryKey->columnName => $value]);
                                         }
                                         if (!$current->isEmpty()) {
@@ -87,9 +103,9 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                             $current["isInserted"] = true;
                                         }
                                     }
-                                    $currentEntity = $entity;
                                 }
                             }
+                            $currentEntity = $entity;
                             unset($current);
                         }
                         if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
