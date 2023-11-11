@@ -229,6 +229,9 @@ class ManagedObjectContext extends ObjectClass
             $savedObject->willSave();
         }
         $result = $this->executePersistentStoreRequest($request);
+        foreach ($this->deletedObjects as $deletedObject) {
+            $this->unregister($deletedObject);
+        }
         foreach ($savedObjects as $savedObject) {
             $savedObject->didSave();
         }
@@ -467,7 +470,6 @@ class ManagedObjectContext extends ObjectClass
         $this->insertedObjects->remove($object);
         $this->updatedObjects->remove($object);
         $object->prepareForDeletion();
-        $this->unregister($object);
         $this->refault($object);
     }
 
@@ -585,7 +587,7 @@ class ManagedObjectContext extends ObjectClass
         $this->refault($object, $mergeChanges);
     }
 
-    /** @noinspection PhpUnhandledExceptionInspection, SpellCheckingInspection */
+    /** @noinspection PhpUnhandledExceptionInspection */
     private function refault(ManagedObject $object, bool $mergeChanges = false): void
     {
         if ($mergeChanges) {
