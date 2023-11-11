@@ -264,9 +264,9 @@ class SQLConnection extends ObjectClass
             } elseif ($type === PersistentHistoryChangeType::delete) {
                 $attributesByName = $managedObject->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => $attribute->preservesValueInHistoryOnDeletion);
                 if (!$attributesByName->isEmpty()) {
-                    $values = $managedObject->dictionaryWithValues($attributesByName->map(fn(AttributeDescription $attribute): string => $attribute->name));
-                    if (!$values->isEmpty()) {
-                        $tombstone = $values;
+                    $dictionary = $managedObject->dictionaryWithValues($attributesByName->map(fn(AttributeDescription $attribute): string => $attribute->name));
+                    if (!$dictionary->isEmpty()) {
+                        $tombstone = $dictionary;
                     }
                 }
             }
