@@ -29,7 +29,6 @@ use Sabatier\Foundation\ValueTransformer;
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
-use function Sabatier\Foundation\human_readable_value;
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /** @internal */
