@@ -29,6 +29,7 @@ use Sabatier\Foundation\ValueTransformer;
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
+use function Sabatier\Foundation\human_readable_value;
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /** @internal */
@@ -214,12 +215,7 @@ class SQLConnection extends ObjectClass
         $statement = new SQLStatement("INSERT INTO `PersistentHistoryTransaction` (`transactionID`, `author`, `bundleID`, `contextName`, `processID`, `storeID`) VALUES (?, ?, ?, ?, ?, ?)", new ArrayClass([$transactionID, $requestContext->context->transactionAuthor, $this->bundleID, $requestContext->context->name, ProcessInfo::processInfo()->globallyUniqueString, $requestContext->sqlCore->identifier]));
         $this->execute($statement);
         $valueTransformer = ValueTransformer::valueTransformerForName(SecureUnarchiveFromDataTransformerName);
-        $statement = SQLStatement::merging($requestContext->affectedObjectIDs->map(function (ManagedObjectID $objectID) use ($requestContext, $valueTransformer, $transactionID): SQLStatement {
-            $object = $requestContext->context->object($objectID);
-            $attributes = $object->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => $attribute->preservesValueInHistoryOnDeletion);
-            $tombstone = $object->dictionaryWithValues($attributes->map(fn(AttributeDescription $attribute): string => $attribute->name));
-            return new SQLStatement("INSERT INTO `PersistentHistoryChange` (`changedObjectID`, `changeType`, `tombstone`, `transactionID`) VALUES (?, ?, ?, ?)", new ArrayClass([$valueTransformer?->transformedValue($objectID), PersistentHistoryChangeType::delete, $valueTransformer?->transformedValue($tombstone), $transactionID]));
-        }));
+        $statement = SQLStatement::merging($requestContext->affectedObjectIDs->map(fn(ManagedObjectID $objectID): SQLStatement => new SQLStatement("INSERT INTO `PersistentHistoryChange` (`changedObjectID`, `changeType`, `tombstone`, `transactionID`) VALUES (?, ?, ?, ?)", new ArrayClass([$valueTransformer?->transformedValue($objectID), PersistentHistoryChangeType::delete, null, $transactionID]))));
         $this->execute($statement);
     }
 
