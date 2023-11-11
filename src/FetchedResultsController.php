@@ -65,7 +65,7 @@ class FetchedResultsController extends ObjectClass
     {
         $sectionNameKeyPath = $this->sectionNameKeyPath ?? "";
         $this->fetchedObjects = $this->managedObjectContext->fetch($this->fetchRequest);
-        if ($sectionNameKeyPath != "" && !$this->fetchRequest->sortDescriptors?->contains(fn(SortDescriptor $sortDescriptor): bool => $sortDescriptor->key == $sectionNameKeyPath)) {
+        if ($sectionNameKeyPath !== "" && !$this->fetchRequest->sortDescriptors?->contains(fn(SortDescriptor $sortDescriptor): bool => $sortDescriptor->key == $sectionNameKeyPath)) {
             fatal_error();
         }
         $this->sections = new ArrayClass([new FetchedResultsSectionInfo($sectionNameKeyPath, $this->fetchedObjects, $this->sectionIndexTitle($sectionNameKeyPath))]);
