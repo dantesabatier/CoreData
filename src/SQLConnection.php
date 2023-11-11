@@ -214,7 +214,7 @@ class SQLConnection extends ObjectClass
         $statement = new SQLStatement("INSERT INTO `PersistentHistoryTransaction` (`transactionID`, `author`, `bundleID`, `contextName`, `processID`, `storeID`) VALUES (?, ?, ?, ?, ?, ?)", new ArrayClass([$transactionID, $requestContext->context->transactionAuthor, $this->bundleID, $requestContext->context->name, ProcessInfo::processInfo()->globallyUniqueString, $requestContext->sqlCore->identifier]));
         $this->execute($statement);
         $valueTransformer = ValueTransformer::valueTransformerForName(SecureUnarchiveFromDataTransformerName);
-        $statement = SQLStatement::merging($requestContext->affectedObjectIDs->map(fn(ManagedObjectID $objectID): SQLStatement => new SQLStatement("INSERT INTO `PersistentHistoryChange` (`changedObjectID`, `changeType`, `tombstone`, `transactionID`) VALUES (?, ?, ?, ?)", new ArrayClass([$valueTransformer?->transformedValue($objectID), PersistentHistoryChangeType::delete, null, $transactionID]))));
+        $statement = SQLStatement::merging($requestContext->affectedObjectIDs->map(fn(ManagedObjectID $objectID): SQLStatement => new SQLStatement("INSERT INTO `PersistentHistoryChange` (`changedObjectID`, `changeType`, `transactionID`) VALUES (?, ?, ?, ?)", new ArrayClass([$valueTransformer?->transformedValue($objectID), PersistentHistoryChangeType::delete, $transactionID]))));
         $this->execute($statement);
     }
 
