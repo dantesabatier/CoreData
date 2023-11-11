@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Sabatier\Foundation\CollectionDifference;
 use Sabatier\Foundation\IndexPath;
 
 /**
@@ -25,9 +26,9 @@ interface FetchedResultsControllerDelegate
      * This method is only invoked if the controller’s {@see FetchedResultsController::$sectionNameKeyPath} property is nil and {@see controllerDidChangeContentWithSnapshot()} is not implemented.
      * If this method is implemented, no other delegate methods are invoked.
      * @param FetchedResultsController $controller
-     * @param mixed $diff
+     * @param CollectionDifference $diff
      */
-    public function controllerDidChangeContentWithDifference(FetchedResultsController $controller, mixed $diff): void;
+    public function controllerDidChangeContentWithDifference(FetchedResultsController $controller, CollectionDifference $diff): void;
 
     /**
      * Notifies the receiver that the fetched results controller is about to start processing of one or more changes due to an add, remove, move, or update.
