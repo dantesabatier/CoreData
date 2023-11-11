@@ -246,15 +246,30 @@ class SQLConnection extends ObjectClass
     }
 
     /**
+     * @param Set<ManagedObjectID> $changedObjectIDs
+     * @param PersistentHistoryChangeType $type
+     * @param int $transactionID
+     * @param ManagedObjectContext $context
      * @throws Exception
      */
     private function insertChanges(Set $changedObjectIDs, PersistentHistoryChangeType $type, int $transactionID, ManagedObjectContext $context): void
     {
         $statement = SQLStatement::merging(new ArrayClass($changedObjectIDs->map(function (ManagedObjectID $changedObjectID) use ($type, $transactionID, $context): SQLStatement {
+            $tombstone = null;
+            $updatedProperties = null;
             $valueTransformer = ValueTransformer::valueTransformerForName(SecureUnarchiveFromDataTransformerName);
             $managedObject = $context->object($changedObjectID);
-            $tombstone = $type === PersistentHistoryChangeType::delete ? $managedObject->changedValues()->filter(fn(mixed $value, string $key): bool => $managedObject->entity->attributesByName->contains(fn(AttributeDescription $attribute): bool => $attribute->name === $key && $attribute->preservesValueInHistoryOnDeletion)) : null;
-            $updatedProperties = $type === PersistentHistoryChangeType::update ? new Set($managedObject->changedValuesForCurrentEvent()->compactMap(fn(mixed $value, string $key): ?string => $managedObject->entity->propertiesByName->valueForKey($key)?->name)) : null;
+            if ($type === PersistentHistoryChangeType::update) {
+                $updatedProperties = new Set($managedObject->changedValuesForCurrentEvent()->compactMap(fn(mixed $value, string $key): ?string => $managedObject->entity->propertiesByName->valueForKey($key)?->name));
+            } elseif ($type === PersistentHistoryChangeType::delete) {
+                $attributesByName = $managedObject->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => $attribute->preservesValueInHistoryOnDeletion);
+                if (!$attributesByName->isEmpty()) {
+                    $values = $managedObject->dictionaryWithValues($attributesByName->map(fn(AttributeDescription $attribute): string => $attribute->name));
+                    if (!$values->isEmpty()) {
+                        $tombstone = $values;
+                    }
+                }
+            }
             return new SQLStatement("INSERT INTO `PersistentHistoryChange` (`changedObjectID`, `changeType`, `tombstone`, `updatedProperties`, `transactionID`) VALUES (?, ?, ?, ?, ?)", new ArrayClass([$valueTransformer?->transformedValue($changedObjectID), $type, $valueTransformer?->transformedValue($tombstone), $valueTransformer?->transformedValue($updatedProperties), $transactionID]));
         })));
         $this->execute($statement);
@@ -308,6 +323,10 @@ class SQLConnection extends ObjectClass
     }
 
     /**
+     * @param ArrayClass<ManagedObject>|ArrayClass<Dictionary> $array
+     * @param SQLEntity $entity
+     * @param bool $includeOnConflict
+     * @return int
      * @throws Exception
      */
     private function insertArray(/** @noinspection PhpUnusedParameterInspection */ ArrayClass $array, SQLEntity $entity, bool $includeOnConflict = false): int
@@ -317,7 +336,6 @@ class SQLConnection extends ObjectClass
         /** @var ArrayClass<string> $columnNames */
         $columnNames = new ArrayClass();
         $columnNames->appendContentsOf([$entity->entityKey->columnName]);
-        /** @var ManagedObject|Dictionary $element */
         $element = $array->first() ?? fatal_error();
         if ($element instanceof ManagedObject) {
             $columnNames->appendContentsOf($element->changedValuesForCurrentEvent()->keys);
