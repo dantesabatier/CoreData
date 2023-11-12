@@ -223,6 +223,7 @@ class SQLEntity extends StoreMapping
                 /** @psalm-suppress PossiblyInvalidArgument */
                 $indexes->merge($subentity->indexes->reduce(new Dictionary(), $updateAccumulatingResult));
             }
+            $indexes[self::entityKeyName] = new SQLIndex(new FetchIndexDescription(self::entityKeyName, new ArrayClass([new FetchIndexElementDescription($this->entityKey->propertyDescription)])), $this);
             $this->$name = $indexes;
             return $this->$name;
         } elseif ($name == "rTreeIndexes") {
