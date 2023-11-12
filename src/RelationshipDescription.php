@@ -74,6 +74,14 @@ class RelationshipDescription extends PropertyDescription
         }
     }
 
+    public function validateDeleteRule(DeleteRule|int|null &$deleteRule): bool
+    {
+        if (is_int($deleteRule)) {
+            $deleteRule = DeleteRule::from($deleteRule);
+        }
+        return true;
+    }
+
     public function versionHashInStyle(?string &$out, VersionHashStyle $style): void
     {
         parent::versionHashInStyle($data, $style);
