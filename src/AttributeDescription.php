@@ -74,6 +74,14 @@ class AttributeDescription extends PropertyDescription
         }
     }
 
+    public function validateType(AttributeType|int|null &$type): bool
+    {
+        if (is_int($type)) {
+            $type = AttributeType::from($type);
+        }
+        return true;
+    }
+
     public function versionHashInStyle(?string &$out, VersionHashStyle $style): void
     {
         parent::versionHashInStyle($data, $style);
