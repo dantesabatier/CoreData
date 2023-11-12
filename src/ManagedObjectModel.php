@@ -245,7 +245,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     private function newFetchRequest(Dictionary $dictionary): ?FetchRequest
     {
         /** @var string|null $fetchRequestEntityName */
-        $fetchRequestEntityName = $dictionary["fetchRequestEntityName"];
+        $fetchRequestEntityName = $dictionary["entityName"];
         if ($fetchRequestEntityName && ($entity = $this->entitiesByName[$fetchRequestEntityName])) {
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $entity;
@@ -255,7 +255,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                 $fetchRequest->predicate = Predicate::format($predicateFormat);
             }
             /** @var int|null $fetchRequestResultType */
-            $fetchRequestResultType = $dictionary["fetchRequestResultType"];
+            $fetchRequestResultType = $dictionary["resultType"];
             if (($fetchRequestResultType !== null) && $fetchRequestResultType = FetchRequestResultType::tryFrom($fetchRequestResultType)) {
                 $fetchRequest->resultType = $fetchRequestResultType;
             }
@@ -515,7 +515,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
         /** @var Dictionary<ArrayClass<Dictionary>> $dictionary */
         $dictionary = new Dictionary();
         $dictionary["entities"] = $this->entitiesByName->filter(fn(EntityDescription $entity): bool => !$entity->isPersistentHistoryEntity && $entity->isRootEntity)->map(fn(EntityDescription $entity): Dictionary => $entity->jsonSerialize());
-        $dictionary["fetchRequests"] = $this->fetchRequestTemplatesByName->mapValues(fn(FetchRequest $fetchRequest, string $templateName): Dictionary => new Dictionary(["name" => $templateName, "fetchRequestEntityName" => $fetchRequest->entityName, "fetchRequestPredicateFormat" => $fetchRequest->predicate?->predicateFormat(), "fetchRequestResultType" => $fetchRequest->resultType !== FetchRequestResultType::managedObjectResultType ? $fetchRequest->resultType->value : null]))->values;
+        $dictionary["fetchRequests"] = $this->fetchRequestTemplatesByName->mapValues(fn(FetchRequest $fetchRequest, string $templateName): Dictionary => new Dictionary(["name" => $templateName, "entityName" => $fetchRequest->entityName, "predicateFormat" => $fetchRequest->predicate?->predicateFormat(), "resultType" => $fetchRequest->resultType !== FetchRequestResultType::managedObjectResultType ? $fetchRequest->resultType->value : null]))->values;
         return $dictionary;
     }
 }
