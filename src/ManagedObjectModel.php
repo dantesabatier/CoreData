@@ -254,10 +254,10 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             if ($predicateString) {
                 $fetchRequest->predicate = Predicate::format($predicateString);
             }
-            /** @var int|null $fetchRequestResultType */
-            $fetchRequestResultType = $dictionary["resultType"];
-            if (($fetchRequestResultType !== null) && $fetchRequestResultType = FetchRequestResultType::tryFrom($fetchRequestResultType)) {
-                $fetchRequest->resultType = $fetchRequestResultType;
+            /** @var int|null $resultType */
+            $resultType = $dictionary["resultType"];
+            if (($resultType !== null) && $resultType = FetchRequestResultType::tryFrom($resultType)) {
+                $fetchRequest->resultType = $resultType;
             }
             return $fetchRequest;
         }
