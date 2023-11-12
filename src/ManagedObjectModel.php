@@ -169,7 +169,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             if ($relationships) {
                 $properties->appendContentsOf($relationships->map(function (Dictionary $description) use ($entity): RelationshipDescription {
                     $deleteRule = $description["deleteRule"] ?? DeleteRule::nullifyDeleteRule->value;
-                    $keys = ["deleteRule", "isMinCountBounded", "isMaxCountBounded"];
+                    $keys = ["deleteRule", "isMinValueBounded", "isMaxValueBounded", "isMinCountBounded", "isMaxCountBounded"];
                     $description->removeAll(fn(mixed $value, string $key): bool => in_array($key, $keys));
                     $instance = new RelationshipDescription();
                     $instance->entity = $entity;
