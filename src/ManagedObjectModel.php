@@ -143,8 +143,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             $attributes = $dictionary["attributes"];
             if ($attributes) {
                 $properties->appendContentsOf($attributes->map(function (Dictionary $description) use ($entity): AttributeDescription {
-                    $attributeType = $description["type"] ?? AttributeType::undefined->value;
-                    $keys = ["type", "isDefaultValueBounded", "isMinValueBounded", "isMaxValueBounded"];
+                    $keys = ["isDefaultValueBounded", "isMinValueBounded", "isMaxValueBounded"];
                     $description->removeAll(fn(mixed $value, string $key): bool => in_array($key, $keys));
                     /** @var string|null $derivationExpressionFormat */
                     $derivationExpressionFormat = $description["derivationExpressionFormat"];
@@ -153,13 +152,11 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                         $instance = new DerivedAttributeDescription();
                         $instance->entity = $entity;
                         $instance->derivationExpression = Expression::expressionWithFormat(trim($derivationExpressionFormat));
-                        $instance->type = AttributeType::from($attributeType);
                         $instance->setValuesForKeys($description);
                         return $instance;
                     }
                     $instance = new AttributeDescription();
                     $instance->entity = $entity;
-                    $instance->type = AttributeType::from($attributeType);
                     $instance->setValuesForKeys($description);
                     return $instance;
                 }));
@@ -168,12 +165,10 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             $relationships = $dictionary["relationships"];
             if ($relationships) {
                 $properties->appendContentsOf($relationships->map(function (Dictionary $description) use ($entity): RelationshipDescription {
-                    $deleteRule = $description["deleteRule"] ?? DeleteRule::nullifyDeleteRule->value;
-                    $keys = ["deleteRule", "isMinValueBounded", "isMaxValueBounded", "isMinCountBounded", "isMaxCountBounded"];
+                    $keys = ["isMinValueBounded", "isMaxValueBounded", "isMinCountBounded", "isMaxCountBounded"];
                     $description->removeAll(fn(mixed $value, string $key): bool => in_array($key, $keys));
                     $instance = new RelationshipDescription();
                     $instance->entity = $entity;
-                    $instance->deleteRule = DeleteRule::from($deleteRule);
                     $instance->setValuesForKeys($description);
                     return $instance;
                 }));
