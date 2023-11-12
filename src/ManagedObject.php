@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use BackedEnum;
 use Exception;
 use JetBrains\PhpStorm\ExpectedValues;
 use Sabatier\Foundation\ArrayClass;
@@ -756,9 +757,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if ($value instanceof Value) {
             $value = $value->value;
         }
-        $coercedValue = fn(string $t): string|int|bool|float|null => match ($t) {
-            "string" => (string)$value,
-            "int" => (int)$value,
+        $coercedValue = fn(string $t): string|int|bool|float|BackedEnum|null => match ($t) {
             "bool" => (function () use ($value, $write): bool|int {
                 if ($value === null) {
                     $value = false;
@@ -811,7 +810,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public static function coerceValue(mixed &$value, PropertyDescription $property, bool $write = false): bool
     {
-        if ($value instanceof Nil) {
+        if ($value instanceof Value) {
             $value = $value->value;
         }
         if ($property instanceof AttributeDescription) {
@@ -833,8 +832,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         fatal_error(sprintf("Invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeValueClassName, typeof($value)));
                     }
                 } elseif (!match ($type) {
-                        AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => is_int($value) || is_float($value) || $value instanceof Number,
-                        AttributeType::string, AttributeType::binaryData => is_string($value),
+                        AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => is_int($value) || is_float($value) || $value instanceof Number || $value instanceof BackedEnum,
+                        AttributeType::string, AttributeType::binaryData => is_string($value) || $value instanceof BackedEnum,
                         AttributeType::boolean => is_bool($value) || is_int($value) || $value instanceof Number,
                         AttributeType::transformable => true,
                         default => false,
