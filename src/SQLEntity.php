@@ -218,12 +218,12 @@ class SQLEntity extends StoreMapping
                 return $result;
             };
             /** @var Dictionary<SQLIndex> $indexes */
-            $indexes = $this->entityDescription->indexes->reduce(new Dictionary(), $updateAccumulatingResult);
+            $indexes = new Dictionary([self::entityKeyName => new SQLIndex(new FetchIndexDescription(self::entityKeyName, new ArrayClass([new FetchIndexElementDescription($this->entityKey->propertyDescription)])), $this)]);
+            $indexes->merge($this->entityDescription->indexes->reduce(new Dictionary(), $updateAccumulatingResult));
             foreach ($this->entityDescription->subentities as $subentity) {
                 /** @psalm-suppress PossiblyInvalidArgument */
                 $indexes->merge($subentity->indexes->reduce(new Dictionary(), $updateAccumulatingResult));
             }
-            $indexes[self::entityKeyName] = new SQLIndex(new FetchIndexDescription(self::entityKeyName, new ArrayClass([new FetchIndexElementDescription($this->entityKey->propertyDescription)])), $this);
             $this->$name = $indexes;
             return $this->$name;
         } elseif ($name == "rTreeIndexes") {
