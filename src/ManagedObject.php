@@ -758,6 +758,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $value = $value->value;
         }
         $coercedValue = fn(string $t): string|int|bool|float|BackedEnum|null => match ($t) {
+            "int" => $value instanceof BackedEnum ? $value : (int)$value,
             "bool" => (function () use ($value, $write): bool|int {
                 if ($value === null) {
                     $value = false;
