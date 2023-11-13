@@ -187,13 +187,9 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                     if ($fetchRequestPredicateFormat) {
                         $fetchRequest->predicate = Predicate::format($fetchRequestPredicateFormat);
                     }
-                    $fetchRequest->fetchLimit = $description["fetchLimit"] ?? 0;
-                    $fetchRequest->fetchBatchSize = $description["fetchBatchSize"] ?? 0;
-                    $fetchRequest->includesSubentities = $description["includesSubentities"] ?? true;
-                    $fetchRequest->includesPropertyValues = $description["includesPropertyValues"] ?? true;
-                    $fetchRequest->returnsObjectsAsFaults = $description["returnsObjectsAsFaults"] ?? false;
-                    $fetchRequest->includesPendingChanges = $description["includesPendingChanges"] ?? false;
-                    $fetchRequest->returnsDistinctResults = $description["fetchBatchSize"] ?? false;
+                    $keys = ["name", "fetchRequestEntityName", "fetchRequestPredicateFormat"];
+                    $description->removeAll(fn(mixed $value, string $key): bool => in_array($key, $keys));
+                    $fetchRequest->setValuesForKeys($description);
                     $instance = new FetchedPropertyDescription();
                     $instance->entity = $entity;
                     $instance->name = $name;
