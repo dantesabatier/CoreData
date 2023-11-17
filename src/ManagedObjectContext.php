@@ -755,9 +755,7 @@ class ManagedObjectContext extends ObjectClass
             if (!($property = $object->entity->propertiesByName[$keyPath])) {
                 return;
             }
-            if ($property instanceof AttributeDescription) {
-                $change->kind = KeyValueChange::replacement;
-            } elseif ($property instanceof RelationshipDescription) {
+            if ($property instanceof RelationshipDescription) {
                 assert($value instanceof Set || $value instanceof ManagedObject || $value instanceof ManagedObjectID, sprintf("invalid argument: %s(%s) expecting \"%s|%s|%s\", \"%s\" given", $object->entity->name, $keyPath, Set::class, ManagedObject::class, ManagedObjectID::class, typeof($value)));
                 if (!$value instanceof Set) {
                     if ($value instanceof ManagedObjectID) {
@@ -776,21 +774,26 @@ class ManagedObjectContext extends ObjectClass
             $this->obtainPermanentID($object);
             $this->hasChanges = true;
             $node = new IncrementalStoreNode($object->objectID, new Dictionary([$property->name => $value]));
-            if ($change->kind == KeyValueChange::insertion) {
-                if ($member = $this->unprocessedInserts->member($node)) {
-                    $node->updateWithValues($member->values);
-                }
-                $this->unprocessedInserts->update($node);
-            } elseif ($change->kind == KeyValueChange::removal) {
-                if ($member = $this->unprocessedDeletes->member($node)) {
-                    $node->updateWithValues($member->values);
-                }
-                $this->unprocessedDeletes->update($node);
-            } elseif ($change->kind == KeyValueChange::replacement) {
-                if ($member = $this->unprocessedChanges->member($node)) {
-                    $node->updateWithValues($member->values);
-                }
-                $this->unprocessedChanges->update($node);
+            switch ($change->kind) {
+                case KeyValueChange::insertion:
+                    if ($member = $this->unprocessedInserts->member($node)) {
+                        $node->updateWithValues($member->values);
+                    }
+                    $this->unprocessedInserts->update($node);
+                    break;
+                case KeyValueChange::removal:
+                    if ($member = $this->unprocessedDeletes->member($node)) {
+                        $node->updateWithValues($member->values);
+                    }
+                    $this->unprocessedDeletes->update($node);
+                    break;
+                case KeyValueChange::setting:
+                case KeyValueChange::replacement:
+                    if ($member = $this->unprocessedChanges->member($node)) {
+                        $node->updateWithValues($member->values);
+                    }
+                    $this->unprocessedChanges->update($node);
+                    break;
             }
         } else {
             parent::observeValue($keyPath, $object, $change, $context);
