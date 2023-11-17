@@ -803,7 +803,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 }
                 return $value;
             })(),
-            AttributeType::undefined => fatal_error("Invalid argument: cannot use an attribute type of \"Undefined\""),
             default => $value
         };
     }
