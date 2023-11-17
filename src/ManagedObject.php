@@ -569,10 +569,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->changedValuesForCurrentEvent[$key] = $value ?? Nil::nil();
         }
         if ($property instanceof AttributeDescription || $property instanceof FetchedPropertyDescription) {
-            $current = $this->primitiveValueForKey($key);
-            $this->willChangeValueForKey($key, KeyValueChange::replacement, $current);
+            $this->willChangeValueForKey($key, KeyValueChange::setting, $value);
             $this->setPrimitiveValueForKey($value, $key);
-            $this->didChangeValueForKey($key, KeyValueChange::replacement, $value);
+            $this->didChangeValueForKey($key, KeyValueChange::setting, $value);
         } elseif ($property instanceof RelationshipDescription) {
             $inverseRelationship = $property->inverseRelationship;
             if ($property->isToMany) {
