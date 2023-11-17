@@ -797,12 +797,13 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 is_null($value) => $isOptional ? null : fatal_error(sprintf("Invalid argument: attribute type \"%s\" cannot be initialized with a null argument", human_readable_value($type))),
                 default => fatal_error(sprintf("Invalid argument: invalid value %s(%s) for type %s", human_readable_value($value), typeof($value), human_readable_value($type)))
             },
-            AttributeType::undefined, AttributeType::transformable, AttributeType::objectID => (function () use ($value, $write, $valueTransformerName): mixed {
+            AttributeType::transformable, AttributeType::objectID => (function () use ($value, $write, $valueTransformerName): mixed {
                 if ($transformer = ValueTransformer::valueTransformerForName($valueTransformerName ?? SecureUnarchiveFromDataTransformerName)) {
                     return $write ? $transformer->transformedValue($value) : $transformer->reverseTransformedValue($value);
                 }
                 return $value;
             })(),
+            AttributeType::undefined => fatal_error("Invalid argument: cannot use an attribute type of \"Undefined\""),
             default => $value
         };
     }
