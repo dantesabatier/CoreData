@@ -9,8 +9,14 @@
 
 namespace Sabatier\CoreData;
 
+use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Error;
+use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Set;
+use const Sabatier\Foundation\CocoaErrorDomain;
+use const Sabatier\Foundation\LocalizedDescriptionKey;
+use const Sabatier\Foundation\LocalizedFailureReasonErrorKey;
 
 /** @internal */
 class SQLAttribute extends SQLColumn
@@ -40,7 +46,7 @@ class SQLAttribute extends SQLColumn
             return $this->$name;
         } elseif ($name == "sqlType") {
             $this->$name = match ($this->attributeDescription->type) {
-                AttributeType::transformable, AttributeType::objectID, AttributeType::undefined => SQLType::varbinary,
+                AttributeType::transformable, AttributeType::objectID => SQLType::varbinary,
                 AttributeType::integer16 => SQLType::smallint,
                 AttributeType::integer32 => SQLType::int,
                 AttributeType::integer64 => SQLType::bigint,
@@ -51,7 +57,8 @@ class SQLAttribute extends SQLColumn
                 AttributeType::boolean => SQLType::tinyint,
                 AttributeType::date => SQLType::timestamp,
                 AttributeType::binaryData => SQLType::blob,
-                AttributeType::uuid => SQLType::uuid
+                AttributeType::uuid => SQLType::uuid,
+                AttributeType::undefined => throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, 0, new Dictionary([LocalizedDescriptionKey => "{$this->entity->entityDescription->name}.$this->name must be a defined type", LocalizedFailureReasonErrorKey => "{$this->entity->entityDescription->name}.$this->name cannot use an attribute type of \"Undefined\""]))),
             };
             return $this->$name;
         } elseif ($name == "triggerKeys") {
