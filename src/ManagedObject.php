@@ -802,6 +802,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 }
                 return $value;
             })(),
+            AttributeType::undefined => fatal_error("Invalid argument: cannot use an attribute type of \"Undefined\""),
             default => $value
         };
     }
@@ -877,7 +878,18 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     return false;
                 }
                 return true;
-            } elseif ($key !== SQLEntity::entityKeyName) {
+            } elseif (!$this->entity->propertiesByName[$key]) {
+                $store = $this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this);
+                if ($store instanceof SQLCore) {
+                    /** @var SQLEntity $entity */
+                    $entity = $store->model->entitiesByName[$this->entity->name];
+                    if ($entity->propertiesByName[$key]) {
+                        return match ($key) {
+                            SQLEntity::entityKeyName => false,
+                            default => true
+                        };
+                    }
+                }
                 throw new UndefinedKeyException(sprintf("%s is not key value coding compliant for the key \"%s\"", $this->debugDescription(), $key));
             }
         }
