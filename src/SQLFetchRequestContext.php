@@ -145,13 +145,13 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         if ($this->debugLogLevel) {
             $message = sprintf("CoreData: annotation: total execution time: %s for %s element(s)", human_readable_time(absolute_time_get_current() - $time), $this->result->count());
             if ($this->debugLogLevel > 3) {
-                $message .= " $this->result";
-                if ($this->debugLogLevel > 4) {
-                    $execute = $this->connection->execute(new SQLStatement("ANALYZE FORMAT=JSON {$this->fetchStatement->string}", $this->fetchStatement->arguments));
-                    $message .= $execute->fetchColumn();
-                }
+                $message .= "\n$this->result";
             }
             error_log($message);
+            if ($this->debugLogLevel > 4) {
+                $execute = $this->connection->execute(new SQLStatement("ANALYZE FORMAT=JSON {$this->fetchStatement->string}", $this->fetchStatement->arguments));
+                error_log($execute->fetchColumn());
+            }
         }
         return true;
     }
