@@ -878,7 +878,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     return false;
                 }
                 return true;
-            } elseif (!$this->entity->propertiesByName[$key]) {
+            } else {
                 $store = $this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this);
                 if ($store instanceof SQLCore) {
                     /** @var SQLEntity $entity */
