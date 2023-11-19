@@ -32,4 +32,5 @@ const MigrationConstraintViolationError = 134111;
 const MigrationError = 134110;
 /** @var int Error code to denote that migration failed due to a problem with the destination data store. */
 const MigrationManagerDestinationStoreError = 134160;
+/** @var int Error code to denote a general SQLite error. */
 const SQLiteError = 134180;
