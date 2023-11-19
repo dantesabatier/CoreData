@@ -24,4 +24,12 @@ const ManagedObjectModelReferenceNotFoundError = 134504;
 const ManagedObjectReferentialIntegrityError = 133000;
 /** @var int Error code to denote a generic validation error. */
 const ManagedObjectValidationError = 1550;
+/** @var int Error code to denote that migration failed due to manual cancellation. */
+const MigrationCancelledError = 134120;
+/** @var int Error code to denote a problem with the validation of a managed object during a migration. */
+const MigrationConstraintViolationError = 134111;
+/** @var int Error code to denote a general migration error. */
+const MigrationError = 134110;
+/** @var int Error code to denote that migration failed due to a problem with the destination data store. */
+const MigrationManagerDestinationStoreError = 134160;
 const SQLiteError = 134180;
