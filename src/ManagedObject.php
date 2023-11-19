@@ -20,7 +20,6 @@ use Sabatier\Foundation\Predicates\CompoundPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\ExpressionType;
 use Sabatier\Foundation\Set;
-use Sabatier\Foundation\UndefinedKeyException;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
 use Sabatier\Foundation\Value;
@@ -890,7 +889,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         };
                     }
                 }
-                throw new UndefinedKeyException(sprintf("%s is not key value coding compliant for the key \"%s\"", $this->debugDescription(), $key));
+                return true;
             }
         }
         return false;
