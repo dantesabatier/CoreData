@@ -41,6 +41,7 @@
       "src/PersistentStoreTypes.php",
       "src/StoreOptions.php",
       "src/UserInfoKeysForStoreChangeNotifications.php",
+      "src/ValidationErrorCodes.php",
       "src/VersionKeys.php"
     ]
   },
