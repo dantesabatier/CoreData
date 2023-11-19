@@ -61,7 +61,7 @@ class MergePolicy extends ObjectClass
             $this->process($conflictList, $mergeConflict, $sourceObject, $cachedSnapshot, $persistedSnapshot);
         }
         if (!$conflictList->isEmpty()) {
-            throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, 133021, new Dictionary(["conflictList" => $conflictList->join(", ")])));
+            throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, ManagedObjectConstraintMergeError, new Dictionary(["conflictList" => $conflictList->join(", ")])));
         }
     }
 
