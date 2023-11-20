@@ -40,6 +40,8 @@ abstract class PropertyDescription extends ObjectClass
     /** @internal */
     public readonly PropertyDescriptionType $propertyType;
     /** @internal */
+    public bool $isReadOnly = false;
+    /** @internal */
     public bool $isEditable = true;
     /** @internal */
     public mixed $minValue = null;
