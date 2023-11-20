@@ -125,10 +125,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->$name = $this->entity->properties;
             return $this->$name;
         } elseif ($name == "modeledProperties") {
-            $this->$name = $this->allProperties;
+            $this->$name = $this->allProperties->filter(fn(PropertyDescription $property): bool => !$property->isReadOnly);
             return $this->$name;
         } elseif ($name == "persistentProperties") {
-            $this->$name = $this->allProperties->filter(fn(PropertyDescription $property): bool => !$property->isTransient && !$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription);
+            $this->$name = $this->modeledProperties->filter(fn(PropertyDescription $property): bool => !$property->isTransient && !$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription);
             return $this->$name;
         } elseif ($name == "transientProperties") {
             $this->$name = $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property->isTransient);
