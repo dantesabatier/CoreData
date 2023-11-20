@@ -130,6 +130,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
             foreach ($value as $property) {
                 if ($property->entity !== $this) {
                     $property = clone $property;
+                    $property->isReadOnly = true;
                 }
                 $property->entity = $this;
                 /** @noinspection PhpSecondWriteToReadonlyPropertyInspection */
