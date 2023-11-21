@@ -16,14 +16,12 @@ abstract class SQLProperty extends ObjectClass
 {
     public string $name;
     public readonly bool $isOptional;
-    public PropertyDescriptionType $propertyType;
-    public SQLType $sqlType = SQLType::unknown;
-    public int $fetchIndex;
-    public int $slot;
     public readonly bool $isUnique;
     public readonly bool $isConstrained;
     public readonly bool $isReadOnly;
-    public bool $allowAliasing = false;
+    public PropertyDescriptionType $propertyType;
+    public SQLType $sqlType = SQLType::unknown;
+    public readonly int $slot;
     public readonly mixed $minValue;
     public readonly mixed $maxValue;
 
@@ -36,6 +34,7 @@ abstract class SQLProperty extends ObjectClass
         unset($this->isReadOnly);
         unset($this->propertyType);
         unset($this->sqlType);
+        unset($this->slot);
         unset($this->minValue);
         unset($this->maxValue);
     }
@@ -50,6 +49,7 @@ abstract class SQLProperty extends ObjectClass
             "isReadOnly" => $this->propertyDescription->isReadOnly,
             "propertyType" => $this->propertyDescription->propertyType,
             "sqlType" => SQLType::unknown,
+            "slot" => 0,
             "minValue" => $this->propertyDescription->minValue,
             "maxValue" => $this->propertyDescription->maxValue,
             default => $this->valueForUndefinedKey($name)
