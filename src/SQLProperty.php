@@ -45,11 +45,11 @@ abstract class SQLProperty extends ObjectClass
         return $this->$name = match ($name) {
             "name" => $this->propertyDescription->name,
             "isOptional" => $this->propertyDescription->isOptional,
-            "propertyType" => $this->propertyDescription->propertyType,
-            "sqlType" => SQLType::unknown,
             "isUnique" => $this->entity->indexes->contains(fn(SQLIndex $index, string $key): bool => $index->isUnique && $key === $this->name),
             "isConstrained" => $this->entity->indexes->contains(fn(SQLIndex $index, string $key): bool => $key === $this->name),
             "isReadOnly" => $this->propertyDescription->isReadOnly,
+            "propertyType" => $this->propertyDescription->propertyType,
+            "sqlType" => SQLType::unknown,
             "minValue" => $this->propertyDescription->minValue,
             "maxValue" => $this->propertyDescription->maxValue,
             default => $this->valueForUndefinedKey($name)
