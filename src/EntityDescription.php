@@ -72,21 +72,17 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         unset($this->renamingIdentifier);
         unset($this->attributesByName);
         unset($this->relationshipsByName);
-        unset($this->subentitiesByName);
-        unset($this->propertiesByName);
-        unset($this->indexes);
-        unset($this->uniquenessConstraints);
+        $this->subentitiesByName = new Dictionary();
+        $this->propertiesByName = new Dictionary();
+        $this->indexes = new ArrayClass();
+        $this->uniquenessConstraints = new ArrayClass();
     }
 
     public function __get(string $name)
     {
-        if ($name == "subentitiesByName" || $name == "propertiesByName") {
-            $this->$name = new Dictionary();
-            return $this->$name;
-        } elseif ($name == "subentities") {
+        if ($name == "subentities") {
             return $this->subentitiesByName->values;
-        } elseif ($name == "indexes" || $name == "uniquenessConstraints") {
-            $this->$name = new ArrayClass();
+        } elseif ($name == "indexes") {
             return $this->$name;
         } elseif ($name == "properties") {
             return $this->propertiesByName->values;
@@ -117,7 +113,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == "versionHash" || $name == "renamingIdentifier" || $name == "attributesByName" || $name == "relationshipsByName" || $name == "subentitiesByName" || $name == "propertiesByName" || $name == "indexes" || $name == "uniquenessConstraints") {
+        if ($name == "versionHash" || $name == "renamingIdentifier" || $name == "attributesByName" || $name == "relationshipsByName") {
             $this->$name = $value;
         } elseif ($name == "subentities") {
             $this->throwIfNotEditable();
