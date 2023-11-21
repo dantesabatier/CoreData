@@ -1,5 +1,7 @@
 <?php
 
+namespace Sabatier\CoreData;
+
 /** @var int An error code that indicates a nonspecific Core Data error. */
 const CoreDataError = 134060;
 /** @var int An error code that indicates a migration failure during processing of an entity migration policy. */
