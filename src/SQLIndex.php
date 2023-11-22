@@ -27,10 +27,7 @@ class SQLIndex extends ObjectClass
         if ($this->isUnique) {
             $this->createTableStatements->append(new SQLStatement("ALTER TABLE `{$this->entity->tableName}` ADD CONSTRAINT `{$this->indexDescription->name}` UNIQUE INDEX IF NOT EXISTS ({$elements->join(", ")}) USING BTREE"));
         } else {
-            $this->createTableStatements->append(match ($elements->count()) {
-                1 => new SQLStatement("ALTER TABLE `{$this->entity->tableName}` ADD INDEX IF NOT EXISTS `{$this->indexDescription->name}` ({$elements->join(", ")}) USING BTREE"),
-                default => new SQLStatement("ALTER TABLE `{$this->entity->tableName}` ADD INDEX IF NOT EXISTS `{$this->indexDescription->name}` compound({$elements->join(", ")}) USING BTREE")
-            });
+            $this->createTableStatements->append(new SQLStatement("ALTER TABLE `{$this->entity->tableName}` ADD INDEX IF NOT EXISTS `{$this->indexDescription->name}` ({$elements->join(", ")}) USING BTREE"));
         }
         $this->updateTableStatements->appendContentsOf($this->createTableStatements);
         $this->updateTableStatements->appendContentsOf($this->dropTableStatements);
