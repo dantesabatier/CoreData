@@ -197,6 +197,16 @@ readonly class SQLStoreMigrator
                     $createIndexStatements->append($adapter->newCreateIndexesStatementForManyToMany($property));
                 }
             }
+            foreach ($sourceEntity->indexes as $index) {
+                if (!$destinationEntity->indexes->containsElement($index)) {
+                    $connection->execute(SQLStatement::merging($index->dropTableStatements));
+                }
+            }
+            foreach ($destinationEntity->indexes as $index) {
+                if (!$sourceEntity->indexes->containsElement($index)) {
+                    $createIndexStatements->appendContentsOf($index->createTableStatements);
+                }
+            }
         }
         foreach ($createIndexStatements as $statement) {
             $connection->execute($statement);
