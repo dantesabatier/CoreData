@@ -137,6 +137,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             if ($renamingIdentifier = $dictionary["renamingIdentifier"]) {
                 $entity->renamingIdentifier = $renamingIdentifier;
             }
+            $entity->versionHashModifier = $dictionary["versionHashModifier"];
             /** @var ArrayClass<PropertyDescription> $properties */
             $properties = new ArrayClass();
             /** @var ArrayClass<Dictionary>|null $attributes */
