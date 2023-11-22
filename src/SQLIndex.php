@@ -29,7 +29,7 @@ class SQLIndex extends ObjectClass
         } else {
             $this->createTableStatements->append(match ($elements->count()) {
                 1 => new SQLStatement("ALTER TABLE `{$this->entity->tableName}` ADD INDEX IF NOT EXISTS `{$this->indexDescription->name}` ({$elements->join(", ")}) USING BTREE"),
-                default => new SQLStatement("ALTER TABLE `{$this->entity->tableName}` ADD INDEX IF NOT EXISTS `{$this->indexDescription->name}` covering({$elements->join(", ")}) USING BTREE")
+                default => new SQLStatement("ALTER TABLE `{$this->entity->tableName}` ADD INDEX IF NOT EXISTS `{$this->indexDescription->name}` compound({$elements->join(", ")}) USING BTREE")
             });
         }
         $this->updateTableStatements->appendContentsOf($this->createTableStatements);
