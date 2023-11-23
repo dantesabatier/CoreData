@@ -302,14 +302,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     private function constraintAsIndex(ArrayClass $constraint): ?FetchIndexDescription
     {
         /** @var ArrayClass<FetchIndexElementDescription> $elements */
-        $elements = $constraint->compactMap(function (AttributeDescription|string $e): ?FetchIndexElementDescription {
-            if ($e instanceof AttributeDescription) {
-                return new FetchIndexElementDescription($e);
-            } elseif ($property = $this->propertiesByName[$e]) {
-                return new FetchIndexElementDescription($property);
-            }
-            return null;
-        });
+        $elements = $constraint->compactMap(fn(AttributeDescription|string $e): ?FetchIndexElementDescription => ($property = $e instanceof AttributeDescription ? $e : $this->propertiesByName[$e]) ? new FetchIndexElementDescription($property) : null);
         if ($elements->isEmpty()) {
             return null;
         }
