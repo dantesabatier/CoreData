@@ -292,7 +292,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
      */
     public function hasUniquedPropertyNamed(string $name): bool
     {
-        return $this->indexes->contains(fn(FetchIndexDescription $index): bool => $index->isUnique() && $index->name === $name);
+        return $this->indexesByName->contains(fn(FetchIndexDescription $index): bool => $index->isUnique() && $index->name === $name);
     }
 
     /**
@@ -376,7 +376,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         if (!$uniquenessConstraints->isEmpty()) {
             $dictionary["uniquenessConstraints"] = $uniquenessConstraints;
         }
-        $indexes = $this->indexes->filter(fn(FetchIndexDescription $index): bool => !$index->isUnique() && !$this->superentity?->indexes?->contains(fn(FetchIndexDescription $e): bool => $e->name === $index->name))->map(fn(FetchIndexDescription $index): Dictionary => $index->jsonSerialize());
+        $indexes = $this->indexesByName->filter(fn(FetchIndexDescription $index): bool => !$index->isUnique() && !$this->superentity?->indexesByName?->contains(fn(FetchIndexDescription $e): bool => $e->name === $index->name))->map(fn(FetchIndexDescription $index): Dictionary => $index->jsonSerialize());
         if (!$indexes->isEmpty()) {
             $dictionary["indexes"] = $indexes;
         }
