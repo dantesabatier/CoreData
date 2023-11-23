@@ -48,7 +48,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     /** @var Dictionary<RelationshipDescription> The relationships of the receiver in a dictionary. The keys in the dictionary are the relationship names and the values are instances of {@see RelationshipDescription}. */
     public readonly Dictionary $relationshipsByName;
     /** @var Dictionary<FetchIndexDescription> $indexesByName */
-    private Dictionary $indexesByName;
+    private readonly Dictionary $indexesByName;
     /** @var ArrayClass<ArrayClass<AttributeDescription|string>> An array of arrays that contains one or more attributes with a value that must be unique over the instances of that entity. Each inner array contains one or more {@see AttributeDescription} objects or strings that contain the names of attributes on the entity. This value forms part of the entity's version hash. Stores that don't support uniqueness constraints must refuse to initialize when receiving a model that contains such constraints. Uniqueness constraint violations can be computationally expensive to handle. The recommendation is to use only one uniqueness constraint per entity hierarchy, although subentites may extend a superentity's constraint. */
     public ArrayClass $uniquenessConstraints;
     /** @var string The version hash is used to uniquely identify an entity based on the collection and configuration of properties for the entity. The version hash uses only values which affect the persistence of data and the user-defined {@see versionHashModifier} value. (The values which affect persistence are: the name of the entity, the version hash of the superentity (if present), if the entity is abstract, and all the version hashes for the properties.) This value is stored as part of the version information in the metadata for stores which use this entity, as well as a definition of an entity involved in an {@see EntityMapping} object. */
@@ -72,15 +72,21 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         unset($this->renamingIdentifier);
         unset($this->attributesByName);
         unset($this->relationshipsByName);
-        $this->subentitiesByName = new Dictionary();
-        $this->propertiesByName = new Dictionary();
-        $this->indexesByName = new Dictionary();
-        $this->uniquenessConstraints = new ArrayClass();
+        unset($this->subentitiesByName);
+        unset($this->propertiesByName);
+        unset($this->indexesByName);
+        unset($this->uniquenessConstraints);
     }
 
     public function __get(string $name)
     {
-        if ($name == "subentities") {
+        if ($name == "subentitiesByName" || $name == "propertiesByName" || $name == "indexesByName") {
+            $this->$name = new Dictionary();
+            return $this->$name;
+        } elseif ($name == "uniquenessConstraints") {
+            $this->$name = new ArrayClass();
+            return $this->$name;
+        } elseif ($name == "subentities") {
             return $this->subentitiesByName->values;
         } elseif ($name == "indexes") {
             return $this->indexesByName->values;
@@ -113,14 +119,13 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == "versionHash" || $name == "renamingIdentifier" || $name == "attributesByName" || $name == "relationshipsByName") {
+        if ($name == "versionHash" || $name == "renamingIdentifier" || $name == "attributesByName" || $name == "relationshipsByName" || $name == "subentitiesByName" || $name == "propertiesByName" || $name == "indexesByName" || $name == "uniquenessConstraints") {
             $this->$name = $value;
         } elseif ($name == "subentities") {
             $this->throwIfNotEditable();
             $this->subentitiesByName->removeAll();
             /** @var EntityDescription $subentity */
             foreach ($value as $subentity) {
-                /** @noinspection PhpSecondWriteToReadonlyPropertyInspection */
                 $this->subentitiesByName[$subentity->name] = $subentity;
             }
         } elseif ($name == "properties") {
@@ -133,7 +138,6 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
                     $property->isReadOnly = true;
                 }
                 $property->entity = $this;
-                /** @noinspection PhpSecondWriteToReadonlyPropertyInspection */
                 $this->propertiesByName[$property->name] = $property;
             }
         } elseif ($name == "indexes") {
