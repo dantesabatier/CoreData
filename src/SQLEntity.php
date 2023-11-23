@@ -224,10 +224,6 @@ class SQLEntity extends StoreMapping
             }
             /** @psalm-suppress PossiblyInvalidArgument */
             $indexes->merge($this->entityDescription->indexes->reduce(new Dictionary(), $updateAccumulatingResult));
-            foreach ($this->entityDescription->subentities as $subentity) {
-                /** @psalm-suppress PossiblyInvalidArgument */
-                $indexes->merge($subentity->indexes->reduce(new Dictionary(), $updateAccumulatingResult));
-            }
             $this->$name = $indexes;
             return $this->$name;
         } elseif ($name == "rTreeIndexes") {
