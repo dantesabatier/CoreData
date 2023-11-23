@@ -11,6 +11,7 @@
 
 namespace Sabatier\CoreData;
 
+use Closure;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\CompareOptions;
 use Sabatier\Foundation\ComparisonResult;
@@ -222,10 +223,8 @@ class SQLGenerator extends ObjectClass
                 $this->appendSQL($this->havingClause);
             }
             if ($request->resultType !== FetchRequestResultType::countResultType) {
-                if ($sortDescriptors = $request->sortDescriptors) {
-                    $this->buildOrderByClause($sortDescriptors);
-                    $this->appendSQL($this->orderByClause);
-                }
+                $this->buildOrderByClause($request->sortDescriptors ?? new ArrayClass());
+                $this->appendSQL($this->orderByClause);
             }
             if ($request->fetchLimit) {
                 $this->appendLimitClauseToSQL($request->fetchLimit);
@@ -607,10 +606,12 @@ class SQLGenerator extends ObjectClass
 
     /**
      * @param Expression $expression
+     * @param Closure(SQLProperty): bool|null $predicate
      * @return ArrayClass<SQLProperty>
      */
-    private function propertiesFromKeyPathExpression(Expression $expression): ArrayClass
+    private function propertiesFromKeyPathExpression(Expression $expression, ?Closure $predicate = null): ArrayClass
     {
+        $predicate ??= fn(SQLProperty $property): bool => true;
         /** @var ArrayClass<SQLProperty> $properties */
         $properties = new ArrayClass();
         if ($expression->expressionType !== ExpressionType::keyPath) {
@@ -624,7 +625,9 @@ class SQLGenerator extends ObjectClass
                 if ($property instanceof SQLRelationship) {
                     $entity = $property->destinationEntity;
                 }
-                $properties[] = $property;
+                if ($predicate($property)) {
+                    $properties[] = $property;
+                }
                 continue;
             }
             if ($this->raisesForNotApplicableKeys) {
@@ -641,7 +644,7 @@ class SQLGenerator extends ObjectClass
      */
     private function relationshipsFromKeyPathExpression(Expression $expression): ArrayClass
     {
-        return $this->propertiesFromKeyPathExpression($expression)->filter(fn(SQLProperty $property): bool => $property instanceof SQLRelationship);
+        return $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLRelationship);
     }
 
     private function isNullExpression(Expression $expression): bool
@@ -654,9 +657,32 @@ class SQLGenerator extends ObjectClass
         };
     }
 
-    private function isToManyCountKeyPath(Expression $expression): bool
+    private function isToManyCountKeyPath(Expression $expression, bool $deep = false): bool
     {
-        return ($expression->expressionType === ExpressionType::keyPath) && (new Set(explode(".", (string)$expression)))->count() > 1;
+        if ($expression->expressionType !== ExpressionType::keyPath) {
+            return false;
+        }
+        $keys = new Set(explode(".", (string)$expression));
+        if (!$deep && $keys->count() < 2) {
+            return false;
+        }
+        $end = $keys->indexBefore($keys->endIndex());
+        $entity = $this->entity;
+        foreach ($keys as $index => $key) {
+            $property = $entity->propertiesByName[$key];
+            if (!$property instanceof SQLProperty) {
+                break;
+            }
+            if (!$property instanceof SQLToMany && !$property instanceof SQLManyToMany) {
+                continue;
+            }
+            $entity = $property->destinationEntity;
+            if ($index < $end) {
+                continue;
+            }
+            return true;
+        }
+        return false;
     }
 
     private function buildKeyPathExpression(Expression $expression): string
@@ -1133,21 +1159,32 @@ class SQLGenerator extends ObjectClass
 
     private function buildOrderByClause(ArrayClass $descriptors): void
     {
+        $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
+        $this->raisesForNotApplicableKeys = false;
         /** @psalm-suppress RedundantCondition, TypeDoesNotContainType */
-        if (SS_COREDATA_CAN_USE_SORT_DESCRIPTORS):
-            $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
-            $this->raisesForNotApplicableKeys = false;
+        if (SS_COREDATA_USES_RELATIONSHIPS_SORT_DESCRIPTORS):
             /** @psalm-suppress ArgumentTypeCoercion */
-            $descriptors->appendContentsOf($this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->flatMap(fn(Expression $expression): iterable => $this->relationshipsFromKeyPathExpression($expression)->filter(fn(SQLRelationship $relationship): bool => $relationship instanceof SQLToMany && $relationship->isOrdered)->map(fn(SQLToMany $relationship): SortDescriptor => ($index = $relationship->inverseToOne->foreignOrderKey->toOneRelationship->destinationEntity->indexes->flatMap(fn(SQLIndex $index): ArrayClass => $index->indexDescription->elements)->first(fn(FetchIndexElementDescription $element): bool => $element->property->name === $relationship->inverseToOne->foreignOrderKey->columnName)) ? new SortDescriptor("{$expression->keyPath()}.{$index->property->name}", $index->isAscending) : new SortDescriptor("{$expression->keyPath()}.{$relationship->inverseToOne->foreignOrderKey->columnName}"))));
-            if (!$descriptors->isEmpty()) {
-                $clauses = new Set($descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? "ASC" : "DESC"))->filter(fn(string $string): bool => str_contains($string, ".")));
-                if (!$clauses->isEmpty()) {
-                    $this->appendOrderByClauseToSQL();
-                    $this->orderByClause .= $clauses->join(", ");
+            $descriptors->appendContentsOf($this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->reduce(new Dictionary(), function (Dictionary $initialResult, Expression $expression): Dictionary {
+                if ($this->isToManyCountKeyPath($expression, true)) {
+                    $keyPath = $expression->keyPath();
+                    $keys = new Set(explode(".", $keyPath));
+                    $relationships = $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLToMany && $property->isOrdered && $property->name === $keys[$keys->indexBefore($keys->endIndex())]);
+                    if (!$relationships->isEmpty()) {
+                        /** @psalm-suppress InvalidArgument */
+                        $initialResult[$keyPath] = $relationships;
+                    }
                 }
-            }
-            $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
+                return $initialResult;
+            })->flatMap(fn(ArrayClass $relationships, string $keyPath): ArrayClass => $relationships->map(fn(SQLToMany $many): SortDescriptor => ($index = $many->inverseToOne->foreignOrderKey->toOneRelationship->destinationEntity->indexes->flatMap(fn(SQLIndex $index): ArrayClass => $index->indexDescription->elements)->first(fn(FetchIndexElementDescription $element): bool => $element->property->name === $many->inverseToOne->foreignOrderKey->columnName)) ? new SortDescriptor("$keyPath.{$index->property->name}", $index->isAscending) : new SortDescriptor("$keyPath.{$many->inverseToOne->foreignOrderKey->columnName}"))));
         endif;
+        if (!$descriptors->isEmpty()) {
+            $clauses = new Set($descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? "ASC" : "DESC"))->filter(fn(string $string): bool => str_contains($string, ".")));
+            if (!$clauses->isEmpty()) {
+                $this->appendOrderByClauseToSQL();
+                $this->orderByClause .= $clauses->join(", ");
+            }
+        }
+        $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
     }
 
     private function coercedValue(ManagedObject|Dictionary $object, AttributeDescription $attribute): mixed

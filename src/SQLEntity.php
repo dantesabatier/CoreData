@@ -215,10 +215,13 @@ class SQLEntity extends StoreMapping
             /** @psalm-suppress PossiblyInvalidArgument */
             $indexes->merge($this->entityDescription->indexes->reduce(new Dictionary(), function (Dictionary $result, FetchIndexDescription $indexDescription): Dictionary {
                 if ($indexDescription->isSpatial()) {
+                    /** @psalm-suppress InvalidArgument */
                     $result[$indexDescription->name] = new SQLRTreeIndex($indexDescription, $this);
                 } elseif ($indexDescription->isBinary()) {
+                    /** @psalm-suppress InvalidArgument */
                     $result[$indexDescription->name] = new SQLBinaryIndex($indexDescription, $this);
                 } else {
+                    /** @psalm-suppress InvalidArgument */
                     $result[$indexDescription->name] = new SQLIndex($indexDescription, $this);
                 }
                 return $result;
