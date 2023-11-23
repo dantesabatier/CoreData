@@ -669,8 +669,7 @@ class SQLGenerator extends ObjectClass
         $end = $keys->indexBefore($keys->endIndex());
         $entity = $this->entity;
         foreach ($keys as $index => $key) {
-            $property = $entity->propertiesByName[$key];
-            if (!$property instanceof SQLProperty) {
+            if (!($property = $entity->propertiesByName[$key])) {
                 break;
             }
             if (!$property instanceof SQLToMany && !$property instanceof SQLManyToMany) {
