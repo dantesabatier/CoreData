@@ -47,8 +47,8 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     public readonly Dictionary $attributesByName;
     /** @var Dictionary<RelationshipDescription> The relationships of the receiver in a dictionary. The keys in the dictionary are the relationship names and the values are instances of {@see RelationshipDescription}. */
     public readonly Dictionary $relationshipsByName;
-    /** @var ArrayClass<FetchIndexDescription> $indexes */
-    protected ArrayClass $indexes;
+    /** @var Dictionary<FetchIndexDescription> $indexesByName */
+    private Dictionary $indexesByName;
     /** @var ArrayClass<ArrayClass<AttributeDescription|string>> An array of arrays that contains one or more attributes with a value that must be unique over the instances of that entity. Each inner array contains one or more {@see AttributeDescription} objects or strings that contain the names of attributes on the entity. This value forms part of the entity's version hash. Stores that don't support uniqueness constraints must refuse to initialize when receiving a model that contains such constraints. Uniqueness constraint violations can be computationally expensive to handle. The recommendation is to use only one uniqueness constraint per entity hierarchy, although subentites may extend a superentity's constraint. */
     public ArrayClass $uniquenessConstraints;
     /** @var string The version hash is used to uniquely identify an entity based on the collection and configuration of properties for the entity. The version hash uses only values which affect the persistence of data and the user-defined {@see versionHashModifier} value. (The values which affect persistence are: the name of the entity, the version hash of the superentity (if present), if the entity is abstract, and all the version hashes for the properties.) This value is stored as part of the version information in the metadata for stores which use this entity, as well as a definition of an entity involved in an {@see EntityMapping} object. */
@@ -74,7 +74,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         unset($this->relationshipsByName);
         $this->subentitiesByName = new Dictionary();
         $this->propertiesByName = new Dictionary();
-        $this->indexes = new ArrayClass();
+        $this->indexesByName = new Dictionary();
         $this->uniquenessConstraints = new ArrayClass();
     }
 
@@ -83,7 +83,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         if ($name == "subentities") {
             return $this->subentitiesByName->values;
         } elseif ($name == "indexes") {
-            return $this->$name;
+            return $this->indexesByName->values;
         } elseif ($name == "properties") {
             return $this->propertiesByName->values;
         } elseif ($name == "versionHash") {
@@ -138,16 +138,16 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
             }
         } elseif ($name == "indexes") {
             $this->throwIfNotEditable();
-            $this->indexes->removeAll();
+            $this->indexesByName->removeAll();
             /** @var FetchIndexDescription $index */
             foreach ($value as $index) {
                 if ($index->entity !== $this) {
                     $index = clone $index;
                 }
                 $index->entity = $this;
-                $this->indexes->append($index);
+                $this->indexesByName[$index->name] = $index;
             }
-            $this->indexes->appendContentsOf($this->uniquenessConstraintsAsFetchIndexes());
+            $this->indexesByName->merge($this->uniquenessConstraintsAsFetchIndexes());
         } else {
             $this->setValueForUndefinedKey($value, $name);
         }
@@ -164,25 +164,31 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     public function flattenProperties(): void
     {
         if (!$this->isFlattened) {
+            /** @var Set<FetchIndexDescription> $indexes */
+            $indexes = new Set();
             /** @var Set<PropertyDescription> $properties */
             $properties = new Set();
             $superentity = $this->superentity;
             $rootEntity = $superentity;
             while ($superentity) {
                 $properties->appendContentsOf($superentity->properties);
+                $indexes->appendContentsOf($superentity->indexes);
                 $superentity = $superentity->superentity;
                 if ($superentity) {
                     $rootEntity = $superentity;
                 }
             }
             $properties->appendContentsOf($this->properties);
+            $indexes->appendContentsOf($this->indexes);
             foreach ($this->subentities as $subentity) {
                 $properties->appendContentsOf($subentity->properties);
+                $indexes->appendContentsOf($subentity->indexes);
             }
             $this->rootEntity = $rootEntity;
             $this->isRootEntity = $rootEntity === null;
             $properties->sort(fn(PropertyDescription $e0, PropertyDescription $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);
             $this->properties = new ArrayClass($properties);
+            $this->indexes = new ArrayClass($indexes);
             $this->isFlattened = true;
             $this->isEditable = false;
         }
@@ -305,17 +311,23 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         }
         $name = $elements->map(fn(FetchIndexElementDescription $element): string => $element->property->name)->join("_");
         $index = new FetchIndexDescription($name, $elements);
+        $index->entity = $this;
         $index->setUnique(true);
         return $index;
     }
 
     /**
-     * @return ArrayClass<FetchIndexDescription>
+     * @return Dictionary<FetchIndexDescription>
      */
-    private function uniquenessConstraintsAsFetchIndexes(): ArrayClass
+    private function uniquenessConstraintsAsFetchIndexes(): Dictionary
     {
-        /** @var ArrayClass<FetchIndexDescription> */
-        return $this->uniquenessConstraints->compactMap(fn(ArrayClass $constraint): ?FetchIndexDescription => $this->constraintAsIndex($constraint));
+        return $this->uniquenessConstraints->reduce(new Dictionary(), function (Dictionary $initial, ArrayClass $constraint): Dictionary {
+            if ($index = $this->constraintAsIndex($constraint)) {
+                /** @psalm-suppress InvalidArgument */
+                $initial[$index->name] = $index;
+            }
+            return $initial;
+        });
     }
 
     public function count(): int
