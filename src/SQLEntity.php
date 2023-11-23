@@ -207,7 +207,13 @@ class SQLEntity extends StoreMapping
             $this->$name = $this->entityDescription->uniquenessConstraints->map(fn(ArrayClass $uniquenessConstraints): ArrayClass => $uniquenessConstraints->compactMap(fn(AttributeDescription|string $description): ?SQLAttribute => $this->attributes->first(fn(SQLAttribute $attribute): bool => $attribute->name === ($description instanceof AttributeDescription ? $description->name : $description))));
             return $this->$name;
         } elseif ($name == "indexes") {
-            $updateAccumulatingResult = function (Dictionary $result, FetchIndexDescription $indexDescription): Dictionary {
+            /** @var Dictionary<SQLIndex> $indexes */
+            $indexes = new Dictionary();
+            if (!$this->entityDescription->isPersistentHistoryEntity) {
+                $indexes[self::entityKeyName] = new SQLIndex(new FetchIndexDescription(self::entityKeyName, new ArrayClass([new FetchIndexElementDescription($this->entityKey->propertyDescription)])), $this);
+            }
+            /** @psalm-suppress PossiblyInvalidArgument */
+            $indexes->merge($this->entityDescription->indexes->reduce(new Dictionary(), function (Dictionary $result, FetchIndexDescription $indexDescription): Dictionary {
                 if ($indexDescription->isSpatial()) {
                     $result[$indexDescription->name] = new SQLRTreeIndex($indexDescription, $this);
                 } elseif ($indexDescription->isBinary()) {
@@ -216,14 +222,7 @@ class SQLEntity extends StoreMapping
                     $result[$indexDescription->name] = new SQLIndex($indexDescription, $this);
                 }
                 return $result;
-            };
-            /** @var Dictionary<SQLIndex> $indexes */
-            $indexes = new Dictionary();
-            if (!$this->entityDescription->isPersistentHistoryEntity) {
-                $indexes[self::entityKeyName] = new SQLIndex(new FetchIndexDescription(self::entityKeyName, new ArrayClass([new FetchIndexElementDescription($this->entityKey->propertyDescription)])), $this);
-            }
-            /** @psalm-suppress PossiblyInvalidArgument */
-            $indexes->merge($this->entityDescription->indexes->reduce(new Dictionary(), $updateAccumulatingResult));
+            }));
             $this->$name = $indexes;
             return $this->$name;
         } elseif ($name == "rTreeIndexes") {
