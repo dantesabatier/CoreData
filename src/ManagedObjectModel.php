@@ -351,9 +351,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
 
     private function throwIfNotEditable(): void
     {
-        if (!$this->isEditable) {
-            fatal_error();
-        }
+        $this->isEditable ?: fatal_error();
     }
 
     /**
@@ -377,9 +375,10 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     {
         if (!$this->entitiesByName[$entity->name]) {
             if (!$entity->isPersistentHistoryEntity) {
-                $this->entityVersionHashesByName->setValueForKey($entity->versionHash, $entity->name);
+                $entityVersionHashesByName = $this->entityVersionHashesByName;
+                $entityVersionHashesByName[$entity->name] = $entity->versionHash;
             }
-            $this->entitiesByName->setValueForKey($entity, $entity->name);
+            $this->entitiesByName[$entity->name] = $entity;
             $entity->managedObjectModel = $this;
             $entity->flattenProperties();
         }
@@ -418,7 +417,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     public function setEntities(ArrayClass $entities, string $configuration): void
     {
         $this->throwIfNotEditable();
-        $this->entitiesByConfigurationName->setValueForKey($entities, $configuration);
+        $this->entitiesByConfigurationName[$configuration] = $entities;
     }
 
     /**
@@ -462,7 +461,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     public function setFetchRequestTemplate(FetchRequest $fetchRequest, string $name): void
     {
         $this->throwIfNotEditable();
-        $this->fetchRequestTemplatesByName->setValueForKey($fetchRequest, $name);
+        $this->fetchRequestTemplatesByName[$name] = $fetchRequest;
     }
 
     /**
