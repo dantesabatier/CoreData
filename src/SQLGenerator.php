@@ -657,7 +657,7 @@ class SQLGenerator extends ObjectClass
         };
     }
 
-    private function isRelationshipKeyPath(Expression $expression): bool
+    private function isSubqueryKeyPath(Expression $expression): bool
     {
         return $expression->expressionType === ExpressionType::keyPath && (new Set(explode(".", (string)$expression)))->count() > 1;
     }
@@ -692,7 +692,7 @@ class SQLGenerator extends ObjectClass
         $keyPath = $tableName;
         $destination = $tableName;
         $description = $expression->description();
-        $isToManyCountKeyPath = $this->isRelationshipKeyPath($expression);
+        $isSubqueryKeyPath = $this->isSubqueryKeyPath($expression);
         $properties = $this->propertiesFromKeyPathExpression($expression);
         foreach ($properties as $property) {
             if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
@@ -707,7 +707,7 @@ class SQLGenerator extends ObjectClass
                 $keyPath .= $property->name;
                 $destination .= "_";
                 $destination .= $property->name;
-                if ($property instanceof SQLToOne && !$isToManyCountKeyPath) {
+                if ($property instanceof SQLToOne && !$isSubqueryKeyPath) {
                     $keyPath .= ".";
                     $keyPath .= $property->destinationEntity->primaryKey->columnName;
                 }
@@ -920,10 +920,10 @@ class SQLGenerator extends ObjectClass
     private function prepareComparisonPredicate(ComparisonPredicate $predicate, string &$clause): void
     {
         if ($predicate->comparisonPredicateModifier !== ComparisonPredicateModifier::direct) {
-            if ($this->isRelationshipKeyPath($predicate->leftExpression)) {
+            if ($this->isSubqueryKeyPath($predicate->leftExpression)) {
                 $this->buildClauseWithSelectPredicate($predicate, $clause);
             }
-            if ($this->isRelationshipKeyPath($predicate->rightExpression)) {
+            if ($this->isSubqueryKeyPath($predicate->rightExpression)) {
                 $this->buildClauseWithSelectPredicate($predicate, $clause);
             }
         } else {
