@@ -73,6 +73,7 @@ class FetchIndexDescription extends ObjectClass
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof FetchIndexDescription) {
+            //FIXME: This may not be enough
             return $this->name === $other->name;
         }
         return false;
