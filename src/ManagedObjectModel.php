@@ -234,7 +234,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                 return $index;
             });
             $entity->userInfo = $dictionary["userInfo"];
-            $this->entitiesByName->setValueForKey($entity, $name);
+            $this->entitiesByName[$name] = $entity;
         }
         return $entity;
     }
