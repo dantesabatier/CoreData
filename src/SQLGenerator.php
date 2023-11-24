@@ -657,15 +657,17 @@ class SQLGenerator extends ObjectClass
         };
     }
 
-    private function isToManyCountKeyPath(Expression $expression, bool $deep = false): bool
+    private function isRelationshipKeyPath(Expression $expression): bool
+    {
+        return $expression->expressionType === ExpressionType::keyPath && (new Set(explode(".", (string)$expression)))->count() > 1;
+    }
+
+    private function isToManyKeyPath(Expression $expression): bool
     {
         if ($expression->expressionType !== ExpressionType::keyPath) {
             return false;
         }
         $keys = new Set(explode(".", (string)$expression));
-        if (!$deep && $keys->count() < 2) {
-            return false;
-        }
         $end = $keys->indexBefore($keys->endIndex());
         $entity = $this->entity;
         foreach ($keys as $index => $key) {
@@ -690,7 +692,7 @@ class SQLGenerator extends ObjectClass
         $keyPath = $tableName;
         $destination = $tableName;
         $description = $expression->description();
-        $isToManyCountKeyPath = $this->isToManyCountKeyPath($expression);
+        $isToManyCountKeyPath = $this->isRelationshipKeyPath($expression);
         $properties = $this->propertiesFromKeyPathExpression($expression);
         foreach ($properties as $property) {
             if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
@@ -918,10 +920,10 @@ class SQLGenerator extends ObjectClass
     private function prepareComparisonPredicate(ComparisonPredicate $predicate, string &$clause): void
     {
         if ($predicate->comparisonPredicateModifier !== ComparisonPredicateModifier::direct) {
-            if ($this->isToManyCountKeyPath($predicate->leftExpression)) {
+            if ($this->isRelationshipKeyPath($predicate->leftExpression)) {
                 $this->buildClauseWithSelectPredicate($predicate, $clause);
             }
-            if ($this->isToManyCountKeyPath($predicate->rightExpression)) {
+            if ($this->isRelationshipKeyPath($predicate->rightExpression)) {
                 $this->buildClauseWithSelectPredicate($predicate, $clause);
             }
         } else {
@@ -1164,7 +1166,7 @@ class SQLGenerator extends ObjectClass
         if (SS_COREDATA_USES_RELATIONSHIPS_SORT_DESCRIPTORS):
             /** @psalm-suppress ArgumentTypeCoercion */
             $descriptors->appendContentsOf($this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->reduce(new Dictionary(), function (Dictionary $initialResult, Expression $expression): Dictionary {
-                if ($this->isToManyCountKeyPath($expression, true)) {
+                if ($this->isToManyKeyPath($expression)) {
                     $keyPath = $expression->keyPath();
                     $keys = new Set(explode(".", $keyPath));
                     $relationships = $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLToMany && $property->isOrdered && $property->name === $keys[$keys->indexBefore($keys->endIndex())]);
