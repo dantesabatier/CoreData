@@ -125,7 +125,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->$name = $this->entity->properties;
             return $this->$name;
         } elseif ($name == "modeledProperties") {
-            $this->$name = $this->allProperties->filter(fn(PropertyDescription $property): bool => !$property->isReadOnly);
+            $this->$name = $this->allProperties;
             return $this->$name;
         } elseif ($name == "persistentProperties") {
             $this->$name = $this->modeledProperties->filter(fn(PropertyDescription $property): bool => !$property->isTransient && !$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription);
@@ -568,9 +568,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->changedValuesForCurrentEvent[$key] = $value ?? Nil::nil();
         }
         if ($property instanceof AttributeDescription || $property instanceof FetchedPropertyDescription) {
-            $this->willChangeValueForKey($key, KeyValueChange::setting, $value);
+            $this->willChangeValueForKey($key, changedValue: $value);
             $this->setPrimitiveValueForKey($value, $key);
-            $this->didChangeValueForKey($key, KeyValueChange::setting, $value);
+            $this->didChangeValueForKey($key, changedValue: $value);
         } elseif ($property instanceof RelationshipDescription) {
             $inverseRelationship = $property->inverseRelationship;
             if ($property->isToMany) {
