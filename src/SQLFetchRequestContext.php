@@ -96,7 +96,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     if ($current instanceof Dictionary) {
                                         $propertyDescription = $property->propertyDescription;
                                         if ($propertyDescription instanceof ExpressionDescription) {
-                                            $value = ManagedObject::coercedValue($value, $propertyDescription->expressionResultType, isOptional: $propertyDescription->isOptional);
+                                            $value = ManagedObject::coercedValue($value, $propertyDescription->resultType, isOptional: $propertyDescription->isOptional);
                                         }
                                         $current[$key] = $value;
                                         if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
