@@ -168,7 +168,7 @@ abstract class AtomicStore extends PersistentStore
                 foreach ($expressionDescriptions as $expressionDescription) {
                     if ($expression = $expressionDescription->expression) {
                         foreach ($objects as $object) {
-                            $object[$expressionDescription->name] = ManagedObject::coercedValue($expression->expressionValue(new ArrayClass([$object])), $expressionDescription->expressionResultType);
+                            $object[$expressionDescription->name] = ManagedObject::coercedValue($expression->expressionValue(new ArrayClass([$object])), $expressionDescription->resultType);
                         }
                     }
                 }
