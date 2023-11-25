@@ -22,8 +22,8 @@ class ExpressionDescription extends PropertyDescription
 {
     /** @var Expression|null The expression for the receiver. */
     public ?Expression $expression = null;
-    /** @var AttributeType The type of the receiver. */
-    public AttributeType $expressionResultType = AttributeType::undefined;
+    /** @var AttributeType The attribute type of the expression’s result. */
+    public AttributeType $resultType = AttributeType::undefined;
 
     public function __get(string $name)
     {
@@ -34,7 +34,7 @@ class ExpressionDescription extends PropertyDescription
             return parent::__get($name);
         }
     }
-    
+
     public function description(): string
     {
         return sprintf("%s, expression %s", parent::description(), human_readable_value($this->expression));
