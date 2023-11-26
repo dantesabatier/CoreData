@@ -221,12 +221,19 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             $entity->indexes = $indexes->map(function (Dictionary $description) use ($entity): FetchIndexDescription {
                 /** @var string $name */
                 $name = $description["name"] ?? fatal_error(sprintf("%s name cannot be null", FetchIndexDescription::class));
-                $description->removeValueForKey("name");
-                /** @var ArrayClass<Dictionary> $elements */
-                $elements = $description["elements"] ?? new ArrayClass();
                 $index = new FetchIndexDescription($name);
                 $index->entity = $entity;
+                /** @var string|null $partialIndexPredicateFormat */
+                $partialIndexPredicateFormat = $description["partialIndexPredicateFormat"];
+                if ($partialIndexPredicateFormat) {
+                    $index->partialIndexPredicate = Predicate::format($partialIndexPredicateFormat);
+                }
+                /** @var ArrayClass<Dictionary> $elements */
+                $elements = $description["elements"] ?? new ArrayClass();
+                $keys = ["name", "partialIndexPredicateFormat", "elements"];
+                $description->removeAll(fn(mixed $value, string $key): bool => in_array($key, $keys));
                 $index->elements = $elements->map(function (Dictionary $description): FetchIndexElementDescription {
+                    $expression = null;
                     /** @var string|null $expressionFormat */
                     $expressionFormat = $description["expressionFormat"];
                     if ($expressionFormat) {
@@ -236,7 +243,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                         $keys = ["expressionFormat", "expressionResultType"];
                         $description->removeAll(fn(mixed $value, string $key): bool => in_array($key, $keys));
                     }
-                    $element = new FetchIndexElementDescription();
+                    $element = new FetchIndexElementDescription($expression);
                     $element->setValuesForKeys($description);
                     return $element;
                 });
