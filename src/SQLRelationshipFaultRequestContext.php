@@ -28,7 +28,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
             $foreignKey = $relationship->foreignKey;
             $columnName = $sourceEntity->primaryKey->columnName;
             $destinationEntity = $relationship->destinationEntity;
-            if ($destinationEntity->isRootEntity && $destinationEntity->subentities->count() === 1) {
+            if ($destinationEntity->isRootEntity && $destinationEntity->subentities->count === 1) {
                 $destinationEntity = $destinationEntity->subentities[0];
             }
             /** @var SQLEntity $entity */
@@ -40,7 +40,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
                 $fetchRequest->entity = $destinationEntity->entityDescription;
                 $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($referenceObject));
                 $fetchRequest->resultType = FetchRequestResultType::managedObjectIDResultType;
-                $this->result = $this->sqlCore->execute($fetchRequest, $this->context)->first();
+                $this->result = $this->sqlCore->execute($fetchRequest, $this->context)->first;
                 return true;
             }
             $this->result = null;
@@ -61,7 +61,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
             $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($this->objectID));
             /** @psalm-suppress InvalidPropertyAssignmentValue */
             $fetchRequest->propertiesToFetch = new ArrayClass([$relationship->relationshipDescription]);
-            $first = $this->sqlCore->execute($fetchRequest, $this->context)->first();
+            $first = $this->sqlCore->execute($fetchRequest, $this->context)->first;
             if ($first instanceof ManagedObject) {
                 $this->result = $first->primitiveValueForKey($relationship->name) ?? new ArrayClass();
             }

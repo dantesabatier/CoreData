@@ -135,7 +135,7 @@ class SQLGenerator extends ObjectClass
         if ($insertedObjects = $requestContext->request->insertedObjects) {
             $dictionary = $this->groupedObjects($insertedObjects);
             foreach ($dictionary as $key => $value) {
-                if (!$value->isEmpty() && ($entity = $model->entity($key))) {
+                if (!$value->isEmpty && ($entity = $model->entity($key))) {
                     $statements->append($this->newSQLStatementForSaveInsertChanges($entity, $value));
                 }
             }
@@ -143,7 +143,7 @@ class SQLGenerator extends ObjectClass
         if ($updatedObjects = $requestContext->request->updatedObjects) {
             $dictionary = $this->groupedObjects($updatedObjects);
             foreach ($dictionary as $key => $value) {
-                if (!$value->isEmpty() && ($entity = $model->entity($key))) {
+                if (!$value->isEmpty && ($entity = $model->entity($key))) {
                     $statements->append($this->newSQLStatementForSaveUpdateChanges($entity, $value));
                 }
             }
@@ -151,12 +151,12 @@ class SQLGenerator extends ObjectClass
         if ($deletedObjects = $requestContext->request->deletedObjects) {
             $dictionary = $this->groupedObjects($deletedObjects);
             foreach ($dictionary as $key => $value) {
-                if (!$value->isEmpty() && ($entity = $model->entity($key))) {
+                if (!$value->isEmpty && ($entity = $model->entity($key))) {
                     $statements->append($this->newSQLStatementForSaveDeleteChanges($entity, $entity->entityDescription->isPersistentHistoryEntity ? $value->map(fn(PersistentHistoryTransaction $transaction): int => $transaction->transactionNumber) : $value->map(fn(ManagedObject $object): int|string => $object->objectID->referenceObject)));
                 }
             }
         }
-        if (!$statements->isEmpty()) {
+        if (!$statements->isEmpty) {
             /** @psalm-suppress RedundantCondition, TypeDoesNotContainType */
             if (SS_COREDATA_DISABLE_FOREIGN_KEY_CHECKS) :
                 if ($statements->contains(fn(SQLStatement $statement): bool => str_starts_with($statement->string, "INSERT"))) {
@@ -186,7 +186,7 @@ class SQLGenerator extends ObjectClass
             $entity = $request->entity;
             /** @var ArrayClass<PropertyDescription> $propertiesToGroupBy */
             $propertiesToGroupBy = $request->propertiesToGroupBy?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $entity->propertiesByName[$property]) ?? new ArrayClass();
-            if (!$propertiesToGroupBy->isEmpty() && $request->resultType !== FetchRequestResultType::dictionaryResultType) {
+            if (!$propertiesToGroupBy->isEmpty && $request->resultType !== FetchRequestResultType::dictionaryResultType) {
                 fatal_error(sprintf("Invalid fetch request: GROUP BY requires %s, %s given", human_readable_value(FetchRequestResultType::dictionaryResultType), human_readable_value($request->resultType)));
             }
             $this->useDistinct = $request->returnsDistinctResults;
@@ -201,7 +201,7 @@ class SQLGenerator extends ObjectClass
             /** @var  EntityDescription $rootEntity */
             $rootEntity = $entity->isRootEntity ? $entity : $entity->rootEntity;
             $subentities = $entity->managedObjectModel->flatten($rootEntity->subentities);
-            if ((!$request->includesSubentities && $subentities->count() > 1) || (!$entity->isPersistentHistoryEntity && !$entity->isRootEntity && (!$entity->superentity?->isRootEntity || $subentities->count() > 1))) {
+            if ((!$request->includesSubentities && $subentities->count > 1) || (!$entity->isPersistentHistoryEntity && !$entity->isRootEntity && (!$entity->superentity?->isRootEntity || $subentities->count > 1))) {
                 $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($entity->name));
                 $predicate = $predicate ? CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory])) : $mandatory;
             }
@@ -213,7 +213,7 @@ class SQLGenerator extends ObjectClass
             $this->appendSQL($this->selectList);
             $this->appendSQL($this->joinClause);
             $this->appendSQL($this->whereClause);
-            if (!$propertiesToGroupBy->isEmpty()) {
+            if (!$propertiesToGroupBy->isEmpty) {
                 $this->buildGroupByClause($propertiesToGroupBy);
                 $this->appendSQL($this->groupByClause);
                 if ($havingPredicate = $request->havingPredicate) {
@@ -409,7 +409,7 @@ class SQLGenerator extends ObjectClass
             /** @var EntityDescription $rootEntity */
             $rootEntity = $destinationEntity->isRootEntity ? $destinationEntity->entityDescription : $destinationEntity->rootEntity?->entityDescription;
             $subentities = $destinationEntity->entityDescription->managedObjectModel->flatten($rootEntity->subentities);
-            if ($subentities->count() > 1) {
+            if ($subentities->count > 1) {
                 $this->joinClause .= " AND ";
                 $this->joinClause .= "$destinationPath.{$destinationEntity->entityKey->columnName} = '{$destinationEntity->entityDescription->name}'";
             }
@@ -530,7 +530,7 @@ class SQLGenerator extends ObjectClass
                         return null;
                     });
                 }
-                if (!$columnNames->isEmpty()) {
+                if (!$columnNames->isEmpty) {
                     $copy = clone $columnNames;
                     foreach ($copy as $columnName) {
                         if (str_contains($this->selectList, $columnName)) {
@@ -540,7 +540,8 @@ class SQLGenerator extends ObjectClass
                             }
                         }
                     }
-                    if (!$columnNames->isEmpty()) {
+                    /** @psalm-suppress RedundantConditionGivenDocblockType */
+                    if (!$columnNames->isEmpty) {
                         $this->selectList .= ", ";
                         $this->selectList .= $columnNames->join(", ");
                     }
@@ -659,7 +660,7 @@ class SQLGenerator extends ObjectClass
 
     private function isSubqueryKeyPath(Expression $expression): bool
     {
-        return $expression->expressionType === ExpressionType::keyPath && (new Set(explode(".", (string)$expression)))->count() > 1;
+        return $expression->expressionType === ExpressionType::keyPath && (new Set(explode(".", (string)$expression)))->count > 1;
     }
 
     private function isToManyKeyPath(Expression $expression): bool
@@ -796,9 +797,9 @@ class SQLGenerator extends ObjectClass
         $arguments = new ArrayClass();
         $left = $this->buildComparisonExpression($predicate->leftExpression, $arguments, $prefix, $suffix);
         $right = $this->buildComparisonExpression($predicate->rightExpression, $arguments, $prefix, $suffix);
-        $numberOfArguments = $arguments->count();
+        $numberOfArguments = $arguments->count;
         if ($numberOfArguments === 1) {
-            $key = $arguments->first();
+            $key = $arguments->first;
             if (is_string($key)) {
                 $key = str_replace([$suffix, $prefix], "", $key);
             }
@@ -822,8 +823,8 @@ class SQLGenerator extends ObjectClass
         $leftExpression = $predicate->leftExpression;
         $rightExpression = $predicate->rightExpression;
         $right = $rightExpression->constantValue() ?? $rightExpression->collection();
-        assert($right instanceof ArrayClass && !$right->isEmpty(), sprintf("invalid argument: the right expression of an IN operator must be an non-empty \"%s\", (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
-        $clause .= "{$this->buildKeyPathExpression($leftExpression)} IN (" . ArrayClass::repeating("?", $right->count())->join(", ") . ")";
+        assert($right instanceof ArrayClass && !$right->isEmpty, sprintf("invalid argument: the right expression of an IN operator must be an non-empty \"%s\", (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
+        $clause .= "{$this->buildKeyPathExpression($leftExpression)} IN (" . ArrayClass::repeating("?", $right->count)->join(", ") . ")";
         $this->arguments->appendContentsOf($right->map(fn(mixed $element): mixed => $element instanceof Expression ? $element->constantValue() : $element));
     }
 
@@ -832,7 +833,7 @@ class SQLGenerator extends ObjectClass
         $leftExpression = $predicate->leftExpression;
         $rightExpression = $predicate->rightExpression;
         $right = $rightExpression->constantValue() ?? $rightExpression->collection();
-        assert($right instanceof ArrayClass && $right->count() == 2, sprintf("invalid argument: the right expression of a BETWEEN operator must be a \"%s\" with exactly two elements, (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
+        assert($right instanceof ArrayClass && $right->count == 2, sprintf("invalid argument: the right expression of a BETWEEN operator must be a \"%s\" with exactly two elements, (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
         $clause .= "({$this->buildKeyPathExpression($leftExpression)} BETWEEN ? AND ?)";
         $this->arguments->appendContentsOf($right->map(fn(mixed $element): mixed => $element instanceof Expression ? $element->constantValue() : $element));
     }
@@ -1170,7 +1171,7 @@ class SQLGenerator extends ObjectClass
                     $keyPath = $expression->keyPath();
                     $keys = new Set(explode(".", $keyPath));
                     $relationships = $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLToMany && $property->isOrdered && $property->name === $keys[$keys->indexBefore($keys->endIndex())]);
-                    if (!$relationships->isEmpty()) {
+                    if (!$relationships->isEmpty) {
                         /** @psalm-suppress InvalidArgument */
                         $initialResult[$keyPath] = $relationships;
                     }
@@ -1178,9 +1179,9 @@ class SQLGenerator extends ObjectClass
                 return $initialResult;
             })->flatMap(fn(ArrayClass $relationships, string $keyPath): ArrayClass => $relationships->map(fn(SQLToMany $many): SortDescriptor => ($index = $many->inverseToOne->foreignOrderKey->toOneRelationship->destinationEntity->indexes->flatMap(fn(SQLIndex $index): ArrayClass => $index->indexDescription->elements)->first(fn(FetchIndexElementDescription $element): bool => $element->property->name === $many->inverseToOne->foreignOrderKey->columnName)) ? new SortDescriptor("$keyPath.{$index->property->name}", $index->isAscending) : new SortDescriptor("$keyPath.{$many->inverseToOne->foreignOrderKey->columnName}"))));
         endif;
-        if (!$descriptors->isEmpty()) {
+        if (!$descriptors->isEmpty) {
             $clauses = new Set($descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? "ASC" : "DESC"))->filter(fn(string $string): bool => str_contains($string, ".")));
-            if (!$clauses->isEmpty()) {
+            if (!$clauses->isEmpty) {
                 $this->appendOrderByClauseToSQL();
                 $this->orderByClause .= $clauses->join(", ");
             }
@@ -1248,7 +1249,7 @@ class SQLGenerator extends ObjectClass
                 }
             }
         }
-        $this->string = "INSERT INTO `$entity->tableName` (" . $columnNames->map(fn(string $columnName): string => "`$columnName`")->join(", ") . ") VALUES " . ArrayClass::repeating("(" . ArrayClass::repeating("?", $columnNames->count())->join(", ") . ")", $insertedObjects->count())->join(", ") . " ON DUPLICATE KEY UPDATE {$columnNames->map(fn(string $columnName): string => "`$columnName` = VALUES(`$columnName`)")->join(", ")}";
+        $this->string = "INSERT INTO `$entity->tableName` (" . $columnNames->map(fn(string $columnName): string => "`$columnName`")->join(", ") . ") VALUES " . ArrayClass::repeating("(" . ArrayClass::repeating("?", $columnNames->count)->join(", ") . ")", $insertedObjects->count)->join(", ") . " ON DUPLICATE KEY UPDATE {$columnNames->map(fn(string $columnName): string => "`$columnName` = VALUES(`$columnName`)")->join(", ")}";
         $this->arguments = $arguments;
     }
 
@@ -1286,14 +1287,14 @@ class SQLGenerator extends ObjectClass
             }
             $arguments->appendContentsOf([$object->objectID->referenceObject, $value]);
             return "WHEN `{$entity->primaryKey->columnName}` = ? THEN ?";
-        })->join(" ")} ELSE `$columnName` END)")->join(", ")} WHERE `{$entity->primaryKey->columnName}` IN (" . ArrayClass::repeating("?", $updatedObjects->count())->join(",") . ")";
+        })->join(" ")} ELSE `$columnName` END)")->join(", ")} WHERE `{$entity->primaryKey->columnName}` IN (" . ArrayClass::repeating("?", $updatedObjects->count)->join(",") . ")";
         $arguments->appendContentsOf($updatedObjects->map(fn(ManagedObject $object): string|int => $object->objectID->referenceObject));
         $this->arguments = $arguments;
     }
 
     private function prepareDeleteStatement(SQLEntity $entity, ArrayClass $objects): void
     {
-        $this->string = "DELETE FROM `$entity->tableName` WHERE `{$entity->primaryKey->columnName}` IN (" . ArrayClass::repeating("?", $objects->count())->join(",") . ")";
+        $this->string = "DELETE FROM `$entity->tableName` WHERE `{$entity->primaryKey->columnName}` IN (" . ArrayClass::repeating("?", $objects->count)->join(",") . ")";
         $this->arguments = $objects;
     }
 
@@ -1332,7 +1333,7 @@ class SQLGenerator extends ObjectClass
     {
         /** @var Dictionary<ArrayClass> $map */
         $map = new Dictionary();
-        $object = $objects->first();
+        $object = $objects->first;
         if ($object instanceof PersistentHistoryTransaction) {
             $map[$object::className()] = new ArrayClass($objects);
         } else {

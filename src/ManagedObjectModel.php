@@ -352,7 +352,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
      */
     public static function merging(/** @noinspection PhpUnusedParameterInspection */ ArrayClass $models, Dictionary $metadata): ?ManagedObjectModel
     {
-        if ($models->isEmpty()) {
+        if ($models->isEmpty) {
             return null;
         }
         /** @var ArrayClass<EntityDescription> $entities */
@@ -461,7 +461,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     public function fetchRequestFromTemplate(string $name, Dictionary $substitutionVariables): ?FetchRequest
     {
         $fetchRequest = $this->fetchRequestTemplate($name);
-        if (!$substitutionVariables->isEmpty() && $fetchRequest && (($predicate = $fetchRequest->predicate))) {
+        if (!$substitutionVariables->isEmpty && $fetchRequest && (($predicate = $fetchRequest->predicate))) {
             $fetchRequest = clone $fetchRequest;
             $fetchRequest->predicate = $predicate->withSubstitutionVariables($substitutionVariables);
         }
@@ -515,7 +515,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
 
     public function count(): int
     {
-        return $this->entitiesByName->count();
+        return $this->entitiesByName->count;
     }
 
     public function getIterator(): Traversable

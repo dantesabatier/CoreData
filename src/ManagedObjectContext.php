@@ -384,7 +384,7 @@ class ManagedObjectContext extends ObjectClass
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $objectID->entity;
             $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($objectID));
-            $object = $this->fetch($fetchRequest)->first();
+            $object = $this->fetch($fetchRequest)->first;
         }
         return $object;
     }
@@ -534,7 +534,7 @@ class ManagedObjectContext extends ObjectClass
                         $fetchRequest->affectedStores = new ArrayClass([$store]);
                     }
                     $persistedObjects = $this->fetch($fetchRequest);
-                    if ($persistedObject = $persistedObjects->first()) {
+                    if ($persistedObject = $persistedObjects->first) {
                         $persistentPropertyKeys = $object->persistentProperties->map(fn(PropertyDescription $property): string => $property->name);
                         return new MergeConflict($object, 0, 1, $object->dictionaryWithValues($persistentPropertyKeys), $persistedObject->dictionaryWithValues($persistentPropertyKeys));
                     }
@@ -563,7 +563,7 @@ class ManagedObjectContext extends ObjectClass
                     $fetchRequest->affectedStores = new ArrayClass([$store]);
                 }
                 $databaseObjects = $this->fetch($fetchRequest);
-                if ($databaseObject = $databaseObjects->first()) {
+                if ($databaseObject = $databaseObjects->first) {
                     $databaseSnapshot = $databaseObject->dictionaryWithValues($attributeKeys);
                     return new ConstraintConflict(new ArrayClass([$key]), $databaseObject, $databaseSnapshot, new ArrayClass([$object, $databaseObject]), new ArrayClass([$object->changedValues(), $databaseSnapshot]));
                 }
@@ -634,7 +634,7 @@ class ManagedObjectContext extends ObjectClass
                 $insertions->setValueForKey($object, $inverseRelationship->name);
             }
         } else {
-            $object->setValueForKey($insertions->first(), $relationship->name);
+            $object->setValueForKey($insertions->first, $relationship->name);
             $this->updatedObjects->append($object);
         }
         $this->insertedObjects->formUnion($insertions);
@@ -763,7 +763,7 @@ class ManagedObjectContext extends ObjectClass
                     }
                     $value = new Set([$value]);
                 }
-                if ($change->kind !== KeyValueChange::removal && $value->isEmpty()) {
+                if ($change->kind !== KeyValueChange::removal && $value->isEmpty) {
                     return;
                 }
                 foreach ($value as $managedObject) {
@@ -872,10 +872,10 @@ class ManagedObjectContext extends ObjectClass
             $deletedObject->validateForDelete();
             $this->detectConflicts($deletedObject);
         }
-        if ($this->insertedObjects->isEmpty() && $this->updatedObjects->isEmpty() && $this->deletedObjects->isEmpty()) {
+        if ($this->insertedObjects->isEmpty && $this->updatedObjects->isEmpty && $this->deletedObjects->isEmpty) {
             return null;
         }
-        return new SaveChangesRequest($this->insertedObjects->isEmpty() ? null : $this->insertedObjects, $this->updatedObjects->isEmpty() ? null : $this->updatedObjects, $this->deletedObjects->isEmpty() ? null : $this->deletedObjects);
+        return new SaveChangesRequest($this->insertedObjects->isEmpty ? null : $this->insertedObjects, $this->updatedObjects->isEmpty ? null : $this->updatedObjects, $this->deletedObjects->isEmpty ? null : $this->deletedObjects);
     }
 
     /**

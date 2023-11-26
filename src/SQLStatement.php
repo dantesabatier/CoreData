@@ -31,7 +31,7 @@ class SQLStatement extends ObjectClass
         if (str_ends_with($this->string, ";")) {
             fatal_error("Invalid sql statement: sql string must not end with a semicolon \";\"");
         }
-        $numberOfArguments = $this->arguments->count();
+        $numberOfArguments = $this->arguments->count;
         $numberOfPlaceholders = string_search($this->string, "?", SearchMethod::contains);
         if ($numberOfArguments !== $numberOfPlaceholders) {
             fatal_error(sprintf("Invalid sql statement: number of arguments (%s) does not match the number of placeholders (%s)\n\"%s\"\n%s", $numberOfArguments, $numberOfPlaceholders, $this->string, human_readable_value($this->arguments)));
@@ -45,7 +45,7 @@ class SQLStatement extends ObjectClass
     public static function merging(ArrayClass $statements): SQLStatement
     {
         /** @noinspection PhpVoidFunctionResultUsedInspection */
-        return match ($statements->count()) {
+        return match ($statements->count) {
             0 => fatal_error("Invalid sql statement: statements cannot be empty"),
             1 => $statements[0],
             default => new SQLStatement($statements->map(fn(SQLStatement $statement): string => $statement->string)->join(";\n"), $statements->flatMap(fn(SQLStatement $statement): ArrayClass => $statement->arguments))

@@ -133,7 +133,7 @@ class MigrationManager extends ObjectClass
         $request->includesSubentities = false;
         $request->fetchBatchSize = 20;
         $instances = $sourceContext->fetch($request);
-        $numberOfInstances = $instances->count();
+        $numberOfInstances = $instances->count;
         if ($numberOfInstances) {
             if (self::$migrationDebugLevel) {
                 error_log("CoreData: Preparing $numberOfInstances instances");
@@ -214,7 +214,7 @@ class MigrationManager extends ObjectClass
         $migrationContext->currentEntityMapping = $mapping;
         $migrationContext->currentMigrationStep = $step;
         $this->willChangeValueForKey("migrationProgress");
-        $this->migrationProgress = $this->migrationContext->currentMigrationStep / ($this->mappingModel->entityMappingsByName->count() * 3);
+        $this->migrationProgress = $this->migrationContext->currentMigrationStep / ($this->mappingModel->entityMappingsByName->count * 3);
         $this->didChangeValueForKey("migrationProgress");
         if (!($destinationEntity = $this->destinationEntity($mapping)) || $destinationEntity->isAbstract) {
             return;

@@ -49,7 +49,7 @@ class SQLAdapter extends ObjectClass
             return "`$column->columnName` $dataType($length) UNSIGNED NOT NULL AUTO_INCREMENT";
         } elseif ($column instanceof SQLEntityKey) {
             $string = "`$column->columnName` $dataType($length) NOT NULL";
-            if (!$column->entity->entityDescription->isPersistentHistoryEntity && $column->entity->subentities->count() <= 1) {
+            if (!$column->entity->entityDescription->isPersistentHistoryEntity && $column->entity->subentities->count <= 1) {
                 $string .= " DEFAULT '{$column->entity->tableName}'";
             }
             return $string;
@@ -87,7 +87,7 @@ class SQLAdapter extends ObjectClass
 
     public function newCorrelationInsertStatementForRelationship(SQLManyToMany $manyToMany, ArrayClass $values): ?SQLStatement
     {
-        if ($values->isEmpty()) {
+        if ($values->isEmpty) {
             return null;
         }
         $object = $values->popFirst();
@@ -97,7 +97,7 @@ class SQLAdapter extends ObjectClass
 
     public function newCorrelationDeleteStatementForRelationship(SQLManyToMany $manyToMany, ArrayClass $values): ?SQLStatement
     {
-        if ($values->isEmpty()) {
+        if ($values->isEmpty) {
             return null;
         }
         $object = $values->popFirst();
@@ -226,7 +226,7 @@ class SQLAdapter extends ObjectClass
         /** @var ArrayClass<SQLStatement> $statements */
         $statements = $entity->indexes->flatMap(fn(SQLIndex $index): ArrayClass => $index->dropTableStatements);
         $statements->appendContentsOf($entity->foreignKeyColumns->flatMap(fn(SQLForeignKey $foreignKey): ArrayClass => $this->newDropIndexStatementsForForeignKey($foreignKey, $entity)));
-        if (!$statements->isEmpty()) {
+        if (!$statements->isEmpty) {
             return SQLStatement::merging($statements);
         }
         return null;
@@ -253,7 +253,7 @@ class SQLAdapter extends ObjectClass
         /** @var ArrayClass<SQLStatement> $statements */
         $statements = $entity->indexes->flatMap(fn(SQLIndex $index): ArrayClass => $index->createTableStatements);
         $statements->appendContentsOf($entity->foreignKeyColumns->map(fn(SQLForeignKey $foreignKey): SQLStatement => $this->newCreateIndexStatementForForeignKey($foreignKey, $entity)));
-        if (!$statements->isEmpty()) {
+        if (!$statements->isEmpty) {
             return SQLStatement::merging($statements);
         }
         return null;

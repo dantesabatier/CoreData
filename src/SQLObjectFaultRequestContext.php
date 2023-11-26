@@ -37,7 +37,7 @@ class SQLObjectFaultRequestContext extends SQLStoreRequestContext
     {
         $context = $this->createFetchRequestContext();
         $context->executeRequestUsingConnection($this->connection);
-        $this->result = $context->result->first();
+        $this->result = $context->result->first;
         return true;
     }
 }

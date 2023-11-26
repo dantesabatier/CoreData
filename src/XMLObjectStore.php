@@ -143,7 +143,7 @@ class XMLObjectStore extends AtomicStore
                 $info[$relationship->name] = $relationshipElement->attributes;
                 if (($references = $relationshipElement->getAttribute("references")) && ($destination = $relationshipElement->getAttribute("destination")) && ($destinationEntity = $this->entitiesForConfiguration[$destination])) {
                     $managedObjectIDs = (new Set(explode(" ", $references)))->map(fn(string $reference): ManagedObjectID => $this->objectID($destinationEntity, (int)$reference));
-                    $value = $relationship->isToMany ? $managedObjectIDs : $managedObjectIDs->first();
+                    $value = $relationship->isToMany ? $managedObjectIDs : $managedObjectIDs->first;
                     $cacheNode->setValueForKey($value, $key);
                 }
             }
@@ -365,7 +365,7 @@ class XMLObjectStore extends AtomicStore
         foreach ($entity->relationshipsByName as $key => $relationship) {
             $value = $object->primitiveValueForKey($key);
             $managedObjectIDs = $this->managedObjectIDs($value, $relationship);
-            $value = $relationship->isToMany ? $managedObjectIDs : $managedObjectIDs->first();
+            $value = $relationship->isToMany ? $managedObjectIDs : $managedObjectIDs->first;
             $node->setValueForKey($value, $key);
         }
         if ($node instanceof XMLObjectStoreCacheNode) {

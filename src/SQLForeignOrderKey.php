@@ -20,7 +20,7 @@ class SQLForeignOrderKey extends SQLColumn
     {
         parent::__construct($entity, $relationshipDescription);
         $this->toOneRelationship = $foreignKey->toOneRelationship;
-        $this->columnName = $relationshipDescription->destinationEntity->attributesByName->first()?->name ?? SQLEntity::primaryKeyName;
+        $this->columnName = $relationshipDescription->destinationEntity->attributesByName->first?->name ?? SQLEntity::primaryKeyName;
         $this->foreignKey = $foreignKey;
         $this->relationshipDescription = $relationshipDescription;
     }

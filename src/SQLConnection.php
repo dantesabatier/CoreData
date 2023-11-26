@@ -159,7 +159,7 @@ class SQLConnection extends ObjectClass
             error_log(sprintf("CoreData: sql: \n%s", $statement->formatted($style)));
         }
         $pdo = $this->pdo();
-        if ($statement->arguments->isEmpty()) {
+        if ($statement->arguments->isEmpty) {
             $prepare = $pdo->query($statement->string);
             if (SQLCore::$debugDefault) {
                 error_log(sprintf("CoreData: annotation: total fetch execution time: %s for %s row(s)", human_readable_time(absolute_time_get_current() - $time), $prepare->rowCount()));
@@ -263,9 +263,9 @@ class SQLConnection extends ObjectClass
                 $updatedProperties = new Set($managedObject->changedValuesForCurrentEvent()->compactMap(fn(mixed $value, string $key): ?string => $managedObject->entity->propertiesByName->valueForKey($key)?->name));
             } elseif ($type === PersistentHistoryChangeType::delete) {
                 $attributesByName = $managedObject->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => $attribute->preservesValueInHistoryOnDeletion);
-                if (!$attributesByName->isEmpty()) {
+                if (!$attributesByName->isEmpty) {
                     $dictionary = $managedObject->dictionaryWithValues($attributesByName->map(fn(AttributeDescription $attribute): string => $attribute->name));
-                    if (!$dictionary->isEmpty()) {
+                    if (!$dictionary->isEmpty) {
                         $tombstone = $dictionary;
                     }
                 }
@@ -323,10 +323,6 @@ class SQLConnection extends ObjectClass
     }
 
     /**
-     * @param ArrayClass<ManagedObject>|ArrayClass<Dictionary> $array
-     * @param SQLEntity $entity
-     * @param bool $includeOnConflict
-     * @return int
      * @throws Exception
      */
     private function insertArray(/** @noinspection PhpUnusedParameterInspection */ ArrayClass $array, SQLEntity $entity, bool $includeOnConflict = false): int
@@ -336,12 +332,13 @@ class SQLConnection extends ObjectClass
         /** @var ArrayClass<string> $columnNames */
         $columnNames = new ArrayClass();
         $columnNames->appendContentsOf([$entity->entityKey->columnName]);
-        $element = $array->first() ?? fatal_error();
+        /** @var ManagedObject|Dictionary $element */
+        $element = $array->first ?? fatal_error();
         if ($element instanceof ManagedObject) {
             $columnNames->appendContentsOf($element->changedValuesForCurrentEvent()->keys);
         }
         $columns = $entity->columnsToCreate->filter(fn(SQLColumn $column): bool => $columnNames->containsElement($column->columnName));
-        $string = "INSERT INTO `$entity->tableName` ({$columns->map(fn(SQLColumn $column): string => "`$column->columnName`")->join(", ")}) VALUES " . ArrayClass::repeating("(" . ArrayClass::repeating("?", $columns->count())->join(", ") . ")", $array->count())->join(", ") . " RETURNING `{$entity->primaryKey->columnName}`";
+        $string = "INSERT INTO `$entity->tableName` ({$columns->map(fn(SQLColumn $column): string => "`$column->columnName`")->join(", ")}) VALUES " . ArrayClass::repeating("(" . ArrayClass::repeating("?", $columns->count)->join(", ") . ")", $array->count)->join(", ") . " RETURNING `{$entity->primaryKey->columnName}`";
         $arguments = $array->flatMap(fn(ManagedObject|Dictionary $object): ArrayClass => $columns->map(function (SQLColumn $column) use ($entity, $object): mixed {
             if ($column instanceof SQLEntityKey) {
                 return $entity->tableName;
@@ -397,20 +394,20 @@ class SQLConnection extends ObjectClass
             $insertedObjects = $requestContext->request->insertedObjects ?? new Set();
             $updatedObjects = $requestContext->request->updatedObjects ?? new Set();
             $deletedObjects = $requestContext->request->deletedObjects ?? new Set();
-            if ($insertedObjects->isEmpty() && $updatedObjects->isEmpty() && $deletedObjects->isEmpty()) {
+            if ($insertedObjects->isEmpty && $updatedObjects->isEmpty && $deletedObjects->isEmpty) {
                 return 0;
             }
             $this->createHistoryTrackingTables();
             $transactionID = $this->fetchMaxPrimaryKey("PersistentHistoryTransaction") + 1;
             $statement = new SQLStatement("INSERT INTO `PersistentHistoryTransaction` (`transactionID`, `author`, `bundleID`, `contextName`, `processID`, `storeID`) VALUES (?, ?, ?, ?, ?, ?)", new ArrayClass([$transactionID, $requestContext->context->transactionAuthor, $this->bundleID, $requestContext->context->name, ProcessInfo::processInfo()->globallyUniqueString, $requestContext->sqlCore->identifier]));
             $this->execute($statement);
-            if (!$insertedObjects->isEmpty()) {
+            if (!$insertedObjects->isEmpty) {
                 $this->insertChanges($insertedObjects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID), PersistentHistoryChangeType::insert, $transactionID, $requestContext->context);
             }
-            if (!$updatedObjects->isEmpty()) {
+            if (!$updatedObjects->isEmpty) {
                 $this->insertChanges($updatedObjects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID), PersistentHistoryChangeType::update, $transactionID, $requestContext->context);
             }
-            if (!$deletedObjects->isEmpty()) {
+            if (!$deletedObjects->isEmpty) {
                 $this->insertChanges($deletedObjects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID), PersistentHistoryChangeType::delete, $transactionID, $requestContext->context);
             }
             return $transactionID;
@@ -426,14 +423,14 @@ class SQLConnection extends ObjectClass
             }
         } elseif ($requestContext instanceof SQLBatchUpdateRequestContext) {
             $affectedObjectIDs = $requestContext->affectedObjectIDs;
-            if ($requestContext->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey) && !$affectedObjectIDs->isEmpty()) {
+            if ($requestContext->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey) && !$affectedObjectIDs->isEmpty) {
                 $this->createHistoryTrackingTables();
                 $transactionID = $this->fetchMaxPrimaryKey("PersistentHistoryTransaction") + 1;
                 $this->insertUpdates($affectedObjectIDs, $transactionID, new Set($requestContext->request->propertiesToUpdate?->keys ?? []));
                 return $transactionID;
             }
         } elseif ($requestContext instanceof SQLBatchDeleteRequestContext) {
-            if ($requestContext->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey) && !$requestContext->affectedObjectIDs->isEmpty()) {
+            if ($requestContext->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey) && !$requestContext->affectedObjectIDs->isEmpty) {
                 $this->createHistoryTrackingTables();
                 $transactionID = $this->fetchMaxPrimaryKey("PersistentHistoryTransaction") + 1;
                 $this->insertBatchDeleteChangesForTransactionID($transactionID);
@@ -702,12 +699,12 @@ class SQLConnection extends ObjectClass
         $adapter = $this->adapter ?? fatal_error();
         /** @var Set<SQLStatement> $statements */
         $statements = (new Set($entities))->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->manyToManyRelationships)->map(fn(SQLManyToMany $manyToMany): SQLStatement => $adapter->newCreateTableStatementForManyToMany($manyToMany));
-        if (!$statements->isEmpty()) {
+        if (!$statements->isEmpty) {
             $this->execute(SQLStatement::merging(new ArrayClass($statements)));
         }
         /** @var Set<SQLStatement> $statements */
         $statements = (new Set($entities))->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->manyToManyRelationships)->map(fn(SQLManyToMany $manyToMany): SQLStatement => $adapter->newCreateIndexesStatementForManyToMany($manyToMany));
-        if (!$statements->isEmpty()) {
+        if (!$statements->isEmpty) {
             $this->execute(SQLStatement::merging(new ArrayClass($statements)));
         }
     }

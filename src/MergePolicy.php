@@ -60,7 +60,7 @@ class MergePolicy extends ObjectClass
             /** @psalm-suppress InvalidArgument */
             $this->process($conflictList, $mergeConflict, $sourceObject, $cachedSnapshot, $persistedSnapshot);
         }
-        if (!$conflictList->isEmpty()) {
+        if (!$conflictList->isEmpty) {
             throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, ManagedObjectConstraintMergeError, new Dictionary(["conflictList" => $conflictList->join(", ")])));
         }
     }
@@ -85,7 +85,7 @@ class MergePolicy extends ObjectClass
                 $object->objectID->persistentStore = $databaseObject->objectID->persistentStore;
             }
         }
-        if (!$conflictList->isEmpty()) {
+        if (!$conflictList->isEmpty) {
             throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, 133021, new Dictionary([ConflictListErrorKey => $conflictList->join(", ")])));
         }
     }

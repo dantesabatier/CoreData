@@ -104,7 +104,7 @@ class EntityMigrationPolicy extends ObjectClass
                 $relationship = $instance->entity->relationshipsByName[$key];
                 $sourceInstances = $manager->sourceInstances($mapping->name, new ArrayClass([$instance]));
                 $destinationInstances = $manager->destinationInstancesForSourceRelationshipNamed($key, $sourceInstances);
-                $value = $relationship->isToMany ? new Set($destinationInstances) : $destinationInstances->first();
+                $value = $relationship->isToMany ? new Set($destinationInstances) : $destinationInstances->first;
                 $instance->setValueForKey($value, $key);
             }
             return true;

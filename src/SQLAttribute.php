@@ -61,7 +61,7 @@ class SQLAttribute extends SQLColumn
             $this->$name = new Set();
             return $this->$name;
         } elseif ($name == "isBackedByTrigger") {
-            $this->$name = !$this->triggerKeys->isEmpty();
+            $this->$name = !$this->triggerKeys->isEmpty;
             return $this->$name;
         } elseif ($name == "isDerivedAttribute") {
             $this->$name = $this->attributeDescription instanceof DerivedAttributeDescription;

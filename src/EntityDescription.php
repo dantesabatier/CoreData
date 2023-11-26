@@ -303,7 +303,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     {
         /** @var ArrayClass<FetchIndexElementDescription> $elements */
         $elements = $constraint->compactMap(fn(AttributeDescription|string $e): ?FetchIndexElementDescription => ($property = $e instanceof AttributeDescription ? $e : $this->propertiesByName[$e]) ? new FetchIndexElementDescription($property) : null);
-        if ($elements->isEmpty()) {
+        if ($elements->isEmpty) {
             return null;
         }
         $name = $elements->map(fn(FetchIndexElementDescription $element): string => $element->property->name)->join("_");
@@ -329,7 +329,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
 
     public function count(): int
     {
-        return $this->propertiesByName->count();
+        return $this->propertiesByName->count;
     }
 
     public function getIterator(): Traversable
@@ -361,27 +361,27 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         }
         $dictionary["versionHashModifier"] = $this->versionHashModifier;
         $attributes = $this->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$this->superentity?->attributesByName?->contains(fn(AttributeDescription $e): bool => $e->name === $attribute->name))->map(fn(AttributeDescription $attribute): Dictionary => $attribute->jsonSerialize());
-        if (!$attributes->isEmpty()) {
+        if (!$attributes->isEmpty) {
             $dictionary["attributes"] = $attributes;
         }
         $relationships = $this->relationshipsByName->filter(fn(RelationshipDescription $relationship): bool => !$this->superentity?->relationshipsByName?->contains(fn(RelationshipDescription $e): bool => $e->name === $relationship->name))->map(fn(RelationshipDescription $relationship): Dictionary => $relationship->jsonSerialize());
-        if (!$relationships->isEmpty()) {
+        if (!$relationships->isEmpty) {
             $dictionary["relationships"] = $relationships;
         }
         $fetchedProperties = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof FetchedPropertyDescription && !$this->superentity?->propertiesByName?->contains(fn(PropertyDescription $e): bool => $e->name === $property->name))->map(fn(PropertyDescription $property): Dictionary => $property->jsonSerialize());
-        if (!$fetchedProperties->isEmpty()) {
+        if (!$fetchedProperties->isEmpty) {
             $dictionary["fetchedProperties"] = $fetchedProperties;
         }
         $uniquenessConstraints = $this->uniquenessConstraints;
-        if (!$uniquenessConstraints->isEmpty()) {
+        if (!$uniquenessConstraints->isEmpty) {
             $dictionary["uniquenessConstraints"] = $uniquenessConstraints;
         }
         $indexes = $this->indexesByName->filter(fn(FetchIndexDescription $index): bool => !$index->isUnique() && !$this->superentity?->indexesByName?->contains(fn(FetchIndexDescription $e): bool => $e->name === $index->name))->map(fn(FetchIndexDescription $index): Dictionary => $index->jsonSerialize());
-        if (!$indexes->isEmpty()) {
+        if (!$indexes->isEmpty) {
             $dictionary["indexes"] = $indexes;
         }
         $subentities = $this->subentitiesByName->map(fn(EntityDescription $subentity): Dictionary => $subentity->jsonSerialize());
-        if (!$subentities->isEmpty()) {
+        if (!$subentities->isEmpty) {
             $dictionary["subentities"] = $subentities;
         }
         return $dictionary;

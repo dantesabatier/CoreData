@@ -60,7 +60,7 @@ class FetchIndexDescription extends ObjectClass
     public function __set(string $name, mixed $value): void
     {
         if ($name == "elements") {
-            if ((new Set($value->map(fn(FetchIndexElementDescription $element): FetchIndexElementType => $element->collationType)))->count() > 1) {
+            if ((new Set($value->map(fn(FetchIndexElementDescription $element): FetchIndexElementType => $element->collationType)))->count > 1) {
                 fatal_error("Invalid argument: elements must be of the same collation type");
             }
             $this->$name = $value;
@@ -82,7 +82,7 @@ class FetchIndexDescription extends ObjectClass
     /** @internal */
     public function isUnique(): bool
     {
-        return $this->elements->first()?->isUnique ?? false;
+        return $this->elements->first?->isUnique ?? false;
     }
 
     /** @internal */
@@ -94,13 +94,13 @@ class FetchIndexDescription extends ObjectClass
     /** @internal */
     public function isSpatial(): bool
     {
-        return $this->elements->first()?->collationType === FetchIndexElementType::rTree;
+        return $this->elements->first?->collationType === FetchIndexElementType::rTree;
     }
 
     /** @internal */
     public function isBinary(): bool
     {
-        return $this->elements->first()?->collationType === FetchIndexElementType::binary;
+        return $this->elements->first?->collationType === FetchIndexElementType::binary;
     }
 
     public function jsonSerialize(): Dictionary

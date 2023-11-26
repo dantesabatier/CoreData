@@ -50,7 +50,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         foreach ($data as $pattern => $value) {
                             $value ??= Nil::nil();
                             $keys = new ArrayClass(explode("_", $pattern));
-                            if ($keys->count() >= 3) {
+                            if ($keys->count >= 3) {
                                 $keys->removeAt(0);
                             }
                             if ($keys[$keys->indexBefore($keys->endIndex())] === $currentEntity->primaryKey->columnName) {
@@ -72,7 +72,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             foreach ($keys as $key) {
                                 $property = $currentEntity->propertiesByName[$key];
                                 if ($property instanceof SQLRelationship) {
-                                    if ($current instanceof ArrayClass && !$current->isEmpty()) {
+                                    if ($current instanceof ArrayClass && !$current->isEmpty) {
                                         /** @psalm-suppress UnsupportedReferenceUsage */
                                         $current = &$current[$current->indexBefore($current->endIndex())];
                                     }
@@ -88,7 +88,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         if ($property instanceof SQLPrimaryKey && !$value instanceof Nil && !$current->contains(fn(Dictionary $dictionary): bool => $dictionary[$key] === $value)) {
                                             $current[] = new Dictionary([$currentEntity->primaryKey->columnName => $value]);
                                         }
-                                        if (!$current->isEmpty()) {
+                                        if (!$current->isEmpty) {
                                             /** @psalm-suppress UnsupportedReferenceUsage */
                                             $current = &$current[$current->indexBefore($current->endIndex())];
                                         }
@@ -109,6 +109,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             unset($current);
                         }
                         if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
+                            /** @psalm-suppress InvalidArgument */
                             $representation["isInserted"] = true;
                         }
                         $map[$referenceObject] = $representation;
@@ -143,7 +144,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         }
         $this->result = $values;
         if ($this->debugLogLevel) {
-            $message = sprintf("CoreData: annotation: total execution time: %s for %s element(s)", human_readable_time(absolute_time_get_current() - $time), $this->result->count());
+            $message = sprintf("CoreData: annotation: total execution time: %s for %s element(s)", human_readable_time(absolute_time_get_current() - $time), $this->result->count);
             if ($this->debugLogLevel > 3) {
                 $message .= "\n$this->result";
             }

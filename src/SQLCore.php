@@ -229,7 +229,7 @@ class SQLCore extends IncrementalStore
      */
     public function recomputePrimaryKeyMaxForEntities(ArrayClass $entities): void
     {
-        if (!$entities->isEmpty()) {
+        if (!$entities->isEmpty) {
             $entities->appendContentsOf($entities->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->entitySpecificRelationships->filter(fn(SQLRelationship $relationship): bool => $relationship->relationshipDescription->deleteRule == DeleteRule::cascadeDeleteRule))->map(fn(SQLRelationship $relationship): SQLEntity => $relationship->destinationEntity));
             /** @var ArrayClass<SQLEntity> $entities */
             $entities = new ArrayClass(new Set($entities->compactMap(fn(SQLEntity $entity): ?SQLEntity => $entity->isRootEntity ? $entity : $entity->rootEntity)));
@@ -266,7 +266,7 @@ class SQLCore extends IncrementalStore
                 $result = $requestContext->result;
                 if (match ($requestContext->request->resultType) {
                     BatchDeleteRequestResultType::statusOnly => !$result->containsElement(false),
-                    BatchDeleteRequestResultType::objectIDs => !$result->isEmpty(),
+                    BatchDeleteRequestResultType::objectIDs => !$result->isEmpty,
                     BatchDeleteRequestResultType::count => (bool)$result->sum()
                 }) {
                     /** @var SQLEntity $entity */
@@ -274,7 +274,7 @@ class SQLCore extends IncrementalStore
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass([$entity]));
                 }
             } elseif ($requestContext instanceof SQLSaveChangesRequestContext) {
-                if (($deletedObjects = $requestContext->request->deletedObjects) && !$deletedObjects->isEmpty()) {
+                if (($deletedObjects = $requestContext->request->deletedObjects) && !$deletedObjects->isEmpty) {
                     /** @psalm-suppress InvalidArgument */
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass($deletedObjects->compactMap(fn(ManagedObject $object): ?SQLEntity => $this->model->entitiesByName[$object->entity->name])));
                 }

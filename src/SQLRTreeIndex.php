@@ -15,7 +15,7 @@ class SQLRTreeIndex extends SQLIndex
         parent::__construct($indexDescription, $entity);
         $this->tableName = $entity->tableName;
         /** @var FetchIndexElementDescription $element */
-        $element = $indexDescription->elements->first();
+        $element = $indexDescription->elements->first;
         $property = $element->property;
         if ($property->isOptional) {
             fatal_error(sprintf("Invalid argument for index %s, property \"%s\" cannot be optional", human_readable_value($element->collationType), $property->name));

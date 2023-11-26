@@ -19,6 +19,6 @@ readonly class FetchedResultsSectionInfo
      */
     public function __construct(public string $name, public ArrayClass $objects, public ?string $indexTitle)
     {
-        $this->numberOfObjects = $this->objects->count();
+        $this->numberOfObjects = $this->objects->count;
     }
 }

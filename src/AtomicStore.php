@@ -104,7 +104,7 @@ abstract class AtomicStore extends PersistentStore
         $resultType = $request->resultType;
         /** @var ArrayClass<PropertyDescription|string> $propertiesToGroupBy */
         $propertiesToGroupBy = $request->propertiesToGroupBy ?? new ArrayClass();
-        if (!$propertiesToGroupBy->isEmpty() && $resultType !== FetchRequestResultType::dictionaryResultType) {
+        if (!$propertiesToGroupBy->isEmpty && $resultType !== FetchRequestResultType::dictionaryResultType) {
             fatal_error(sprintf("Invalid fetch request: GROUP BY requires %s, %s given", human_readable_value(FetchRequestResultType::dictionaryResultType), human_readable_value($request->resultType)));
         }
         /** @var ArrayClass<ManagedObject> $objects */
@@ -138,7 +138,7 @@ abstract class AtomicStore extends PersistentStore
             }
             $objects = $objects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID);
         } elseif ($resultType === FetchRequestResultType::dictionaryResultType) {
-            if (!$propertiesToGroupBy->isEmpty()) {
+            if (!$propertiesToGroupBy->isEmpty) {
                 /** @var Dictionary<ArrayClass<ManagedObject>> $dictionary */
                 $dictionary = new Dictionary();
                 foreach ($objects as $object) {
@@ -162,7 +162,7 @@ abstract class AtomicStore extends PersistentStore
                 $objects = $objects->filtered($predicate);
             }
             $objects = $objects->map(fn(ManagedObject $object): Dictionary => $object->jsonSerialize());
-            if (($propertiesToFetch = $request->propertiesToFetch) && !$propertiesToFetch->isEmpty()) {
+            if (($propertiesToFetch = $request->propertiesToFetch) && !$propertiesToFetch->isEmpty) {
                 /** @var ArrayClass<ExpressionDescription> $expressionDescriptions */
                 $expressionDescriptions = $propertiesToFetch->filter(fn(PropertyDescription|string $property): bool => $property instanceof ExpressionDescription);
                 foreach ($expressionDescriptions as $expressionDescription) {
@@ -187,7 +187,7 @@ abstract class AtomicStore extends PersistentStore
                 $objects = $objects->sorted($descriptors);
             }
         } else {
-            $objects = new ArrayClass([new Number($objects->count())]);
+            $objects = new ArrayClass([new Number($objects->count)]);
         }
         return $objects;
     }
@@ -195,7 +195,7 @@ abstract class AtomicStore extends PersistentStore
     private function executeRefreshRequest(RefreshRequest $request, ManagedObjectContext $context): ArrayClass
     {
         return $this->groupedObjects($request->refreshObjects)->flatMap(function (Set $objects, string $key) use ($context): Set|ArrayClass {
-            if (!$objects->isEmpty() && ($entity = $this->persistentStoreCoordinator->managedObjectModel->entitiesByName[$key])) {
+            if (!$objects->isEmpty && ($entity = $this->persistentStoreCoordinator->managedObjectModel->entitiesByName[$key])) {
                 $fetchRequest = new FetchRequest();
                 $fetchRequest->entity = $entity;
                 $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($objects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID)), PredicateOperatorType::in);

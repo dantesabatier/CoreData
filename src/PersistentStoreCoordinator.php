@@ -287,7 +287,7 @@ class PersistentStoreCoordinator extends ObjectClass
             }
             $destinationContext->reset();
             $this->remove($store);
-            return $destinationContext->persistentStoreCoordinator?->persistentStores->first();
+            return $destinationContext->persistentStoreCoordinator?->persistentStores->first;
         }
         return null;
     }
@@ -370,7 +370,7 @@ class PersistentStoreCoordinator extends ObjectClass
     public function currentPersistentHistoryToken(?ArrayClass $stores = null): ?PersistentHistoryToken
     {
         $stores ??= $this->persistentStores;
-        if (!$stores->isEmpty()) {
+        if (!$stores->isEmpty) {
             return new PersistentHistoryToken($stores->reduce(new Dictionary(), function (Dictionary &$result, PersistentStore $store): Dictionary {
                 $result[$store->configurationName] = $store;
                 return $result;

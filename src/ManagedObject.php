@@ -152,7 +152,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->$name = $serializationKeys;
             return $this->$name;
         } elseif ($name == "hasPersistentChangedValues") {
-            return !$this->changedValues()->isEmpty();
+            return !$this->changedValues()->isEmpty;
         } elseif ($name == "hasChanges") {
             return $this->isInserted || $this->isUpdated || $this->isDeleted;
         } elseif ($name == "isInserted") {
@@ -167,7 +167,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->$name = (bool)$this->managedObjectContext->count($fetchRequest);
             return $this->$name;
         } elseif ($name == "isUpdated") {
-            $this->$name = $this->isInserted && !$this->changedValuesForCurrentEvent->isEmpty();
+            $this->$name = $this->isInserted && !$this->changedValuesForCurrentEvent->isEmpty;
             return $this->$name;
         } elseif ($name == "isDeleted") {
             $this->$name = $this->managedObjectContext->deletedObjects->containsElement($this);
@@ -670,7 +670,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 if ($objectID) {
                     return $store->objectID($entity, $objectID);
                 }
-                if (!$object->isEmpty()) {
+                if (!$object->isEmpty) {
                     return $store->objectID($entity, uuid_generate());
                 }
             }
@@ -704,7 +704,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         $fetchRequest->entity = $foreignKeyColumn->toOneRelationship->destinationEntity->entityDescription;
                         $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue((int)$value));
                         /** @noinspection PhpUnhandledExceptionInspection */
-                        return $this->managedObjectContext->fetch($fetchRequest)->first();
+                        return $this->managedObjectContext->fetch($fetchRequest)->first;
                     })();
                     $representation->removeValueForKey($key);
                 }
@@ -718,7 +718,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 if ($value instanceof ArrayClass) {
                     if ($property->isToMany) {
                         $representation[$key] = $value->compactMap(fn(ManagedObject|ManagedObjectID|Dictionary $object): ?ManagedObject => $managedObject($destinationEntity, $object));
-                    } elseif (!$value->isEmpty()) {
+                    } elseif (!$value->isEmpty) {
                         fatal_error(sprintf("%s: Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", $entity->name, ArrayClass::class, $key));
                     }
                 } elseif ($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value instanceof Dictionary) {

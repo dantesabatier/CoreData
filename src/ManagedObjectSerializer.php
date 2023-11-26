@@ -19,11 +19,11 @@ final class ManagedObjectSerializer
     
     private function update(ManagedObject $object, Dictionary $dictionary): void
     {
-        if ($dictionary->isEmpty()) {
+        if ($dictionary->isEmpty) {
             return;
         }
         $serializationKeys = $dictionary->keys->filter(fn(string $key): bool => isset($object->entity->propertiesByName[$key]));
-        if ($serializationKeys->isEmpty()) {
+        if ($serializationKeys->isEmpty) {
             return;
         }
         $serializationKeys->insertAt(SQLEntity::primaryKeyName, 0);
@@ -42,7 +42,7 @@ final class ManagedObjectSerializer
             }
             if ($value instanceof Dictionary) {
                 $serialization = $this->serialization($propertyName, $value);
-                if (!$serialization?->isEmpty()) {
+                if (!$serialization?->isEmpty) {
                     return $serialization;
                 }
             }
@@ -80,7 +80,7 @@ final class ManagedObjectSerializer
 
     public function serialized(ManagedObject $object, ?Dictionary $dictionary): ManagedObject
     {
-        if (!$dictionary || $dictionary->isEmpty()) {
+        if (!$dictionary || $dictionary->isEmpty) {
             return $object;
         }
         $this->serialize($object, $dictionary);
