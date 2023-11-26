@@ -239,7 +239,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                         $expression->name = $name;
                         $expression->expression = Expression::expressionWithFormat($expressionFormat);
                         $expression->resultType = AttributeType::from($description["expressionResultType"] ?? AttributeType::undefined->value);
-                        $keys = ["expressionFormat", "expressionResultType"];
+                        $keys = ["expressionFormat", "expressionResultType", "propertyName"];
                         $description->removeAll(fn(mixed $value, string $key): bool => in_array($key, $keys));
                     }
                     $keys = ["name", "partialIndexPredicateFormat", "elements"];
