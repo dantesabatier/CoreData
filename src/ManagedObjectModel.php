@@ -230,8 +230,6 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                 }
                 /** @var ArrayClass<Dictionary> $elements */
                 $elements = $description["elements"] ?? new ArrayClass();
-                $keys = ["name", "partialIndexPredicateFormat", "elements"];
-                $description->removeAll(fn(mixed $value, string $key): bool => in_array($key, $keys));
                 $index->elements = $elements->map(function (Dictionary $description): FetchIndexElementDescription {
                     $expression = null;
                     /** @var string|null $expressionFormat */
@@ -243,6 +241,8 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                         $keys = ["expressionFormat", "expressionResultType"];
                         $description->removeAll(fn(mixed $value, string $key): bool => in_array($key, $keys));
                     }
+                    $keys = ["name", "partialIndexPredicateFormat", "elements"];
+                    $description->removeAll(fn(mixed $value, string $key): bool => in_array($key, $keys));
                     $element = new FetchIndexElementDescription($expression);
                     $element->setValuesForKeys($description);
                     return $element;
