@@ -67,7 +67,7 @@ class SQLAdapter extends ObjectClass
                 $string .= "($length)";
             }
             if ($expression = $this->generatedAlwaysColumnExpression($column)) {
-                return "$string GENERATED ALWAYS AS ($expression) VIRTUAL";
+                return "$string GENERATED ALWAYS AS ($expression) PERSISTENT";
             }
             if ($column->isOptional) {
                 if ($sqlType === SQLType::timestamp) {

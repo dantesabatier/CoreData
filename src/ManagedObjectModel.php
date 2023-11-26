@@ -144,12 +144,11 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             $attributes = $dictionary["attributes"];
             if ($attributes) {
                 $properties->appendContentsOf($attributes->map(function (Dictionary $description) use ($entity): AttributeDescription {
-                    $keys = ["isDefaultValueBounded", "isMinValueBounded", "isMaxValueBounded"];
-                    $description->removeAll(fn(mixed $value, string $key): bool => in_array($key, $keys));
                     /** @var string|null $derivationExpressionFormat */
                     $derivationExpressionFormat = $description["derivationExpressionFormat"];
+                    $keys = ["isDefaultValueBounded", "isMinValueBounded", "isMaxValueBounded", "derivationExpressionFormat"];
+                    $description->removeAll(fn(mixed $value, string $key): bool => in_array($key, $keys));
                     if ($derivationExpressionFormat) {
-                        $description->removeValueForKey("derivationExpressionFormat");
                         $instance = new DerivedAttributeDescription();
                         $instance->entity = $entity;
                         $instance->derivationExpression = Expression::expressionWithFormat(trim($derivationExpressionFormat));
