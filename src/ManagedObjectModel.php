@@ -230,12 +230,13 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                 }
                 /** @var ArrayClass<Dictionary> $elements */
                 $elements = $description["elements"] ?? new ArrayClass();
-                $index->elements = $elements->map(function (Dictionary $description): FetchIndexElementDescription {
+                $index->elements = $elements->map(function (Dictionary $description) use ($name): FetchIndexElementDescription {
                     $expression = null;
                     /** @var string|null $expressionFormat */
                     $expressionFormat = $description["expressionFormat"];
                     if ($expressionFormat) {
                         $expression = new ExpressionDescription();
+                        $expression->name = $name;
                         $expression->expression = Expression::expressionWithFormat($expressionFormat);
                         $expression->resultType = AttributeType::from($description["expressionResultType"] ?? AttributeType::undefined->value);
                         $keys = ["expressionFormat", "expressionResultType"];
