@@ -227,6 +227,15 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                 $index = new FetchIndexDescription($name);
                 $index->entity = $entity;
                 $index->elements = $elements->map(function (Dictionary $description): FetchIndexElementDescription {
+                    /** @var string|null $expressionFormat */
+                    $expressionFormat = $description["expressionFormat"];
+                    if ($expressionFormat) {
+                        $expression = new ExpressionDescription();
+                        $expression->expression = Expression::expressionWithFormat($expressionFormat);
+                        $expression->resultType = AttributeType::from($description["expressionResultType"] ?? AttributeType::undefined->value);
+                        $keys = ["expressionFormat", "expressionResultType"];
+                        $description->removeAll(fn(mixed $value, string $key): bool => in_array($key, $keys));
+                    }
                     $element = new FetchIndexElementDescription();
                     $element->setValuesForKeys($description);
                     return $element;
