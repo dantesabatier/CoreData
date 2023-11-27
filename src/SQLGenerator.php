@@ -687,7 +687,7 @@ class SQLGenerator extends ObjectClass
         return false;
     }
 
-    private function buildKeyPathExpression(Expression $expression): string
+    private function buildKeyPathExpression(Expression $expression, ?bool &$isDeterministic = true): string
     {
         $tableName = $this->entity->tableName;
         $keyPath = $tableName;
@@ -698,7 +698,7 @@ class SQLGenerator extends ObjectClass
         foreach ($properties as $property) {
             if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
                 if ($property instanceof SQLAttribute && ($expression = $property->derivationExpression) && $expression->usesKVC) {
-                    return $this->buildDerivationExpression($expression, $destination);
+                    return $this->buildDerivationExpression($expression, $destination, $isDeterministic);
                 }
                 $keyPath .= ".";
                 $keyPath .= $property->columnName;
@@ -966,7 +966,7 @@ class SQLGenerator extends ObjectClass
         $clause .= ")";
     }
 
-    public function buildDerivationExpression(Expression $expression, ?string $destination = null): string
+    public function buildDerivationExpression(Expression $expression, ?string $destination = null, ?bool &$isDeterministic = true): string
     {
         switch ($expression->expressionType) {
             case ExpressionType::keyPath:
@@ -1016,22 +1016,25 @@ class SQLGenerator extends ObjectClass
                     }
                     fatal_error("Invalid argument: unsupported expression \"$expression\"");
                 }
-                return $this->buildKeyPathExpression($expression);
+                return $this->buildKeyPathExpression($expression, $isDeterministic);
             case ExpressionType::function:
-                return $this->buildFunctionExpression($expression);
+                return $this->buildFunctionExpression($expression, $isDeterministic);
             case ExpressionType::conditional:
-                return $this->buildConditionalExpression($expression);
+                return $this->buildConditionalExpression($expression, $isDeterministic);
             default:
                 fatal_error("Invalid argument: unsupported expression \"$expression\"");
         }
     }
 
-    private function buildFunctionExpression(Expression $expression): string
+    private function buildFunctionExpression(Expression $expression, ?bool &$isDeterministic = true): string
     {
         $arguments = $expression->arguments() ?? fatal_error();
         $operator = $expression->operand();
         if ($operator instanceof ExpressionOperator) {
-            switch ($operator->operatorType()) {
+            if (func_num_args() > 1) {
+                $isDeterministic = $operator->isDeterministic;
+            }
+            switch ($operator->operatorType) {
                 case ExpressionOperatorType::addTo:
                 case ExpressionOperatorType::fromSubtract:
                 case ExpressionOperatorType::multiplyBy:
@@ -1042,7 +1045,7 @@ class SQLGenerator extends ObjectClass
                 case ExpressionOperatorType::bitwiseXorWith:
                 case ExpressionOperatorType::leftshiftBy:
                 case ExpressionOperatorType::rightshiftBy:
-                    return "({$arguments->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(" {$operator->operatorSymbol()} ")})";
+                    return "({$arguments->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(" $operator->operatorSymbol ")})";
                 case ExpressionOperatorType::sum:
                 case ExpressionOperatorType::count:
                 case ExpressionOperatorType::min:
@@ -1068,7 +1071,7 @@ class SQLGenerator extends ObjectClass
                 case ExpressionOperatorType::isNull:
                 case ExpressionOperatorType::ifNull:
                 case ExpressionOperatorType::nullIf:
-                    $function = $operator->operatorSymbol();
+                    $function = $operator->operatorSymbol;
                     break;
                 case ExpressionOperatorType::average:
                     $function = "AVG";
@@ -1099,7 +1102,7 @@ class SQLGenerator extends ObjectClass
             }
             $column = strtoupper($function);
             $column .= "(";
-            $column .= $arguments->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(match ($operator->operatorType()) {
+            $column .= $arguments->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(match ($operator->operatorType) {
                 ExpressionOperatorType::cast => " AS ",
                 default => ", ",
             });
@@ -1108,21 +1111,21 @@ class SQLGenerator extends ObjectClass
         fatal_error("Invalid argument: unsupported expression \"$expression\"");
     }
 
-    private function buildConditionalExpression(Expression $expression): string
+    private function buildConditionalExpression(Expression $expression, ?bool &$isDeterministic = true): string
     {
         $predicate = "";
         $this->preparePredicate($expression->predicate(), $predicate);
         $true = $expression->true();
         if ($true->expressionType == ExpressionType::keyPath) {
-            $true = $this->buildKeyPathExpression($true);
+            $true = $this->buildKeyPathExpression($true, $isDeterministic);
         } elseif ($true->expressionType == ExpressionType::function) {
-            $true = $this->buildFunctionExpression($true);
+            $true = $this->buildFunctionExpression($true, $isDeterministic);
         }
         $false = $expression->false();
         if ($false->expressionType == ExpressionType::keyPath) {
-            $false = $this->buildKeyPathExpression($false);
+            $false = $this->buildKeyPathExpression($false, $isDeterministic);
         } elseif ($false->expressionType == ExpressionType::function) {
-            $false = $this->buildFunctionExpression($false);
+            $false = $this->buildFunctionExpression($false, $isDeterministic);
         }
         return "IF($predicate, $true, $false)";
     }
