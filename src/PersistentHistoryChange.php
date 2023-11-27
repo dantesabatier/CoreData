@@ -94,7 +94,7 @@ class PersistentHistoryChange extends ObjectClass
      */
     public static function entityDescription(ManagedObjectContext $context): ?EntityDescription
     {
-        return $context->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[self::className()];
+        return $context->persistentStoreCoordinator?->managedObjectModel?->entitiesByName["PersistentHistoryChange"];
     }
 
     public function description(): string
