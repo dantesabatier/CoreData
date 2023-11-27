@@ -1178,7 +1178,6 @@ class SQLGenerator extends ObjectClass
                 }
                 return $initialResult;
             });
-            /** @psalm-suppress ArgumentTypeCoercion */
             $descriptors->appendContentsOf($byMappingByKeyPathRelationshipsAssociationTable->flatMap(fn(ArrayClass $relationships, string $keyPath): ArrayClass => $relationships->map(fn(SQLToMany $many): SortDescriptor => ($index = $many->inverseToOne->foreignOrderKey->toOneRelationship->destinationEntity->indexes->flatMap(fn(SQLIndex $index): ArrayClass => $index->indexDescription->elements)->first(fn(FetchIndexElementDescription $element): bool => $element->property->name === $many->inverseToOne->foreignOrderKey->columnName)) ? new SortDescriptor("$keyPath.{$index->property->name}", $index->isAscending) : new SortDescriptor("$keyPath.{$many->inverseToOne->foreignOrderKey->columnName}"))));
         endif;
         if (!$descriptors->isEmpty) {
