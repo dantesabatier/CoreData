@@ -1165,8 +1165,8 @@ class SQLGenerator extends ObjectClass
         $this->raisesForNotApplicableKeys = false;
         /** @psalm-suppress RedundantCondition, TypeDoesNotContainType */
         if (SS_COREDATA_USES_RELATIONSHIPS_SORT_DESCRIPTORS):
-            /** @psalm-suppress ArgumentTypeCoercion */
-            $descriptors->appendContentsOf($this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->reduce(new Dictionary(), function (Dictionary $initialResult, Expression $expression): Dictionary {
+            /** @var Dictionary<ArrayClass<SQLToMany>> $byMappingByKeyPathRelationshipsAssociationTable */
+            $byMappingByKeyPathRelationshipsAssociationTable = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->reduce(new Dictionary(), function (Dictionary $initialResult, Expression $expression): Dictionary {
                 if ($this->isToManyKeyPath($expression)) {
                     $keyPath = $expression->keyPath();
                     $keys = new Set(explode(".", $keyPath));
@@ -1177,7 +1177,9 @@ class SQLGenerator extends ObjectClass
                     }
                 }
                 return $initialResult;
-            })->flatMap(fn(ArrayClass $relationships, string $keyPath): ArrayClass => $relationships->map(fn(SQLToMany $many): SortDescriptor => ($index = $many->inverseToOne->foreignOrderKey->toOneRelationship->destinationEntity->indexes->flatMap(fn(SQLIndex $index): ArrayClass => $index->indexDescription->elements)->first(fn(FetchIndexElementDescription $element): bool => $element->property->name === $many->inverseToOne->foreignOrderKey->columnName)) ? new SortDescriptor("$keyPath.{$index->property->name}", $index->isAscending) : new SortDescriptor("$keyPath.{$many->inverseToOne->foreignOrderKey->columnName}"))));
+            });
+            /** @psalm-suppress ArgumentTypeCoercion */
+            $descriptors->appendContentsOf($byMappingByKeyPathRelationshipsAssociationTable->flatMap(fn(ArrayClass $relationships, string $keyPath): ArrayClass => $relationships->map(fn(SQLToMany $many): SortDescriptor => ($index = $many->inverseToOne->foreignOrderKey->toOneRelationship->destinationEntity->indexes->flatMap(fn(SQLIndex $index): ArrayClass => $index->indexDescription->elements)->first(fn(FetchIndexElementDescription $element): bool => $element->property->name === $many->inverseToOne->foreignOrderKey->columnName)) ? new SortDescriptor("$keyPath.{$index->property->name}", $index->isAscending) : new SortDescriptor("$keyPath.{$many->inverseToOne->foreignOrderKey->columnName}"))));
         endif;
         if (!$descriptors->isEmpty) {
             $clauses = new Set($descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? "ASC" : "DESC"))->filter(fn(string $string): bool => str_contains($string, ".")));

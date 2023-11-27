@@ -90,6 +90,7 @@ class SQLAdapter extends ObjectClass
         if ($values->isEmpty) {
             return null;
         }
+        /** @var ManagedObject $object */
         $object = $values->popFirst();
         $columnNames = new ArrayClass([$manyToMany->columnName, $manyToMany->inverseColumnName]);
         return SQLStatement::merging($values->map(fn(ManagedObject $e): SQLStatement => new SQLStatement("INSERT INTO `$manyToMany->correlationTableName` ({$columnNames->map(fn(string $columnName): string => "`$columnName`")->join(", ")}) VALUES (?, ?) ON DUPLICATE KEY UPDATE {$columnNames->map(fn(string $columnName): string => "`$columnName` = VALUES(`$columnName`)")->join(", ")}", new ArrayClass([$e->objectID, $object->objectID]))));
@@ -100,6 +101,7 @@ class SQLAdapter extends ObjectClass
         if ($values->isEmpty) {
             return null;
         }
+        /** @var ManagedObject $object */
         $object = $values->popFirst();
         $columnNames = new ArrayClass([$manyToMany->columnName, $manyToMany->inverseColumnName]);
         return SQLStatement::merging($values->map(fn(ManagedObject $e): SQLStatement => new SQLStatement("DELETE FROM `$manyToMany->correlationTableName` WHERE {$columnNames->map(fn(string $columnName): string => "`$columnName` = ?")->join(" AND ")}", new ArrayClass([$e->objectID, $object->objectID]))));

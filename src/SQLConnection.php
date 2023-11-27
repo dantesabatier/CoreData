@@ -391,8 +391,11 @@ class SQLConnection extends ObjectClass
             if (!$requestContext->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey) || $requestContext->hasHistoryTracking) {
                 return 0;
             }
+            /** @var Set<ManagedObject> $insertedObjects */
             $insertedObjects = $requestContext->request->insertedObjects ?? new Set();
+            /** @var Set<ManagedObject> $updatedObjects */
             $updatedObjects = $requestContext->request->updatedObjects ?? new Set();
+            /** @var Set<ManagedObject> $deletedObjects */
             $deletedObjects = $requestContext->request->deletedObjects ?? new Set();
             if ($insertedObjects->isEmpty && $updatedObjects->isEmpty && $deletedObjects->isEmpty) {
                 return 0;
