@@ -9,6 +9,7 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
+use function Sabatier\Foundation\human_readable_value;
 
 /** @internal */
 class SQLAdapter extends ObjectClass
@@ -28,15 +29,15 @@ class SQLAdapter extends ObjectClass
         };
     }
 
-    private function generatedColumnExpression(SQLAttribute $attribute, ?string &$generatedColumnType): ?string
+    private function generatedColumnExpression(SQLAttribute $attribute): ?string
     {
         if (($expression = $attribute->derivationExpression) && !$expression->usesKVC) {
             $request = new FetchRequest();
             $request->entity = $attribute->entity->entityDescription;
             $generator = new SQLGenerator(new SQLFetchRequestContext($request, new ManagedObjectContext(), $this->sqlCore));
-            $format = $generator->buildDerivationExpression($expression, isDeterministic: $isDeterministic);
+            $expression = $generator->buildDerivationExpression($expression, isDeterministic: $isDeterministic);
             $generatedColumnType = $isDeterministic ? "PERSISTENT" : "VIRTUAL";
-            return (string)(new SQLStatement($format, $generator->arguments));
+            return (string)(new SQLStatement("GENERATED ALWAYS AS ($expression) $generatedColumnType", $generator->arguments));
         }
         return null;
     }
@@ -67,8 +68,8 @@ class SQLAdapter extends ObjectClass
                 })) {
                 $string .= "($length)";
             }
-            if ($expression = $this->generatedColumnExpression($column, $generatedColumnType)) {
-                return "$string GENERATED ALWAYS AS ($expression) $generatedColumnType";
+            if ($generatedColumnExpression = $this->generatedColumnExpression($column)) {
+                return "$string $generatedColumnExpression";
             }
             if ($column->isOptional) {
                 if ($sqlType === SQLType::timestamp) {
