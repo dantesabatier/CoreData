@@ -28,13 +28,14 @@ class SQLAdapter extends ObjectClass
         };
     }
 
-    private function generatedAlwaysColumnExpression(SQLAttribute $attribute, ?bool &$isDeterministic): ?string
+    private function generatedAlwaysColumnExpression(SQLAttribute $attribute, ?string &$generatedColumnType): ?string
     {
         if (($expression = $attribute->derivationExpression) && !$expression->usesKVC) {
             $request = new FetchRequest();
             $request->entity = $attribute->entity->entityDescription;
             $generator = new SQLGenerator(new SQLFetchRequestContext($request, new ManagedObjectContext(), $this->sqlCore));
             $format = $generator->buildDerivationExpression($expression, isDeterministic: $isDeterministic);
+            $generatedColumnType = $$isDeterministic ? "PERSISTENT" : "VIRTUAL";
             return (string)(new SQLStatement($format, $generator->arguments));
         }
         return null;
@@ -66,8 +67,8 @@ class SQLAdapter extends ObjectClass
                 })) {
                 $string .= "($length)";
             }
-            if ($expression = $this->generatedAlwaysColumnExpression($column, $isDeterministic)) {
-                return "$string GENERATED ALWAYS AS ($expression) " . ($isDeterministic ? "PERSISTENT" : "VIRTUAL");
+            if ($expression = $this->generatedAlwaysColumnExpression($column, $generatedColumnType)) {
+                return "$string GENERATED ALWAYS AS ($expression) $generatedColumnType";
             }
             if ($column->isOptional) {
                 if ($sqlType === SQLType::timestamp) {
