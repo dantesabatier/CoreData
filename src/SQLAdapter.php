@@ -35,7 +35,7 @@ class SQLAdapter extends ObjectClass
             $request->entity = $attribute->entity->entityDescription;
             $generator = new SQLGenerator(new SQLFetchRequestContext($request, new ManagedObjectContext(), $this->sqlCore));
             $format = $generator->buildDerivationExpression($expression, isDeterministic: $isDeterministic);
-            $generatedColumnType = $$isDeterministic ? "PERSISTENT" : "VIRTUAL";
+            $generatedColumnType = $isDeterministic ? "PERSISTENT" : "VIRTUAL";
             return (string)(new SQLStatement($format, $generator->arguments));
         }
         return null;
