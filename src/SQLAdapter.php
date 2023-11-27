@@ -28,7 +28,7 @@ class SQLAdapter extends ObjectClass
         };
     }
 
-    private function generatedAlwaysColumnExpression(SQLAttribute $attribute, ?string &$generatedColumnType): ?string
+    private function generatedColumnExpression(SQLAttribute $attribute, ?string &$generatedColumnType): ?string
     {
         if (($expression = $attribute->derivationExpression) && !$expression->usesKVC) {
             $request = new FetchRequest();
@@ -67,7 +67,7 @@ class SQLAdapter extends ObjectClass
                 })) {
                 $string .= "($length)";
             }
-            if ($expression = $this->generatedAlwaysColumnExpression($column, $generatedColumnType)) {
+            if ($expression = $this->generatedColumnExpression($column, $generatedColumnType)) {
                 return "$string GENERATED ALWAYS AS ($expression) $generatedColumnType";
             }
             if ($column->isOptional) {
