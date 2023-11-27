@@ -136,7 +136,7 @@ class PersistentHistoryTransaction extends ObjectClass
      */
     public static function entityDescription(ManagedObjectContext $context): ?EntityDescription
     {
-        return $context->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[self::className()];
+        return $context->persistentStoreCoordinator?->managedObjectModel?->entitiesByName["PersistentHistoryTransaction"];
     }
 
     public function description(): string
