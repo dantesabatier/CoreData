@@ -63,7 +63,7 @@ class SQLAdapter extends ObjectClass
                     AttributeType::string => $attributeDescription->maxValue ?? 255,
                     AttributeType::uri => 600,
                     AttributeType::transformable, AttributeType::objectID => 9999,
-                    default => $length,
+                    default => $length
                 })) {
                 $string .= "($length)";
             }
