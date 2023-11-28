@@ -1103,7 +1103,7 @@ class SQLGenerator extends ObjectClass
             }
             $column = strtoupper($function);
             $column .= "(";
-            $column .= $arguments->map(fn(Expression $argument): string => $this->buildExpression($argument, $isDeterministic))->join(match ($operator->operatorType) {
+            $column .= $arguments->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(match ($operator->operatorType) {
                 ExpressionOperatorType::cast => " AS ",
                 default => ", ",
             });
