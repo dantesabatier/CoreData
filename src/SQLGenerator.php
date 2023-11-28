@@ -1031,9 +1031,7 @@ class SQLGenerator extends ObjectClass
         $arguments = $expression->arguments() ?? fatal_error();
         $operator = $expression->operand();
         if ($operator instanceof ExpressionOperator) {
-            if (func_num_args() > 1) {
-                $isDeterministic = $operator->isDeterministic;
-            }
+            $isDeterministic = $operator->isDeterministic;
             switch ($operator->operatorType) {
                 case ExpressionOperatorType::addTo:
                 case ExpressionOperatorType::fromSubtract:
