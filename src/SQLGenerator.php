@@ -1103,7 +1103,7 @@ class SQLGenerator extends ObjectClass
             }
             $column = strtoupper($function);
             $column .= "(";
-            $column .= $arguments->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(match ($operator->operatorType) {
+            $column .= $arguments->map(fn(Expression $argument): string => $this->buildExpression($argument, $isDeterministic))->join(match ($operator->operatorType) {
                 ExpressionOperatorType::cast => " AS ",
                 default => ", ",
             });
@@ -1131,7 +1131,7 @@ class SQLGenerator extends ObjectClass
         return "IF($predicate, $true, $false)";
     }
 
-    private function buildConstantExpression(Expression $expression): string
+    private function buildConstantExpression(/** @noinspection PhpUnusedParameterInspection */ Expression $expression, ?bool &$isDeterministic = true): string
     {
         $value = $expression->constantValue();
         if ($value instanceof ArrayClass) {
@@ -1140,21 +1140,21 @@ class SQLGenerator extends ObjectClass
         return $expression->description();
     }
 
-    private function buildExpression(Expression $expression): string
+    private function buildExpression(Expression $expression, ?bool &$isDeterministic = true): string
     {
         return match ($expression->expressionType) {
-            ExpressionType::constantValue => $this->buildConstantExpression($expression),
-            ExpressionType::keyPath => $this->buildKeyPathExpression($expression),
-            ExpressionType::function => $this->buildFunctionExpression($expression),
-            ExpressionType::conditional => $this->buildConditionalExpression($expression),
-            ExpressionType::aggregate => $this->buildAggregateExpression($expression),
+            ExpressionType::constantValue => $this->buildConstantExpression($expression, $isDeterministic),
+            ExpressionType::keyPath => $this->buildKeyPathExpression($expression, $isDeterministic),
+            ExpressionType::function => $this->buildFunctionExpression($expression, $isDeterministic),
+            ExpressionType::conditional => $this->buildConditionalExpression($expression, $isDeterministic),
+            ExpressionType::aggregate => $this->buildAggregateExpression($expression, $isDeterministic),
             default => $expression->description(),
         };
     }
 
-    private function buildAggregateExpression(Expression $expression): string
+    private function buildAggregateExpression(Expression $expression, ?bool &$isDeterministic = true): string
     {
-        return $expression->collection()->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(", ");
+        return $expression->collection()->map(fn(Expression $argument): string => $this->buildExpression($argument, $isDeterministic))->join(", ");
     }
 
     private function buildGroupByClause(ArrayClass $propertiesToGroupBy): void
