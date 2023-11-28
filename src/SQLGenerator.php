@@ -1094,6 +1094,9 @@ class SQLGenerator extends ObjectClass
                 case ExpressionOperatorType::concat:
                     $function = "CONCAT_WS";
                     break;
+                case ExpressionOperatorType::index:
+                    $function = "ELT";
+                    break;
                 default:
                     fatal_error("Invalid argument: unsupported expression \"$expression\"");
             }
