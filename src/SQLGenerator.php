@@ -1217,7 +1217,7 @@ class SQLGenerator extends ObjectClass
                 if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey) {
                     $columnNames->append($property->name);
                 } elseif ($property instanceof SQLAttribute) {
-                    if ($insertedObject->changedValuesForCurrentEvent()[$property->name]) {
+                    if ($insertedObject->changedValuesForCurrentEvent()[$property->name] !== null) {
                         $columnNames->append($property->columnName);
                     }
                 } elseif ($property instanceof SQLToOne) {
