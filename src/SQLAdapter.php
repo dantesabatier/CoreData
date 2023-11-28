@@ -9,7 +9,6 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
-use function Sabatier\Foundation\human_readable_value;
 
 /** @internal */
 class SQLAdapter extends ObjectClass
@@ -189,7 +188,7 @@ class SQLAdapter extends ObjectClass
         }
         if ($destination->defaultValue !== null && ($source->isOptional !== $destination->isOptional || $source->defaultValue !== $destination->defaultValue)) {
             $request = new BatchUpdateRequest($entity->entityDescription);
-            $request->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($destination->columnName), Expression::expressionForConstantValue($source->defaultValue));
+            $request->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($destination->columnName), Expression::expressionForConstantValue(null));
             $request->propertiesToUpdate = new Dictionary([$destination->columnName => $destination->defaultValue]);
             $requestContext = new SQLBatchUpdateRequestContext($request, new ManagedObjectContext(), $this->sqlCore);
             /** @noinspection PhpUnhandledExceptionInspection */
