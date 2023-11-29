@@ -146,8 +146,10 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                 $properties->appendContentsOf($attributes->map(function (Dictionary $description) use ($entity): AttributeDescription {
                     /** @var string|null $derivationExpressionFormat */
                     $derivationExpressionFormat = $description["derivationExpressionFormat"];
-                    $keys = ["isDefaultValueBounded", "isMinValueBounded", "isMaxValueBounded", "derivationExpressionFormat"];
-                    $description->removeAll(fn(mixed $value, string $key): bool => in_array($key, $keys));
+                    $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
+                        "isDefaultValueBounded", "isMinValueBounded", "isMaxValueBounded", "derivationExpressionFormat" => true,
+                        default => false
+                    });
                     if ($derivationExpressionFormat) {
                         $instance = new DerivedAttributeDescription();
                         $instance->entity = $entity;
@@ -165,8 +167,10 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             $relationships = $dictionary["relationships"];
             if ($relationships) {
                 $properties->appendContentsOf($relationships->map(function (Dictionary $description) use ($entity): RelationshipDescription {
-                    $keys = ["isMinValueBounded", "isMaxValueBounded", "isMinCountBounded", "isMaxCountBounded"];
-                    $description->removeAll(fn(mixed $value, string $key): bool => in_array($key, $keys));
+                    $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
+                        "isMinValueBounded", "isMaxValueBounded", "isMinCountBounded", "isMaxCountBounded" => true,
+                        default => false
+                    });
                     $instance = new RelationshipDescription();
                     $instance->entity = $entity;
                     $instance->setValuesForKeys($description);
@@ -187,8 +191,10 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                     if ($fetchRequestPredicateFormat) {
                         $fetchRequest->predicate = Predicate::format($fetchRequestPredicateFormat);
                     }
-                    $keys = ["name", "fetchRequestEntityName", "fetchRequestPredicateFormat"];
-                    $description->removeAll(fn(mixed $value, string $key): bool => in_array($key, $keys));
+                    $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
+                        "name", "fetchRequestEntityName", "fetchRequestPredicateFormat" => true,
+                        default => false
+                    });
                     $fetchRequest->setValuesForKeys($description);
                     $instance = new FetchedPropertyDescription();
                     $instance->entity = $entity;
@@ -238,11 +244,15 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                         $expression->name = $name;
                         $expression->expression = Expression::expressionWithFormat($expressionFormat);
                         $expression->resultType = AttributeType::from($description["expressionResultType"] ?? AttributeType::undefined->value);
-                        $keys = ["expressionFormat", "expressionResultType", "propertyName"];
-                        $description->removeAll(fn(mixed $value, string $key): bool => in_array($key, $keys));
+                        $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
+                            "expressionFormat", "expressionResultType", "propertyName" => true,
+                            default => false
+                        });
                     }
-                    $keys = ["name", "partialIndexPredicateFormat", "elements"];
-                    $description->removeAll(fn(mixed $value, string $key): bool => in_array($key, $keys));
+                    $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
+                        "name", "partialIndexPredicateFormat", "elements" => true,
+                        default => false
+                    });
                     $element = new FetchIndexElementDescription($expression);
                     $element->setValuesForKeys($description);
                     return $element;
