@@ -1345,13 +1345,12 @@ class SQLGenerator extends ObjectClass
             $objects = $objects->sort(fn(ManagedObject $e0, ManagedObject $e1): int => $e0->entity->relationshipsByName->compactMap(fn(RelationshipDescription $relationship): ?EntityDescription => $e0->isRelationshipForKeyFault($relationship->name) ? $relationship->destinationEntity : null)->containsElement($e1->entity) ? ComparisonResult::orderedDescending->value : ComparisonResult::orderedAscending->value);
             foreach ($objects as $object) {
                 $entity = $object->entity;
-                $key = $entity->name;
                 /** @var ArrayClass $value */
-                $value = $map[$key] ?? new ArrayClass();
+                $value = $map[$entity->name] ?? new ArrayClass();
                 if (!$value->containsElement($object)) {
                     $value->append($object);
                 }
-                $map[$key] = $value;
+                $map[$entity->name] = $value;
             }
         }
         return $map;
