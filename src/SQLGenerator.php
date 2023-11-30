@@ -1338,18 +1338,20 @@ class SQLGenerator extends ObjectClass
     {
         /** @var Dictionary<ArrayClass> $map */
         $map = new Dictionary();
-        if ($objects->first instanceof PersistentHistoryTransaction) {
+        $first = $objects->first;
+        if ($first instanceof PersistentHistoryTransaction) {
             $map["PersistentHistoryTransaction"] = new ArrayClass($objects);
-        } else {
+        } elseif ($first instanceof PersistentHistoryChange) {
+            $map["PersistentHistoryChange"] = new ArrayClass($objects);
+        } elseif ($first instanceof ManagedObject) {
             $objects = $objects->sort(fn(ManagedObject $e0, ManagedObject $e1): int => $e0->entity->relationshipsByName->compactMap(fn(RelationshipDescription $relationship): ?EntityDescription => $e0->isRelationshipForKeyFault($relationship->name) ? $relationship->destinationEntity : null)->containsElement($e1->entity) ? ComparisonResult::orderedDescending->value : ComparisonResult::orderedAscending->value);
             foreach ($objects as $object) {
-                $entity = $object->entity;
                 /** @var ArrayClass $value */
-                $value = $map[$entity->name] ?? new ArrayClass();
+                $value = $map[$object->entity->name] ?? new ArrayClass();
                 if (!$value->containsElement($object)) {
                     $value->append($object);
                 }
-                $map[$entity->name] = $value;
+                $map[$object->entity->name] = $value;
             }
         }
         return $map;
