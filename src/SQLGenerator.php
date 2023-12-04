@@ -1101,13 +1101,10 @@ class SQLGenerator extends ObjectClass
             if (empty($function)) {
                 fatal_error("Invalid argument: unsupported expression \"$expression\"");
             }
-            $column = $function;
-            $column .= "(";
-            $column .= $arguments->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(match ($operator->operatorType) {
-                ExpressionOperatorType::cast => " AS ",
-                default => ", ",
-            });
-            return $column . ")";
+            return "$function(" . $arguments->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(match ($operator->operatorType) {
+                    ExpressionOperatorType::cast => " AS ",
+                    default => ", ",
+                }) . ")";
         }
         fatal_error("Invalid argument: unsupported expression \"$expression\"");
     }
