@@ -1069,7 +1069,7 @@ class SQLGenerator extends ObjectClass
                 case ExpressionOperatorType::isNull:
                 case ExpressionOperatorType::ifNull:
                 case ExpressionOperatorType::nullIf:
-                    $function = $operator->operatorSymbol;
+                    $function = strtoupper($operator->operatorSymbol);
                     break;
                 case ExpressionOperatorType::average:
                     $function = "AVG";
@@ -1096,12 +1096,12 @@ class SQLGenerator extends ObjectClass
                     $function = "ELT";
                     break;
                 default:
-                    fatal_error("Invalid argument: unsupported expression \"$expression\"");
+                    break;
             }
             if (empty($function)) {
                 fatal_error("Invalid argument: unsupported expression \"$expression\"");
             }
-            $column = strtoupper($function);
+            $column = $function;
             $column .= "(";
             $column .= $arguments->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(match ($operator->operatorType) {
                 ExpressionOperatorType::cast => " AS ",
