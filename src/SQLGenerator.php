@@ -1096,11 +1096,10 @@ class SQLGenerator extends ObjectClass
                     $function = "ELT";
                     break;
                 default:
+                    $function = "";
                     break;
             }
-            if (empty($function)) {
-                fatal_error("Invalid argument: unsupported expression \"$expression\"");
-            }
+            $function ?: fatal_error("Invalid argument: unsupported expression \"$expression\"");
             return "$function(" . $arguments->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(match ($operator->operatorType) {
                     ExpressionOperatorType::cast => " AS ",
                     default => ", ",
