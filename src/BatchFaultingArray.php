@@ -35,7 +35,7 @@ class BatchFaultingArray extends ArrayClass
         $this->objectIDs = new ArrayClass();
         /** @noinspection PhpUnhandledExceptionInspection */
         $this->count = $context->count($this->request);
-        $this->indices = parent::indices();
+        $this->indices = new Range(0, $this->count);
     }
 
     public function indices(): Range
