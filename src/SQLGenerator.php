@@ -1095,6 +1095,9 @@ class SQLGenerator extends ObjectClass
                 case ExpressionOperatorType::index:
                     $function = "ELT";
                     break;
+                case ExpressionOperatorType::dateFormat:
+                    $function = "DATE_FORMAT";
+                    break;
                 default:
                     $function = "";
                     break;
