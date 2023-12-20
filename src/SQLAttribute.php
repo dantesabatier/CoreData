@@ -70,14 +70,20 @@ class SQLAttribute extends SQLColumn
             $this->$name = $this->attributeDescription instanceof DerivedAttributeDescription ? $this->attributeDescription->derivationExpression : null;
             return $this->$name;
         } elseif ($name == "defaultValue") {
-            $defaultValue = ManagedObject::coercedValue($this->attributeDescription->defaultValue, $this->attributeDescription->type, $this->attributeDescription->attributeValueClassName, $this->attributeDescription->valueTransformerName, $this->attributeDescription->isOptional, true);
-            if (is_string($defaultValue)) {
-                $defaultValue = match ($defaultValue) {
-                    "CURRENT_TIMESTAMP", "UUID()", "" => $defaultValue,
-                    default => "'$defaultValue'"
-                };
-            }
-            $this->$name = $defaultValue;
+            $this->$name = match ($this->sqlType) {
+                SQLType::uuid => "UUID()",
+                SQLType::timestamp => "CURRENT_TIMESTAMP",
+                default => (function (): mixed {
+                    $defaultValue = ManagedObject::coercedValue($this->attributeDescription->defaultValue, $this->attributeDescription->type, $this->attributeDescription->attributeValueClassName, $this->attributeDescription->valueTransformerName, $this->attributeDescription->isOptional, true);
+                    if (is_string($defaultValue)) {
+                        $defaultValue = match ($defaultValue) {
+                            "" => $defaultValue,
+                            default => "'$defaultValue'"
+                        };
+                    }
+                    return $defaultValue;
+                })()
+            };
             return $this->$name;
         } else {
             return parent::__get($name);
