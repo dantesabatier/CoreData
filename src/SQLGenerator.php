@@ -17,6 +17,7 @@ use Sabatier\Foundation\CompareOptions;
 use Sabatier\Foundation\ComparisonResult;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\KeyValueOperator;
+use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\ComparisonPredicateModifier;
@@ -652,8 +653,8 @@ class SQLGenerator extends ObjectClass
     {
         /** @noinspection PhpVoidFunctionResultUsedInspection */
         return match ($expression->expressionType) {
-            ExpressionType::constantValue => $expression->constantValue() === null,
-            ExpressionType::keyPath => (new Value((string)$expression))->isEqual(null) ? fatal_error("Invalid argument: invalid expression $expression") : false,
+            ExpressionType::constantValue => Nil::nil()->isEqual($expression->constantValue()),
+            ExpressionType::keyPath => Nil::nil()->isEqual(new Value((string)$expression)) ? fatal_error("Invalid argument: invalid expression $expression") : false,
             default => false
         };
     }
