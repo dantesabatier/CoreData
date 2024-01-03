@@ -58,7 +58,7 @@ class SQLAdapter extends ObjectClass
             return "`$column->columnName` $dataType($length) UNSIGNED";
         } elseif ($column instanceof SQLAttribute) {
             $attributeDescription = $column->attributeDescription;
-            $string = "`$column->name` $dataType";
+            $string = "`$column->columnName` $dataType";
             if ($length && ($length = match ($attributeDescription->type) {
                     AttributeType::string => $attributeDescription->maxValue ?? 255,
                     AttributeType::uri => 600,
@@ -66,6 +66,12 @@ class SQLAdapter extends ObjectClass
                     default => $length
                 })) {
                 $string .= "($length)";
+            }
+            if ($column->minValue === 0 && ($unsigned = match ($sqlType) {
+                    SQLType::smallint, SQLType::int, SQLType::bigint, SQLType::decimal, SQLType::float, SQLType::double => "UNSIGNED",
+                    default => false
+                })) {
+                $string .= " $unsigned";
             }
             if ($generatedColumnExpression = $this->generatedColumnExpression($column)) {
                 return "$string $generatedColumnExpression";
