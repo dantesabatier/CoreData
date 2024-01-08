@@ -27,5 +27,7 @@
                 <file name="src/PersistentStoreCoordinator.php" />
             </errorLevel>
         </InvalidArgument>
+        <InternalClass errorLevel="suppress"/>
+        <InternalProperty errorLevel="suppress"/>
     </issueHandlers>
 </psalm>
