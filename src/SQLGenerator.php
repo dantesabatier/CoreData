@@ -1066,6 +1066,7 @@ class SQLGenerator extends ObjectClass
                 case ExpressionOperatorType::hour:
                 case ExpressionOperatorType::minute:
                 case ExpressionOperatorType::second:
+                case ExpressionOperatorType::date:
                 case ExpressionOperatorType::uuid:
                 case ExpressionOperatorType::isNull:
                 case ExpressionOperatorType::ifNull:
@@ -1095,6 +1096,9 @@ class SQLGenerator extends ObjectClass
                     break;
                 case ExpressionOperatorType::index:
                     $function = "ELT";
+                    break;
+                case ExpressionOperatorType::currentDate:
+                    $function = "CURDATE";
                     break;
                 case ExpressionOperatorType::dateFormat:
                     $function = "DATE_FORMAT";
