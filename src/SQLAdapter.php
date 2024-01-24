@@ -28,17 +28,14 @@ class SQLAdapter extends ObjectClass
         };
     }
 
-    private function generatedColumnExpression(SQLAttribute $attribute): ?string
+    private function generatedColumnExpression(Expression $expression, EntityDescription $entityDescription): ?string
     {
-        if (($expression = $attribute->derivationExpression) && !$expression->usesKVC) {
-            $request = new FetchRequest();
-            $request->entity = $attribute->entity->entityDescription;
-            $generator = new SQLGenerator(new SQLFetchRequestContext($request, new ManagedObjectContext(), $this->sqlCore));
-            $expression = $generator->buildDerivationExpression($expression, isDeterministic: $isDeterministic);
-            $generatedColumnType = $isDeterministic ? "PERSISTENT" : "VIRTUAL";
-            return (string)(new SQLStatement("GENERATED ALWAYS AS ($expression) $generatedColumnType", $generator->arguments));
-        }
-        return null;
+        $request = new FetchRequest();
+        $request->entity = $entityDescription;
+        $generator = new SQLGenerator(new SQLFetchRequestContext($request, new ManagedObjectContext(), $this->sqlCore));
+        $expression = $generator->buildDerivationExpression($expression, isDeterministic: $isDeterministic);
+        $generatedColumnType = $isDeterministic ? "PERSISTENT" : "VIRTUAL";
+        return (string)(new SQLStatement("GENERATED ALWAYS AS ($expression) $generatedColumnType", $generator->arguments));
     }
 
     private function typeStringForColumn(SQLColumn $column): ?string
@@ -73,8 +70,11 @@ class SQLAdapter extends ObjectClass
                 })) {
                 $string .= " $unsigned";
             }
-            if ($generatedColumnExpression = $this->generatedColumnExpression($column)) {
-                return "$string $generatedColumnExpression";
+            if ($expression = $column->derivationExpression) {
+                if ($expression->usesKVC) {
+                    return null;
+                }
+                return "$string {$this->generatedColumnExpression($expression, $column->entity->entityDescription)}";
             }
             if ($column->isOptional) {
                 if ($sqlType === SQLType::timestamp) {
