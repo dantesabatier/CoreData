@@ -1132,6 +1132,7 @@ class SQLGenerator extends ObjectClass
         } elseif ($false->expressionType == ExpressionType::function) {
             $false = $this->buildFunctionExpression($false, $isDeterministic);
         }
+        $isDeterministic = false;
         return "IF($predicate, $true, $false)";
     }
 
