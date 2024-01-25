@@ -273,10 +273,10 @@ class SQLEntity extends StoreMapping
 
     public function columnAfter(int $index): SQLColumn
     {
-        $end = $this->properties->endIndex();
-        $start = max(min($index, $end - 1), $this->properties->startIndex());
-        while ($start < $end) {
-            $property = $this->properties[$start];
+        $max = $this->properties->endIndex();
+        $i = max(min($index, $this->properties->indexBefore($max)), $this->properties->startIndex());
+        while ($i < $max) {
+            $property = $this->properties[$i];
             if ($property instanceof SQLAttribute) {
                 if ($property->isDerivedAttribute) {
                     if (!$property->derivationExpression?->usesKVC) {
@@ -288,7 +288,7 @@ class SQLEntity extends StoreMapping
             } elseif ($property instanceof SQLEntityKey || $property instanceof SQLForeignKey) {
                 return $property;
             }
-            $this->properties->formIndexAfter($start);
+            $this->properties->formIndexAfter($i);
         }
         return $this->entityKey;
     }
