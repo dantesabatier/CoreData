@@ -88,4 +88,12 @@ class SQLColumn extends SQLProperty
     {
         return sprintf("<%s %s>", $this->columnName, $this->hash());
     }
+
+    public function isEqual(mixed $other): bool
+    {
+        if ($other instanceof SQLColumn) {
+            return $this->columnName === $other->columnName;
+        }
+        return parent::isEqual($other);
+    }
 }
