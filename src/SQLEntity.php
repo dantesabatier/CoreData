@@ -273,8 +273,8 @@ class SQLEntity extends StoreMapping
 
     public function columnAfter(int $index): SQLColumn
     {
-        $start = $index;
         $end = $this->properties->endIndex();
+        $start = max(min($index, $end - 1), $this->properties->startIndex());
         while ($start < $end) {
             $property = $this->properties[$start];
             if ($property instanceof SQLAttribute) {
