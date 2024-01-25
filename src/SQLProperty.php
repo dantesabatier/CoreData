@@ -72,7 +72,7 @@ abstract class SQLProperty extends ObjectClass
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof SQLProperty) {
-            return $this->propertyDescription->isEqual($other->propertyDescription);
+            return $this->name === $other->name;
         }
         return false;
     }
