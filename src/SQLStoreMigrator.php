@@ -185,7 +185,7 @@ readonly class SQLStoreMigrator
             }
             foreach ($destinationEntity->properties as $index => $property) {
                 if ($property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
-                    if (!$sourceEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) && ($statement = $adapter->newCreateColumnStatement($property, $sourceEntity->columnAfter($index - 1)))) {
+                    if (!$sourceEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) && ($statement = $adapter->newCreateColumnStatement($property, $sourceEntity->columnAfter($destinationEntity->properties->indexBefore($index))))) {
                         $connection->execute($statement);
                         if ($statement = $adapter->newCreateIndexStatement($property)) {
                             $connection->execute($statement);
