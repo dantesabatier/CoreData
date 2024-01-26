@@ -154,6 +154,7 @@ class PersistentHistoryTransaction extends ObjectClass
         $dictionary["contextName"] = $this->contextName;
         $dictionary["processID"] = $this->processID;
         $dictionary["storeID"] = $this->storeID;
+        $dictionary["changes"] = $this->changes->map(fn(PersistentHistoryChange $change): Dictionary => $change->jsonSerialize());
         return $dictionary;
     }
 }
