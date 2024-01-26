@@ -143,4 +143,17 @@ class PersistentHistoryTransaction extends ObjectClass
     {
         return sprintf("<%s: %s %s %s %s %s %s>", self::class, $this->transactionNumber, $this->timestamp->description(), $this->bundleID, human_readable_value($this->author), human_readable_value($this->contextName), human_readable_value($this->changes));
     }
+
+    public function jsonSerialize(): Dictionary
+    {
+        /** @var Dictionary<mixed> $dictionary */
+        $dictionary = new Dictionary();
+        $dictionary["transactionID"] = $this->transactionNumber;
+        $dictionary["author"] = $this->author;
+        $dictionary["bundleID"] = $this->bundleID;
+        $dictionary["contextName"] = $this->contextName;
+        $dictionary["processID"] = $this->processID;
+        $dictionary["storeID"] = $this->storeID;
+        return $dictionary;
+    }
 }
