@@ -118,8 +118,10 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
         /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
         $changedObjectID->entity = $persistentStoreCoordinator->managedObjectModel->entitiesByName[$changedObjectID->entityName];
         $changedObjectID->persistentStore = $persistentStoreCoordinator->persistentStores->first(fn(PersistentStore $persistentStore): bool => $persistentStore->identifier === $changedObjectID->storeIdentifier);
-        $dictionary->removeValueForKey("changedObjectID");
-        $dictionary->removeValueForKey("transaction");
+        $dictionary->removeAll(fn(mixed $value, string $key): bool => match ($key) {
+            "changedObjectID", "transaction" => true,
+            default => false
+        });
         return new PersistentHistoryChange($dictionary, $changedObjectID);
     }
 
