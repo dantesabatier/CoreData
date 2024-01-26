@@ -108,8 +108,6 @@ class PersistentHistoryChange extends ObjectClass
         $dictionary = new Dictionary();
         $dictionary["changeID"] = $this->changeID;
         $dictionary["changeType"] = $this->changeType;
-        $dictionary["tombstone"] = $this->tombstone;
-        $dictionary["updatedProperties"] = $this->updatedProperties;
         return $dictionary;
     }
 }
