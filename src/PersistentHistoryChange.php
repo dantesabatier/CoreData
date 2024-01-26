@@ -101,4 +101,15 @@ class PersistentHistoryChange extends ObjectClass
     {
         return sprintf("<%s: %s %s %s %s %s>", self::class, $this->changeID, human_readable_value($this->changedObjectID), $this->changeType->name, human_readable_value($this->tombstone), human_readable_value($this->updatedProperties));
     }
+
+    public function jsonSerialize(): Dictionary
+    {
+        /** @var Dictionary<mixed> $dictionary */
+        $dictionary = new Dictionary();
+        $dictionary["changeID"] = $this->changeID;
+        $dictionary["changeType"] = $this->changeType;
+        $dictionary["tombstone"] = $this->tombstone;
+        $dictionary["updatedProperties"] = $this->updatedProperties;
+        return $dictionary;
+    }
 }
