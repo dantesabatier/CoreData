@@ -64,7 +64,7 @@ class SQLColumn extends SQLProperty
             $this->$name = $this->isOptional ? null : match ($this->sqlType) {
                 SQLType::tinyint, SQLType::smallint, SQLType::mediumint, SQLType::int, SQLType::bigint => 0,
                 SQLType::decimal, SQLType::float, SQLType::double => 0.0,
-                SQLType::binary, SQLType::blob, SQLType::bit, SQLType::text, SQLType::char, SQLType::varchar, SQLType::varbinary => "",
+                SQLType::binary, SQLType::tinyblob, SQLType::blob, SQLType::mediumblob, SQLType::longblob, SQLType::bit, SQLType::text, SQLType::char, SQLType::varchar, SQLType::varbinary => "",
                 SQLType::timestamp => "CURRENT_TIMESTAMP",
                 SQLType::uuid => "UUID()",
                 SQLType::unknown => null
