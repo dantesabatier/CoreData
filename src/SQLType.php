@@ -14,7 +14,10 @@ enum SQLType: string
     case float = "FLOAT";
     case double = "DOUBLE";
     case binary = "BINARY";
+    case tinyblob = "TINYBLOB";
     case blob = "BLOB";
+    case mediumblob = "MEDIUMBLOB";
+    case longblob = "LONGBLOB";
     case bit = "BIT";
     case text = "TEXT";
     case char = "CHAR";
