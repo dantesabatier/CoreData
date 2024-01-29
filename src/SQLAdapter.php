@@ -59,7 +59,6 @@ class SQLAdapter extends ObjectClass
             if ($length && ($length = match ($attributeDescription->type) {
                     AttributeType::string => $attributeDescription->maxValue ?? 255,
                     AttributeType::uri => 600,
-                    AttributeType::transformable, AttributeType::objectID => 9999,
                     default => $length
                 })) {
                 $string .= "($length)";
