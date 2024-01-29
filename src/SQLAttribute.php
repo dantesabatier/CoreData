@@ -42,7 +42,6 @@ class SQLAttribute extends SQLColumn
         } elseif ($name == "sqlType") {
             /** @noinspection PhpVoidFunctionResultUsedInspection */
             $this->$name = match ($this->attributeDescription->type) {
-                AttributeType::transformable, AttributeType::objectID => SQLType::varbinary,
                 AttributeType::integer16 => SQLType::smallint,
                 AttributeType::integer32 => SQLType::int,
                 AttributeType::integer64 => SQLType::bigint,
@@ -53,6 +52,8 @@ class SQLAttribute extends SQLColumn
                 AttributeType::boolean => SQLType::tinyint,
                 AttributeType::date => SQLType::timestamp,
                 AttributeType::binaryData => SQLType::longblob,
+                AttributeType::transformable => SQLType::mediumblob,
+                AttributeType::objectID => SQLType::tinyblob,
                 AttributeType::uuid => SQLType::uuid,
                 AttributeType::undefined => fatal_error("{$this->entity->entityDescription->name}.$this->name cannot use an attribute type of \"Undefined\""),
             };
