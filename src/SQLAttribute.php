@@ -48,13 +48,14 @@ class SQLAttribute extends SQLColumn
                 AttributeType::decimal => SQLType::decimal,
                 AttributeType::double => SQLType::double,
                 AttributeType::float => SQLType::float,
-                AttributeType::string, AttributeType::uri => SQLType::varchar,
+                AttributeType::string => SQLType::varchar,
                 AttributeType::boolean => SQLType::tinyint,
                 AttributeType::date => SQLType::timestamp,
                 AttributeType::binaryData => SQLType::longblob,
                 AttributeType::transformable => SQLType::mediumblob,
                 AttributeType::objectID => SQLType::tinyblob,
                 AttributeType::uuid => SQLType::uuid,
+                AttributeType::uri => SQLType::varbinary,
                 AttributeType::undefined => fatal_error("{$this->entity->entityDescription->name}.$this->name cannot use an attribute type of \"Undefined\""),
             };
             return $this->$name;
