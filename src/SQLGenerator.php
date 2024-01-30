@@ -348,7 +348,7 @@ class SQLGenerator extends ObjectClass
             }
             $properties->appendContentsOf($keys->filter(fn(string $key): bool => $request->entity->attributesByName->contains(fn(AttributeDescription $attribute): bool => $attribute->name === $key)));
             /** @psalm-suppress InvalidArgument */
-            $columnNames->appendContentsOf($properties->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => is_string($property) ? ($entity->attributes->first(fn(SQLAttribute $attribute): bool => $attribute->name === $property)?->attributeDescription ?? fatal_error("Entity {$entity->entityDescription->name} doesn't contains an attribute named \"$property\"")) : ($property instanceof AttributeDescription || $property instanceof ExpressionDescription ? $property : null))->map(function (PropertyDescription $property) use ($entity): string {
+            $columnNames->appendContentsOf($properties->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => is_string($property) ? $entity->attributes->first(fn(SQLAttribute $attribute): bool => $attribute->name === $property)?->attributeDescription : ($property instanceof AttributeDescription || $property instanceof ExpressionDescription ? $property : null))->map(function (PropertyDescription $property) use ($entity): string {
                 if ($property instanceof AttributeDescription) {
                     if ($property instanceof DerivedAttributeDescription && $property->derivationExpression?->usesKVC) {
                         return "{$this->buildDerivationExpression($property->derivationExpression)} AS $property->name";
