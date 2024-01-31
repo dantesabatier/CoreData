@@ -28,7 +28,7 @@ class SQLAdapter extends ObjectClass
         };
     }
 
-    private function generatedColumnExpression(Expression $expression, EntityDescription $entityDescription): ?string
+    private function generatedColumnExpression(Expression $expression, EntityDescription $entityDescription): string
     {
         $request = new FetchRequest();
         $request->entity = $entityDescription;
