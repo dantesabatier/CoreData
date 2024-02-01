@@ -52,7 +52,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
             /** @var FetchRequest<ManagedObjectID> $fetchRequest */
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $destinationEntity->entityDescription;
-            $fetchRequest->predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([new ComparisonPredicate(Expression::expressionForKeyPath($columnName), Expression::expressionForConstantValue($this->objectID)), new ComparisonPredicate(Expression::expressionForKeyPath($entity->entityKey->columnName), Expression::expressionForConstantValue($destinationEntity->tableName))]));
+            $fetchRequest->predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([new ComparisonPredicate(Expression::expressionForKeyPath($columnName), Expression::expressionForConstantValue($this->objectID)), new ComparisonPredicate(Expression::expressionForKeyPath($destinationEntity->entityKey->columnName), Expression::expressionForConstantValue($destinationEntity->tableName))]));
             $fetchRequest->resultType = FetchRequestResultType::managedObjectIDResultType;
             $this->result = $this->sqlCore->execute($fetchRequest, $this->context);
         } elseif ($relationship instanceof SQLManyToMany) {
