@@ -53,7 +53,7 @@ class SQLGenerator extends ObjectClass
     private FetchRequest $request;
     private SQLEntity $entity;
     /** @var ArrayClass<mixed> */
-    public readonly ArrayClass $arguments;
+    public ArrayClass $arguments;
     public readonly ?SQLStatement $statement;
     private SQLAliasGenerator $aliasGenerator;
     /** @var Dictionary<string> */
