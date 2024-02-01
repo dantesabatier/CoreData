@@ -1004,7 +1004,7 @@ class SQLGenerator extends ObjectClass
                             $generator->raisesForNotApplicableKeys = false;
                             $generator->keyValueOperator = $collectionOperator;
                             $statement = $generator->statement() ?? fatal_error();
-                            $string = "($statement->string";
+                            $string = "($statement";
                             $string .= $generator->whereClause ? " AND " : " WHERE ";
                             if ($relationship instanceof SQLToMany) {
                                 $destination ??= $entity->tableName;
