@@ -4,6 +4,7 @@ namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
+use Sabatier\Foundation\Predicates\CompoundPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 use function Sabatier\Foundation\fatal_error;
 
@@ -51,7 +52,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
             /** @var FetchRequest<ManagedObjectID> $fetchRequest */
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $destinationEntity->entityDescription;
-            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($columnName), Expression::expressionForConstantValue($this->objectID));
+            $fetchRequest->predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([new ComparisonPredicate(Expression::expressionForKeyPath($columnName), Expression::expressionForConstantValue($this->objectID)), new ComparisonPredicate(Expression::expressionForKeyPath($entity->entityKey->columnName), Expression::expressionForConstantValue($destinationEntity->tableName))]));
             $fetchRequest->resultType = FetchRequestResultType::managedObjectIDResultType;
             $this->result = $this->sqlCore->execute($fetchRequest, $this->context);
         } elseif ($relationship instanceof SQLManyToMany) {
