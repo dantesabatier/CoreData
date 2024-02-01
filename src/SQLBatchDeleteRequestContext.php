@@ -22,7 +22,7 @@ class SQLBatchDeleteRequestContext extends SQLStoreRequestContext
         $this->fetchRequestForObjectsToDelete->resultType = FetchRequestResultType::managedObjectIDResultType;
         $this->fetchRequestForObjectsToDelete->includesPropertyValues = false;
         $this->fetchContext = new SQLFetchRequestContext($this->fetchRequestForObjectsToDelete, $this->context, $this->sqlCore);
-        $this->deleteStatement = $this->generator->statement();
+        $this->deleteStatement = $this->generator->statement;
         $this->isWritingRequest = true;
     }
 

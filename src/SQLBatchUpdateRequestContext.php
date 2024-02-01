@@ -17,7 +17,7 @@ class SQLBatchUpdateRequestContext extends SQLStoreRequestContext
     {
         parent::__construct($this->request, $context, $sqlCore);
         $this->fetchContext = $this->createFetchRequestContextForObjectsToUpdate();
-        $this->updateStatement = $this->generator->statement();
+        $this->updateStatement = $this->generator->statement;
         $this->isWritingRequest = true;
     }
 

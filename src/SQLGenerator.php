@@ -53,7 +53,8 @@ class SQLGenerator extends ObjectClass
     private FetchRequest $request;
     private SQLEntity $entity;
     /** @var ArrayClass<mixed> */
-    public ArrayClass $arguments;
+    public readonly ArrayClass $arguments;
+    public readonly ?SQLStatement $statement;
     private SQLAliasGenerator $aliasGenerator;
     /** @var Dictionary<string> */
     public Dictionary $byMappingByTableAliasAssociationTable;
@@ -67,6 +68,7 @@ class SQLGenerator extends ObjectClass
         unset($this->request);
         unset($this->entity);
         unset($this->arguments);
+        unset($this->statement);
         unset($this->aliasGenerator);
         unset($this->byMappingByTableAliasAssociationTable);
     }
@@ -90,6 +92,15 @@ class SQLGenerator extends ObjectClass
             return $this->$name;
         } elseif ($name == "arguments") {
             $this->$name = new ArrayClass();
+            return $this->$name;
+        } elseif ($name == "statement") {
+            if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext || $this->requestContext instanceof SQLFetchRequestContext) {
+                $this->$name = $this->newSQLStatementForPersistentStoreRequest();
+            } elseif ($this->requestContext instanceof SQLSaveChangesRequestContext) {
+                $this->$name = $this->newSQLStatementForSaveChangesRequestContext();
+            } else {
+                $this->$name = null;
+            }
             return $this->$name;
         } elseif ($name == "byMappingByTableAliasAssociationTable") {
             $this->$name = new Dictionary();
@@ -168,17 +179,6 @@ class SQLGenerator extends ObjectClass
             return SQLStatement::merging($statements);
         }
         return null;
-    }
-
-    public function statement(): ?SQLStatement
-    {
-        if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext || $this->requestContext instanceof SQLFetchRequestContext) {
-            return $this->newSQLStatementForPersistentStoreRequest();
-        } elseif ($this->requestContext instanceof SQLSaveChangesRequestContext) {
-            return $this->newSQLStatementForSaveChangesRequestContext();
-        } else {
-            return null;
-        }
     }
 
     private function startSQL(PersistentStoreRequest $request): void
@@ -1003,7 +1003,7 @@ class SQLGenerator extends ObjectClass
                             $generator->autoDistinct = false;
                             $generator->raisesForNotApplicableKeys = false;
                             $generator->keyValueOperator = $collectionOperator;
-                            $string = "({$generator->statement()}";
+                            $string = "($generator->statement";
                             $string .= $generator->whereClause ? " AND " : " WHERE ";
                             if ($relationship instanceof SQLToMany) {
                                 $destination ??= $entity->tableName;

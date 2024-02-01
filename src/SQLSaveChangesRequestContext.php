@@ -20,7 +20,7 @@ class SQLSaveChangesRequestContext extends SQLStoreRequestContext
 
     public function executeRequestCore(): bool
     {
-        if (!($statement = $this->generator->statement())) {
+        if (!($statement = $this->generator->statement)) {
             return false;
         }
         $this->connection->execute($statement);
