@@ -6,6 +6,7 @@ namespace Sabatier\CoreData;
 
 use Exception;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\ComparisonResult;
 use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\fatal_error;
 
@@ -19,6 +20,8 @@ readonly class SQLStoreMigrator
     private ArrayClass $removedEntities;
     /** @var ArrayClass<SQLManyToMany> */
     private ArrayClass $removedManyToMany;
+    /** @var ArrayClass<SQLColumn> */
+    private ArrayClass $removedColumns;
 
     /**
      * @throws Exception
@@ -30,6 +33,7 @@ readonly class SQLStoreMigrator
         $this->sourceModel = new SQLModel($this->connection->cachedModel ?? fatal_error(), $this->store->configurationName);
         $this->removedEntities = new ArrayClass();
         $this->removedManyToMany = new ArrayClass();
+        $this->removedColumns = new ArrayClass();
     }
 
     /**
@@ -176,8 +180,7 @@ readonly class SQLStoreMigrator
                         if ($statement = $adapter->newDropIndexStatement($source)) {
                             $connection->execute($statement);
                         }
-                        $statement = $adapter->newDropColumnStatement($source);
-                        $connection->execute($statement);
+                        $this->removedColumns->append($source);
                     }
                 } elseif ($source instanceof SQLManyToMany) {
                     $this->removedManyToMany->append($source);
@@ -222,6 +225,10 @@ readonly class SQLStoreMigrator
         $connection = $this->connection;
         foreach ($this->removedManyToMany as $manyToMany) {
             $statement = $adapter->newDropTableStatementForManyToMany($manyToMany);
+            $connection->execute($statement);
+        }
+        foreach ($this->removedColumns->sort(fn(SQLColumn $c1, SQLColumn $c2): int => $c1 instanceof SQLAttribute && $c1->isDerivedAttribute ? ComparisonResult::orderedAscending->value : ComparisonResult::orderedDescending->value) as $removedColumn) {
+            $statement = $adapter->newDropColumnStatement($removedColumn);
             $connection->execute($statement);
         }
         foreach ($this->removedEntities as $entity) {
