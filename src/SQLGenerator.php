@@ -168,17 +168,17 @@ class SQLGenerator extends ObjectClass
                 }
             }
         }
-        if (!$statements->isEmpty) {
-            /** @psalm-suppress RedundantCondition, TypeDoesNotContainType */
-            if (SS_COREDATA_DISABLE_FOREIGN_KEY_CHECKS) :
-                if ($statements->contains(fn(SQLStatement $statement): bool => str_starts_with($statement->string, "INSERT"))) {
-                    $statements->insertAt(new SQLStatement("/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */"), 0);
-                    $statements->append(new SQLStatement("/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */"));
-                }
-            endif;
-            return SQLStatement::merging($statements);
+        if ($statements->isEmpty) {
+            return null;
         }
-        return null;
+        /** @psalm-suppress RedundantCondition, TypeDoesNotContainType */
+        if (SS_COREDATA_DISABLE_FOREIGN_KEY_CHECKS) :
+            if ($statements->contains(fn(SQLStatement $statement): bool => str_starts_with($statement->string, "INSERT"))) {
+                $statements->insertAt(new SQLStatement("/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */"), 0);
+                $statements->append(new SQLStatement("/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */"));
+            }
+        endif;
+        return SQLStatement::merging($statements);
     }
 
     private function startSQL(PersistentStoreRequest $request): void
