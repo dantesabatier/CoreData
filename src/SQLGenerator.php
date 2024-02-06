@@ -1000,7 +1000,6 @@ class SQLGenerator extends ObjectClass
                             $fetchRequest->propertiesToFetch = $propertiesToFetch;
                             $fetchRequest->resultType = FetchRequestResultType::countResultType;
                             $generator = new SQLGenerator(new SQLFetchRequestContext($fetchRequest, $requestContext->context, $requestContext->sqlCore));
-                            $generator->request = $fetchRequest;
                             $generator->autoDistinct = false;
                             $generator->raisesForNotApplicableKeys = false;
                             $generator->keyValueOperator = $collectionOperator;
