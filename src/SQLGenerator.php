@@ -975,6 +975,7 @@ class SQLGenerator extends ObjectClass
                 $keyPath = (string)$expression;
                 if ($expression->usesKVC) {
                     $entity = $this->entity;
+                    $destination ??= $entity->tableName;
                     [$keyPathToCollection, $collectionOperator, $keyPathToProperty] = kvc_components($keyPath);
                     if ($keyPathToCollection && $collectionOperator) {
                         /** @var SQLRelationship|null $relationship */
@@ -993,7 +994,7 @@ class SQLGenerator extends ObjectClass
                             $requestContext = $this->requestContext;
                             $managedObjectModel = $requestContext->sqlCore->persistentStoreCoordinator->managedObjectModel;
                             /** @var EntityDescription $entityForFetchRequest */
-                            $entityForFetchRequest = $managedObjectModel->entitiesByName[$destinationEntity->tableName];
+                            $entityForFetchRequest = $managedObjectModel->entitiesByName[$destinationEntity->entityDescription->name];
                             $fetchRequest = new FetchRequest();
                             $fetchRequest->entity = $entityForFetchRequest;
                             $fetchRequest->propertiesToFetch = $propertiesToFetch;
@@ -1006,7 +1007,6 @@ class SQLGenerator extends ObjectClass
                             $string = "($generator->statement";
                             $string .= $generator->whereClause ? " AND " : " WHERE ";
                             if ($relationship instanceof SQLToMany) {
-                                $destination ??= $entity->tableName;
                                 $string .= "$destinationEntity->tableName.{$relationship->inverseToOne->foreignKey->columnName} = $destination";
                                 $string .= $destinationEntity->isKindOfSQLEntity($entity) ? ".{$relationship->inverseToOne->foreignKey->columnName}" : ".{$entity->primaryKey->columnName}";
                             } else {
