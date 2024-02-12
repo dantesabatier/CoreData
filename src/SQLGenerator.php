@@ -968,62 +968,63 @@ class SQLGenerator extends ObjectClass
         $clause .= ")";
     }
 
+    private function buildDerivedKeyPathExpression(Expression $expression, ?string $destination = null, ?bool &$isDeterministic = true): string
+    {
+        $keyPath = (string)$expression;
+        if ($expression->usesKVC) {
+            $entity = $this->entity;
+            $destination ??= $entity->tableName;
+            [$keyPathToCollection, $collectionOperator, $keyPathToProperty] = kvc_components($keyPath);
+            if ($keyPathToCollection && $collectionOperator) {
+                /** @var SQLRelationship|null $relationship */
+                $relationship = $entity->propertiesByName[$keyPathToCollection];
+                if ($relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany) {
+                    $inverseRelationship = $relationship->inverseRelationship;
+                    $destinationEntity = $relationship->destinationEntity;
+                    if (($collectionOperator === KeyValueOperator::countKeyValueOperator && $keyPathToProperty) || ($collectionOperator !== KeyValueOperator::countKeyValueOperator && !$keyPathToProperty)) {
+                        fatal_error("Invalid expression \"$expression\"");
+                    }
+                    /** @var ArrayClass<string|PropertyDescription> $propertiesToFetch */
+                    $propertiesToFetch = new ArrayClass([$inverseRelationship->relationshipDescription]);
+                    if ($collectionOperator !== KeyValueOperator::countKeyValueOperator) {
+                        $propertiesToFetch->append($keyPathToProperty);
+                    }
+                    $requestContext = $this->requestContext;
+                    $managedObjectModel = $requestContext->sqlCore->persistentStoreCoordinator->managedObjectModel;
+                    /** @var EntityDescription $entityForFetchRequest */
+                    $entityForFetchRequest = $managedObjectModel->entitiesByName[$destinationEntity->entityDescription->name];
+                    $fetchRequest = new FetchRequest();
+                    $fetchRequest->entity = $entityForFetchRequest;
+                    $fetchRequest->propertiesToFetch = $propertiesToFetch;
+                    $fetchRequest->resultType = FetchRequestResultType::countResultType;
+                    $generator = new SQLGenerator(new SQLFetchRequestContext($fetchRequest, $requestContext->context, $requestContext->sqlCore));
+                    $generator->autoDistinct = false;
+                    $generator->raisesForNotApplicableKeys = false;
+                    $generator->keyValueOperator = $collectionOperator;
+                    $string = "($generator->statement";
+                    $string .= $generator->whereClause ? " AND " : " WHERE ";
+                    if ($relationship instanceof SQLToMany) {
+                        $string .= "$destinationEntity->tableName.{$relationship->inverseToOne->foreignKey->columnName} = $destination";
+                        $string .= $destinationEntity->isKindOfSQLEntity($entity) ? ".{$relationship->inverseToOne->foreignKey->columnName}" : ".{$entity->primaryKey->columnName}";
+                    } else {
+                        $string .= "{$destinationEntity->tableName}_$relationship->correlationTableName.$relationship->inverseColumnName = $entity->tableName.{$entity->primaryKey->columnName}";
+                    }
+                    return "$string)";
+                }
+            }
+            fatal_error("Invalid argument: unsupported expression \"$expression\"");
+        }
+        return $this->buildKeyPathExpression($expression, $isDeterministic);
+    }
+
     public function buildDerivationExpression(Expression $expression, ?string $destination = null, ?bool &$isDeterministic = true): string
     {
-        switch ($expression->expressionType) {
-            case ExpressionType::keyPath:
-                $keyPath = (string)$expression;
-                if ($expression->usesKVC) {
-                    $entity = $this->entity;
-                    $destination ??= $entity->tableName;
-                    [$keyPathToCollection, $collectionOperator, $keyPathToProperty] = kvc_components($keyPath);
-                    if ($keyPathToCollection && $collectionOperator) {
-                        /** @var SQLRelationship|null $relationship */
-                        $relationship = $entity->propertiesByName[$keyPathToCollection];
-                        if ($relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany) {
-                            $inverseRelationship = $relationship->inverseRelationship;
-                            $destinationEntity = $relationship->destinationEntity;
-                            if (($collectionOperator === KeyValueOperator::countKeyValueOperator && $keyPathToProperty) || ($collectionOperator !== KeyValueOperator::countKeyValueOperator && !$keyPathToProperty)) {
-                                fatal_error("Invalid expression \"$expression\"");
-                            }
-                            /** @var ArrayClass<string|PropertyDescription> $propertiesToFetch */
-                            $propertiesToFetch = new ArrayClass([$inverseRelationship->relationshipDescription]);
-                            if ($collectionOperator !== KeyValueOperator::countKeyValueOperator) {
-                                $propertiesToFetch->append($keyPathToProperty);
-                            }
-                            $requestContext = $this->requestContext;
-                            $managedObjectModel = $requestContext->sqlCore->persistentStoreCoordinator->managedObjectModel;
-                            /** @var EntityDescription $entityForFetchRequest */
-                            $entityForFetchRequest = $managedObjectModel->entitiesByName[$destinationEntity->entityDescription->name];
-                            $fetchRequest = new FetchRequest();
-                            $fetchRequest->entity = $entityForFetchRequest;
-                            $fetchRequest->propertiesToFetch = $propertiesToFetch;
-                            $fetchRequest->resultType = FetchRequestResultType::countResultType;
-                            $generator = new SQLGenerator(new SQLFetchRequestContext($fetchRequest, $requestContext->context, $requestContext->sqlCore));
-                            $generator->autoDistinct = false;
-                            $generator->raisesForNotApplicableKeys = false;
-                            $generator->keyValueOperator = $collectionOperator;
-                            $string = "($generator->statement";
-                            $string .= $generator->whereClause ? " AND " : " WHERE ";
-                            if ($relationship instanceof SQLToMany) {
-                                $string .= "$destinationEntity->tableName.{$relationship->inverseToOne->foreignKey->columnName} = $destination";
-                                $string .= $destinationEntity->isKindOfSQLEntity($entity) ? ".{$relationship->inverseToOne->foreignKey->columnName}" : ".{$entity->primaryKey->columnName}";
-                            } else {
-                                $string .= "{$destinationEntity->tableName}_$relationship->correlationTableName.$relationship->inverseColumnName = $entity->tableName.{$entity->primaryKey->columnName}";
-                            }
-                            return "$string)";
-                        }
-                    }
-                    fatal_error("Invalid argument: unsupported expression \"$expression\"");
-                }
-                return $this->buildKeyPathExpression($expression, $isDeterministic);
-            case ExpressionType::function:
-                return $this->buildFunctionExpression($expression, $isDeterministic);
-            case ExpressionType::conditional:
-                return $this->buildConditionalExpression($expression, $isDeterministic);
-            default:
-                fatal_error("Invalid argument: unsupported expression \"$expression\"");
-        }
+        return match ($expression->expressionType) {
+            ExpressionType::conditional => $this->buildConditionalExpression($expression, $isDeterministic),
+            ExpressionType::function => $this->buildFunctionExpression($expression, $isDeterministic),
+            ExpressionType::keyPath => $this->buildDerivedKeyPathExpression($expression, $destination, $isDeterministic),
+            default => fatal_error("Invalid argument: unsupported expression \"$expression\"")
+        };
     }
 
     private function buildFunctionExpression(Expression $expression, ?bool &$isDeterministic = true): string
