@@ -208,6 +208,11 @@ readonly class SQLStoreMigrator
                     $createIndexStatements->appendContentsOf($index->createTableStatements);
                 }
             }
+            foreach ($destinationEntity->properties as $index => $property) {
+                if ($property instanceof SQLAttribute && !$property->isDerivedAttribute && ($statement = $adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($destinationEntity->properties->indexBefore($index))))) {
+                    $connection->execute($statement);
+                }
+            }
         }
         foreach ($createIndexStatements as $statement) {
             $connection->execute($statement);
