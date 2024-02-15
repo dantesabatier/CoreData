@@ -205,6 +205,15 @@ class SQLAdapter extends ObjectClass
         return null;
     }
 
+
+    public function newModifyColumnStatement(SQLColumn $column, SQLColumn $after): ?SQLStatement
+    {
+        if ($string = $this->typeStringForColumn($column)) {
+            return new SQLStatement("ALTER TABLE `{$column->entity->tableName}` MODIFY IF EXISTS $string AFTER `$after->columnName`");
+        }
+        return null;
+    }
+
     public function newCreateColumnStatement(SQLColumn $column, SQLColumn $after): ?SQLStatement
     {
         if ($string = $this->typeStringForColumn($column)) {
