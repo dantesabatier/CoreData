@@ -100,7 +100,7 @@ class SQLEntity extends StoreMapping
             $this->$name = $entity->entityDescription->name;
             return $this->$name;
         } elseif ($name == "superentity") {
-            $this->$name = ($superentity = $this->entityDescription->superentity) ? $this->model->entitiesByName[$superentity->name] : null;
+            $this->$name = $this->model->entitiesByName->first(fn(SQLEntity $entity): bool => $entity->entityDescription->isEqual($this->entityDescription->superentity));
             return $this->$name;
         } elseif ($name == "subentities") {
             /** @psalm-suppress all */
