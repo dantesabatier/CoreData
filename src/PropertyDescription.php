@@ -161,7 +161,7 @@ abstract class PropertyDescription extends ObjectClass
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof PropertyDescription) {
-            return $this->entity->isEqual($other->entity) && $this->renamingIdentifier === $other->renamingIdentifier;
+            return $this->entity->isKindOf($other->entity) && $this->renamingIdentifier === $other->renamingIdentifier;
         }
         return false;
     }
