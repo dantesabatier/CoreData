@@ -340,7 +340,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof EntityDescription) {
-            return ($this::class === $other::class) && ($this->managedObjectClassName === $other->managedObjectClassName) && ($this->renamingIdentifier === $other->renamingIdentifier);
+            return ($this->managedObjectClassName === $other->managedObjectClassName) && ($this->renamingIdentifier === $other->renamingIdentifier);
         }
         return false;
     }
