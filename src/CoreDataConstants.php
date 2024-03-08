@@ -4,6 +4,7 @@ namespace Sabatier\CoreData;
 
 //Error Domains
 
+const CoreDataErrorDomain = "CoreDataErrorDomain";
 /** @var string Domain for SQL errors. */
 const SQLErrorDomain = "SQLErrorDomain";
 
