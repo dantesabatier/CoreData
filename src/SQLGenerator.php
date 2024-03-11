@@ -851,7 +851,13 @@ class SQLGenerator extends ObjectClass
 
     private function prepareNotEqual(ComparisonPredicate $predicate, string &$clause): void
     {
-        $this->prepareClauseWithSimplePredicate($predicate, $clause, "!=");
+        $operator = "!=";
+        if ($this->isNullExpression($predicate->rightExpression)) {
+            $operator = "IS NOT";
+        } elseif ($this->isNullExpression($predicate->leftExpression) || $this->isNullExpression($predicate->rightExpression)) {
+            $operator = "<>";
+        }
+        $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator);
     }
 
     private function prepareLike(ComparisonPredicate $predicate, string &$clause): void
