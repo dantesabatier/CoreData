@@ -1145,7 +1145,10 @@ class SQLGenerator extends ObjectClass
         if ($value instanceof ArrayClass) {
             return $value->join(", ");
         }
-        return $expression->description();
+        return match ($value) {
+            "MICROSECOND", "SECOND", "MINUTE", "HOUR", "DAY", "WEEK", "MONTH", "QUARTER", "YEAR" => $value,
+            default => $expression->description()
+        };
     }
 
     private function buildExpression(Expression $expression, ?bool &$isDeterministic = true): string
