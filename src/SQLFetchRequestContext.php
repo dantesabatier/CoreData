@@ -71,6 +71,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             $current = &$representation;
                             foreach ($keys as $key) {
                                 $property = $currentEntity->propertiesByName[$key];
+                                $propertyDescription = $property?->propertyDescription ?? $this->request->propertiesToFetch?->first(fn(string|PropertyDescription $property): bool => $property instanceof PropertyDescription ? $property->name === $key : $property === $key);
                                 if ($property instanceof SQLRelationship) {
                                     if ($current instanceof ArrayClass && !$current->isEmpty) {
                                         /** @psalm-suppress UnsupportedReferenceUsage */
@@ -83,7 +84,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     $relationship = $property;
                                     $currentEntity = $relationship->destinationEntity;
                                 }
-                                if ($property instanceof SQLColumn) {
+                                if ($property instanceof SQLColumn || $propertyDescription instanceof ExpressionDescription) {
                                     if ($current instanceof ArrayClass) {
                                         if ($property instanceof SQLPrimaryKey && !$value instanceof Nil && !$current->contains(fn(Dictionary $dictionary): bool => $dictionary[$key] === $value)) {
                                             $current[] = new Dictionary([$currentEntity->primaryKey->columnName => $value]);
@@ -94,7 +95,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         }
                                     }
                                     if ($current instanceof Dictionary) {
-                                        $propertyDescription = $property->propertyDescription;
                                         if ($propertyDescription instanceof ExpressionDescription) {
                                             $value = ManagedObject::coercedValue($value, $propertyDescription->resultType, isOptional: $propertyDescription->isOptional);
                                         }
