@@ -1103,6 +1103,9 @@ class SQLGenerator extends ObjectClass
                 case ExpressionOperatorType::dateFormat:
                     $function = "DATE_FORMAT";
                     break;
+                case ExpressionOperatorType::dateDiff:
+                    $function = "TIMESTAMPDIFF";
+                    break;
                 default:
                     $function = "";
                     break;
