@@ -129,4 +129,9 @@ class FetchRequest extends PersistentStoreRequest
         }
         return $context;
     }
+
+    public function jsonSerialize(): Dictionary
+    {
+        return $this->dictionaryWithValues(new ArrayClass(["includesSubentities", "fetchLimit", "fetchOffset", "fetchBatchSize", "sortDescriptors", "includesPendingChanges", "returnsDistinctResults", "includesPropertyValues", "shouldRefreshRefetchedObjects", "returnsObjectsAsFaults", "havingPredicate", "resultType", "entity", "predicate", "propertiesToFetch", "propertiesToGroupBy", "entityName"]));
+    }
 }
