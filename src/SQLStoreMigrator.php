@@ -209,7 +209,7 @@ readonly class SQLStoreMigrator
                 }
             }
             foreach ($destinationEntity->properties as $index => $property) {
-                if ($property instanceof SQLAttribute && !$property->isDerivedAttribute && ($statement = $adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($destinationEntity->properties->indexBefore($index))))) {
+                if ($property instanceof SQLAttribute && !$property->isDerivedAttribute && $property->sqlType !== SQLType::uuid && ($statement = $adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($destinationEntity->properties->indexBefore($index))))) {
                     $connection->execute($statement);
                 }
             }
