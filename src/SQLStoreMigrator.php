@@ -184,9 +184,10 @@ readonly class SQLStoreMigrator
                     $this->removedManyToMany->append($source);
                 }
             }
+            //mariadb -u root -p '' -e "SELECT @@GLOBAL.SQL_MODE;"
             foreach ($destinationEntity->properties as $index => $property) {
                 if ($property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
-                    if (!$sourceEntity->properties->contains(fn(SQLProperty $e): bool => $e->propertyDescription->renamingIdentifier === $property->propertyDescription->renamingIdentifier) && ($statement = $adapter->newCreateColumnStatement($property, $destinationEntity->columnAfter($destinationEntity->properties->indexBefore($index))))) {
+                    if ($statement = $adapter->newCreateColumnStatement($property, $destinationEntity->columnAfter($destinationEntity->properties->indexBefore($index)))) {
                         $connection->execute($statement);
                         if ($statement = $adapter->newCreateIndexStatement($property)) {
                             $connection->execute($statement);
@@ -209,7 +210,7 @@ readonly class SQLStoreMigrator
                 }
             }
             foreach ($destinationEntity->properties as $index => $property) {
-                if ($property instanceof SQLAttribute && !$property->isDerivedAttribute && $property->sqlType !== SQLType::uuid && ($statement = $adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($destinationEntity->properties->indexBefore($index))))) {
+                if ($property instanceof SQLAttribute && ($statement = $adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($destinationEntity->properties->indexBefore($index))))) {
                     $connection->execute($statement);
                 }
             }
