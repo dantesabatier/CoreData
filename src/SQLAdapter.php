@@ -209,7 +209,7 @@ class SQLAdapter extends ObjectClass
     public function newModifyColumnStatement(SQLColumn $column, SQLColumn $after): ?SQLStatement
     {
         if ($string = $this->typeStringForColumn($column)) {
-            return new SQLStatement("ALTER TABLE `{$column->entity->tableName}` MODIFY IF EXISTS $string AFTER `$after->columnName`");
+            return new SQLStatement("ALTER IGNORE TABLE `{$column->entity->tableName}` MODIFY IF EXISTS $string AFTER `$after->columnName`");
         }
         return null;
     }
