@@ -130,9 +130,8 @@ readonly class SQLStoreMigrator
             }
             foreach ($destinationEntity->properties as $property) {
                 if ($property instanceof SQLAttribute && $property->isDerivedAttribute) {
-                    if ($statement = $adapter->newDropColumnStatement($property)) {
-                        $connection->execute($statement);
-                    }
+                    $statement = $adapter->newDropColumnStatement($property);
+                    $connection->execute($statement);
                 }
             }
             foreach ($sourceEntity->properties as $source) {
