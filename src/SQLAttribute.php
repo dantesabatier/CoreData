@@ -103,5 +103,6 @@ class SQLAttribute extends SQLColumn
 
     public function addKeyForTriggerOnRelationship(SQLRelationship $relationship): void
     {
+        $this->triggerKeys->append($relationship->name);
     }
 }
