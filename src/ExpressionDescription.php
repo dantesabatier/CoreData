@@ -9,7 +9,10 @@
 
 namespace Sabatier\CoreData;
 
+use Sabatier\Foundation\Nil;
+use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Predicates\Expression;
+use Sabatier\Foundation\Value;
 use function Sabatier\Foundation\human_readable_value;
 
 /**
@@ -33,6 +36,17 @@ class ExpressionDescription extends PropertyDescription
         } else {
             return parent::__get($name);
         }
+    }
+
+    public function validateResultType(AttributeType|Number|Nil|int|null &$resultType): bool
+    {
+        if ($resultType instanceof Value) {
+            $resultType = $resultType->value;
+        }
+        if (is_int($resultType)) {
+            $resultType = AttributeType::from($resultType);
+        }
+        return true;
     }
 
     public function description(): string
