@@ -10,7 +10,10 @@
 namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Nil;
+use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
+use Sabatier\Foundation\Value;
 use function Sabatier\Foundation\fatal_error;
 
 /**
@@ -77,6 +80,17 @@ class FetchIndexElementDescription extends ObjectClass
         };
     }
 
+    public function validateCollationType(FetchIndexElementType|Number|Nil|int|null &$collationType): bool
+    {
+        if ($collationType instanceof Value) {
+            $collationType = $collationType->value;
+        }
+        if (is_int($collationType)) {
+            $collationType = FetchIndexElementType::from($collationType);
+        }
+        return true;
+    }
+
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof FetchIndexElementDescription) {
@@ -100,7 +114,7 @@ class FetchIndexElementDescription extends ObjectClass
         $dictionary = new Dictionary();
         $dictionary["propertyName"] = $this->property->name;
         if ($this->collationType !== FetchIndexElementType::bTree) {
-            $dictionary["collationType"] = $this->collationType->value;
+            $dictionary["collationType"] = $this->collationType;
         }
         if (!$this->isAscending) {
             $dictionary["isAscending"] = $this->isAscending;
