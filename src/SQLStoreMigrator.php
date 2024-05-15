@@ -128,7 +128,9 @@ readonly class SQLStoreMigrator
                 $statement = $adapter->newRenameTableStatement($sourceEntity, $destinationEntity);
                 $connection->execute($statement);
             }
-            foreach ($sourceEntity->properties as $property) {
+            $properties = new Set($sourceEntity->properties);
+            $properties->appendContentsOf($destinationEntity->properties);
+            foreach ($properties as $property) {
                 if ($property instanceof SQLAttribute && $property->isDerivedAttribute) {
                     $statement = $adapter->newDropColumnStatement($property);
                     $connection->execute($statement);
