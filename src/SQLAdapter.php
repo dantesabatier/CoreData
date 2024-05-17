@@ -214,10 +214,10 @@ class SQLAdapter extends ObjectClass
         return null;
     }
 
-    public function newCreateColumnStatement(SQLColumn $column, SQLColumn $after): ?SQLStatement
+    public function newCreateColumnStatement(SQLColumn $column, ?SQLColumn $after = null): ?SQLStatement
     {
         if ($string = $this->typeStringForColumn($column)) {
-            return new SQLStatement("ALTER TABLE `{$column->entity->tableName}` ADD COLUMN IF NOT EXISTS $string AFTER `$after->columnName`");
+            return $after ? new SQLStatement("ALTER TABLE `{$column->entity->tableName}` ADD COLUMN IF NOT EXISTS $string AFTER `$after->columnName`") : new SQLStatement("ALTER TABLE `{$column->entity->tableName}` ADD COLUMN IF NOT EXISTS $string");
         }
         return null;
     }
