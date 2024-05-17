@@ -192,9 +192,9 @@ readonly class SQLStoreMigrator
                     $this->removedManyToMany->append($source);
                 }
             }
-            foreach ($destinationEntity->properties as $index => $property) {
+            foreach ($destinationEntity->properties as $property) {
                 if ($property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
-                    if ($statement = $adapter->newCreateColumnStatement($property, $destinationEntity->columnAfter($destinationEntity->properties->indexBefore($index)))) {
+                    if ($statement = $adapter->newCreateColumnStatement($property)) {
                         $connection->execute($statement);
                         if ($statement = $adapter->newCreateIndexStatement($property)) {
                             $connection->execute($statement);
