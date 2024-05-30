@@ -106,22 +106,24 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
         return $fetchRequest;
     }
 
-    private function changeFromResult(Dictionary $dictionary): PersistentHistoryChange
+    private function changeFromResult(Dictionary $dictionary): ?PersistentHistoryChange
     {
         $persistentStoreCoordinator = $this->sqlCore->persistentStoreCoordinator;
         /** @var ValueTransformer $valueTransformer */
         $valueTransformer = ValueTransformer::valueTransformerForName(SecureUnarchiveFromDataTransformerName);
         /** @var string $data */
         $data = $dictionary["changedObjectID"];
-        /** @var ManagedObjectID $changedObjectID */
-        $changedObjectID = $valueTransformer->reverseTransformedValue($data);
-        /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-        $changedObjectID->entity = $persistentStoreCoordinator->managedObjectModel->entitiesByName[$changedObjectID->entityName];
-        $changedObjectID->persistentStore = $persistentStoreCoordinator->persistentStores->first(fn(PersistentStore $persistentStore): bool => $persistentStore->identifier === $changedObjectID->storeIdentifier);
         $dictionary->removeAll(fn(mixed $value, string $key): bool => match ($key) {
             "changedObjectID", "transaction" => true,
             default => false
         });
+        /** @var ManagedObjectID $changedObjectID */
+        $changedObjectID = $valueTransformer->reverseTransformedValue($data);
+        if (!($entity = $persistentStoreCoordinator->managedObjectModel->entitiesByName[$changedObjectID->entityName])) {
+            return null;
+        }
+        $changedObjectID->entity = $entity;
+        $changedObjectID->persistentStore = $persistentStoreCoordinator->persistentStores->first(fn(PersistentStore $persistentStore): bool => $persistentStore->identifier === $changedObjectID->storeIdentifier);
         return new PersistentHistoryChange($dictionary, $changedObjectID);
     }
 
@@ -130,7 +132,7 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
         /** @var Set<Dictionary>|null $changes */
         $changes = $dictionary["changes"];
         if ($changes) {
-            $dictionary["changes"] = new ArrayClass($changes->map(fn(Dictionary $dictionary): PersistentHistoryChange => $this->changeFromResult($dictionary)));
+            $dictionary["changes"] = new ArrayClass($changes->compactMap(fn(Dictionary $dictionary): ?PersistentHistoryChange => $this->changeFromResult($dictionary)));
         }
         return new PersistentHistoryTransaction($dictionary);
     }
@@ -168,7 +170,7 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
                         default => $transactions
                     };
                 } else {
-                    $changes = $context->result->map(fn(Dictionary $dictionary): PersistentHistoryChange => $this->changeFromResult($dictionary));
+                    $changes = $context->result->compactMap(fn(Dictionary $dictionary): ?PersistentHistoryChange => $this->changeFromResult($dictionary));
                     return match ($this->request->resultType) {
                         PersistentHistoryResultType::objectIDs => $changes->map(fn(PersistentHistoryChange $change): ManagedObjectID => $change->changedObjectID),
                         PersistentHistoryResultType::transactionsOnly, PersistentHistoryResultType::transactionsAndChanges => new ArrayClass([new PersistentHistoryTransaction(new Dictionary(["changes" => $changes]))]),
