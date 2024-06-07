@@ -1075,6 +1075,8 @@ class SQLGenerator extends ObjectClass
                 case ExpressionOperatorType::second:
                 case ExpressionOperatorType::date:
                 case ExpressionOperatorType::uuid:
+                case ExpressionOperatorType::substring:
+                case ExpressionOperatorType::length:
                 case ExpressionOperatorType::isNull:
                 case ExpressionOperatorType::ifNull:
                 case ExpressionOperatorType::nullIf:
