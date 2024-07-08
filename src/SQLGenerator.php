@@ -781,9 +781,9 @@ class SQLGenerator extends ObjectClass
                     $constantValue = $constantValue->objectID;
                 }
                 $argument = $constantValue;
-                if (is_string($argument)) {
+                if (is_string($argument) || $prefix || $suffix) {
                     $argument = "$prefix$argument$suffix";
-                    if (str_contains($argument, "\%") || str_contains($argument, "\_")) {
+                    if ($prefix || $suffix || str_contains($argument, "\%") || str_contains($argument, "\_")) {
                         $constantValue = "?";
                     }
                 }
