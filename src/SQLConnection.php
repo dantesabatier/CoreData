@@ -556,12 +556,11 @@ class SQLConnection extends ObjectClass
      */
     public function saveCachedModel(SQLModel $model): void
     {
-        $managedObjectModel = $model->managedObjectModel;
         $this->createCachedModelTable();
-        $this->execute(new SQLStatement("INSERT INTO `ManagedObjectModel` (`modelID`, `data`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `modelID` = VALUES(`modelID`), `data` = VALUES(`data`)", new ArrayClass([1, $this->compressedDataWithModel($managedObjectModel)])));
+        $this->execute(new SQLStatement("INSERT INTO `ManagedObjectModel` (`modelID`, `data`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `modelID` = VALUES(`modelID`), `data` = VALUES(`data`)", new ArrayClass([1, $this->compressedDataWithModel($model->managedObjectModel)])));
         /** @var Dictionary<mixed> $metadata */
         $metadata = $this->adapter?->sqlCore?->metadata ?? new Dictionary([StoreTypeKey => SQLStoreType]);
-        $metadata[StoreModelVersionHashesKey] = $managedObjectModel->versionHash;
+        $metadata[StoreModelVersionHashesKey] = $model->managedObjectModel->versionHash;
         $this->saveMetadata($metadata);
     }
 
@@ -570,7 +569,7 @@ class SQLConnection extends ObjectClass
      */
     private function compressedDataWithModel(ManagedObjectModel $model): ?string
     {
-        if ($data = gzcompress(KeyedArchiver::archivedData($model->jsonSerialize()), 9)) {
+        if ($data = gzdeflate(KeyedArchiver::archivedData($model->jsonSerialize()), 9)) {
             return $data;
         }
         return null;
@@ -594,7 +593,7 @@ class SQLConnection extends ObjectClass
      */
     private function decompressedModelWithData(string $compressedData): ?ManagedObjectModel
     {
-        if ($data = gzuncompress($compressedData)) {
+        if ($data = gzinflate($compressedData)) {
             return ManagedObjectModel::newModel($data);
         }
         return null;
@@ -606,7 +605,7 @@ class SQLConnection extends ObjectClass
     private function createCachedModelTable(): void
     {
         if (!$this->hasCachedModelTable) {
-            $this->execute(new SQLStatement("CREATE TABLE `ManagedObjectModel` (`modelID` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT, `data` BLOB NOT NULL, PRIMARY KEY (`modelID`)) ENGINE={$this->schema->engine} DEFAULT CHARSET={$this->schema->charset} COLLATE={$this->schema->collation}"));
+            $this->execute(new SQLStatement("CREATE TABLE IF NOT EXISTS `ManagedObjectModel` (`modelID` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT, `data` LONGBLOB NOT NULL, PRIMARY KEY (`modelID`)) ENGINE={$this->schema->engine} DEFAULT CHARSET={$this->schema->charset} COLLATE={$this->schema->collation}"));
         }
     }
 
@@ -616,7 +615,7 @@ class SQLConnection extends ObjectClass
     private function createMetadata(): void
     {
         if (!$this->hasMetadataTable) {
-            $this->execute(new SQLStatement("CREATE TABLE `PersistentStoreMetadata` (`metadataID` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT, `data` BLOB NOT NULL, PRIMARY KEY (`metadataID`)) ENGINE={$this->schema->engine} DEFAULT CHARSET={$this->schema->charset} COLLATE={$this->schema->collation}"));
+            $this->execute(new SQLStatement("CREATE TABLE IF NOT EXISTS `PersistentStoreMetadata` (`metadataID` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT, `data` LONGBLOB NOT NULL, PRIMARY KEY (`metadataID`)) ENGINE={$this->schema->engine} DEFAULT CHARSET={$this->schema->charset} COLLATE={$this->schema->collation}"));
         }
     }
 
@@ -633,7 +632,7 @@ class SQLConnection extends ObjectClass
      */
     private function decompressedMetadataWithData(string $compressedData): ?Dictionary
     {
-        if ($data = gzuncompress($compressedData)) {
+        if ($data = gzinflate($compressedData)) {
             return KeyedUnarchiver::unarchiveTopLevelObjectWithData($data);
         }
         return null;
@@ -657,7 +656,7 @@ class SQLConnection extends ObjectClass
      */
     private function compressedDataWithMetadata(Dictionary $metadata): ?string
     {
-        if ($data = gzcompress(KeyedArchiver::archivedData($metadata), 9)) {
+        if ($data = gzdeflate(KeyedArchiver::archivedData($metadata), 9)) {
             return $data;
         }
         return null;
