@@ -212,7 +212,7 @@ class SQLCore extends IncrementalStore
 
     public function loadMetadata(): bool
     {
-        if ($this->queryGenerationTrackingConnection->hasMetadataTable && ($metadata = $this->queryGenerationTrackingConnection->fetchMetadata())) {
+        if ($metadata = $this->queryGenerationTrackingConnection->fetchMetadata()) {
             $this->metadata = $metadata;
             $this->identifier = $metadata[StoreUUIDKey];
         }
