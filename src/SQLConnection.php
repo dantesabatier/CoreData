@@ -569,10 +569,7 @@ class SQLConnection extends ObjectClass
      */
     private function compressedDataWithModel(ManagedObjectModel $model): ?string
     {
-        if ($data = gzdeflate(KeyedArchiver::archivedData($model->jsonSerialize()), 9)) {
-            return $data;
-        }
-        return null;
+        return KeyedArchiver::archivedData($model->jsonSerialize());
     }
 
     /**
@@ -593,10 +590,7 @@ class SQLConnection extends ObjectClass
      */
     private function decompressedModelWithData(string $compressedData): ?ManagedObjectModel
     {
-        if ($data = gzinflate($compressedData)) {
-            return ManagedObjectModel::newModel($data);
-        }
-        return null;
+        return ManagedObjectModel::newModel($compressedData);
     }
 
     /**
@@ -632,10 +626,7 @@ class SQLConnection extends ObjectClass
      */
     private function decompressedMetadataWithData(string $compressedData): ?Dictionary
     {
-        if ($data = gzinflate($compressedData)) {
-            return KeyedUnarchiver::unarchiveTopLevelObjectWithData($data);
-        }
-        return null;
+        return KeyedUnarchiver::unarchiveTopLevelObjectWithData($compressedData);
     }
 
     /**
@@ -656,10 +647,7 @@ class SQLConnection extends ObjectClass
      */
     private function compressedDataWithMetadata(Dictionary $metadata): ?string
     {
-        if ($data = gzdeflate(KeyedArchiver::archivedData($metadata), 9)) {
-            return $data;
-        }
-        return null;
+        return KeyedArchiver::archivedData($metadata);
     }
 
     /**
