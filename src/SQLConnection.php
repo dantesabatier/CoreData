@@ -567,7 +567,7 @@ class SQLConnection extends ObjectClass
     /**
      * @throws Exception
      */
-    private function compressedDataWithModel(ManagedObjectModel $model): ?string
+    private function compressedDataWithModel(ManagedObjectModel $model): string
     {
         return KeyedArchiver::archivedData($model->jsonSerialize());
     }
@@ -645,7 +645,7 @@ class SQLConnection extends ObjectClass
     /**
      * @throws Exception
      */
-    private function compressedDataWithMetadata(Dictionary $metadata): ?string
+    private function compressedDataWithMetadata(Dictionary $metadata): string
     {
         return KeyedArchiver::archivedData($metadata);
     }

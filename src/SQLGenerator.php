@@ -341,7 +341,11 @@ class SQLGenerator extends ObjectClass
             if (!$entity->entityDescription->isPersistentHistoryEntity && $request->resultType !== FetchRequestResultType::countResultType) {
                 $columnNames->append("$entity->tableName.{$entity->entityKey->columnName}");
             }
-            $keys = $request->serialization->keys->filter(fn(string $key): bool => ($property = $entity->propertiesByName[$key]) && !$property->propertyDescription->isTransient);
+            $keys = $request->serialization->keys->filter(function (string $key) use ($entity): bool {
+                /** @var SQLProperty $property */
+                $property = $entity->propertiesByName[$key] ?? fatal_error("$entity->tableName does not contains a property named \"$key\"");
+                return !$property->propertyDescription->isTransient;
+            });
             /** @var ArrayClass<string|PropertyDescription> $properties */
             $properties = new ArrayClass();
             if ($propertiesToFetch = $request->propertiesToFetch) {
