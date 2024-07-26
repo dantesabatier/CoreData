@@ -36,13 +36,13 @@ abstract class PersistentStore extends ObjectClass
      * Returns a store initialized with the given arguments.
      *
      * You must ensure that you load metadata during initialization and set it using {@see $metadata}.
-     * @param PersistentStoreCoordinator $coordinator A persistent store coordinator.
+     * @param PersistentStoreCoordinator $persistentStoreCoordinator A persistent store coordinator.
      * @param string $configurationName The name of the managed object model configuration to use.
      * @param URL $url The URL of the store to load.
      * @param Dictionary|null $options A dictionary containing configuration options.
      * @see PersistentStoreCoordinator for a list of key names for options in this dictionary.
      */
-    public function __construct(public readonly PersistentStoreCoordinator $coordinator, public readonly string $configurationName, public URL $url, public readonly ?Dictionary $options = null)
+    public function __construct(public readonly PersistentStoreCoordinator $persistentStoreCoordinator, public readonly string $configurationName, public URL $url, public readonly ?Dictionary $options = null)
     {
         unset($this->identifier);
         unset($this->metadata);
