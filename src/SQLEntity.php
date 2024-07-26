@@ -234,7 +234,7 @@ class SQLEntity extends StoreMapping
             return $this->$name;
         } elseif ($name == "columnsToFetch") {
             /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute ? ($property->isDerivedAttribute && !$property->derivationExpression?->usesKVC || !$property->isDerivedAttribute) : !$property instanceof SQLRelationship && !$property instanceof SQLForeignKey);
+            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => !$property->propertyDescription->isTransient && (($property instanceof SQLAttribute ? ($property->isDerivedAttribute && !$property->derivationExpression?->usesKVC || !$property->isDerivedAttribute) : !$property instanceof SQLRelationship && !$property instanceof SQLForeignKey)));
             return $this->$name;
         } elseif ($name == "columnsToCreate") {
             /** @psalm-suppress PropertyTypeCoercion */

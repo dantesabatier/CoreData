@@ -32,7 +32,7 @@ class MappingModelBuilder
 
     public function newInferredAttributeMapping(?AttributeDescription $source, ?AttributeDescription $destination): ?PropertyMapping
     {
-        if (!$destination || $destination instanceof DerivedAttributeDescription) {
+        if (!$destination  || $destination->isTransient || $destination instanceof DerivedAttributeDescription) {
             return null;
         }
         if (!$source) {

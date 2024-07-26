@@ -341,11 +341,11 @@ class SQLGenerator extends ObjectClass
             if (!$entity->entityDescription->isPersistentHistoryEntity && $request->resultType !== FetchRequestResultType::countResultType) {
                 $columnNames->append("$entity->tableName.{$entity->entityKey->columnName}");
             }
-            $keys = $request->serialization->keys;
+            $keys = $request->serialization->keys->filter(fn(string $key): bool => ($property = $entity->propertiesByName[$key]) && !$property->propertyDescription->isTransient);
             /** @var ArrayClass<string|PropertyDescription> $properties */
             $properties = new ArrayClass();
             if ($propertiesToFetch = $request->propertiesToFetch) {
-                $properties->appendContentsOf($propertiesToFetch->filter(fn(PropertyDescription|string $property): bool => $property instanceof PropertyDescription ? !$keys->containsElement($property->name) : !$keys->containsElement($property)));
+                $properties->appendContentsOf($propertiesToFetch->filter(fn(PropertyDescription|string $property): bool => $property instanceof PropertyDescription ? !$property->isTransient && !$keys->containsElement($property->name) : !$keys->containsElement($property)));
             }
             $properties->appendContentsOf($keys->filter(fn(string $key): bool => $request->entity->attributesByName->contains(fn(AttributeDescription $attribute): bool => $attribute->name === $key)));
             /** @psalm-suppress InvalidArgument */
