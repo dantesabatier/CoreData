@@ -831,7 +831,7 @@ class SQLGenerator extends ObjectClass
         $rightExpression = $predicate->rightExpression;
         $right = $rightExpression->constantValue() ?? $rightExpression->collection();
         assert($right instanceof ArrayClass && !$right->isEmpty, sprintf("invalid argument: the right expression of an IN operator must be an non-empty \"%s\", (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
-        $clause .= "{$this->buildKeyPathExpression($leftExpression)} IN (" . ArrayClass::repeating("?", $right->count)->join(", ") . ")";
+        $clause .= "{$this->buildExpression($leftExpression)} IN (" . ArrayClass::repeating("?", $right->count)->join(", ") . ")";
         $this->arguments->appendContentsOf($right->map(fn(mixed $element): mixed => $element instanceof Expression ? $element->constantValue() : $element));
     }
 
@@ -841,7 +841,7 @@ class SQLGenerator extends ObjectClass
         $rightExpression = $predicate->rightExpression;
         $right = $rightExpression->constantValue() ?? $rightExpression->collection();
         assert($right instanceof ArrayClass && $right->count == 2, sprintf("invalid argument: the right expression of a BETWEEN operator must be a \"%s\" with exactly two elements, (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
-        $clause .= "({$this->buildKeyPathExpression($leftExpression)} BETWEEN ? AND ?)";
+        $clause .= "({$this->buildExpression($leftExpression)} BETWEEN ? AND ?)";
         $this->arguments->appendContentsOf($right->map(fn(mixed $element): mixed => $element instanceof Expression ? $element->constantValue() : $element));
     }
 
