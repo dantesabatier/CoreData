@@ -218,7 +218,7 @@ readonly class SQLStoreMigrator
                 }
             }
             foreach ($properties as $index => $property) {
-                if ($property instanceof SQLAttribute && ($statement = $adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($destinationEntity->properties->indexBefore($index))))) {
+                if ($property instanceof SQLAttribute && ($statement = $adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($properties->indexBefore($index))))) {
                     $connection->execute($statement);
                 }
             }
