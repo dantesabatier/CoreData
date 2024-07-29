@@ -28,7 +28,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
             $foreignKey = $relationship->foreignKey;
             $columnName = $sourceEntity->primaryKey->columnName;
             $destinationEntity = $relationship->destinationEntity;
-            if ($destinationEntity->isRootEntity && $destinationEntity->subentities->count === 1) {
+            if ($destinationEntity->isRootEntity && $destinationEntity->entityDescription->isAbstract && $destinationEntity->subentities->count === 1) {
                 $destinationEntity = $destinationEntity->subentities[0];
             }
             /** @var SQLEntity $entity */
