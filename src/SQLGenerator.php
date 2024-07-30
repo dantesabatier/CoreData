@@ -202,8 +202,7 @@ class SQLGenerator extends ObjectClass
             /** @var  EntityDescription $rootEntity */
             $rootEntity = $entity->isRootEntity ? $entity : $entity->rootEntity;
             $subentities = $entity->managedObjectModel->flatten($rootEntity->subentities);
-            /** @psalm-suppress RedundantConditionGivenDocblockType, TypeDoesNotContainType */
-            if ((!$request->includesSubentities && !$subentities->isEmpty) || (!$entity->isPersistentHistoryEntity && (!$entity->isRootEntity && !$subentities->isEmpty) && (!$entity->superentity?->isRootEntity || !$subentities->isEmpty)) || ($entity->isRootEntity && !$entity->isAbstract && !$subentities->isEmpty && !$request->includesSubentities)) {
+            if (!$entity->isAbstract && !$subentities->isEmpty) {
                 $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($entity->name));
                 $predicate = $predicate ? CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory])) : $mandatory;
             }
@@ -344,16 +343,16 @@ class SQLGenerator extends ObjectClass
             $keys = $request->serialization->keys->filter(function (string $key) use ($entity): bool {
                 /** @var SQLProperty $property */
                 $property = $entity->propertiesByName[$key] ?? fatal_error("$entity->tableName does not contains a property named \"$key\"");
-                return !$property->propertyDescription->isTransient;
+                return !$property->isTransient;
             });
             /** @var ArrayClass<string|PropertyDescription> $properties */
             $properties = new ArrayClass();
             if ($propertiesToFetch = $request->propertiesToFetch) {
                 $properties->appendContentsOf($propertiesToFetch->filter(fn(PropertyDescription|string $property): bool => $property instanceof PropertyDescription ? !$property->isTransient && !$keys->containsElement($property->name) : !$keys->containsElement($property)));
             }
-            $properties->appendContentsOf($keys->filter(fn(string $key): bool => $request->entity->attributesByName->contains(fn(AttributeDescription $attribute): bool => $attribute->name === $key)));
+            $properties->appendContentsOf($keys->filter(fn(string $key): bool => $request->entity->attributesByName->contains(fn(AttributeDescription $attribute): bool => !$attribute->isTransient && $attribute->name === $key)));
             /** @psalm-suppress InvalidArgument */
-            $columnNames->appendContentsOf($properties->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => is_string($property) ? $entity->attributes->first(fn(SQLAttribute $attribute): bool => $attribute->name === $property)?->attributeDescription : ($property instanceof AttributeDescription || $property instanceof ExpressionDescription ? $property : null))->map(function (PropertyDescription $property) use ($entity): string {
+            $columnNames->appendContentsOf($properties->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => is_string($property) ? $entity->attributes->first(fn(SQLAttribute $attribute): bool => !$attribute->isTransient && $attribute->name === $property)?->attributeDescription : ($property instanceof AttributeDescription || $property instanceof ExpressionDescription ? $property : null))->map(function (PropertyDescription $property) use ($entity): string {
                 if ($property instanceof AttributeDescription) {
                     if ($property instanceof DerivedAttributeDescription && $property->derivationExpression?->usesKVC) {
                         return "{$this->buildDerivationExpression($property->derivationExpression)} AS $property->name";
@@ -511,7 +510,11 @@ class SQLGenerator extends ObjectClass
                 $dictionary = $serialization[$name];
                 if ($dictionary instanceof Dictionary) {
                     $serialization = clone $dictionary;
-                    $serializationKeys = $serialization->keys;
+                    $serializationKeys = $serialization->keys->filter(function (string $key) use ($entity): bool {
+                        /** @var SQLProperty $property */
+                        $property = $entity->propertiesByName[$key] ?? fatal_error("$entity->tableName does not contains a property named \"$key\"");
+                        return !$property->isTransient;
+                    });
                     if (!$serializationKeys->containsElement($entity->primaryKey->columnName)) {
                         $serializationKeys->insertAt($entity->primaryKey->columnName, 0);
                     }
