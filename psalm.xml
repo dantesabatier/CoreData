@@ -30,5 +30,6 @@
         <InternalClass errorLevel="suppress"/>
         <InternalProperty errorLevel="suppress"/>
         <RiskyTruthyFalsyComparison errorLevel="suppress"/>
+        <ParamNameMismatch errorLevel="suppress"/>
     </issueHandlers>
 </psalm>
