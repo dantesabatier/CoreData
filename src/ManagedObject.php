@@ -680,10 +680,13 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             if ($object instanceof ManagedObject) {
                 return $object;
             } elseif ($object instanceof ManagedObjectID) {
-                return $this->managedObjectContext->object($object);
+                $managedObject = $this->managedObjectContext->object($object);
+                $managedObject->awakeFromFetch();
+                return $managedObject;
             } elseif ($objectID = $managedObjectID($entity, $object)) {
                 $managedObject = $this->managedObjectContext->object($objectID);
                 $managedObject->setValuesForKeys($object);
+                $managedObject->awakeFromFetch();
                 return $managedObject;
             }
             return null;
