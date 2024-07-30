@@ -145,13 +145,19 @@ readonly class SQLStoreMigrator
                         if (($source->sqlType !== $destination->sqlType || $source->isOptional !== $destination->isOptional || $source->isUnique !== $destination->isUnique || $source->minValue !== $destination->minValue || $source->maxValue !== $destination->maxValue || $source->defaultValue !== $destination->defaultValue || ($source->isDerivedAttribute !== $destination->isDerivedAttribute) || ($source->isDerivedAttribute && $destination->isDerivedAttribute && (string)$source->derivationExpression !== (string)$destination->derivationExpression)) && ($statement = $adapter->newRenameColumnStatement($source, $destination))) {
                             $connection->execute($statement);
                         }
-                        if ($source->isConstrained !== $destination->isConstrained) {
+                        if ($source->isConstrained !== $destination->isConstrained || $source->isTransient !== $destination->isTransient) {
                             if ($statement = $adapter->newDropIndexStatement($source)) {
                                 $connection->execute($statement);
                             }
                             if ($statement = $adapter->newCreateIndexStatement($destination)) {
                                 $connection->execute($statement);
                             }
+                        }
+                        if (!$source->isTransient && $destination->isTransient) {
+                            if ($statement = $adapter->newDropIndexStatement($source)) {
+                                $connection->execute($statement);
+                            }
+                            $this->removedColumns->append($source);
                         }
                     } elseif ($source instanceof SQLForeignKey && $destination instanceof SQLForeignKey) {
                         if ($source->toOneRelationship->relationshipDescription->deleteRule !== $destination->toOneRelationship->relationshipDescription->deleteRule) {
