@@ -40,6 +40,9 @@ class SQLAdapter extends ObjectClass
 
     private function typeStringForColumn(SQLColumn $column): ?string
     {
+        if ($column->isTransient) {
+            return null;
+        }
         $sqlType = $column->sqlType;
         $dataType = $sqlType->value;
         $length = $column->length;
