@@ -198,7 +198,7 @@ readonly class SQLStoreMigrator
                     $this->removedManyToMany->append($source);
                 }
             }
-            $properties = $destinationEntity->properties->filter(fn(SQLProperty $property): bool => !$property->propertyDescription->isTransient);
+            $properties = $destinationEntity->properties;
             foreach ($properties as $property) {
                 if ($property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
                     if ($statement = $adapter->newCreateColumnStatement($property)) {
@@ -224,8 +224,10 @@ readonly class SQLStoreMigrator
                 }
             }
             foreach ($properties as $index => $property) {
-                if ($property instanceof SQLAttribute && ($statement = $adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($properties->indexBefore($index))))) {
-                    $connection->execute($statement);
+                if ($property instanceof SQLAttribute) {
+                    if ($statement = $adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($properties->indexBefore($index)))) {
+                        $connection->execute($statement);
+                    }
                 }
             }
         }
