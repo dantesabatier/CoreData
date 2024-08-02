@@ -904,7 +904,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     private function validateChangedValues(): void
     {
         foreach ($this->changedValues as $key => $value) {
-            if (!$value instanceof Nil && ($property = $this->entity->propertiesByName[$key])) {
+            if (!$value instanceof Nil && ($property = $this->entity->propertiesByName[$key]) && !$property->isTransient) {
                 foreach ($property->validationPredicates as $validationPredicate) {
                     if (!$validationPredicate->evaluate($this)) {
                         throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, KeyValueValidationError, new Dictionary([ValidationObjectErrorKey => $this, ValidationValueErrorKey => $value, ValidationKeyErrorKey => $key, ValidationPredicateErrorKey => $validationPredicate])));
