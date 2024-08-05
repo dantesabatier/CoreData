@@ -15,6 +15,7 @@ use Closure;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\CompareOptions;
 use Sabatier\Foundation\ComparisonResult;
+use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\KeyValueOperator;
 use Sabatier\Foundation\Nil;
@@ -1160,6 +1161,8 @@ class SQLGenerator extends ObjectClass
         $value = $expression->constantValue();
         if ($value instanceof ArrayClass) {
             return $value->join(", ");
+        } elseif ($value instanceof Date) {
+            return "'$value'";
         }
         return match ($value) {
             "MICROSECOND", "SECOND", "MINUTE", "HOUR", "DAY", "WEEK", "MONTH", "QUARTER", "YEAR" => $value,
