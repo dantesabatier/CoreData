@@ -20,6 +20,8 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
 
     public function executeRequestCore(): bool
     {
+        $debugLogLevel = $this->debugLogLevel;
+        $this->debugLogLevel = 0;
         /** @var SQLEntity $entity */
         $entity = $this->sqlModel->entitiesByName[$this->objectID->entity->name];
         $relationship = $entity->entitySpecificRelationships->first(fn(SQLRelationship $relationship): bool => $relationship->relationshipDescription->name === $this->relationship->name) ?? fatal_error("Unable to find relationship {$this->relationship->name} in {$entity->entitySpecificRelationships->map(fn(SQLRelationship $relationship): string => $relationship->name)->description()}");
@@ -66,6 +68,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
                 $this->result = $first->primitiveValueForKey($relationship->name) ?? new ArrayClass();
             }
         }
+        $this->debugLogLevel = $debugLogLevel;
         return true;
     }
 }
