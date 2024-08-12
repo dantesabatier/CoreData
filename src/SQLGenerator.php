@@ -205,7 +205,13 @@ class SQLGenerator extends ObjectClass
             $subentities = $entity->managedObjectModel->flatten($rootEntity->subentities);
             if (!$entity->isAbstract && !$subentities->isEmpty) {
                 $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($entity->name));
-                $predicate = $predicate ? CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory])) : $mandatory;
+                if ($predicate) {
+                    if (!$this->isPrimaryKeyPredicate($predicate)) {
+                        $predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory]));
+                    }
+                } else {
+                    $predicate = $mandatory;
+                }
             }
             if ($predicate) {
                 $this->appendWhereClauseToSQL();
@@ -657,6 +663,22 @@ class SQLGenerator extends ObjectClass
     private function relationshipsFromKeyPathExpression(Expression $expression): ArrayClass
     {
         return $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLRelationship);
+    }
+
+    private function isPrimaryKeyPredicate(Predicate $predicate): bool
+    {
+        if ($predicate instanceof ComparisonPredicate) {
+            return $this->isPrimaryKeyExpression($predicate->leftExpression) || $this->isPrimaryKeyExpression($predicate->rightExpression);
+        } elseif ($predicate instanceof CompoundPredicate) {
+            return $predicate->subpredicates->contains(fn($subpredicate): bool => $this->isPrimaryKeyPredicate($subpredicate));
+        } else {
+            return false;
+        }
+    }
+
+    private function isPrimaryKeyExpression(Expression $expression): bool
+    {
+        return $expression->expressionType === ExpressionType::keyPath && str_ends_with($expression->keyPath(), SQLEntity::primaryKeyName);
     }
 
     private function isNullExpression(Expression $expression): bool
