@@ -2,19 +2,22 @@
 
 namespace Sabatier\CoreData;
 
+use AllowDynamicProperties;
 use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
 use function Sabatier\Foundation\request_concrete_implementation;
 
-/** @internal */
-abstract class SQLStoreRequestContext extends ObjectClass
+/**
+ * @property int $debugLogLevel
+ * @property bool $useColoredLogging
+ * @internal
+ */
+#[AllowDynamicProperties] abstract class SQLStoreRequestContext extends ObjectClass
 {
     public SQLConnection $connection;
     public Number $transactionID;
-    public readonly int $debugLogLevel;
-    public readonly bool $useColoredLogging;
     public ?QueryGenerationToken $queryGenerationToken = null;
     public readonly bool $shouldRegisterQueryGeneration;
     public bool $isWritingRequest = false;
@@ -25,10 +28,28 @@ abstract class SQLStoreRequestContext extends ObjectClass
     public function __construct(public readonly PersistentStoreRequest $persistentStoreRequest, public readonly ManagedObjectContext $context, public readonly SQLCore $sqlCore)
     {
         $this->result = new ArrayClass();
-        $this->debugLogLevel = SQLCore::$debugDefault;
-        $this->useColoredLogging = SQLCore::$coloredLoggingDefault;
         $this->shouldRegisterQueryGeneration = false;
         $this->generator = new SQLGenerator($this);
+    }
+
+    public function __get(string $name)
+    {
+        return match ($name) {
+            "debugLogLevel" => SQLCore::$debugDefault,
+            "useColoredLogging" => SQLCore::$coloredLoggingDefault,
+            default => $this->valueForUndefinedKey($name)
+        };
+    }
+
+    public function __set(string $name, mixed $value): void
+    {
+        if ($name === "debugLogLevel") {
+            SQLCore::$debugDefault = $value;
+        } elseif ($name === "useColoredLogging") {
+            SQLCore::$coloredLoggingDefault = $value;
+        } else {
+            $this->setValueForUndefinedKey($value, $name);
+        }
     }
 
     /**
