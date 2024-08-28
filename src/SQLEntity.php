@@ -10,8 +10,8 @@ use Sabatier\Foundation\Dictionary;
 /** @internal */
 class SQLEntity extends StoreMapping
 {
-    public const primaryKeyName = "objectID";
-    public const entityKeyName = "entityName";
+    public const string primaryKeyName = "objectID";
+    public const string entityKeyName = "entityName";
     public readonly string $tableName;
     /** @var ArrayClass<SQLEntity> */
     public readonly ArrayClass $subentities;

@@ -16,7 +16,7 @@
     }
   ],
   "require": {
-    "php": "^8.2",
+    "php": "^8.3",
     "ext-dom": "*",
     "ext-libxml": "*",
     "ext-pdo": "*",
@@ -26,8 +26,8 @@
   },
   "config": {
     "platform": {
-      "ext-pcntl": "8.2",
-      "ext-posix": "8.2"
+      "ext-pcntl": "8.3",
+      "ext-posix": "8.3"
     }
   },
   "autoload": {

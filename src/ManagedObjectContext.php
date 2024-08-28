@@ -40,11 +40,11 @@ use function Sabatier\Foundation\typeof;
  */
 class ManagedObjectContext extends ObjectClass
 {
-    private const observationContext = "observationContext";
-    final public const didChangeObjectsNotification = ManagedObjectContextObjectsDidChange;
-    final public const willSaveObjectsNotification = ManagedObjectContextWillSave;
-    final public const didSaveObjectsNotification = ManagedObjectContextDidSave;
-    final public const didSaveObjectIDsNotification = ManagedObjectContextDidSaveObjectIDs;
+    private const string observationContext = "observationContext";
+    final public const string didChangeObjectsNotification = ManagedObjectContextObjectsDidChange;
+    final public const string willSaveObjectsNotification = ManagedObjectContextWillSave;
+    final public const string didSaveObjectsNotification = ManagedObjectContextDidSave;
+    final public const string didSaveObjectIDsNotification = ManagedObjectContextDidSaveObjectIDs;
     /** @var PersistentStoreCoordinator|null The persistent store coordinator of the context.
      * The coordinator provides the managed object model and handles persistence.
      * Note that multiple contexts can share a coordinator. May not be nil. */
