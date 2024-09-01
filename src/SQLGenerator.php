@@ -726,9 +726,9 @@ class SQLGenerator extends ObjectClass
         $keyPath = $tableName;
         $destination = $tableName;
         $description = $expression->description();
-        $isSubqueryKeyPath = $this->isSubqueryKeyPath($expression);
         $properties = $this->propertiesFromKeyPathExpression($expression);
-        foreach ($properties as $property) {
+        $max = $properties->indexBefore($properties->endIndex());
+        foreach ($properties as $idx => $property) {
             if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
                 if ($property instanceof SQLAttribute && ($expression = $property->derivationExpression) && $expression->usesKVC) {
                     return $this->buildDerivationExpression($expression, $destination, $isDeterministic);
@@ -741,7 +741,7 @@ class SQLGenerator extends ObjectClass
                 $keyPath .= $property->name;
                 $destination .= "_";
                 $destination .= $property->name;
-                if ($property instanceof SQLToOne && !$isSubqueryKeyPath) {
+                if ($property instanceof SQLToOne && ($idx === $max)) {
                     $keyPath .= ".";
                     $keyPath .= $property->destinationEntity->primaryKey->columnName;
                 }
