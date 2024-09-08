@@ -80,6 +80,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public bool $isSuppressingKVO = false;
     /** @internal */
     public bool $isSuppressingChangeNotifications = false;
+    public readonly string $entityName;
 
     /**
      * Initializes a managed object from an entity description and inserts it into the specified managed object context.
@@ -107,6 +108,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         }
         $this->managedObjectContext = $managedObjectContext;
         $this->entity = $entity ?? fatal_error("Invalid argument: entity cannot be null");
+        $this->entityName = $this->entity->name;
         $this->managedObjectContext->insert($this);
     }
 
@@ -148,6 +150,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 })->keys,
                 default => new ArrayClass(),
             };
+            $serializationKeys->insertAt(SQLEntity::primaryKeyName, 0);
             $serializationKeys->insertAt(SQLEntity::primaryKeyName, 0);
             $this->$name = $serializationKeys;
             return $this->$name;
