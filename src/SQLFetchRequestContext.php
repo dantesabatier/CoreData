@@ -128,7 +128,10 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                 $object->isSuppressingKVO = true;
                 $object->isFault = $this->request->returnsObjectsAsFaults;
                 $object->setValuesForKeys($dictionary);
-                $object->awakeFromFetch();
+                if (!$object->isAwakening) {
+                    $object->isAwakening = true;
+                    $object->awakeFromFetch();
+                }
                 $object->isSuppressingKVO = false;
                 return $object->serialized($this->request->serialization);
             });
