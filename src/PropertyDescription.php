@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use BackedEnum;
 use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
@@ -10,6 +11,7 @@ use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\Predicate;
+use Sabatier\Foundation\Value;
 use function Sabatier\Foundation\fatal_error;
 
 /**
@@ -69,7 +71,11 @@ abstract class PropertyDescription extends ObjectClass
                 $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class ($minValue) extends Validator {
                     public function validate(mixed $object): bool
                     {
-                        if (is_string($object)) {
+                        if ($object instanceof Value || $object instanceof BackedEnum) {
+                            $object = $object->value;
+                        } elseif ($object instanceof ManagedObjectID) {
+                            $object = $object->referenceObject;
+                        } elseif (is_string($object)) {
                             $object = strlen($object);
                         }
                         return $object >= $this->value;
@@ -81,7 +87,11 @@ abstract class PropertyDescription extends ObjectClass
                 $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class ($maxValue) extends Validator {
                     public function validate(mixed $object): bool
                     {
-                        if (is_string($object)) {
+                        if ($object instanceof Value || $object instanceof BackedEnum) {
+                            $object = $object->value;
+                        } elseif ($object instanceof ManagedObjectID) {
+                            $object = $object->referenceObject;
+                        } elseif (is_string($object)) {
                             $object = strlen($object);
                         }
                         return $object <= $this->value;
