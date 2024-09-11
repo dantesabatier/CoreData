@@ -43,7 +43,10 @@ abstract class AtomicStore extends PersistentStore
             $cacheNode = $this->newCacheNode($object);
             $this->nodeCache[$key] = $cacheNode;
             $this->updateObject($object);
-            $object->awakeFromFetch();
+            if (!$object->isAwakening) {
+                $object->isAwakening = true;
+                $object->awakeFromFetch();
+            }
         }
     }
 
