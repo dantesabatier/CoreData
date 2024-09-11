@@ -19,6 +19,7 @@ use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\CompoundPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\ExpressionType;
+use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
@@ -910,13 +911,18 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     private function validateChangedValues(): void
     {
         foreach ($this->changedValues as $key => $value) {
-            if (!$value instanceof Nil && ($property = $this->entity->propertiesByName[$key]) && !$property->isTransient) {
-                foreach ($property->validationPredicates as $validationPredicate) {
-                    if (!$validationPredicate->evaluate($this)) {
-                        throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, KeyValueValidationError, new Dictionary([ValidationObjectErrorKey => $this, ValidationValueErrorKey => $value, ValidationKeyErrorKey => $key, ValidationPredicateErrorKey => $validationPredicate])));
-                    }
-                }
+            if ($value instanceof Nil) {
+                continue;
             }
+            /** @var PropertyDescription|null $property */
+            $property = $this->entity->propertiesByName[$key];
+            if ($property?->isTransient) {
+                continue;
+            }
+            if (!($validationPredicate = $property->validationPredicates->first(fn(Predicate $predicate) => !$predicate->evaluate($this)))) {
+                continue;
+            }
+            throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, KeyValueValidationError, new Dictionary([ValidationObjectErrorKey => $this, ValidationValueErrorKey => $value, ValidationKeyErrorKey => $key, ValidationPredicateErrorKey => $validationPredicate])));
         }
     }
 
