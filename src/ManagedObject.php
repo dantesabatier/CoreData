@@ -80,6 +80,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public bool $isSuppressingKVO = false;
     /** @internal */
     public bool $isSuppressingChangeNotifications = false;
+    /** @internal */
+    public bool $isAwakening = false;
+    /** @internal */
     public readonly string $entityName;
 
     /**
