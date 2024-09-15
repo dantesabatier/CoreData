@@ -96,7 +96,7 @@ class SQLAdapter extends ObjectClass
 
     public function newCorrelationInsertStatementForRelationship(SQLManyToMany $manyToMany, ArrayClass $values): ?SQLStatement
     {
-        if ($values->isEmpty) {
+        if ($values->count < 2) {
             return null;
         }
         /** @var ManagedObject $object */
@@ -107,7 +107,7 @@ class SQLAdapter extends ObjectClass
 
     public function newCorrelationDeleteStatementForRelationship(SQLManyToMany $manyToMany, ArrayClass $values): ?SQLStatement
     {
-        if ($values->isEmpty) {
+        if ($values->count < 2) {
             return null;
         }
         /** @var ManagedObject $object */
