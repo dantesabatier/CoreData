@@ -919,7 +919,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             if ($property?->isTransient) {
                 continue;
             }
-            if (!($validationPredicate = $property->validationPredicates->first(fn(Predicate $predicate) => !$predicate->evaluate($this)))) {
+            if (!($validationPredicate = $property?->validationPredicates->first(fn(Predicate $predicate) => !$predicate->evaluate($this)))) {
                 continue;
             }
             throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, KeyValueValidationError, new Dictionary([ValidationObjectErrorKey => $this, ValidationValueErrorKey => $value, ValidationKeyErrorKey => $key, ValidationPredicateErrorKey => $validationPredicate])));
