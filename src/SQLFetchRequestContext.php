@@ -69,13 +69,19 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             }
                             $relationship = null;
                             $current = &$representation;
+                            $parentKeys = new ArrayClass([$entityName]);
+                            $parentKeys->appendContentsOf($keys->dropLast(1));
+                            $parentKeys->append($currentEntity->primaryKey->columnName);
+                            $parentKey = $parentKeys->join("_");
+                            $parentID = $data[$parentKey] ?? null;
                             foreach ($keys as $key) {
                                 $property = $currentEntity->propertiesByName[$key];
                                 $propertyDescription = $property?->propertyDescription ?? $this->request->propertiesToFetch?->first(fn(string|PropertyDescription $property): bool => $property instanceof PropertyDescription ? $property->name === $key : $property === $key);
                                 if ($property instanceof SQLRelationship) {
                                     if ($current instanceof ArrayClass && !$current->isEmpty) {
+                                        $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID) ?? $current[$current->indexBefore($current->endIndex())];
                                         /** @psalm-suppress UnsupportedReferenceUsage */
-                                        $current = &$current[$current->indexBefore($current->endIndex())];
+                                        $current = &$parent;
                                     }
                                     if ($current instanceof Dictionary) {
                                         $current[$key] ??= $property instanceof SQLToOne ? new Dictionary() : new ArrayClass();
@@ -86,12 +92,13 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 }
                                 if ($property instanceof SQLColumn || $propertyDescription instanceof ExpressionDescription) {
                                     if ($current instanceof ArrayClass) {
-                                        if ($property instanceof SQLPrimaryKey && !$value instanceof Nil && !$current->contains(fn(Dictionary $dictionary): bool => $dictionary[$key] === $value)) {
-                                            $current[] = new Dictionary([$currentEntity->primaryKey->columnName => $value]);
+                                        if ($property instanceof SQLPrimaryKey && !$current->contains(fn(Dictionary $dictionary): bool => $dictionary[$key] === $value)) {
+                                            $current[] = new Dictionary([$currentEntity->primaryKey->columnName => $value, $currentEntity->entityKey->columnName => $currentEntity->entityDescription->name]);
                                         }
                                         if (!$current->isEmpty) {
+                                            $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID) ?? $current[$current->indexBefore($current->endIndex())];
                                             /** @psalm-suppress UnsupportedReferenceUsage */
-                                            $current = &$current[$current->indexBefore($current->endIndex())];
+                                            $current = &$parent;
                                         }
                                     }
                                     if ($current instanceof Dictionary) {
@@ -105,8 +112,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     }
                                 }
                             }
-                            $currentEntity = $entity;
                             unset($current);
+                            $currentEntity = $entity;
                         }
                         if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
                             /** @psalm-suppress InvalidArgument */
