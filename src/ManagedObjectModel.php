@@ -267,9 +267,9 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
 
     private function newFetchRequest(Dictionary $dictionary): ?FetchRequest
     {
-        /** @var string|null $fetchRequestEntityName */
-        $fetchRequestEntityName = $dictionary["entityName"];
-        if ($fetchRequestEntityName && ($entity = $this->entitiesByName[$fetchRequestEntityName])) {
+        /** @var string|null $fetchEntityName */
+        $fetchEntityName = $dictionary["fetchEntityName"];
+        if ($fetchEntityName && ($entity = $this->entitiesByName[$fetchEntityName])) {
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $entity;
             /** @var string|null $predicateString */
@@ -277,10 +277,10 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             if ($predicateString) {
                 $fetchRequest->predicate = Predicate::format($predicateString);
             }
-            /** @var int|null $resultType */
-            $resultType = $dictionary["resultType"];
-            if (($resultType !== null) && $resultType = FetchRequestResultType::tryFrom($resultType)) {
-                $fetchRequest->resultType = $resultType;
+            /** @var int|null $fetchResultType */
+            $fetchResultType = $dictionary["fetchResultType"];
+            if (($fetchResultType !== null) && $fetchResultType = FetchRequestResultType::tryFrom($fetchResultType)) {
+                $fetchRequest->resultType = $fetchResultType;
             }
             return $fetchRequest;
         }
