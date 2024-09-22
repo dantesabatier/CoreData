@@ -230,6 +230,8 @@ class ManagedObjectContext extends ObjectClass
         }
         $result = $this->executePersistentStoreRequest($request);
         foreach ($this->deletedObjects as $deletedObject) {
+            $deletedObject->prepareForDeletion();
+            $this->refault($deletedObject);
             $this->unregister($deletedObject);
         }
         foreach ($savedObjects as $savedObject) {
@@ -469,8 +471,6 @@ class ManagedObjectContext extends ObjectClass
         $this->deletedObjects->append($object);
         $this->insertedObjects->remove($object);
         $this->updatedObjects->remove($object);
-        $object->prepareForDeletion();
-        $this->refault($object);
     }
 
     /**
