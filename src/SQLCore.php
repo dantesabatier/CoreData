@@ -377,7 +377,8 @@ class SQLCore extends IncrementalStore
         return $requestContext->result;
     }
 
-    #[Override] public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): ?IncrementalStoreNode
+    #[Override]
+    public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): ?IncrementalStoreNode
     {
         $requestContext = new SQLObjectFaultRequestContext($objectID, $context, $this);
         $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
