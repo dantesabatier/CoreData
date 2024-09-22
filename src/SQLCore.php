@@ -10,6 +10,7 @@
 namespace Sabatier\CoreData;
 
 use Exception;
+use Override;
 use ReflectionClass;
 use ReflectionNamedType;
 use ReflectionProperty;
@@ -376,7 +377,7 @@ class SQLCore extends IncrementalStore
         return $requestContext->result;
     }
 
-    public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): ?IncrementalStoreNode
+    #[Override] public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): ?IncrementalStoreNode
     {
         $requestContext = new SQLObjectFaultRequestContext($objectID, $context, $this);
         $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
