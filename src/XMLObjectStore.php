@@ -14,6 +14,7 @@ use DOMDocument;
 use DOMElement;
 use DOMNode;
 use Exception;
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\FileManager;
@@ -447,7 +448,7 @@ class XMLObjectStore extends AtomicStore
         return $this->document;
     }
 
-    public function load(): bool
+    #[Override] public function load(): bool
     {
         $document = $this->document();
         $this->metadata = self::loadMetadataFromDocument($document);
