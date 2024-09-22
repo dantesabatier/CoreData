@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\URL;
 
@@ -17,6 +18,7 @@ use Sabatier\Foundation\URL;
  */
 abstract class IncrementalStore extends PersistentStore
 {
+    #[Override]
     public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): ?IncrementalStoreNode
     {
         return null;
@@ -34,6 +36,7 @@ abstract class IncrementalStore extends PersistentStore
         return parent::objectID($entity, $referenceObject);
     }
 
+    #[Override]
     public function obtainPermanentIDs(ArrayClass $objects): ArrayClass
     {
         return $objects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID->isTemporaryID ? $this->objectID($object->entity, $this->newReferenceObject($object)) : $object->objectID);

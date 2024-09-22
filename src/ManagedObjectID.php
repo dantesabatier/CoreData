@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\URL;
 
@@ -78,6 +79,7 @@ class ManagedObjectID extends ObjectClass implements FetchRequestResult
         return $url;
     }
 
+    #[Override]
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof ManagedObjectID) {

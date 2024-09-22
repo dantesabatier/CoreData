@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
 
@@ -51,6 +52,7 @@ class IncrementalStoreNode extends ObjectClass
         return $this->values[$property->name];
     }
 
+    #[Override]
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof IncrementalStoreNode) {

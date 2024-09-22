@@ -10,6 +10,7 @@
 namespace Sabatier\CoreData;
 
 use Exception;
+use Override;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Predicates\Expression;
 use function Sabatier\Foundation\fatal_error;
@@ -39,6 +40,7 @@ class FetchRequestExpression extends Expression
     /**
      * @throws Exception
      */
+    #[Override]
     public function expressionValue(mixed $object = null, ?Dictionary $context = null): mixed
     {
         $managedObjectContext = $this->contextExpression->expressionValue($object, $context);

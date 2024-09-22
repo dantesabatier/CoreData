@@ -4,6 +4,7 @@ namespace Sabatier\CoreData;
 
 use BackedEnum;
 use Exception;
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\KeyedArchiver;
@@ -168,6 +169,7 @@ abstract class PropertyDescription extends ObjectClass
         $out = KeyedArchiver::archivedData($this->jsonSerialize());
     }
 
+    #[Override]
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof PropertyDescription) {

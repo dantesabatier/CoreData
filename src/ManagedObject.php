@@ -5,6 +5,7 @@ namespace Sabatier\CoreData;
 use BackedEnum;
 use Exception;
 use JetBrains\PhpStorm\ExpectedValues;
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\ComparisonResult;
 use Sabatier\Foundation\Date;
@@ -466,6 +467,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * @return mixed The value of the property specified by key.
      * @noinspection PhpUnhandledExceptionInspection, PhpDocMissingThrowsInspection
      */
+    #[Override]
     final public function valueForKey(string $key): mixed
     {
         if (empty($key)) {
@@ -564,6 +566,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * @param mixed|null $value The new value for the property specified by key.
      * @param string $key The name of one of the receiver's properties.
      */
+    #[Override]
     final public function setValueForKey(mixed $value, string $key): void
     {
         if (!$this->validateValueForKey($value, $key)) {
@@ -662,6 +665,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         }
     }
 
+    #[Override]
     final public function setValuesForKeys(Dictionary $keyedValues): void
     {
         $store = $this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null");
@@ -876,6 +880,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * @param string $key The name of one of the receiver's properties.
      * @return bool true if value is a valid value for key (or if value can be coerced into a valid value for key), otherwise false. If value is not a valid value for key (and cannot be coerced), the method raises an exception.
      */
+    #[Override]
     public function validateValueForKey(mixed &$value, string $key): bool
     {
         if (parent::validateValueForKey($value, $key)) {
@@ -1072,6 +1077,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         return ManagedObjectSerializer::shared()->serialized($this, $serialization);
     }
 
+    #[Override]
     final public function isEqual(mixed $other): bool
     {
         if ($other instanceof ManagedObject && $this->entity->isKindOf($other->entity)) {

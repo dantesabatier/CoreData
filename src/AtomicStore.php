@@ -3,6 +3,7 @@
 namespace Sabatier\CoreData;
 
 use Exception;
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Number;
@@ -241,6 +242,7 @@ abstract class AtomicStore extends PersistentStore
         return new ArrayClass();
     }
 
+    #[Override]
     public function execute(PersistentStoreRequest $request, ManagedObjectContext $context): ArrayClass
     {
         if ($request instanceof FetchRequest) {
@@ -254,6 +256,7 @@ abstract class AtomicStore extends PersistentStore
         }
     }
 
+    #[Override]
     public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): ?AtomicStoreCacheNode
     {
         if (!($object = $context->existingObject($objectID))) {
@@ -262,6 +265,7 @@ abstract class AtomicStore extends PersistentStore
         return $this->newCacheNode($object);
     }
 
+    #[Override]
     public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): mixed
     {
         $entity = $objectID->entity;
@@ -284,11 +288,13 @@ abstract class AtomicStore extends PersistentStore
         return null;
     }
 
+    #[Override]
     public function obtainPermanentIDs(ArrayClass $objects): ArrayClass
     {
         return $objects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID->isTemporaryID ? $this->objectID($object->entity, $this->newReferenceObject($object)) : $object->objectID);
     }
 
+    #[Override]
     public function newReferenceObject(ManagedObject $managedObject): int|string
     {
         if ($this->nextReference === NotFound) {
@@ -310,6 +316,7 @@ abstract class AtomicStore extends PersistentStore
      * @return bool true if the cache nodes were loaded correctly, otherwise false.
      * @throws Exception
      */
+    #[Override]
     public function load(): bool
     {
         request_concrete_implementation($this, __FUNCTION__);

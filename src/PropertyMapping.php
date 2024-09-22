@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\Expression;
@@ -29,6 +30,7 @@ class PropertyMapping extends ObjectClass
     {
     }
 
+    #[Override]
     public function isEqual($other): bool
     {
         if ($other instanceof PropertyMapping) {
@@ -37,6 +39,7 @@ class PropertyMapping extends ObjectClass
         return parent::isEqual($other);
     }
 
+    #[Override]
     public function description(): string
     {
         return sprintf("<%s %s %s>", self::class, $this->name, $this->hash());

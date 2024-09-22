@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
@@ -69,6 +70,7 @@ class EntityMapping extends ObjectClass
         }
     }
 
+    #[Override]
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof EntityMapping) {
