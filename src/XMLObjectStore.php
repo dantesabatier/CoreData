@@ -448,7 +448,8 @@ class XMLObjectStore extends AtomicStore
         return $this->document;
     }
 
-    #[Override] public function load(): bool
+    #[Override]
+    public function load(): bool
     {
         $document = $this->document();
         $this->metadata = self::loadMetadataFromDocument($document);
