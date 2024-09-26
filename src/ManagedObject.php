@@ -915,6 +915,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     private function validateChangedValues(): void
     {
+        $this->changedValues->merge($this->changedValuesForCurrentEvent);
         foreach ($this->changedValues as $key => $value) {
             if ($value instanceof Nil) {
                 continue;
