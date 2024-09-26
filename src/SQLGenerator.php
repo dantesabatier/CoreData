@@ -1254,7 +1254,7 @@ class SQLGenerator extends ObjectClass
 
     private function coercedValue(ManagedObject|Dictionary $object, AttributeDescription $attribute): mixed
     {
-        $value = $object->valueForKey($attribute->name) ?? $object->changedValuesForCurrentEvent()[$attribute->name];
+        $value = $object->valueForKey($attribute->name);
         ManagedObject::coerceValue($value, $attribute, true);
         return $value;
     }
