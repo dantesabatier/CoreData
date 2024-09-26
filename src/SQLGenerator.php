@@ -182,6 +182,25 @@ class SQLGenerator extends ObjectClass
         return SQLStatement::merging($statements);
     }
 
+    private function compound(EntityDescription $entity, ?Predicate $predicate): ?Predicate
+    {
+
+        /** @var  EntityDescription $rootEntity */
+        $rootEntity = $entity->isRootEntity ? $entity : $entity->rootEntity;
+        $subentities = $entity->managedObjectModel->flatten($rootEntity->subentities);
+        if (!$entity->isAbstract && !$subentities->isEmpty) {
+            $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($entity->name));
+            if ($predicate) {
+                if (!$this->isPrimaryKeyPredicate($predicate)) {
+                    $predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory]));
+                }
+            } else {
+                $predicate = $mandatory;
+            }
+        }
+        return $predicate;
+    }
+
     private function startSQL(PersistentStoreRequest $request): void
     {
         if ($request instanceof FetchRequest) {
@@ -199,20 +218,7 @@ class SQLGenerator extends ObjectClass
             $this->resetSQL();
             $this->prepareSelectStatementWithFetchRequest($request);
             $this->prepareJoinStatementsForPredicateAndRelationships();
-            $predicate = $request->predicate;
-            /** @var  EntityDescription $rootEntity */
-            $rootEntity = $entity->isRootEntity ? $entity : $entity->rootEntity;
-            $subentities = $entity->managedObjectModel->flatten($rootEntity->subentities);
-            if (!$entity->isAbstract && !$subentities->isEmpty) {
-                $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($entity->name));
-                if ($predicate) {
-                    if (!$this->isPrimaryKeyPredicate($predicate)) {
-                        $predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory]));
-                    }
-                } else {
-                    $predicate = $mandatory;
-                }
-            }
+            $predicate = $this->compound($entity, $request->predicate);
             if ($predicate) {
                 $this->appendWhereClauseToSQL();
                 $this->preparePredicate($predicate, $this->whereClause);
@@ -246,7 +252,7 @@ class SQLGenerator extends ObjectClass
             $this->prepareJoinStatementsForPredicateAndRelationships();
             $this->appendSQL($this->joinClause);
             $this->appendSetStatementForBatchUpdateRequest($request);
-            if ($predicate = $request->predicate) {
+            if ($predicate = $this->compound($request->entity, $request->predicate)) {
                 $this->appendWhereClauseToSQL();
                 $this->preparePredicate($predicate, $this->whereClause);
                 $this->appendSQL($this->whereClause);
