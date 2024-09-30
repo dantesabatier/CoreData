@@ -2,7 +2,6 @@
 
 namespace Sabatier\CoreData;
 
-use AllowDynamicProperties;
 use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Number;
@@ -14,7 +13,7 @@ use function Sabatier\Foundation\request_concrete_implementation;
  * @property bool $useColoredLogging
  * @internal
  */
-#[AllowDynamicProperties] abstract class SQLStoreRequestContext extends ObjectClass
+abstract class SQLStoreRequestContext extends ObjectClass
 {
     public SQLConnection $connection;
     public Number $transactionID;
