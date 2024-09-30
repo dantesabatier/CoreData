@@ -46,6 +46,99 @@ class SQLCore extends IncrementalStore
         unset($this->queryGenerationTrackingConnection);
         unset($this->maxPrimaryKeys);
         unset($this->model);
+        $this->addPersistentHistoryEntities();
+    }
+
+    #[Override]
+    public function __get(string $name)
+    {
+        if ($name == "adapter") {
+            $this->$name = new SQLAdapter($this);
+            return $this->$name;
+        } elseif ($name == "schemaValidationConnection") {
+            $this->$name = new SQLConnection($this->adapter);
+            return $this->$name;
+        } elseif ($name == "queryGenerationTrackingConnection") {
+            $this->$name = new SQLConnection($this->adapter);
+            return $this->$name;
+        } elseif ($name == "maxPrimaryKeys") {
+            $this->$name = new Dictionary();
+            return $this->$name;
+        } elseif ($name == "model") {
+            $this->$name = new SQLModel($this->persistentStoreCoordinator->managedObjectModel, $this->configurationName);
+            return $this->$name;
+        } else {
+            return parent::__get($name);
+        }
+    }
+
+    #[Override]
+    public static function migrationManagerClass(): string
+    {
+        return SQLInPlaceMigrationManager::class;
+    }
+
+    /**
+     * @throws Exception
+     */
+    #[Override]
+    public static function cachedModelForPersistentStoreWithURL(URL $url, ?Dictionary $options = null): ?ManagedObjectModel
+    {
+        $connection = new SQLConnection();
+        if ($connection->hasMetadataTable) {
+            return $connection->cachedModel;
+        }
+        return null;
+    }
+
+    #[Override]
+    public static function destroyPersistentStoreAtURL(URL $url, ?Dictionary $options = null): bool
+    {
+        return SQLConnection::destroyPersistentStoreAtURL($url, $options);
+    }
+
+    #[Override]
+    public static function replacePersistentStoreAtURL(URL $destinationURL, ?Dictionary $destinationOptions, URL $sourceURL, ?Dictionary $sourceOptions): bool
+    {
+        return SQLConnection::replacePersistentStoreAtURL($destinationURL, $destinationOptions, $sourceURL, $sourceOptions);
+    }
+
+    #[Override]
+    public static function metadataForPersistentStore(URL $url): Dictionary
+    {
+        $connection = new SQLConnection();
+        if ($connection->hasMetadataTable && ($metadata = $connection->fetchMetadata())) {
+            return $metadata;
+        }
+        return new Dictionary([StoreTypeKey => SQLStoreType]);
+    }
+
+    #[Override]
+    public static function setMetadata(?Dictionary $metadata, URL $url): bool
+    {
+        $metadata ??= new Dictionary([StoreTypeKey => SQLStoreType, StoreUUIDKey => uuid_generate()]);
+        $connection = new SQLConnection();
+        $connection->saveMetadata($metadata);
+        return true;
+    }
+
+    #[Override]
+    public function loadMetadata(): bool
+    {
+        if ($metadata = $this->queryGenerationTrackingConnection->fetchMetadata()) {
+            $this->metadata = $metadata;
+            $this->identifier = $metadata[StoreUUIDKey];
+        }
+        return true;
+    }
+
+    #[Override]
+    public function willRemove(PersistentStoreCoordinator $coordinator): void
+    {
+    }
+
+    private function addPersistentHistoryEntities(): void
+    {
         $managedObjectModel = $this->persistentStoreCoordinator->managedObjectModel;
         if (!$managedObjectModel->entitiesByName["PersistentHistoryTransaction"]) {
             $reflectionClass = new ReflectionClass(PersistentHistoryTransaction::class);
@@ -143,94 +236,6 @@ class SQLCore extends IncrementalStore
             $managedObjectModel->addEntity($entityDescription);
             PersistentHistoryChange::$entityDescription = $entityDescription;
         }
-    }
-
-    #[Override]
-    public function __get(string $name)
-    {
-        if ($name == "adapter") {
-            $this->$name = new SQLAdapter($this);
-            return $this->$name;
-        } elseif ($name == "schemaValidationConnection") {
-            $this->$name = new SQLConnection($this->adapter);
-            return $this->$name;
-        } elseif ($name == "queryGenerationTrackingConnection") {
-            $this->$name = new SQLConnection($this->adapter);
-            return $this->$name;
-        } elseif ($name == "maxPrimaryKeys") {
-            $this->$name = new Dictionary();
-            return $this->$name;
-        } elseif ($name == "model") {
-            $this->$name = new SQLModel($this->persistentStoreCoordinator->managedObjectModel, $this->configurationName);
-            return $this->$name;
-        } else {
-            return parent::__get($name);
-        }
-    }
-
-    #[Override]
-    public static function migrationManagerClass(): string
-    {
-        return SQLInPlaceMigrationManager::class;
-    }
-
-    /**
-     * @throws Exception
-     */
-    #[Override]
-    public static function cachedModelForPersistentStoreWithURL(URL $url, ?Dictionary $options = null): ?ManagedObjectModel
-    {
-        $connection = new SQLConnection();
-        if ($connection->hasMetadataTable) {
-            return $connection->cachedModel;
-        }
-        return null;
-    }
-
-    #[Override]
-    public static function destroyPersistentStoreAtURL(URL $url, ?Dictionary $options = null): bool
-    {
-        return SQLConnection::destroyPersistentStoreAtURL($url, $options);
-    }
-
-    #[Override]
-    public static function replacePersistentStoreAtURL(URL $destinationURL, ?Dictionary $destinationOptions, URL $sourceURL, ?Dictionary $sourceOptions): bool
-    {
-        return SQLConnection::replacePersistentStoreAtURL($destinationURL, $destinationOptions, $sourceURL, $sourceOptions);
-    }
-
-    #[Override]
-    public static function metadataForPersistentStore(URL $url): Dictionary
-    {
-        $connection = new SQLConnection();
-        if ($connection->hasMetadataTable && ($metadata = $connection->fetchMetadata())) {
-            return $metadata;
-        }
-        return new Dictionary([StoreTypeKey => SQLStoreType]);
-    }
-
-    #[Override]
-    public static function setMetadata(?Dictionary $metadata, URL $url): bool
-    {
-        $metadata ??= new Dictionary([StoreTypeKey => SQLStoreType, StoreUUIDKey => uuid_generate()]);
-        $connection = new SQLConnection();
-        $connection->saveMetadata($metadata);
-        return true;
-    }
-
-    #[Override]
-    public function loadMetadata(): bool
-    {
-        if ($metadata = $this->queryGenerationTrackingConnection->fetchMetadata()) {
-            $this->metadata = $metadata;
-            $this->identifier = $metadata[StoreUUIDKey];
-        }
-        return true;
-    }
-
-    #[Override]
-    public function willRemove(PersistentStoreCoordinator $coordinator): void
-    {
     }
 
     /**
