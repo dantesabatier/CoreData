@@ -9,6 +9,8 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
+
 /** @internal */
 class SQLColumn extends SQLProperty
 {
@@ -28,6 +30,7 @@ class SQLColumn extends SQLProperty
         unset($this->defaultValue);
     }
 
+    #[Override]
     public function __get(string $name)
     {
         if ($name == "columnName") {
@@ -75,6 +78,7 @@ class SQLColumn extends SQLProperty
         }
     }
 
+    #[Override]
     public function __set(string $name, mixed $value): void
     {
         if ($name == "columnName" || $name == "precision" || $name == "scale" || $name == "length" || $name == "defaultValue") {
@@ -84,11 +88,13 @@ class SQLColumn extends SQLProperty
         }
     }
 
+    #[Override]
     public function description(): string
     {
         return sprintf("<%s %s>", $this->columnName, $this->hash());
     }
 
+    #[Override]
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof SQLColumn) {

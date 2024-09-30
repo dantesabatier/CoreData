@@ -10,6 +10,7 @@
 namespace Sabatier\CoreData;
 
 use JetBrains\PhpStorm\ExpectedValues;
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\CompareOptions;
 use Sabatier\Foundation\ObjectClass;
@@ -57,6 +58,7 @@ class SQLStatement extends ObjectClass
         return (new SQLStatementFormatter($style))->string($this) ?? $this->string;
     }
 
+    #[Override]
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof SQLStatement) {
@@ -65,6 +67,7 @@ class SQLStatement extends ObjectClass
         return false;
     }
 
+    #[Override]
     public function description(): string
     {
         return $this->formatted();

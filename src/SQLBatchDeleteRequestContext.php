@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Number;
 
@@ -26,6 +27,7 @@ class SQLBatchDeleteRequestContext extends SQLStoreRequestContext
         $this->isWritingRequest = true;
     }
 
+    #[Override]
     public function executeRequestCore(): bool
     {
         if (!($deleteStatement = $this->deleteStatement)) {

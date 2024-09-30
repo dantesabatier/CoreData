@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
@@ -18,6 +19,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
         $this->sqlModel = $sqlCore->model;
     }
 
+    #[Override]
     public function executeRequestCore(): bool
     {
         $debugLogLevel = $this->debugLogLevel;

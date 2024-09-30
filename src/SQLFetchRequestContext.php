@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Nil;
@@ -26,6 +27,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         $this->fetchStatement = $this->generator->statement ?? fatal_error();
     }
 
+    #[Override]
     public function executeRequestCore(): bool
     {
         $time = absolute_time_get_current();

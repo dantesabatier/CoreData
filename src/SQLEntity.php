@@ -4,6 +4,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 
@@ -299,6 +300,7 @@ class SQLEntity extends StoreMapping
         return $this->entityDescription->isKindOf($entity->entityDescription);
     }
 
+    #[Override]
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof SQLEntity) {
@@ -307,6 +309,7 @@ class SQLEntity extends StoreMapping
         return false;
     }
 
+    #[Override]
     public function description(): string
     {
         return sprintf("<%s %s>", $this->entityDescription->name, $this->hash());

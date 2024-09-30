@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Predicates\Expression;
 
@@ -24,6 +25,7 @@ class DerivedAttributeDescription extends AttributeDescription
     /** @var Expression|null An expression for generating derived data. */
     public ?Expression $derivationExpression = null;
 
+    #[Override]
     public function __get(string $name)
     {
         if ($name == "propertyType") {
@@ -34,6 +36,7 @@ class DerivedAttributeDescription extends AttributeDescription
         }
     }
 
+    #[Override]
     public function jsonSerialize(): Dictionary
     {
         $dictionary = parent::jsonSerialize();

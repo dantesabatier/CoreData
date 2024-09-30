@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Number;
 
@@ -38,6 +39,7 @@ class SQLBatchUpdateRequestContext extends SQLStoreRequestContext
         return $fetchRequest;
     }
 
+    #[Override]
     public function executeRequestCore(): bool
     {
         if (!($updateStatement = $this->updateStatement)) {

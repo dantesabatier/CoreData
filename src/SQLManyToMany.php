@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\ComparisonResult;
 use Sabatier\Foundation\SortDescriptor;
@@ -41,6 +42,7 @@ class SQLManyToMany extends SQLRelationship
         unset($this->isMaster);
     }
 
+    #[Override]
     public function __get(string $name)
     {
         if ($name == "inverseManyToMany") {
@@ -76,6 +78,7 @@ class SQLManyToMany extends SQLRelationship
         }
     }
 
+    #[Override]
     public function __set(string $name, mixed $value): void
     {
         if ($name == "inverseManyToMany" || $name == "correlationTableName" || $name == "columnName" || $name == "columnSQLType" || $name == "inverseColumnName" || $name == "orderColumnName" || $name == "inverseOrderColumnName" || $name == "isReflexive" || $name == "isMaster") {
@@ -85,6 +88,7 @@ class SQLManyToMany extends SQLRelationship
         }
     }
 
+    #[Override]
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof SQLManyToMany) {

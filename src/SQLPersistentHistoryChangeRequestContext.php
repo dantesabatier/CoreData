@@ -3,6 +3,7 @@
 namespace Sabatier\CoreData;
 
 use Exception;
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Number;
@@ -137,6 +138,7 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
         return new PersistentHistoryTransaction($dictionary);
     }
 
+    #[Override]
     public function executeRequestCore(): bool
     {
         if ($this->request->isDelete) {

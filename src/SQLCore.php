@@ -145,6 +145,7 @@ class SQLCore extends IncrementalStore
         }
     }
 
+    #[Override]
     public function __get(string $name)
     {
         if ($name == "adapter") {
@@ -167,6 +168,7 @@ class SQLCore extends IncrementalStore
         }
     }
 
+    #[Override]
     public static function migrationManagerClass(): string
     {
         return SQLInPlaceMigrationManager::class;
@@ -175,6 +177,7 @@ class SQLCore extends IncrementalStore
     /**
      * @throws Exception
      */
+    #[Override]
     public static function cachedModelForPersistentStoreWithURL(URL $url, ?Dictionary $options = null): ?ManagedObjectModel
     {
         $connection = new SQLConnection();
@@ -184,16 +187,19 @@ class SQLCore extends IncrementalStore
         return null;
     }
 
+    #[Override]
     public static function destroyPersistentStoreAtURL(URL $url, ?Dictionary $options = null): bool
     {
         return SQLConnection::destroyPersistentStoreAtURL($url, $options);
     }
 
+    #[Override]
     public static function replacePersistentStoreAtURL(URL $destinationURL, ?Dictionary $destinationOptions, URL $sourceURL, ?Dictionary $sourceOptions): bool
     {
         return SQLConnection::replacePersistentStoreAtURL($destinationURL, $destinationOptions, $sourceURL, $sourceOptions);
     }
 
+    #[Override]
     public static function metadataForPersistentStore(URL $url): Dictionary
     {
         $connection = new SQLConnection();
@@ -203,6 +209,7 @@ class SQLCore extends IncrementalStore
         return new Dictionary([StoreTypeKey => SQLStoreType]);
     }
 
+    #[Override]
     public static function setMetadata(?Dictionary $metadata, URL $url): bool
     {
         $metadata ??= new Dictionary([StoreTypeKey => SQLStoreType, StoreUUIDKey => uuid_generate()]);
@@ -211,6 +218,7 @@ class SQLCore extends IncrementalStore
         return true;
     }
 
+    #[Override]
     public function loadMetadata(): bool
     {
         if ($metadata = $this->queryGenerationTrackingConnection->fetchMetadata()) {
@@ -220,6 +228,7 @@ class SQLCore extends IncrementalStore
         return true;
     }
 
+    #[Override]
     public function willRemove(PersistentStoreCoordinator $coordinator): void
     {
     }
@@ -340,6 +349,7 @@ class SQLCore extends IncrementalStore
         return $this->processRequestContext(new SQLPersistentHistoryChangeRequestContext($request, $context, $this));
     }
 
+    #[Override]
     public function execute(PersistentStoreRequest $request, ManagedObjectContext $context): ArrayClass
     {
         if ($request instanceof FetchRequest) {
@@ -370,6 +380,7 @@ class SQLCore extends IncrementalStore
         return $requestContext->result;
     }
 
+    #[Override]
     public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): mixed
     {
         $requestContext = new SQLRelationshipFaultRequestContext($objectID, $relationship, $context, $this);
@@ -389,6 +400,7 @@ class SQLCore extends IncrementalStore
         return new IncrementalStoreNode($objectID, $values);
     }
 
+    #[Override]
     public function newReferenceObject(ManagedObject $managedObject): int
     {
         /** @var SQLEntity $entity */
@@ -402,6 +414,7 @@ class SQLCore extends IncrementalStore
         return $this->maxPrimaryKeys[$entityName];
     }
 
+    #[Override]
     public function load(): bool
     {
         return $this->queryGenerationTrackingConnection->connect();

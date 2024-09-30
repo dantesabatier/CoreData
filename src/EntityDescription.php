@@ -5,6 +5,7 @@ namespace Sabatier\CoreData;
 use ArrayIterator;
 use Countable;
 use IteratorAggregate;
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\InternalInconsistencyException;
@@ -327,16 +328,19 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         });
     }
 
+    #[Override]
     public function count(): int
     {
         return $this->propertiesByName->count;
     }
 
+    #[Override]
     public function getIterator(): Traversable
     {
         return new ArrayIterator($this->properties->toArray());
     }
 
+    #[Override]
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof EntityDescription) {
@@ -345,11 +349,13 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         return false;
     }
 
+    #[Override]
     public function description(): string
     {
         return sprintf("<%s: %s> isAbstract %s", $this->name, $this->hash(), (int)$this->isAbstract);
     }
 
+    #[Override]
     public function jsonSerialize(): Dictionary
     {
         /** @var Dictionary<mixed> $dictionary */

@@ -31,6 +31,7 @@ class FetchRequestExpression extends Expression
         parent::__construct();
     }
 
+    #[Override]
     public function withSubstitutionVariables(Dictionary $variables): Expression
     {
         /** @noinspection PhpInternalEntityUsedInspection */

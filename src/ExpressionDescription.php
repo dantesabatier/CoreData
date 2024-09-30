@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Predicates\Expression;
@@ -28,6 +29,7 @@ class ExpressionDescription extends PropertyDescription
     /** @var AttributeType The attribute type of the expression’s result. */
     public AttributeType $resultType = AttributeType::undefined;
 
+    #[Override]
     public function __get(string $name)
     {
         if ($name == "propertyType") {
@@ -49,6 +51,7 @@ class ExpressionDescription extends PropertyDescription
         return true;
     }
 
+    #[Override]
     public function description(): string
     {
         return sprintf("%s, expression %s", parent::description(), human_readable_value($this->expression));

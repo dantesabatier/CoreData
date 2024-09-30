@@ -42,6 +42,7 @@ class RelationshipDescription extends PropertyDescription
         unset($this->inverseRelationship);
     }
 
+    #[Override]
     public function __get(string $name)
     {
         if ($name == "destinationEntity") {
@@ -66,6 +67,7 @@ class RelationshipDescription extends PropertyDescription
         }
     }
 
+    #[Override]
     public function __set(string $name, mixed $value): void
     {
         if ($name == "destinationEntity" || $name == "inverseRelationship") {
@@ -83,6 +85,7 @@ class RelationshipDescription extends PropertyDescription
         return true;
     }
 
+    #[Override]
     public function versionHashInStyle(?string &$out, VersionHashStyle $style): void
     {
         parent::versionHashInStyle($data, $style);
@@ -102,6 +105,7 @@ class RelationshipDescription extends PropertyDescription
         return sprintf("%s destinationEntityName %s InverseRelationshipName %s minCount %s maxCount %s deleteRule %s", parent::description(), $this->lazyDestinationEntityName, $this->lazyInverseRelationshipName, $this->minCount, $this->maxCount, human_readable_value($this->deleteRule));
     }
 
+    #[Override]
     public function jsonSerialize(): Dictionary
     {
         /** @var Dictionary<mixed> $dictionary */

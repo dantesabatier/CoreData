@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
@@ -33,6 +34,7 @@ class SQLObjectFaultRequestContext extends SQLStoreRequestContext
         return new SQLFetchRequestContext($this->fetchRequest, $this->context, $this->sqlCore);
     }
 
+    #[Override]
     public function executeRequestCore(): bool
     {
         $context = $this->createFetchRequestContext();

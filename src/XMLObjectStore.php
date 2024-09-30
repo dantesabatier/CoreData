@@ -64,6 +64,7 @@ class XMLObjectStore extends AtomicStore
         return $metadata;
     }
 
+    #[Override]
     public static function metadataForPersistentStore(URL $url): Dictionary
     {
         $document = new DOMDocument("1.0", "UTF-8");
@@ -72,6 +73,7 @@ class XMLObjectStore extends AtomicStore
         return self::loadMetadataFromDocument($document);
     }
 
+    #[Override]
     public static function setMetadata(?Dictionary $metadata, URL $url): bool
     {
         $path = $url->path;
@@ -167,6 +169,7 @@ class XMLObjectStore extends AtomicStore
     /**
      * @throws Exception
      */
+    #[Override]
     public function newCacheNode(ManagedObject $object): AtomicStoreCacheNode
     {
         $document = $this->document();
@@ -354,6 +357,7 @@ class XMLObjectStore extends AtomicStore
     /**
      * @throws Exception
      */
+    #[Override]
     public function updateCacheNode(AtomicStoreCacheNode $node, ManagedObject $object): void
     {
         $entity = $object->entity;
@@ -377,6 +381,7 @@ class XMLObjectStore extends AtomicStore
     /**
      * @throws Exception
      */
+    #[Override]
     public function willRemoveCacheNodes(Set $cacheNodes): void
     {
         $document = $this->document();
@@ -433,6 +438,7 @@ class XMLObjectStore extends AtomicStore
         }
     }
 
+    #[Override]
     public function willRemove(PersistentStoreCoordinator $coordinator): void
     {
     }
@@ -458,6 +464,7 @@ class XMLObjectStore extends AtomicStore
         return true;
     }
 
+    #[Override]
     public function save(): bool
     {
         return (bool)$this->document()->save($this->url->path);

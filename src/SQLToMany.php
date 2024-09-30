@@ -9,6 +9,8 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
+
 /** @internal */
 class SQLToMany extends SQLRelationship
 {
@@ -20,6 +22,7 @@ class SQLToMany extends SQLRelationship
         unset($this->inverseToOne);
     }
 
+    #[Override]
     public function __get(string $name)
     {
         if ($name === "inverseToOne") {
@@ -31,6 +34,7 @@ class SQLToMany extends SQLRelationship
         }
     }
 
+    #[Override]
     public function __set(string $name, mixed $value): void
     {
         if ($name === "inverseToOne") {

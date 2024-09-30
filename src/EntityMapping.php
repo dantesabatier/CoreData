@@ -79,6 +79,7 @@ class EntityMapping extends ObjectClass
         return parent::isEqual($other);
     }
 
+    #[Override]
     public function description(): string
     {
         return sprintf("<%s %s %s>", self::class, $this->name, $this->hash());

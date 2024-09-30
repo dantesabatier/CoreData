@@ -104,7 +104,7 @@ abstract class PropertyDescription extends ObjectClass
                 $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class ($regex) extends Validator {
                     public function validate(mixed $object): bool
                     {
-                        return preg_match($this->value, $object) === 1;
+                        return preg_match($this->value, (string) $object) === 1;
                     }
                 }), Expression::expressionForKeyPath($this->name), selector: "validate"));
             }
@@ -178,11 +178,13 @@ abstract class PropertyDescription extends ObjectClass
         return false;
     }
 
+    #[Override]
     public function description(): string
     {
         return sprintf("(<%s: %s>), name %s, isOptional %s, isTransient %s, entity %s renamingIdentifier %s, validation predicates %s, warnings %s", static::class, $this->hash(), $this->name, (int)$this->isOptional, (int)$this->isTransient, $this->entity->name, $this->renamingIdentifier, $this->validationPredicates->description(), $this->validationWarnings->description());
     }
 
+    #[Override]
     public function jsonSerialize(): Dictionary
     {
         /** @var Dictionary<mixed> $dictionary */

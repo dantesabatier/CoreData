@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\KeyedArchiver;
@@ -38,6 +39,7 @@ class AttributeDescription extends PropertyDescription
         unset($this->attributeValueClassName);
     }
 
+    #[Override]
     public function __get(string $name)
     {
         if ($name == "attributeValueClassName") {
@@ -63,6 +65,7 @@ class AttributeDescription extends PropertyDescription
         }
     }
 
+    #[Override]
     public function __set(string $name, mixed $value): void
     {
         if ($name == "attributeValueClassName") {
@@ -82,6 +85,7 @@ class AttributeDescription extends PropertyDescription
         return true;
     }
 
+    #[Override]
     public function versionHashInStyle(?string &$out, VersionHashStyle $style): void
     {
         parent::versionHashInStyle($data, $style);
@@ -93,11 +97,13 @@ class AttributeDescription extends PropertyDescription
         $out = KeyedArchiver::archivedData($dictionary);
     }
 
+    #[Override]
     public function description(): string
     {
         return sprintf("%s, type %s", parent::description(), human_readable_value($this->type));
     }
 
+    #[Override]
     public function jsonSerialize(): Dictionary
     {
         $dictionary = parent::jsonSerialize();

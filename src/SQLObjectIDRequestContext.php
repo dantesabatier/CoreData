@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\Dictionary;
 
 /** @internal */
@@ -15,6 +16,7 @@ class SQLObjectIDRequestContext extends SQLStoreRequestContext
         $this->isWritingRequest = true;
     }
 
+    #[Override]
     public function executeRequestCore(): bool
     {
         return true;

@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ObjectClass;
 
 /** @internal */
@@ -67,11 +68,13 @@ abstract class SQLProperty extends ObjectClass
         };
     }
 
+    #[Override]
     public function description(): string
     {
         return sprintf("<%s %s>", $this->name, $this->hash());
     }
 
+    #[Override]
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof SQLProperty) {

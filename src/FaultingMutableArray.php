@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ArrayClass;
 
 /**
@@ -23,6 +24,7 @@ class FaultingMutableArray extends ArrayClass
         $this->removeAll();
     }
 
+    #[Override]
     public function setArray(ArrayClass $array): void
     {
         parent::setArray($array);

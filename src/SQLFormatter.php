@@ -3,6 +3,7 @@
 namespace Sabatier\CoreData;
 
 use JetBrains\PhpStorm\ExpectedValues;
+use Override;
 use Sabatier\Foundation\EscapeSequenceColor;
 use Sabatier\Foundation\EscapeSequenceTextAttribute;
 use Sabatier\Foundation\Formatter;
@@ -367,6 +368,7 @@ class SQLFormatter extends Formatter
         return $return;
     }
 
+    #[Override]
     public function string(mixed $object): ?string
     {
         if (is_string($object)) {

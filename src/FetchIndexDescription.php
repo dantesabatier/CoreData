@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
@@ -70,6 +71,7 @@ class FetchIndexDescription extends ObjectClass
         }
     }
 
+    #[Override]
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof FetchIndexDescription) {
@@ -103,6 +105,7 @@ class FetchIndexDescription extends ObjectClass
         return $this->elements->first?->collationType === FetchIndexElementType::binary;
     }
 
+    #[Override]
     public function jsonSerialize(): Dictionary
     {
         /** @var Dictionary<mixed> $dictionary */

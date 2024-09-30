@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Dictionary;
@@ -139,11 +140,13 @@ class PersistentHistoryTransaction extends ObjectClass
         return $context->persistentStoreCoordinator?->managedObjectModel?->entitiesByName["PersistentHistoryTransaction"];
     }
 
+    #[Override]
     public function description(): string
     {
         return sprintf("<%s: %s %s %s %s %s %s>", self::class, $this->transactionNumber, $this->timestamp->description(), $this->bundleID, human_readable_value($this->author), human_readable_value($this->contextName), human_readable_value($this->changes));
     }
 
+    #[Override]
     public function jsonSerialize(): Dictionary
     {
         /** @var Dictionary<mixed> $dictionary */

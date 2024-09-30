@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
@@ -39,8 +40,9 @@ class ConstraintConflict extends ObjectClass
         };
     }
 
+    #[Override]
     public function description(): string
     {
-        return sprintf("%s %s for constraint (%s): database(%s): conflictedObjects (%s):", $this::class, $this->hash(), $this->constraint->join(", "), human_readable_value($this->databaseObject), $this->conflictingObjects->join(", "));
+        return sprintf("%s %s for constraint (%s): database(%s): conflictedObjects (%s):", static::class, $this->hash(), $this->constraint->join(", "), human_readable_value($this->databaseObject), $this->conflictingObjects->join(", "));
     }
 }

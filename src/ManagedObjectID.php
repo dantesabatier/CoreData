@@ -88,16 +88,19 @@ class ManagedObjectID extends ObjectClass implements FetchRequestResult
         return false;
     }
 
+    #[Override]
     public function description(): string
     {
         return sprintf("<%s>", $this->uriRepresentation()->absoluteString);
     }
 
+    #[Override]
     public function debugDescription(): string
     {
         return sprintf("<%s: %s> %s", self::class, $this->hash(), $this->entity->name);
     }
 
+    #[Override]
     public function jsonSerialize(): int|string
     {
         return $this->referenceObject;

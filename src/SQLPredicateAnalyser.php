@@ -11,6 +11,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\Predicate;
@@ -27,14 +28,17 @@ class SQLPredicateAnalyser implements PredicateVisitor
     /** @var ArrayClass<Expression> */
     public ArrayClass $setExpressions;
 
+    #[Override]
     public function visitPredicate(Predicate $predicate): void
     {
     }
 
+    #[Override]
     public function visitPredicateExpression(Expression $expression): void
     {
     }
 
+    #[Override]
     public function visitPredicateOperator(PredicateOperator $operator): void
     {
     }

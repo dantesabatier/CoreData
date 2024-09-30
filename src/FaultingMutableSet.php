@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\Set;
 
 /**
@@ -23,6 +24,7 @@ class FaultingMutableSet extends Set
         $this->removeAll();
     }
 
+    #[Override]
     public function indexOf(mixed $element): ?int
     {
         if ($element instanceof ManagedObjectID) {
@@ -31,6 +33,7 @@ class FaultingMutableSet extends Set
         return parent::indexOf($element);
     }
 
+    #[Override]
     public function append(mixed $element): void
     {
         if ($element instanceof ManagedObject) {
@@ -39,6 +42,7 @@ class FaultingMutableSet extends Set
         parent::append($element);
     }
 
+    #[Override]
     public function insert(mixed $newElement): array
     {
         if ($newElement instanceof ManagedObject) {
@@ -47,6 +51,7 @@ class FaultingMutableSet extends Set
         return parent::insert($newElement);
     }
 
+    #[Override]
     public function insertAt(mixed $element, int $at): void
     {
         if ($element instanceof ManagedObject) {
@@ -55,6 +60,7 @@ class FaultingMutableSet extends Set
         parent::insertAt($element, $at);
     }
 
+    #[Override]
     public function remove(mixed $element): void
     {
         if ($element instanceof ManagedObject) {
@@ -63,6 +69,7 @@ class FaultingMutableSet extends Set
         parent::remove($element);
     }
 
+    #[Override]
     public function update(mixed $element)
     {
         if ($element instanceof ManagedObject) {
@@ -71,6 +78,7 @@ class FaultingMutableSet extends Set
         return parent::update($element);
     }
 
+    #[Override]
     public function containsElement(mixed $element): bool
     {
         if ($element instanceof ManagedObjectID) {
@@ -79,6 +87,7 @@ class FaultingMutableSet extends Set
         return parent::containsElement($element);
     }
 
+    #[Override]
     public function member(mixed $element)
     {
         if ($element instanceof ManagedObjectID) {
@@ -87,12 +96,14 @@ class FaultingMutableSet extends Set
         return parent::member($element);
     }
 
+    #[Override]
     public function setSet(Set $set): void
     {
         parent::setSet($set->map(fn(ManagedObject|ManagedObjectID $e): ManagedObjectID => $e instanceof ManagedObject ? $e->objectID : $e));
         $this->isFault = false;
     }
 
+    #[Override]
     public function current(): ManagedObject
     {
         $current = parent::current();
@@ -102,6 +113,7 @@ class FaultingMutableSet extends Set
         return $current;
     }
 
+    #[Override]
     public function offsetGet(mixed $offset): ManagedObject
     {
         $element = parent::offsetGet($offset);
@@ -111,6 +123,7 @@ class FaultingMutableSet extends Set
         return $element;
     }
 
+    #[Override]
     public function offsetSet(mixed $offset, mixed $value): void
     {
         if ($value instanceof ManagedObject) {

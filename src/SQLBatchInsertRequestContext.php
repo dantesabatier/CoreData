@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\Number;
 
 /** @internal */
@@ -13,6 +14,7 @@ class SQLBatchInsertRequestContext extends SQLStoreRequestContext
         $this->isWritingRequest = true;
     }
 
+    #[Override]
     public function executeRequestCore(): bool
     {
         $this->transactionID = new Number($this->connection->insertTransactionForRequestContext($this));

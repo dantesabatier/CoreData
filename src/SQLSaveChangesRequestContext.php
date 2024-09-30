@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\Number;
 
 /** @internal */
@@ -18,6 +19,7 @@ class SQLSaveChangesRequestContext extends SQLStoreRequestContext
         $this->isWritingRequest = true;
     }
 
+    #[Override]
     public function executeRequestCore(): bool
     {
         if (!($statement = $this->generator->statement)) {

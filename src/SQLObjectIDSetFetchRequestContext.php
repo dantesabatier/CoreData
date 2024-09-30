@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ArrayClass;
 
 /** @internal */
@@ -12,6 +13,7 @@ class SQLObjectIDSetFetchRequestContext extends SQLFetchRequestContext
         parent::__construct($request, $context, $sqlCore);
     }
 
+    #[Override]
     public function executeRequestCore(): bool
     {
         return true;

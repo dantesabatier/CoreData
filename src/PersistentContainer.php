@@ -98,7 +98,7 @@ class PersistentContainer extends ObjectClass
     public function loadPersistentStores(Closure $completion): void
     {
         foreach ($this->persistentStoreDescriptions as $persistentStoreDescription) {
-            $this->persistentStoreCoordinator->addPersistentStoreWithDescription($persistentStoreDescription, function (PersistentStoreDescription $description, ?Error $error) use ($completion) {
+            $this->persistentStoreCoordinator->addPersistentStoreWithDescription($persistentStoreDescription, function (PersistentStoreDescription $description, ?Error $error) use ($completion): void {
                 $completion($description, $error);
             });
         }
@@ -130,7 +130,7 @@ class PersistentContainer extends ObjectClass
     public function performBackgroundTask(Closure $task): void
     {
         $backgroundContext = $this->newBackgroundContext();
-        $backgroundContext->performBlock(function () use ($backgroundContext, $task) {
+        $backgroundContext->performBlock(function () use ($backgroundContext, $task): void {
             $task($backgroundContext);
         });
     }

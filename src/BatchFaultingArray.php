@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Range;
 use function Sabatier\Foundation\invalid_mutation;
@@ -38,31 +39,37 @@ class BatchFaultingArray extends ArrayClass
         $this->indices = new Range(0, $this->count);
     }
 
+    #[Override]
     public function indices(): Range
     {
         return $this->indices;
     }
 
+    #[Override]
     public function append(mixed $element): void
     {
         invalid_mutation();
     }
 
+    #[Override]
     public function insert(mixed $newElement): never
     {
         invalid_mutation();
     }
 
+    #[Override]
     public function insertAt(mixed $element, int $at): void
     {
         invalid_mutation();
     }
 
+    #[Override]
     public function removeAt(int $index): never
     {
         invalid_mutation();
     }
 
+    #[Override]
     public function setArray(ArrayClass $array): void
     {
         invalid_mutation();
@@ -85,6 +92,7 @@ class BatchFaultingArray extends ArrayClass
         return $result;
     }
 
+    #[Override]
     public function current(): ManagedObjectID|ManagedObject
     {
         $objectID = $this->objectIDs->current();
@@ -95,6 +103,7 @@ class BatchFaultingArray extends ArrayClass
         return $this->context->object($objectID);
     }
 
+    #[Override]
     public function next(): void
     {
         parent::next();
@@ -104,6 +113,7 @@ class BatchFaultingArray extends ArrayClass
         }
     }
 
+    #[Override]
     public function rewind(): void
     {
         parent::rewind();
@@ -111,16 +121,19 @@ class BatchFaultingArray extends ArrayClass
         $this->objectIDs = $this->arrayFromObjectIDs();
     }
 
+    #[Override]
     public function count(): int
     {
         return $this->count;
     }
 
+    #[Override]
     public function offsetExists(mixed $offset): bool
     {
         return $this->indices->contains($offset);
     }
 
+    #[Override]
     public function offsetGet(mixed $offset): ManagedObjectID|ManagedObject
     {
         $objectID = $this->objectIDs->offsetGet($offset);
@@ -131,6 +144,7 @@ class BatchFaultingArray extends ArrayClass
         return $this->context->object($objectID);
     }
 
+    #[Override]
     public function offsetSet(mixed $offset, mixed $value): void
     {
         invalid_mutation();

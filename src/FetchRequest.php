@@ -6,6 +6,7 @@ namespace Sabatier\CoreData;
 
 use Exception;
 use InvalidArgumentException;
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\OperationQueue;
@@ -130,6 +131,7 @@ class FetchRequest extends PersistentStoreRequest
         return $context;
     }
 
+    #[Override]
     public function jsonSerialize(): Dictionary
     {
         return $this->dictionaryWithValues(new ArrayClass(["includesSubentities", "fetchLimit", "fetchOffset", "fetchBatchSize", "sortDescriptors", "includesPendingChanges", "returnsDistinctResults", "includesPropertyValues", "shouldRefreshRefetchedObjects", "returnsObjectsAsFaults", "havingPredicate", "resultType", "entity", "predicate", "propertiesToFetch", "propertiesToGroupBy", "entityName"]));

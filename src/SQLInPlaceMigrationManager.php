@@ -2,12 +2,14 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\URL;
 
 /** @internal */
 class SQLInPlaceMigrationManager extends MigrationManager
 {
+    #[Override]
     public function migrateStore(URL $sourceURL, PersistentStoreType $sourceType, ?Dictionary $sourceOptions, MappingModel $mappingModel, URL $destinationURL, PersistentStoreType $destinationType, ?Dictionary $destinationOptions): bool
     {
         if (!$this->prepare($sourceURL, $sourceType, $sourceOptions, $mappingModel, $destinationURL, $destinationType, $destinationOptions)) {

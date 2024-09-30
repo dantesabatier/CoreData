@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\fatal_error;
@@ -33,6 +34,7 @@ class SQLAttribute extends SQLColumn
         unset($this->derivationExpression);
     }
 
+    #[Override]
     public function __get(string $name)
     {
         if ($name == "attributeDescription") {
@@ -92,6 +94,7 @@ class SQLAttribute extends SQLColumn
         }
     }
 
+    #[Override]
     public function __set(string $name, mixed $value): void
     {
         if ($name == "attributeDescription" || $name == "triggerKeys" || $name == "isBackedByTrigger" || $name == "isDerivedAttribute" || $name == "derivationExpression") {

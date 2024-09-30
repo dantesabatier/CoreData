@@ -11,6 +11,7 @@ namespace Sabatier\CoreData;
 
 use Closure;
 use Exception;
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\KeyValueChange;
@@ -194,7 +195,7 @@ class ManagedObjectContext extends ObjectClass
      */
     private function executeAsynchronousFetchRequest(AsynchronousFetchRequest $asynchronousFetchRequest): AsynchronousFetchResult
     {
-        $this->performBlock(function () use ($asynchronousFetchRequest) {
+        $this->performBlock(function () use ($asynchronousFetchRequest): void {
             ($asynchronousFetchRequest->completionBlock)(new AsynchronousFetchResult($asynchronousFetchRequest, $this, $this->fetch($asynchronousFetchRequest->fetchRequest)));
         });
         return new AsynchronousFetchResult($asynchronousFetchRequest, $this, new ArrayClass());
@@ -746,6 +747,7 @@ class ManagedObjectContext extends ObjectClass
         }
     }
 
+    #[Override]
     public function observeValue(string $keyPath, mixed $object, KeyValueObservedChange $change, mixed $context = null): void
     {
         if ($context === self::observationContext) {

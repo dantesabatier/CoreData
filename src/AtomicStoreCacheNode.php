@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
 
@@ -36,6 +37,7 @@ class AtomicStoreCacheNode extends ObjectClass
      * @param string $key The name of a property.
      * @return mixed The value for the property named key. For an attribute, the return value is an instance of an attribute type supported by Core Data (see {@see AttributeDescription}); for a to-one relationship, the return value must be another cache node instance; for a to-many relationship, the return value must be a collection of the related cache nodes.
      */
+    #[Override]
     public function valueForKey(string $key): mixed
     {
         if ($this->objectID->entity->propertiesByName[$key]) {
@@ -51,6 +53,7 @@ class AtomicStoreCacheNode extends ObjectClass
      * @param mixed $value The value for the property identified by key.
      * @param string $key The name of a property.
      */
+    #[Override]
     public function setValueForKey(mixed $value, string $key): void
     {
         if ($this->objectID->entity->propertiesByName[$key]) {
@@ -60,6 +63,7 @@ class AtomicStoreCacheNode extends ObjectClass
         }
     }
 
+    #[Override]
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof IncrementalStoreNode) {

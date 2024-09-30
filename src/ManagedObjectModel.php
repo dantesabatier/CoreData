@@ -6,6 +6,7 @@ use ArrayIterator;
 use Countable;
 use Exception;
 use IteratorAggregate;
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Bundle;
 use Sabatier\Foundation\Dictionary;
@@ -522,16 +523,19 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
         return KeyedArchiver::archivedData($this->entitiesByName->compactMapValues(fn(EntityDescription $entity): ?string => $entity->isPersistentHistoryEntity ? null : $entity->versionHashInStyle($style)));
     }
 
+    #[Override]
     public function count(): int
     {
         return $this->entitiesByName->count;
     }
 
+    #[Override]
     public function getIterator(): Traversable
     {
         return new ArrayIterator($this->entities->toArray());
     }
 
+    #[Override]
     public function jsonSerialize(): Dictionary
     {
         /** @var Dictionary<ArrayClass<Dictionary>> $dictionary */

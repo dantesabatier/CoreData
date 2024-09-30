@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
@@ -32,6 +33,7 @@ abstract class SQLRelationship extends SQLProperty
         unset($this->lazyInverseRelationshipName);
     }
 
+    #[Override]
     public function __get(string $name)
     {
         if ($name == "relationshipDescription") {
@@ -60,6 +62,7 @@ abstract class SQLRelationship extends SQLProperty
         }
     }
 
+    #[Override]
     public function __set(string $name, mixed $value): void
     {
         if ($name == "relationshipDescription" || $name == "isOrdered" || $name == "lazyDestinationEntityName" || $name == "lazyInverseRelationshipName" || $name == "destinationEntity" || $name == "inverseRelationship") {

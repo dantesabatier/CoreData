@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\ObjectClass;
 
@@ -33,6 +34,7 @@ class SQLIndex extends ObjectClass
         $this->updateTableStatements->appendContentsOf($this->dropTableStatements);
     }
 
+    #[Override]
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof SQLIndex) {

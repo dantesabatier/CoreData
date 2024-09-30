@@ -392,6 +392,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         return $fetchRequest;
     }
 
+    #[Override]
     public function mutableSetValueForKey(string $key): Set
     {
         if (!($relationship = $this->entity->relationshipsByName[$key])) {
@@ -412,6 +413,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         return $mutableSet;
     }
 
+    #[Override]
     public function mutableArrayValueForKey(string $key): ArrayClass
     {
         if (!($property = $this->entity->propertiesByName[$key])) {
@@ -1006,6 +1008,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         }
     }
 
+    #[Override]
     public function willChangeValueForKey(string $key, KeyValueChange $changeKind = KeyValueChange::setting, mixed $changedValue = null): void
     {
         if (!$this->isSuppressingKVO) {
@@ -1013,6 +1016,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         }
     }
 
+    #[Override]
     public function didChangeValueForKey(string $key, KeyValueChange $changeKind = KeyValueChange::setting, mixed $changedValue = null): void
     {
         if (!$this->isSuppressingKVO) {
@@ -1050,6 +1054,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         return null;
     }
 
+    #[Override]
     public function jsonSerialize(): Dictionary
     {
         return $this->serializationKeys->reduce(new Dictionary(), function (Dictionary &$dictionary, string $key): Dictionary {
@@ -1086,11 +1091,13 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         return false;
     }
 
+    #[Override]
     public function description(): string
     {
         return sprintf("<%s %s> (entity: %s; id: %s %s; data: %s)", $this->entity->name, $this->hash(), $this->entity->name, $this->objectID->hash(), $this->objectID->description(), $this->isFault ? "<fault>" : $this->dictionaryWithValues($this->entity->propertiesByName->filter(fn(PropertyDescription $property): bool => !$this->isRelationshipForKeyFault($property->name))->keys)->description());
     }
 
+    #[Override]
     public function debugDescription(): string
     {
         return sprintf("<%s: %s>", static::class, $this->hash());
