@@ -258,12 +258,14 @@ readonly class SQLStoreMigrator
             $statement = $adapter->newDropTableStatementForManyToMany($manyToMany);
             $connection->execute($statement);
         }
-        foreach ($this->removedColumns->sort(fn(SQLColumn $c1, SQLColumn $c2): int => $c1 instanceof SQLAttribute && $c1->isDerivedAttribute ? ComparisonResult::orderedAscending->value : ComparisonResult::orderedDescending->value) as $removedColumn) {
+        $removedColumns = $this->removedColumns->sort(fn(SQLColumn $c1, SQLColumn $c2): int => $c1 instanceof SQLAttribute && $c1->isDerivedAttribute ? ComparisonResult::orderedAscending->value : ComparisonResult::orderedDescending->value);
+        foreach ($removedColumns as $removedColumn) {
             $statement = $adapter->newDropColumnStatement($removedColumn);
             $connection->execute($statement);
         }
         foreach ($this->removedEntities as $entity) {
-            foreach ($entity->toManyRelationships->flatMap(fn(SQLToMany $many): ArrayClass => $many->destinationEntity->foreignKeyColumns->filter(fn(SQLForeignKey $foreignKey): bool => $foreignKey->toOneRelationship->isEqual($many->inverseToOne))) as $foreignKey) {
+            $foreignKeys = $entity->toManyRelationships->flatMap(fn(SQLToMany $many): ArrayClass => $many->destinationEntity->foreignKeyColumns->filter(fn(SQLForeignKey $foreignKey): bool => $foreignKey->toOneRelationship->isEqual($many->inverseToOne)));
+            foreach ($foreignKeys as $foreignKey) {
                 $statement = $adapter->newDropIndexStatementForForeignKey($foreignKey);
                 $connection->execute($statement);
             }
