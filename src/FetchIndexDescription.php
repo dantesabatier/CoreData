@@ -60,7 +60,7 @@ class FetchIndexDescription extends ObjectClass
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == "elements") {
+        if ($name === "elements") {
             if ((new Set($value->map(fn(FetchIndexElementDescription $element): FetchIndexElementType => $element->collationType)))->count > 1) {
                 fatal_error("Invalid argument: elements must be of the same collation type");
             }

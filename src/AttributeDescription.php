@@ -42,7 +42,7 @@ class AttributeDescription extends PropertyDescription
     #[Override]
     public function __get(string $name)
     {
-        if ($name == "attributeValueClassName") {
+        if ($name === "attributeValueClassName") {
             $this->$name = match ($this->type) {
                 AttributeType::date => Date::class,
                 AttributeType::uuid => UUID::class,
@@ -51,10 +51,10 @@ class AttributeDescription extends PropertyDescription
                 default => null,
             };
             return $this->$name;
-        } elseif ($name == "propertyType") {
+        } elseif ($name === "propertyType") {
             $this->$name = PropertyDescriptionType::attribute;
             return $this->$name;
-        } elseif ($name == "defaultValue") {
+        } elseif ($name === "defaultValue") {
             $defaultValue = $this->$name;
             if ($defaultValue !== null) {
                 ManagedObject::coerceValue($defaultValue, $this);
@@ -68,9 +68,9 @@ class AttributeDescription extends PropertyDescription
     #[Override]
     public function __set(string $name, mixed $value): void
     {
-        if ($name == "attributeValueClassName") {
+        if ($name === "attributeValueClassName") {
             $this->$name = $value;
-        } elseif ($name == "defaultValue") {
+        } elseif ($name === "defaultValue") {
             $this->$name = (new Value($value))->value;
         } else {
             parent::__set($name, $value);

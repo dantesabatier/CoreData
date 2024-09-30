@@ -76,21 +76,21 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
 
     public function __get(string $name)
     {
-        if ($name == "entitiesByName" || $name == "entitiesByConfigurationName" || $name == "fetchRequestTemplatesByName" || $name == "entityVersionHashesByName") {
+        if ($name === "entitiesByName" || $name === "entitiesByConfigurationName" || $name === "fetchRequestTemplatesByName" || $name === "entityVersionHashesByName") {
             $this->$name = new Dictionary();
             return $this->$name;
-        } elseif ($name == "versionHash") {
+        } elseif ($name === "versionHash") {
             $this->$name = KeyedArchiver::archivedData($this->entityVersionHashesByName);
             return $this->$name;
-        } elseif ($name == "configurations") {
+        } elseif ($name === "configurations") {
             $this->$name = $this->entitiesByConfigurationName->keys;
             return $this->$name;
-        } elseif ($name == "versionIdentifiers") {
+        } elseif ($name === "versionIdentifiers") {
             $this->$name = new Set();
             return $this->$name;
-        } elseif ($name == "entities") {
+        } elseif ($name === "entities") {
             return $this->entitiesByName->values;
-        } elseif ($name == "isImmutable") {
+        } elseif ($name === "isImmutable") {
             $this->$name = false;
             return $this->$name;
         } else {
@@ -100,9 +100,9 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == "entitiesByName" || $name == "entitiesByConfigurationName" || $name == "fetchRequestTemplatesByName" || $name == "entityVersionHashesByName" || $name == "versionHash" || $name == "isImmutable") {
+        if ($name === "entitiesByName" || $name === "entitiesByConfigurationName" || $name === "fetchRequestTemplatesByName" || $name === "entityVersionHashesByName" || $name === "versionHash" || $name === "isImmutable") {
             $this->$name = $value;
-        } elseif ($name == "entities") {
+        } elseif ($name === "entities") {
             $this->throwIfNotEditable();
             $this->entitiesByName->removeAll();
             $entities = $this->flatten($value);

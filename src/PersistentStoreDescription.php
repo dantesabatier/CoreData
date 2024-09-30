@@ -55,13 +55,13 @@ class PersistentStoreDescription extends ObjectClass
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == "timeout") {
+        if ($name === "timeout") {
             $this->options->setValueForKey($value, PersistentStoreTimeoutOption);
-        } elseif ($name == "isReadOnly") {
+        } elseif ($name === "isReadOnly") {
             $this->options->setValueForKey($value, ReadOnlyPersistentStoreOption);
-        } elseif ($name == "shouldInferMappingModelAutomatically") {
+        } elseif ($name === "shouldInferMappingModelAutomatically") {
             $this->options->setValueForKey($value, InferMappingModelAutomaticallyOption);
-        } elseif ($name == "shouldMigrateStoreAutomatically") {
+        } elseif ($name === "shouldMigrateStoreAutomatically") {
             $this->options->setValueForKey($value, MigratePersistentStoresAutomaticallyOption);
         } else {
             $this->setValueForUndefinedKey($value, $name);

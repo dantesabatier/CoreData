@@ -77,24 +77,24 @@ class SQLGenerator extends ObjectClass
     /** @suppress PHP0416 */
     public function __get(string $name)
     {
-        if ($name == "request") {
+        if ($name === "request") {
             if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext) {
                 $this->$name = $this->requestContext->fetchContext->request;
             } elseif ($this->requestContext instanceof SQLFetchRequestContext) {
                 $this->$name = $this->requestContext->request;
             }
             return $this->$name;
-        } elseif ($name == "entity") {
+        } elseif ($name === "entity") {
             if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext) {
                 $this->$name = $this->requestContext->fetchContext->sqlEntityForFetchRequest;
             } elseif ($this->requestContext instanceof SQLFetchRequestContext) {
                 $this->$name = $this->requestContext->sqlEntityForFetchRequest;
             }
             return $this->$name;
-        } elseif ($name == "arguments") {
+        } elseif ($name === "arguments") {
             $this->$name = new ArrayClass();
             return $this->$name;
-        } elseif ($name == "statement") {
+        } elseif ($name === "statement") {
             if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext || $this->requestContext instanceof SQLFetchRequestContext) {
                 $this->$name = $this->newSQLStatementForPersistentStoreRequest();
             } elseif ($this->requestContext instanceof SQLSaveChangesRequestContext) {
@@ -103,10 +103,10 @@ class SQLGenerator extends ObjectClass
                 $this->$name = null;
             }
             return $this->$name;
-        } elseif ($name == "byMappingByTableAliasAssociationTable") {
+        } elseif ($name === "byMappingByTableAliasAssociationTable") {
             $this->$name = new Dictionary();
             return $this->$name;
-        } elseif ($name == "aliasGenerator") {
+        } elseif ($name === "aliasGenerator") {
             $this->$name = new SQLAliasGenerator();
             return $this->$name;
         } else {

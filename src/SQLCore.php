@@ -52,19 +52,19 @@ class SQLCore extends IncrementalStore
     #[Override]
     public function __get(string $name)
     {
-        if ($name == "adapter") {
+        if ($name === "adapter") {
             $this->$name = new SQLAdapter($this);
             return $this->$name;
-        } elseif ($name == "schemaValidationConnection") {
+        } elseif ($name === "schemaValidationConnection") {
             $this->$name = new SQLConnection($this->adapter);
             return $this->$name;
-        } elseif ($name == "queryGenerationTrackingConnection") {
+        } elseif ($name === "queryGenerationTrackingConnection") {
             $this->$name = new SQLConnection($this->adapter);
             return $this->$name;
-        } elseif ($name == "maxPrimaryKeys") {
+        } elseif ($name === "maxPrimaryKeys") {
             $this->$name = new Dictionary();
             return $this->$name;
-        } elseif ($name == "model") {
+        } elseif ($name === "model") {
             $this->$name = new SQLModel($this->persistentStoreCoordinator->managedObjectModel, $this->configurationName);
             return $this->$name;
         } else {
@@ -151,7 +151,7 @@ class SQLCore extends IncrementalStore
                     return null;
                 }
                 $name = $property->name;
-                if ($name == "token" || $name == "transactionNumber") {
+                if ($name === "token" || $name === "transactionNumber") {
                     return null;
                 }
                 /** @var ReflectionNamedType $reflectionType */
@@ -197,7 +197,7 @@ class SQLCore extends IncrementalStore
                     return null;
                 }
                 $name = $property->name;
-                if ($name == "changeID") {
+                if ($name === "changeID") {
                     return null;
                 }
                 /** @var ReflectionNamedType $reflectionType */

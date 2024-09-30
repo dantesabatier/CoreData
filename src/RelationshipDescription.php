@@ -45,21 +45,21 @@ class RelationshipDescription extends PropertyDescription
     #[Override]
     public function __get(string $name)
     {
-        if ($name == "destinationEntity") {
+        if ($name === "destinationEntity") {
             if ($this->entity->isEditable) {
                 fatal_error("{$this->debugDescription()} property \"$name\" cannot be accessed before initialization");
             }
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
             $this->$name = $this->entity->managedObjectModel->entitiesByName[$this->lazyDestinationEntityName] ?? $this->entity->managedObjectModel->entitiesByName->first(fn(EntityDescription $entity): bool => $entity->renamingIdentifier === $this->lazyDestinationEntityName) ?? fatal_error("$this->name, destination entity \"$this->lazyDestinationEntityName\" does not exists");
             return $this->$name;
-        } elseif ($name == "inverseRelationship") {
+        } elseif ($name === "inverseRelationship") {
             if ($this->entity->isEditable) {
                 fatal_error("{$this->debugDescription()} property \"$name\" cannot be accessed before initialization");
             }
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
             $this->$name = $this->destinationEntity->relationshipsByName[$this->lazyInverseRelationshipName] ?? $this->destinationEntity->relationshipsByName->first(fn(RelationshipDescription $relationship): bool => $relationship->renamingIdentifier === $this->lazyInverseRelationshipName) ?? fatal_error("$this->name, inverse relationship \"$this->lazyInverseRelationshipName\" does not exists");
             return $this->$name;
-        } elseif ($name == "propertyType") {
+        } elseif ($name === "propertyType") {
             $this->$name = PropertyDescriptionType::relationship;
             return $this->$name;
         } else {
@@ -70,7 +70,7 @@ class RelationshipDescription extends PropertyDescription
     #[Override]
     public function __set(string $name, mixed $value): void
     {
-        if ($name == "destinationEntity" || $name == "inverseRelationship") {
+        if ($name === "destinationEntity" || $name === "inverseRelationship") {
             $this->$name = $value;
         } else {
             parent::__set($name, $value);

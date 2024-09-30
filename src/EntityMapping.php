@@ -55,7 +55,7 @@ class EntityMapping extends ObjectClass
 
     public function __get(string $name)
     {
-        if ($name == "name") {
+        if ($name === "name") {
             $mappingName = "";
             if ($sourceEntityName = $this->sourceEntityName) {
                 $mappingName = $sourceEntityName;

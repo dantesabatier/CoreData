@@ -119,28 +119,28 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     public function __get(string $name)
     {
-        if ($name == "objectID") {
+        if ($name === "objectID") {
             $this->$name = new ManagedObjectID($this->entity, uuid_generate());
             return $this->$name;
-        } elseif ($name == "changedValues" || $name == "changedValuesForCurrentEvent") {
+        } elseif ($name === "changedValues" || $name === "changedValuesForCurrentEvent") {
             $this->$name = new Dictionary();
             return $this->$name;
-        } elseif ($name == "faultHandler") {
+        } elseif ($name === "faultHandler") {
             $this->$name = ($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null"))->faultHandler;
             return $this->$name;
-        } elseif ($name == "allProperties") {
+        } elseif ($name === "allProperties") {
             $this->$name = $this->entity->properties;
             return $this->$name;
-        } elseif ($name == "modeledProperties") {
+        } elseif ($name === "modeledProperties") {
             $this->$name = $this->allProperties;
             return $this->$name;
-        } elseif ($name == "persistentProperties") {
+        } elseif ($name === "persistentProperties") {
             $this->$name = $this->modeledProperties->filter(fn(PropertyDescription $property): bool => !$property->isTransient && !$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription);
             return $this->$name;
-        } elseif ($name == "transientProperties") {
+        } elseif ($name === "transientProperties") {
             $this->$name = $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property->isTransient);
             return $this->$name;
-        } elseif ($name == "serializationKeys") {
+        } elseif ($name === "serializationKeys") {
             /** @var ArrayClass<string> $serializationKeys */
             $serializationKeys = match ($this->serializationRule) {
                 SerializationRule::attributesOnly => $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient)->keys,
@@ -159,11 +159,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $serializationKeys->insertAt(SQLEntity::primaryKeyName, 0);
             $this->$name = $serializationKeys;
             return $this->$name;
-        } elseif ($name == "hasPersistentChangedValues") {
+        } elseif ($name === "hasPersistentChangedValues") {
             return !$this->changedValues()->isEmpty;
-        } elseif ($name == "hasChanges") {
+        } elseif ($name === "hasChanges") {
             return $this->isInserted || $this->isUpdated || $this->isDeleted;
-        } elseif ($name == "isInserted") {
+        } elseif ($name === "isInserted") {
             /** @var FetchRequest<Number> $fetchRequest */
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $this->entity;
@@ -174,10 +174,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             /** @noinspection PhpUnhandledExceptionInspection */
             $this->$name = (bool)$this->managedObjectContext->count($fetchRequest);
             return $this->$name;
-        } elseif ($name == "isUpdated") {
+        } elseif ($name === "isUpdated") {
             $this->$name = $this->isInserted && !$this->changedValuesForCurrentEvent->isEmpty;
             return $this->$name;
-        } elseif ($name == "isDeleted") {
+        } elseif ($name === "isDeleted") {
             $this->$name = $this->managedObjectContext->deletedObjects->containsElement($this);
             return $this->$name;
         } else {
@@ -187,7 +187,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == "changedValues" || $name == "changedValuesForCurrentEvent" || $name == "serializationKeys" || $name == "allProperties" || $name == "modeledProperties" || $name == "persistentProperties" || $name == "transientProperties" || $name == "faultHandler" || $name == "isInserted" || $name == "isUpdated" || $name == "isDeleted") {
+        if ($name === "changedValues" || $name === "changedValuesForCurrentEvent" || $name === "serializationKeys" || $name === "allProperties" || $name === "modeledProperties" || $name === "persistentProperties" || $name === "transientProperties" || $name === "faultHandler" || $name === "isInserted" || $name === "isUpdated" || $name === "isDeleted") {
             $this->$name = $value;
         } else {
             $this->setValueForKey($value, $name);

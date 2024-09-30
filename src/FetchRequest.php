@@ -79,14 +79,14 @@ class FetchRequest extends PersistentStoreRequest
 
     public function __get(string $name)
     {
-        if ($name == "entityName") {
+        if ($name === "entityName") {
             $this->$name = $this->entity->name;
             return $this->$name;
-        } elseif ($name == "entity") {
+        } elseif ($name === "entity") {
             $entityName = $this->entityName ?? fatal_error("Invalid fetch request: expecting an entity or an entity name");
             $this->$name = EntityDescription::entity($entityName, $this->context());
             return $this->$name;
-        } elseif ($name == "serialization") {
+        } elseif ($name === "serialization") {
             /** @psalm-suppress all */
             $this->$name = ($this->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $this->entity->propertiesByName[$property]) ?? $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient && (!$attribute instanceof DerivedAttributeDescription || !$attribute->derivationExpression?->usesKVC))->values)->reduce(new Dictionary(), function (Dictionary $result, PropertyDescription $propertyDescription): Dictionary {
                 if ($propertyDescription instanceof AttributeDescription) {

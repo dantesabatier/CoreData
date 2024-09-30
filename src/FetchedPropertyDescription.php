@@ -29,7 +29,7 @@ class FetchedPropertyDescription extends PropertyDescription
     #[Override]
     public function __get(string $name)
     {
-        if ($name == "propertyType") {
+        if ($name === "propertyType") {
             $this->$name = PropertyDescriptionType::fetchedProperty;
             return $this->$name;
         } else {

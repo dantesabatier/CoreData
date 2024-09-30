@@ -37,11 +37,11 @@ class SQLAttribute extends SQLColumn
     #[Override]
     public function __get(string $name)
     {
-        if ($name == "attributeDescription") {
+        if ($name === "attributeDescription") {
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->propertyDescription;
             return $this->$name;
-        } elseif ($name == "sqlType") {
+        } elseif ($name === "sqlType") {
             /** @noinspection PhpVoidFunctionResultUsedInspection */
             $this->$name = match ($this->attributeDescription->type) {
                 AttributeType::integer16 => SQLType::smallint,
@@ -61,19 +61,19 @@ class SQLAttribute extends SQLColumn
                 AttributeType::undefined => fatal_error("{$this->entity->entityDescription->name}.$this->name cannot use an attribute type of \"Undefined\""),
             };
             return $this->$name;
-        } elseif ($name == "triggerKeys") {
+        } elseif ($name === "triggerKeys") {
             $this->$name = new Set();
             return $this->$name;
-        } elseif ($name == "isBackedByTrigger") {
+        } elseif ($name === "isBackedByTrigger") {
             $this->$name = !$this->triggerKeys->isEmpty;
             return $this->$name;
-        } elseif ($name == "isDerivedAttribute") {
+        } elseif ($name === "isDerivedAttribute") {
             $this->$name = $this->attributeDescription instanceof DerivedAttributeDescription;
             return $this->$name;
-        } elseif ($name == "derivationExpression") {
+        } elseif ($name === "derivationExpression") {
             $this->$name = $this->attributeDescription instanceof DerivedAttributeDescription ? $this->attributeDescription->derivationExpression : null;
             return $this->$name;
-        } elseif ($name == "defaultValue") {
+        } elseif ($name === "defaultValue") {
             $this->$name = match ($this->sqlType) {
                 SQLType::uuid => "UUID()",
                 SQLType::timestamp => "CURRENT_TIMESTAMP",
@@ -97,7 +97,7 @@ class SQLAttribute extends SQLColumn
     #[Override]
     public function __set(string $name, mixed $value): void
     {
-        if ($name == "attributeDescription" || $name == "triggerKeys" || $name == "isBackedByTrigger" || $name == "isDerivedAttribute" || $name == "derivationExpression") {
+        if ($name === "attributeDescription" || $name === "triggerKeys" || $name === "isBackedByTrigger" || $name === "isDerivedAttribute" || $name === "derivationExpression") {
             $this->$name = $value;
         } else {
             parent::__set($name, $value);

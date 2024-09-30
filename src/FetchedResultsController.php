@@ -41,10 +41,10 @@ class FetchedResultsController extends ObjectClass
 
     public function __get(string $name)
     {
-        if ($name == "fetchedObjects" || $name == "sections") {
+        if ($name === "fetchedObjects" || $name === "sections") {
             $this->$name = new ArrayClass();
             return $this->$name;
-        } elseif ($name == "sectionIndexTitles") {
+        } elseif ($name === "sectionIndexTitles") {
             /** @var ArrayClass<string> $sectionIndexTitles */
             $sectionIndexTitles = $this->sections->compactMap(fn(FetchedResultsSectionInfo $section): ?string => $section->indexTitle);
             $this->$name = $sectionIndexTitles;
@@ -65,7 +65,7 @@ class FetchedResultsController extends ObjectClass
     {
         $sectionNameKeyPath = $this->sectionNameKeyPath ?? "";
         $this->fetchedObjects = $this->managedObjectContext->fetch($this->fetchRequest);
-        if ($sectionNameKeyPath !== "" && !$this->fetchRequest->sortDescriptors?->contains(fn(SortDescriptor $sortDescriptor): bool => $sortDescriptor->key == $sectionNameKeyPath)) {
+        if ($sectionNameKeyPath !== "" && !$this->fetchRequest->sortDescriptors?->contains(fn(SortDescriptor $sortDescriptor): bool => $sortDescriptor->key === $sectionNameKeyPath)) {
             fatal_error();
         }
         $this->sections = new ArrayClass([new FetchedResultsSectionInfo($sectionNameKeyPath, $this->fetchedObjects, $this->sectionIndexTitle($sectionNameKeyPath))]);

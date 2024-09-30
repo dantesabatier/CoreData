@@ -126,26 +126,26 @@ class ManagedObjectContext extends ObjectClass
 
     public function __get(string $name)
     {
-        if ($name == "persistentStoreCoordinator") {
+        if ($name === "persistentStoreCoordinator") {
             $this->$name = null;
             return $this->$name;
-        } elseif ($name == "userInfo" || $name == "byHashAssociationTable") {
+        } elseif ($name === "userInfo" || $name === "byHashAssociationTable") {
             $this->$name = new Dictionary();
             return $this->$name;
-        } elseif ($name == "queue") {
+        } elseif ($name === "queue") {
             $queue = new OperationQueue();
             $queue->setAssociatedValueForKey($this, "managedObjectContext");
             $this->$name = $queue;
             return $this->$name;
-        } elseif ($name == "mergePolicy") {
+        } elseif ($name === "mergePolicy") {
             $this->$name = MergePolicy::error();
             return $this->$name;
-        } elseif ($name == "queryGenerationToken") {
+        } elseif ($name === "queryGenerationToken") {
             $this->$name = null;
             return $this->$name;
-        } elseif ($name == "registeredObjects") {
+        } elseif ($name === "registeredObjects") {
             return new Set($this->byHashAssociationTable->values);
-        } elseif ($name == "unprocessedChanges" || $name == "unprocessedDeletes" || $name == "unprocessedInserts" || $name == "insertedObjects" || $name == "updatedObjects" || $name == "deletedObjects" || $name == "lockedObjects" || $name == "refreshedObjects") {
+        } elseif ($name === "unprocessedChanges" || $name === "unprocessedDeletes" || $name === "unprocessedInserts" || $name === "insertedObjects" || $name === "updatedObjects" || $name === "deletedObjects" || $name === "lockedObjects" || $name === "refreshedObjects") {
             $this->$name = new Set();
             return $this->$name;
         } else {
@@ -155,7 +155,7 @@ class ManagedObjectContext extends ObjectClass
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == "persistentStoreCoordinator") {
+        if ($name === "persistentStoreCoordinator") {
             $this->$name = $value;
             NotificationCenter::default()->removeObserver($this, PersistentStoreCoordinatorWillRemoveStore);
             NotificationCenter::default()->addObserverForName(PersistentStoreCoordinatorWillRemoveStore, $value, function (Notification $notification): void {
@@ -174,7 +174,7 @@ class ManagedObjectContext extends ObjectClass
                     }
                 }
             });
-        } elseif ($name == "queue" || $name == "mergePolicy" || $name == "queryGenerationToken" || $name == "userInfo" || $name == "byHashAssociationTable" || $name == "unprocessedChanges" || $name == "unprocessedDeletes" || $name == "unprocessedInserts" || $name == "insertedObjects" || $name == "updatedObjects" || $name == "deletedObjects" || $name == "lockedObjects" || $name == "refreshedObjects") {
+        } elseif ($name === "queue" || $name === "mergePolicy" || $name === "queryGenerationToken" || $name === "userInfo" || $name === "byHashAssociationTable" || $name === "unprocessedChanges" || $name === "unprocessedDeletes" || $name === "unprocessedInserts" || $name === "insertedObjects" || $name === "updatedObjects" || $name === "deletedObjects" || $name === "lockedObjects" || $name === "refreshedObjects") {
             $this->$name = $value;
         } else {
             $this->setValueForUndefinedKey($value, $name);

@@ -81,32 +81,32 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
 
     public function __get(string $name)
     {
-        if ($name == "subentitiesByName" || $name == "propertiesByName" || $name == "indexesByName") {
+        if ($name === "subentitiesByName" || $name === "propertiesByName" || $name === "indexesByName") {
             $this->$name = new Dictionary();
             return $this->$name;
-        } elseif ($name == "uniquenessConstraints") {
+        } elseif ($name === "uniquenessConstraints") {
             $this->$name = new ArrayClass();
             return $this->$name;
-        } elseif ($name == "subentities") {
+        } elseif ($name === "subentities") {
             return $this->subentitiesByName->values;
-        } elseif ($name == "indexes") {
+        } elseif ($name === "indexes") {
             return $this->indexesByName->values;
-        } elseif ($name == "properties") {
+        } elseif ($name === "properties") {
             return $this->propertiesByName->values;
-        } elseif ($name == "versionHash") {
+        } elseif ($name === "versionHash") {
             $this->$name = $this->versionHashInStyle(VersionHashStyle::default);
             return $this->$name;
-        } elseif ($name == "renamingIdentifier") {
+        } elseif ($name === "renamingIdentifier") {
             $this->$name = $this->name;
             return $this->$name;
-        } elseif ($name == "attributesByName") {
+        } elseif ($name === "attributesByName") {
             if ($this->isEditable) {
                 fatal_error("{$this->debugDescription()} property \"$name\" cannot be accessed before initialization");
             }
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
             return $this->$name;
-        } elseif ($name == "relationshipsByName") {
+        } elseif ($name === "relationshipsByName") {
             if ($this->isEditable) {
                 fatal_error("{$this->debugDescription()} property \"$name\" cannot be accessed before initialization");
             }
@@ -120,16 +120,16 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name == "versionHash" || $name == "renamingIdentifier" || $name == "attributesByName" || $name == "relationshipsByName" || $name == "subentitiesByName" || $name == "propertiesByName" || $name == "indexesByName" || $name == "uniquenessConstraints") {
+        if ($name === "versionHash" || $name === "renamingIdentifier" || $name === "attributesByName" || $name === "relationshipsByName" || $name === "subentitiesByName" || $name === "propertiesByName" || $name === "indexesByName" || $name === "uniquenessConstraints") {
             $this->$name = $value;
-        } elseif ($name == "subentities") {
+        } elseif ($name === "subentities") {
             $this->throwIfNotEditable();
             $this->subentitiesByName->removeAll();
             /** @var EntityDescription $subentity */
             foreach ($value as $subentity) {
                 $this->subentitiesByName[$subentity->name] = $subentity;
             }
-        } elseif ($name == "properties") {
+        } elseif ($name === "properties") {
             $this->throwIfNotEditable();
             $this->propertiesByName->removeAll();
             /** @var PropertyDescription $property */
@@ -141,7 +141,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
                 $property->entity = $this;
                 $this->propertiesByName[$property->name] = $property;
             }
-        } elseif ($name == "indexes") {
+        } elseif ($name === "indexes") {
             $this->throwIfNotEditable();
             $this->indexesByName->removeAll();
             /** @var FetchIndexDescription $index */

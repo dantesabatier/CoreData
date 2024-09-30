@@ -32,7 +32,7 @@ class ExpressionDescription extends PropertyDescription
     #[Override]
     public function __get(string $name)
     {
-        if ($name == "propertyType") {
+        if ($name === "propertyType") {
             $this->$name = PropertyDescriptionType::expression;
             return $this->$name;
         } else {

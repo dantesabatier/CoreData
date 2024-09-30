@@ -64,7 +64,7 @@ abstract class PropertyDescription extends ObjectClass
 
     public function __get(string $name)
     {
-        if ($name == "validationPredicates") {
+        if ($name === "validationPredicates") {
             /** @var ArrayClass<Predicate> $validationPredicates */
             $validationPredicates = new ArrayClass();
             $minValue = $this->minValue;
@@ -110,19 +110,19 @@ abstract class PropertyDescription extends ObjectClass
             }
             $this->$name = $validationPredicates;
             return $this->$name;
-        } elseif ($name == "validationWarnings") {
+        } elseif ($name === "validationWarnings") {
             $this->$name = $this->validationPredicates->map(fn(Predicate $predicate): string => $predicate->predicateFormat());
             return $this->$name;
-        } elseif ($name == "versionHash") {
+        } elseif ($name === "versionHash") {
             /** @noinspection PhpUnhandledExceptionInspection */
             $this->versionHashInStyle($hash, VersionHashStyle::default);
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
             $this->$name = $hash;
             return $this->$name;
-        } elseif ($name == "renamingIdentifier") {
+        } elseif ($name === "renamingIdentifier") {
             $this->$name = $this->name;
             return $this->$name;
-        } elseif ($name == "propertyType") {
+        } elseif ($name === "propertyType") {
             $this->$name = PropertyDescriptionType::private;
             return $this->$name;
         } else {
@@ -133,7 +133,7 @@ abstract class PropertyDescription extends ObjectClass
     public function __set(string $name, mixed $value): void
     {
         $this->throwIfNotEditable();
-        if ($name == "validationPredicates" || $name == "validationWarnings" || $name == "renamingIdentifier" || $name == "propertyType") {
+        if ($name === "validationPredicates" || $name === "validationWarnings" || $name === "renamingIdentifier" || $name === "propertyType") {
             $this->$name = $value;
         } else {
             $this->setValueForUndefinedKey($value, $name);
