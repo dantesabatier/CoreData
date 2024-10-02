@@ -44,14 +44,14 @@ class FetchedResultsController extends ObjectClass
         if ($name === "fetchedObjects" || $name === "sections") {
             $this->$name = new ArrayClass();
             return $this->$name;
-        } elseif ($name === "sectionIndexTitles") {
+        }
+        if ($name === "sectionIndexTitles") {
             /** @var ArrayClass<string> $sectionIndexTitles */
             $sectionIndexTitles = $this->sections->compactMap(fn(FetchedResultsSectionInfo $section): ?string => $section->indexTitle);
             $this->$name = $sectionIndexTitles;
             return $this->$name;
-        } else {
-            return $this->valueForUndefinedKey($name);
         }
+        return $this->valueForUndefinedKey($name);
     }
 
     /**

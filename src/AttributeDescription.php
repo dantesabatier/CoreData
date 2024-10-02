@@ -51,18 +51,19 @@ class AttributeDescription extends PropertyDescription
                 default => null,
             };
             return $this->$name;
-        } elseif ($name === "propertyType") {
+        }
+        if ($name === "propertyType") {
             $this->$name = PropertyDescriptionType::attribute;
             return $this->$name;
-        } elseif ($name === "defaultValue") {
+        }
+        if ($name === "defaultValue") {
             $defaultValue = $this->$name;
             if ($defaultValue !== null) {
                 ManagedObject::coerceValue($defaultValue, $this);
             }
             return $defaultValue;
-        } else {
-            return parent::__get($name);
         }
+        return parent::__get($name);
     }
 
     #[Override]

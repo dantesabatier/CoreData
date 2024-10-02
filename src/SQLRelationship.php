@@ -40,26 +40,30 @@ abstract class SQLRelationship extends SQLProperty
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->propertyDescription;
             return $this->$name;
-        } elseif ($name === "isOrdered") {
+        }
+        if ($name === "isOrdered") {
             $this->$name = $this->relationshipDescription->isOrdered;
             return $this->$name;
-        } elseif ($name === "lazyDestinationEntityName") {
+        }
+        if ($name === "lazyDestinationEntityName") {
             $this->$name = $this->relationshipDescription->destinationEntity->name;
             return $this->$name;
-        } elseif ($name === "lazyInverseRelationshipName") {
+        }
+        if ($name === "lazyInverseRelationshipName") {
             $this->$name = $this->relationshipDescription->inverseRelationship->name;
             return $this->$name;
-        } elseif ($name === "destinationEntity") {
+        }
+        if ($name === "destinationEntity") {
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
             $this->$name = $this->entity->model->entitiesByName[$this->lazyDestinationEntityName] ?? fatal_error("$this->name, destination entity \"$this->lazyDestinationEntityName\" does not exists");
             return $this->$name;
-        } elseif ($name === "inverseRelationship") {
+        }
+        if ($name === "inverseRelationship") {
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->destinationEntity->propertiesByName[$this->lazyInverseRelationshipName] ?? fatal_error("$this->name, inverse relationship \"$this->lazyInverseRelationshipName\" does not exists");
             return $this->$name;
-        } else {
-            return parent::__get($name);
         }
+        return parent::__get($name);
     }
 
     #[Override]

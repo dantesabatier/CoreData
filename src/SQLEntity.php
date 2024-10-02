@@ -100,17 +100,21 @@ class SQLEntity extends StoreMapping
             $entity = $this->isRootEntity ? $this : $this->rootEntity;
             $this->$name = $entity->entityDescription->name;
             return $this->$name;
-        } elseif ($name === "superentity") {
+        }
+        if ($name === "superentity") {
             $this->$name = $this->model->entitiesByName->first(fn(SQLEntity $entity): bool => $entity->entityDescription->isEqual($this->entityDescription->superentity));
             return $this->$name;
-        } elseif ($name === "subentities") {
+        }
+        if ($name === "subentities") {
             /** @psalm-suppress all */
             $this->$name = $this->entityDescription->subentities->map(fn(EntityDescription $subentity): SQLEntity => $this->model->entitiesByName[$subentity->name]);
             return $this->$name;
-        } elseif ($name === "isRootEntity") {
+        }
+        if ($name === "isRootEntity") {
             $this->$name = $this->superentity === null;
             return $this->$name;
-        } elseif ($name === "rootEntity") {
+        }
+        if ($name === "rootEntity") {
             $superentity = $this->superentity;
             $rootEntity = $superentity;
             while ($superentity) {
@@ -121,7 +125,8 @@ class SQLEntity extends StoreMapping
             }
             $this->$name = $rootEntity;
             return $this->$name;
-        } elseif ($name === "entityKey") {
+        }
+        if ($name === "entityKey") {
             $attribute = new AttributeDescription();
             $attribute->entity = $this->entityDescription;
             $attribute->name = self::entityKeyName;
@@ -129,7 +134,8 @@ class SQLEntity extends StoreMapping
             $attribute->isOptional = false;
             $this->$name = new SQLEntityKey($this, $attribute);
             return $this->$name;
-        } elseif ($name === "primaryKey") {
+        }
+        if ($name === "primaryKey") {
             $attribute = new AttributeDescription();
             $attribute->entity = $this->entityDescription;
             $attribute->name = match ($this->entityDescription->name) {
@@ -141,14 +147,17 @@ class SQLEntity extends StoreMapping
             $attribute->isOptional = false;
             $this->$name = new SQLPrimaryKey($this, $attribute);
             return $this->$name;
-        } elseif ($name === "optLockKey") {
+        }
+        if ($name === "optLockKey") {
             $this->$name = null;
             return $this->$name;
-        } elseif ($name === "propertiesByName") {
+        }
+        if ($name === "propertiesByName") {
             $transform = function (PropertyDescription $propertyDescription): ?SQLProperty {
                 if ($propertyDescription instanceof AttributeDescription) {
                     return new SQLAttribute($this, $propertyDescription);
-                } elseif ($propertyDescription instanceof RelationshipDescription) {
+                }
+                if ($propertyDescription instanceof RelationshipDescription) {
                     if ($propertyDescription->isToMany) {
                         if ($propertyDescription->inverseRelationship->isToMany) {
                             return new SQLManyToMany($this, $propertyDescription);
@@ -167,47 +176,59 @@ class SQLEntity extends StoreMapping
             }
             $this->$name = $propertiesByName;
             return $this->$name;
-        } elseif ($name === "properties") {
+        }
+        if ($name === "properties") {
             $this->$name = $this->propertiesByName->values;
             return $this->$name;
-        } elseif ($name === "uniqueProperties") {
+        }
+        if ($name === "uniqueProperties") {
             $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property->isUnique);
             return $this->$name;
-        } elseif ($name === "attributes") {
+        }
+        if ($name === "attributes") {
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute);
             return $this->$name;
-        } elseif ($name === "derivedAttributes") {
+        }
+        if ($name === "derivedAttributes") {
             $this->$name = $this->attributes->filter(fn(SQLAttribute $attribute): bool => $attribute->attributeDescription instanceof DerivedAttributeDescription);
             return $this->$name;
-        } elseif ($name === "entitySpecificAttributes") {
+        }
+        if ($name === "entitySpecificAttributes") {
             /** @psalm-suppress all */
             $this->$name = $this->entityDescription->attributesByName->map(fn(AttributeDescription $attributeDescription): SQLAttribute => $this->propertiesByName[$attributeDescription->name]);
             return $this->$name;
-        } elseif ($name === "entitySpecificRelationships") {
+        }
+        if ($name === "entitySpecificRelationships") {
             /** @psalm-suppress all */
             $this->$name = $this->entityDescription->relationshipsByName->map(fn(RelationshipDescription $relationshipDescription): SQLRelationship => $this->propertiesByName[$relationshipDescription->name]);
             return $this->$name;
-        } elseif ($name === "toManyRelationships") {
+        }
+        if ($name === "toManyRelationships") {
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLToMany);
             return $this->$name;
-        } elseif ($name === "manyToManyRelationships") {
+        }
+        if ($name === "manyToManyRelationships") {
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLManyToMany);
             return $this->$name;
-        } elseif ($name === "foreignKeyColumns") {
+        }
+        if ($name === "foreignKeyColumns") {
             /** @psalm-suppress all */
             $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLRelationship)->compactMap(fn(SQLRelationship $relationship): ?SQLForeignKey => $relationship instanceof SQLToOne ? $relationship->foreignKey : null);
             return $this->$name;
-        } elseif ($name === "virtualForeignKeyColumns") {
+        }
+        if ($name === "virtualForeignKeyColumns") {
             $this->$name = $this->foreignKeyColumns->filter(fn(SQLForeignKey $foreignKey): bool => $foreignKey->toOneRelationship->isVirtual);
             return $this->$name;
-        } elseif ($name === "multiColumnUniquenessConstraints") {
+        }
+        if ($name === "multiColumnUniquenessConstraints") {
             /** @psalm-suppress InvalidPropertyAssignmentValue */
             $this->$name = $this->entityDescription->uniquenessConstraints->map(fn(ArrayClass $uniquenessConstraints): ArrayClass => $uniquenessConstraints->compactMap(fn(AttributeDescription|string $description): ?SQLAttribute => $this->attributes->first(fn(SQLAttribute $attribute): bool => $attribute->name === ($description instanceof AttributeDescription ? $description->name : $description))));
             return $this->$name;
-        } elseif ($name === "indexes") {
+        }
+        if ($name === "indexes") {
             /** @var Dictionary<SQLIndex> $indexes */
             $indexes = new Dictionary();
             if (!$this->entityDescription->isPersistentHistoryEntity) {
@@ -229,27 +250,31 @@ class SQLEntity extends StoreMapping
             }));
             $this->$name = $indexes;
             return $this->$name;
-        } elseif ($name === "rTreeIndexes") {
+        }
+        if ($name === "rTreeIndexes") {
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->indexes->filter(fn(SQLIndex $index): bool => $index instanceof SQLRTreeIndex);
             return $this->$name;
-        } elseif ($name === "columnsToFetch") {
+        }
+        if ($name === "columnsToFetch") {
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient && (($property instanceof SQLAttribute ? ($property->isDerivedAttribute && !$property->derivationExpression?->usesKVC || !$property->isDerivedAttribute) : !$property instanceof SQLRelationship && !$property instanceof SQLForeignKey)));
             return $this->$name;
-        } elseif ($name === "columnsToCreate") {
+        }
+        if ($name === "columnsToCreate") {
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => !$property instanceof SQLRelationship && !($property instanceof SQLAttribute && $property->isDerivedAttribute && $property->derivationExpression?->usesKVC));
             return $this->$name;
-        } elseif ($name === "entityID") {
-            $this->$name = 0;
-            return $this->$name;
-        } elseif ($name === "subentityMaxID") {
-            $this->$name = 0;
-            return $this->$name;
-        } else {
-            return $this->valueForUndefinedKey($name);
         }
+        if ($name === "entityID") {
+            $this->$name = 0;
+            return $this->$name;
+        }
+        if ($name === "subentityMaxID") {
+            $this->$name = 0;
+            return $this->$name;
+        }
+        return $this->valueForUndefinedKey($name);
     }
 
     public function generateInverseRelationshipsAndMore(): void

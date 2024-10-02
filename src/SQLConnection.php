@@ -170,14 +170,17 @@ class SQLConnection extends ObjectClass
         $prepare->execute($statement->arguments->map(function (mixed $e): mixed {
             if ($e instanceof Nil || $e instanceof BackedEnum) {
                 return $e->value;
-            } elseif ($e instanceof ManagedObjectID) {
+            }
+            if ($e instanceof ManagedObjectID) {
                 return $e->referenceObject;
-            } elseif ($e instanceof Number) {
+            }
+            if ($e instanceof Number) {
                 if (is_bool($e->value)) {
                     return $e->intValue;
                 }
                 return $e->value;
-            } elseif (is_bool($e)) {
+            }
+            if (is_bool($e)) {
                 return (int)$e;
             }
             return $e;
@@ -342,13 +345,13 @@ class SQLConnection extends ObjectClass
         $arguments = $array->flatMap(fn(ManagedObject|Dictionary $object): ArrayClass => $columns->map(function (SQLColumn $column) use ($entity, $object): mixed {
             if ($column instanceof SQLEntityKey) {
                 return $entity->tableName;
-            } elseif ($column instanceof SQLAttribute) {
+            }
+            if ($column instanceof SQLAttribute) {
                 $value = $object->valueForKey($column->name);
                 ManagedObject::coerceValue($value, $column->attributeDescription, true);
                 return $value;
-            } else {
-                return $object->valueForKey($column->name);
             }
+            return $object->valueForKey($column->name);
         }));
         $statement = new SQLStatement($string, $arguments);
         $execute = $this->execute($statement);
@@ -414,14 +417,17 @@ class SQLConnection extends ObjectClass
                 $this->insertChanges($deletedObjects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID), PersistentHistoryChangeType::delete, $transactionID, $requestContext->context);
             }
             return $transactionID;
-        } elseif ($requestContext instanceof SQLBatchInsertRequestContext) {
+        }
+        if ($requestContext instanceof SQLBatchInsertRequestContext) {
             /** @var SQLEntity $entity */
             $entity = $requestContext->sqlCore->model->entitiesByName[$requestContext->request->entity->name];
             if ($objectsToInsert = $requestContext->request->objectsToInsert) {
                 return $this->insertArray($objectsToInsert, $entity);
-            } elseif ($dictionaryHandler = $requestContext->request->dictionaryHandler) {
+            }
+            if ($dictionaryHandler = $requestContext->request->dictionaryHandler) {
                 return $this->insertDictionaryBlock($dictionaryHandler, $entity);
-            } elseif ($managedObjectHandler = $requestContext->request->managedObjectHandler) {
+            }
+            if ($managedObjectHandler = $requestContext->request->managedObjectHandler) {
                 return $this->insertManagedObjectBlock($managedObjectHandler, $entity);
             }
         } elseif ($requestContext instanceof SQLBatchUpdateRequestContext) {

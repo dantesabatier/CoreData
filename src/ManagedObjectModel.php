@@ -79,23 +79,27 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
         if ($name === "entitiesByName" || $name === "entitiesByConfigurationName" || $name === "fetchRequestTemplatesByName" || $name === "entityVersionHashesByName") {
             $this->$name = new Dictionary();
             return $this->$name;
-        } elseif ($name === "versionHash") {
+        }
+        if ($name === "versionHash") {
             $this->$name = KeyedArchiver::archivedData($this->entityVersionHashesByName);
             return $this->$name;
-        } elseif ($name === "configurations") {
+        }
+        if ($name === "configurations") {
             $this->$name = $this->entitiesByConfigurationName->keys;
             return $this->$name;
-        } elseif ($name === "versionIdentifiers") {
+        }
+        if ($name === "versionIdentifiers") {
             $this->$name = new Set();
             return $this->$name;
-        } elseif ($name === "entities") {
+        }
+        if ($name === "entities") {
             return $this->entitiesByName->values;
-        } elseif ($name === "isImmutable") {
+        }
+        if ($name === "isImmutable") {
             $this->$name = false;
             return $this->$name;
-        } else {
-            return $this->valueForUndefinedKey($name);
         }
+        return $this->valueForUndefinedKey($name);
     }
 
     public function __set(string $name, mixed $value): void

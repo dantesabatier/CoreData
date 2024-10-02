@@ -36,7 +36,8 @@ class SQLColumn extends SQLProperty
         if ($name === "columnName") {
             $this->$name = $this->propertyDescription->name;
             return $this->$name;
-        } elseif ($name === "precision") {
+        }
+        if ($name === "precision") {
             $this->$name = match ($this->sqlType) {
                 SQLType::tinyint => 1,
                 SQLType::smallint => 6,
@@ -49,21 +50,24 @@ class SQLColumn extends SQLProperty
                 default => 0
             };
             return $this->$name;
-        } elseif ($name === "scale") {
+        }
+        if ($name === "scale") {
             $this->$name = match ($this->sqlType) {
                 SQLType::decimal => 2,
                 SQLType::double => 6,
                 default => 0
             };
             return $this->$name;
-        } elseif ($name === "length") {
+        }
+        if ($name === "length") {
             $length = $this->precision ? "$this->precision" : "";
             if ($length && $this->scale) {
                 $length .= ",$this->scale";
             }
             $this->$name = $length;
             return $this->$name;
-        } elseif ($name === "defaultValue") {
+        }
+        if ($name === "defaultValue") {
             $this->$name = $this->isOptional ? null : match ($this->sqlType) {
                 SQLType::tinyint, SQLType::smallint, SQLType::mediumint, SQLType::int, SQLType::bigint => 0,
                 SQLType::decimal, SQLType::float, SQLType::double => 0.0,
@@ -73,9 +77,8 @@ class SQLColumn extends SQLProperty
                 SQLType::unknown => null
             };
             return $this->$name;
-        } else {
-            return parent::__get($name);
         }
+        return parent::__get($name);
     }
 
     #[Override]

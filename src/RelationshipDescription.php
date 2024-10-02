@@ -52,19 +52,20 @@ class RelationshipDescription extends PropertyDescription
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
             $this->$name = $this->entity->managedObjectModel->entitiesByName[$this->lazyDestinationEntityName] ?? $this->entity->managedObjectModel->entitiesByName->first(fn(EntityDescription $entity): bool => $entity->renamingIdentifier === $this->lazyDestinationEntityName) ?? fatal_error("$this->name, destination entity \"$this->lazyDestinationEntityName\" does not exists");
             return $this->$name;
-        } elseif ($name === "inverseRelationship") {
+        }
+        if ($name === "inverseRelationship") {
             if ($this->entity->isEditable) {
                 fatal_error("{$this->debugDescription()} property \"$name\" cannot be accessed before initialization");
             }
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
             $this->$name = $this->destinationEntity->relationshipsByName[$this->lazyInverseRelationshipName] ?? $this->destinationEntity->relationshipsByName->first(fn(RelationshipDescription $relationship): bool => $relationship->renamingIdentifier === $this->lazyInverseRelationshipName) ?? fatal_error("$this->name, inverse relationship \"$this->lazyInverseRelationshipName\" does not exists");
             return $this->$name;
-        } elseif ($name === "propertyType") {
+        }
+        if ($name === "propertyType") {
             $this->$name = PropertyDescriptionType::relationship;
             return $this->$name;
-        } else {
-            return parent::__get($name);
         }
+        return parent::__get($name);
     }
 
     #[Override]

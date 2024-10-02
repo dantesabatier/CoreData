@@ -247,13 +247,14 @@ abstract class AtomicStore extends PersistentStore
     {
         if ($request instanceof FetchRequest) {
             return $this->executeFetchRequest($request, $context);
-        } elseif ($request instanceof RefreshRequest) {
-            return $this->executeRefreshRequest($request, $context);
-        } elseif ($request instanceof SaveChangesRequest) {
-            return $this->executeSaveChangesRequest($request, $context);
-        } else {
-            return new ArrayClass();
         }
+        if ($request instanceof RefreshRequest) {
+            return $this->executeRefreshRequest($request, $context);
+        }
+        if ($request instanceof SaveChangesRequest) {
+            return $this->executeSaveChangesRequest($request, $context);
+        }
+        return new ArrayClass();
     }
 
     #[Override]
@@ -275,10 +276,10 @@ abstract class AtomicStore extends PersistentStore
             if ($relationship->isToMany) {
                 if ($inverseRelationship->isToMany) {
                     return $this->nodeCache->filter(fn(AtomicStoreCacheNode $node): bool => $node->objectID->entity->isKindOf($destinationEntity) && $node->valueForKey($inverseRelationship->name)?->containsElement($objectID))->map(fn(AtomicStoreCacheNode $node): ManagedObjectID => $node->objectID);
-                } else {
-                    return $this->nodeCache->filter(fn(AtomicStoreCacheNode $node): bool => $node->objectID->entity->isKindOf($destinationEntity) && $node->valueForKey($inverseRelationship->name)?->isEqual($objectID))->map(fn(AtomicStoreCacheNode $node): ManagedObjectID => $node->objectID);
                 }
-            } elseif (!$inverseRelationship->isToMany) {
+                return $this->nodeCache->filter(fn(AtomicStoreCacheNode $node): bool => $node->objectID->entity->isKindOf($destinationEntity) && $node->valueForKey($inverseRelationship->name)?->isEqual($objectID))->map(fn(AtomicStoreCacheNode $node): ManagedObjectID => $node->objectID);
+            }
+            if (!$inverseRelationship->isToMany) {
                 return $this->nodeCache->first(fn(AtomicStoreCacheNode $node): bool => $node->objectID->entity->isKindOf($destinationEntity) && $node->valueForKey($inverseRelationship->name)?->isEqual($objectID))?->objectID;
             }
         }

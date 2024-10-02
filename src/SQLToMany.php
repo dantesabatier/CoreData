@@ -29,9 +29,8 @@ class SQLToMany extends SQLRelationship
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->inverseRelationship;
             return $this->$name;
-        } else {
-            return parent::__get($name);
         }
+        return parent::__get($name);
     }
 
     #[Override]

@@ -110,24 +110,27 @@ abstract class PropertyDescription extends ObjectClass
             }
             $this->$name = $validationPredicates;
             return $this->$name;
-        } elseif ($name === "validationWarnings") {
+        }
+        if ($name === "validationWarnings") {
             $this->$name = $this->validationPredicates->map(fn(Predicate $predicate): string => $predicate->predicateFormat());
             return $this->$name;
-        } elseif ($name === "versionHash") {
+        }
+        if ($name === "versionHash") {
             /** @noinspection PhpUnhandledExceptionInspection */
             $this->versionHashInStyle($hash, VersionHashStyle::default);
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
             $this->$name = $hash;
             return $this->$name;
-        } elseif ($name === "renamingIdentifier") {
+        }
+        if ($name === "renamingIdentifier") {
             $this->$name = $this->name;
             return $this->$name;
-        } elseif ($name === "propertyType") {
+        }
+        if ($name === "propertyType") {
             $this->$name = PropertyDescriptionType::private;
             return $this->$name;
-        } else {
-            return $this->valueForUndefinedKey($name);
         }
+        return $this->valueForUndefinedKey($name);
     }
 
     public function __set(string $name, mixed $value): void

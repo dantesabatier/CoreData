@@ -55,21 +55,24 @@ class SQLCore extends IncrementalStore
         if ($name === "adapter") {
             $this->$name = new SQLAdapter($this);
             return $this->$name;
-        } elseif ($name === "schemaValidationConnection") {
+        }
+        if ($name === "schemaValidationConnection") {
             $this->$name = new SQLConnection($this->adapter);
             return $this->$name;
-        } elseif ($name === "queryGenerationTrackingConnection") {
+        }
+        if ($name === "queryGenerationTrackingConnection") {
             $this->$name = new SQLConnection($this->adapter);
             return $this->$name;
-        } elseif ($name === "maxPrimaryKeys") {
+        }
+        if ($name === "maxPrimaryKeys") {
             $this->$name = new Dictionary();
             return $this->$name;
-        } elseif ($name === "model") {
+        }
+        if ($name === "model") {
             $this->$name = new SQLModel($this->persistentStoreCoordinator->managedObjectModel, $this->configurationName);
             return $this->$name;
-        } else {
-            return parent::__get($name);
         }
+        return parent::__get($name);
     }
 
     #[Override]
@@ -359,17 +362,23 @@ class SQLCore extends IncrementalStore
     {
         if ($request instanceof FetchRequest) {
             return $this->processFetchRequest($request, $context);
-        } elseif ($request instanceof RefreshRequest) {
+        }
+        if ($request instanceof RefreshRequest) {
             return $this->processRefreshObjects($request, $context);
-        } elseif ($request instanceof SaveChangesRequest) {
+        }
+        if ($request instanceof SaveChangesRequest) {
             return $this->processSaveChanges($request, $context);
-        } elseif ($request instanceof BatchInsertRequest) {
+        }
+        if ($request instanceof BatchInsertRequest) {
             return $this->processBatchInsert($request, $context);
-        } elseif ($request instanceof BatchUpdateRequest) {
+        }
+        if ($request instanceof BatchUpdateRequest) {
             return $this->processBatchUpdate($request, $context);
-        } elseif ($request instanceof BatchDeleteRequest) {
+        }
+        if ($request instanceof BatchDeleteRequest) {
             return $this->processBatchDelete($request, $context);
-        } elseif ($request instanceof PersistentHistoryChangeRequest) {
+        }
+        if ($request instanceof PersistentHistoryChangeRequest) {
             return $this->processChangeRequest($request, $context);
         }
         return new ArrayClass();

@@ -41,7 +41,8 @@ class SQLAttribute extends SQLColumn
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->propertyDescription;
             return $this->$name;
-        } elseif ($name === "sqlType") {
+        }
+        if ($name === "sqlType") {
             /** @noinspection PhpVoidFunctionResultUsedInspection */
             $this->$name = match ($this->attributeDescription->type) {
                 AttributeType::integer16 => SQLType::smallint,
@@ -61,26 +62,31 @@ class SQLAttribute extends SQLColumn
                 AttributeType::undefined => fatal_error("{$this->entity->entityDescription->name}.$this->name cannot use an attribute type of \"Undefined\""),
             };
             return $this->$name;
-        } elseif ($name === "triggerKeys") {
+        }
+        if ($name === "triggerKeys") {
             $this->$name = new Set();
             return $this->$name;
-        } elseif ($name === "isBackedByTrigger") {
+        }
+        if ($name === "isBackedByTrigger") {
             $this->$name = !$this->triggerKeys->isEmpty;
             return $this->$name;
-        } elseif ($name === "isDerivedAttribute") {
+        }
+        if ($name === "isDerivedAttribute") {
             $this->$name = $this->attributeDescription instanceof DerivedAttributeDescription;
             return $this->$name;
-        } elseif ($name === "derivationExpression") {
+        }
+        if ($name === "derivationExpression") {
             $this->$name = $this->attributeDescription instanceof DerivedAttributeDescription ? $this->attributeDescription->derivationExpression : null;
             return $this->$name;
-        } elseif ($name === "defaultValue") {
+        }
+        if ($name === "defaultValue") {
             $this->$name = match ($this->sqlType) {
                 SQLType::uuid => "UUID()",
                 SQLType::timestamp => "CURRENT_TIMESTAMP",
                 default => (function (): mixed {
                     $defaultValue = ManagedObject::coercedValue($this->attributeDescription->defaultValue, $this->attributeDescription->type, $this->attributeDescription->attributeValueClassName, $this->attributeDescription->valueTransformerName, $this->attributeDescription->isOptional, true);
                     if (is_string($defaultValue)) {
-                        $defaultValue = match ($defaultValue) {
+                        return match ($defaultValue) {
                             "" => $defaultValue,
                             default => "'$defaultValue'"
                         };
@@ -89,9 +95,8 @@ class SQLAttribute extends SQLColumn
                 })()
             };
             return $this->$name;
-        } else {
-            return parent::__get($name);
         }
+        return parent::__get($name);
     }
 
     #[Override]

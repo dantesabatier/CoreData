@@ -36,7 +36,7 @@ class SQLStatementFormatter extends Formatter
                         }
                         $v = human_readable_value($e);
                         if (is_bool($e) || is_null($e)) {
-                            $v = strtoupper($v);
+                            return strtoupper($v);
                         }
                         return $v;
                     })()

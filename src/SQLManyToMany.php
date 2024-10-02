@@ -49,33 +49,40 @@ class SQLManyToMany extends SQLRelationship
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->inverseRelationship;
             return $this->$name;
-        } elseif ($name === "correlationTableName") {
+        }
+        if ($name === "correlationTableName") {
             $this->$name = (new ArrayClass([$this->destinationEntity, $this->inverseRelationship->destinationEntity]))->sorted([new SortDescriptor("tableName")])->valueForKey("tableName")->join("");
             return $this->$name;
-        } elseif ($name === "columnName") {
+        }
+        if ($name === "columnName") {
             $this->$name = "{$this->name}ID";
             return $this->$name;
-        } elseif ($name === "columnSQLType") {
+        }
+        if ($name === "columnSQLType") {
             $this->$name = SQLType::int;
             return $this->$name;
-        } elseif ($name === "inverseColumnName") {
+        }
+        if ($name === "inverseColumnName") {
             $this->$name = $this->inverseManyToMany->columnName;
             return $this->$name;
-        } elseif ($name === "orderColumnName") {
+        }
+        if ($name === "orderColumnName") {
             $this->$name = $this->isReflexive ? $this->columnName : (new ArrayClass([$this->columnName, $this->inverseColumnName]))->sort(fn(string $e, string $e1): int => ComparisonResult::orderedAscending->value * ($e <=> $e1))[0];
             return $this->$name;
-        } elseif ($name === "inverseOrderColumnName") {
+        }
+        if ($name === "inverseOrderColumnName") {
             $this->$name = $this->isReflexive ? $this->columnName : (new ArrayClass([$this->columnName, $this->inverseColumnName]))->sort(fn(string $e, string $e1): int => ComparisonResult::orderedAscending->value * ($e <=> $e1))[1];
             return $this->$name;
-        } elseif ($name === "isReflexive") {
+        }
+        if ($name === "isReflexive") {
             $this->$name = $this->columnName === $this->inverseColumnName;
             return $this->$name;
-        } elseif ($name === "isMaster") {
+        }
+        if ($name === "isMaster") {
             $this->$name = false;
             return $this->$name;
-        } else {
-            return parent::__get($name);
         }
+        return parent::__get($name);
     }
 
     #[Override]

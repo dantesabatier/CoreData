@@ -31,7 +31,6 @@ class XMLObjectStore extends AtomicStore
     private ?DOMDocument $document = null;
     /** @var Dictionary<EntityDescription> */
     private readonly Dictionary $entitiesForConfiguration;
-    /** @var Dictionary */
     private Dictionary $xmlInfo;
 
     public function __construct(PersistentStoreCoordinator $coordinator, string $configurationName, URL $url, ?Dictionary $options = null)

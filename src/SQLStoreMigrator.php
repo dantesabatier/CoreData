@@ -97,7 +97,10 @@ readonly class SQLStoreMigrator
             }
         }
         foreach ($copiedEntityMappings as $mapping) {
-            if (!($sourceEntityName = $mapping->sourceEntityName) || !($destinationEntityName = $mapping->destinationEntityName)) {
+            if (!($sourceEntityName = $mapping->sourceEntityName)) {
+                continue;
+            }
+            if (!($destinationEntityName = $mapping->destinationEntityName)) {
                 continue;
             }
             /** @var SQLEntity|null $sourceEntity */
@@ -122,7 +125,10 @@ readonly class SQLStoreMigrator
             }
         }
         foreach ($transformedEntityMappings as $mapping) {
-            if (!($sourceEntityName = $mapping->sourceEntityName) || !($destinationEntityName = $mapping->destinationEntityName)) {
+            if (!($sourceEntityName = $mapping->sourceEntityName)) {
+                continue;
+            }
+            if (!($destinationEntityName = $mapping->destinationEntityName)) {
                 continue;
             }
             /** @var SQLEntity|null $sourceEntity */

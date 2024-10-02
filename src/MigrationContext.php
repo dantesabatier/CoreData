@@ -75,7 +75,8 @@ class MigrationContext
     {
         if ($sourceInstance && ($destinationInstance = $this->byDestinationAssociationTable[(string)$sourceInstance->objectID])) {
             return new ArrayClass([$destinationInstance]);
-        } elseif ($entityMapping && ($destinationEntityName = $entityMapping->destinationEntityName) && ($destinationInstances = $this->byMappingByDestinationAssociationTable[$destinationEntityName])) {
+        }
+        if ($entityMapping && ($destinationEntityName = $entityMapping->destinationEntityName) && ($destinationInstances = $this->byMappingByDestinationAssociationTable[$destinationEntityName])) {
             return $destinationInstances;
         }
         return new ArrayClass();
@@ -90,7 +91,8 @@ class MigrationContext
     {
         if ($destinationInstance && ($sourceInstance = $this->bySourceAssociationTable[(string)$destinationInstance->objectID])) {
             return new ArrayClass([$sourceInstance]);
-        } elseif ($entityMapping && ($sourceEntityName = $entityMapping->sourceEntityName) && ($sourceInstances = $this->byMappingBySourceAssociationTable[$sourceEntityName])) {
+        }
+        if ($entityMapping && ($sourceEntityName = $entityMapping->sourceEntityName) && ($sourceInstances = $this->byMappingBySourceAssociationTable[$sourceEntityName])) {
             return $sourceInstances;
         }
         return new ArrayClass();

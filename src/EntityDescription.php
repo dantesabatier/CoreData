@@ -84,38 +84,45 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         if ($name === "subentitiesByName" || $name === "propertiesByName" || $name === "indexesByName") {
             $this->$name = new Dictionary();
             return $this->$name;
-        } elseif ($name === "uniquenessConstraints") {
+        }
+        if ($name === "uniquenessConstraints") {
             $this->$name = new ArrayClass();
             return $this->$name;
-        } elseif ($name === "subentities") {
+        }
+        if ($name === "subentities") {
             return $this->subentitiesByName->values;
-        } elseif ($name === "indexes") {
+        }
+        if ($name === "indexes") {
             return $this->indexesByName->values;
-        } elseif ($name === "properties") {
+        }
+        if ($name === "properties") {
             return $this->propertiesByName->values;
-        } elseif ($name === "versionHash") {
+        }
+        if ($name === "versionHash") {
             $this->$name = $this->versionHashInStyle(VersionHashStyle::default);
             return $this->$name;
-        } elseif ($name === "renamingIdentifier") {
+        }
+        if ($name === "renamingIdentifier") {
             $this->$name = $this->name;
             return $this->$name;
-        } elseif ($name === "attributesByName") {
+        }
+        if ($name === "attributesByName") {
             if ($this->isEditable) {
                 fatal_error("{$this->debugDescription()} property \"$name\" cannot be accessed before initialization");
             }
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
             return $this->$name;
-        } elseif ($name === "relationshipsByName") {
+        }
+        if ($name === "relationshipsByName") {
             if ($this->isEditable) {
                 fatal_error("{$this->debugDescription()} property \"$name\" cannot be accessed before initialization");
             }
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
             return $this->$name;
-        } else {
-            return $this->valueForUndefinedKey($name);
         }
+        return $this->valueForUndefinedKey($name);
     }
 
     public function __set(string $name, mixed $value): void

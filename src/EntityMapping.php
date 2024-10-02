@@ -65,9 +65,8 @@ class EntityMapping extends ObjectClass
             }
             $this->$name = $mappingName;
             return $this->$name;
-        } else {
-            return $this->valueForUndefinedKey($name);
         }
+        return $this->valueForUndefinedKey($name);
     }
 
     #[Override]

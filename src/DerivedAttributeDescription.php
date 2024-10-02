@@ -31,9 +31,8 @@ class DerivedAttributeDescription extends AttributeDescription
         if ($name === "propertyType") {
             $this->$name = PropertyDescriptionType::derivedAttribute;
             return $this->$name;
-        } else {
-            return parent::__get($name);
         }
+        return parent::__get($name);
     }
 
     #[Override]

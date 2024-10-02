@@ -35,9 +35,8 @@ class ExpressionDescription extends PropertyDescription
         if ($name === "propertyType") {
             $this->$name = PropertyDescriptionType::expression;
             return $this->$name;
-        } else {
-            return parent::__get($name);
         }
+        return parent::__get($name);
     }
 
     public function validateResultType(AttributeType|Number|Nil|int|null &$resultType): bool

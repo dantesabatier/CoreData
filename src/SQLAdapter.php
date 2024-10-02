@@ -48,15 +48,18 @@ class SQLAdapter extends ObjectClass
         $length = $column->length;
         if ($column instanceof SQLPrimaryKey) {
             return "`$column->columnName` $dataType($length) UNSIGNED NOT NULL AUTO_INCREMENT";
-        } elseif ($column instanceof SQLEntityKey) {
+        }
+        if ($column instanceof SQLEntityKey) {
             $string = "`$column->columnName` $dataType($length) NOT NULL";
             if (!$column->entity->entityDescription->isPersistentHistoryEntity && $column->entity->subentities->count <= 1) {
                 $string .= " DEFAULT '{$column->entity->tableName}'";
             }
             return $string;
-        } elseif ($column instanceof SQLForeignKey) {
+        }
+        if ($column instanceof SQLForeignKey) {
             return "`$column->columnName` $dataType($length) UNSIGNED";
-        } elseif ($column instanceof SQLAttribute) {
+        }
+        if ($column instanceof SQLAttribute) {
             $attributeDescription = $column->attributeDescription;
             $string = "`$column->columnName` $dataType";
             if ($length && ($length = match ($attributeDescription->type) {

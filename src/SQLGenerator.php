@@ -84,17 +84,20 @@ class SQLGenerator extends ObjectClass
                 $this->$name = $this->requestContext->request;
             }
             return $this->$name;
-        } elseif ($name === "entity") {
+        }
+        if ($name === "entity") {
             if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext) {
                 $this->$name = $this->requestContext->fetchContext->sqlEntityForFetchRequest;
             } elseif ($this->requestContext instanceof SQLFetchRequestContext) {
                 $this->$name = $this->requestContext->sqlEntityForFetchRequest;
             }
             return $this->$name;
-        } elseif ($name === "arguments") {
+        }
+        if ($name === "arguments") {
             $this->$name = new ArrayClass();
             return $this->$name;
-        } elseif ($name === "statement") {
+        }
+        if ($name === "statement") {
             if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext || $this->requestContext instanceof SQLFetchRequestContext) {
                 $this->$name = $this->newSQLStatementForPersistentStoreRequest();
             } elseif ($this->requestContext instanceof SQLSaveChangesRequestContext) {
@@ -103,15 +106,16 @@ class SQLGenerator extends ObjectClass
                 $this->$name = null;
             }
             return $this->$name;
-        } elseif ($name === "byMappingByTableAliasAssociationTable") {
+        }
+        if ($name === "byMappingByTableAliasAssociationTable") {
             $this->$name = new Dictionary();
             return $this->$name;
-        } elseif ($name === "aliasGenerator") {
+        }
+        if ($name === "aliasGenerator") {
             $this->$name = new SQLAliasGenerator();
             return $this->$name;
-        } else {
-            return $this->valueForUndefinedKey($name);
         }
+        return $this->valueForUndefinedKey($name);
     }
 
     private function newSQLStatementForPersistentStoreRequest(): SQLStatement
@@ -539,7 +543,8 @@ class SQLGenerator extends ObjectClass
                         $property = $entity->propertiesByName[$key];
                         if ($property instanceof SQLEntityKey || $property instanceof SQLPrimaryKey) {
                             return "$destination.$property->columnName AS {$destination}_$property->columnName";
-                        } elseif ($property instanceof SQLAttribute) {
+                        }
+                        if ($property instanceof SQLAttribute) {
                             if (($expression = $property->derivationExpression) && $expression->usesKVC) {
                                 $bk = $this->entity;
                                 $this->entity = $entity;
@@ -674,12 +679,15 @@ class SQLGenerator extends ObjectClass
     private function isPrimaryKeyPredicate(Predicate $predicate): bool
     {
         if ($predicate instanceof ComparisonPredicate) {
-            return $this->isPrimaryKeyExpression($predicate->leftExpression) || $this->isPrimaryKeyExpression($predicate->rightExpression);
-        } elseif ($predicate instanceof CompoundPredicate) {
-            return $predicate->subpredicates->contains(fn($subpredicate): bool => $this->isPrimaryKeyPredicate($subpredicate));
-        } else {
-            return false;
+            if ($this->isPrimaryKeyExpression($predicate->leftExpression)) {
+                return true;
+            }
+            return $this->isPrimaryKeyExpression($predicate->rightExpression);
         }
+        if ($predicate instanceof CompoundPredicate) {
+            return $predicate->subpredicates->contains(fn($subpredicate): bool => $this->isPrimaryKeyPredicate($subpredicate));
+        }
+        return false;
     }
 
     private function isPrimaryKeyExpression(Expression $expression): bool
@@ -1189,7 +1197,8 @@ class SQLGenerator extends ObjectClass
         $value = $expression->constantValue();
         if ($value instanceof ArrayClass) {
             return $value->join(", ");
-        } elseif ($value instanceof Date) {
+        }
+        if ($value instanceof Date) {
             return "'$value'";
         }
         return match ($value) {

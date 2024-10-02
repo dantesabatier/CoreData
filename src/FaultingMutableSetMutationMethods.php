@@ -26,7 +26,10 @@ trait FaultingMutableSetMutationMethods
 
     public function responds(string $selector): bool
     {
-        return parent::responds($selector) || $this->faultingMutableSetMutationMethods?->offsetExists($selector);
+        if (parent::responds($selector)) {
+            return true;
+        }
+        return (bool) $this->faultingMutableSetMutationMethods?->offsetExists($selector);
     }
 
     /**

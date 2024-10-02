@@ -171,14 +171,13 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
                         PersistentHistoryResultType::changesOnly => $transactions->flatMap(fn(PersistentHistoryTransaction $transaction): iterable => $transaction->changes ?? []),
                         default => $transactions
                     };
-                } else {
-                    $changes = $context->result->compactMap(fn(Dictionary $dictionary): ?PersistentHistoryChange => $this->changeFromResult($dictionary));
-                    return match ($this->request->resultType) {
-                        PersistentHistoryResultType::objectIDs => $changes->map(fn(PersistentHistoryChange $change): ManagedObjectID => $change->changedObjectID),
-                        PersistentHistoryResultType::transactionsOnly, PersistentHistoryResultType::transactionsAndChanges => new ArrayClass([new PersistentHistoryTransaction(new Dictionary(["changes" => $changes]))]),
-                        default => $changes
-                    };
                 }
+                $changes = $context->result->compactMap(fn(Dictionary $dictionary): ?PersistentHistoryChange => $this->changeFromResult($dictionary));
+                return match ($this->request->resultType) {
+                    PersistentHistoryResultType::objectIDs => $changes->map(fn(PersistentHistoryChange $change): ManagedObjectID => $change->changedObjectID),
+                    PersistentHistoryResultType::transactionsOnly, PersistentHistoryResultType::transactionsAndChanges => new ArrayClass([new PersistentHistoryTransaction(new Dictionary(["changes" => $changes]))]),
+                    default => $changes
+                };
             })()
         };
         return true;

@@ -122,36 +122,43 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if ($name === "objectID") {
             $this->$name = new ManagedObjectID($this->entity, uuid_generate());
             return $this->$name;
-        } elseif ($name === "changedValues" || $name === "changedValuesForCurrentEvent") {
+        }
+        if ($name === "changedValues" || $name === "changedValuesForCurrentEvent") {
             $this->$name = new Dictionary();
             return $this->$name;
-        } elseif ($name === "faultHandler") {
+        }
+        if ($name === "faultHandler") {
             $this->$name = ($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null"))->faultHandler;
             return $this->$name;
-        } elseif ($name === "allProperties") {
+        }
+        if ($name === "allProperties") {
             $this->$name = $this->entity->properties;
             return $this->$name;
-        } elseif ($name === "modeledProperties") {
+        }
+        if ($name === "modeledProperties") {
             $this->$name = $this->allProperties;
             return $this->$name;
-        } elseif ($name === "persistentProperties") {
+        }
+        if ($name === "persistentProperties") {
             $this->$name = $this->modeledProperties->filter(fn(PropertyDescription $property): bool => !$property->isTransient && !$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription);
             return $this->$name;
-        } elseif ($name === "transientProperties") {
+        }
+        if ($name === "transientProperties") {
             $this->$name = $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property->isTransient);
             return $this->$name;
-        } elseif ($name === "serializationKeys") {
+        }
+        if ($name === "serializationKeys") {
             /** @var ArrayClass<string> $serializationKeys */
             $serializationKeys = match ($this->serializationRule) {
                 SerializationRule::attributesOnly => $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient)->keys,
                 SerializationRule::attributesAndRelationships => $this->entity->propertiesByName->filter(function (PropertyDescription $property): bool {
                     if ($property instanceof AttributeDescription) {
                         return !$property->isTransient;
-                    } elseif ($property instanceof RelationshipDescription) {
-                        return $property->isToMany && !$property->inverseRelationship->isToMany;
-                    } else {
-                        return $property instanceof FetchedPropertyDescription;
                     }
+                    if ($property instanceof RelationshipDescription) {
+                        return $property->isToMany && !$property->inverseRelationship->isToMany;
+                    }
+                    return $property instanceof FetchedPropertyDescription;
                 })->keys,
                 default => new ArrayClass(),
             };
@@ -159,11 +166,14 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $serializationKeys->insertAt(SQLEntity::primaryKeyName, 0);
             $this->$name = $serializationKeys;
             return $this->$name;
-        } elseif ($name === "hasPersistentChangedValues") {
+        }
+        if ($name === "hasPersistentChangedValues") {
             return !$this->changedValues()->isEmpty;
-        } elseif ($name === "hasChanges") {
+        }
+        if ($name === "hasChanges") {
             return $this->isInserted || $this->isUpdated || $this->isDeleted;
-        } elseif ($name === "isInserted") {
+        }
+        if ($name === "isInserted") {
             /** @var FetchRequest<Number> $fetchRequest */
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $this->entity;
@@ -174,15 +184,16 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             /** @noinspection PhpUnhandledExceptionInspection */
             $this->$name = (bool)$this->managedObjectContext->count($fetchRequest);
             return $this->$name;
-        } elseif ($name === "isUpdated") {
+        }
+        if ($name === "isUpdated") {
             $this->$name = $this->isInserted && !$this->changedValuesForCurrentEvent->isEmpty;
             return $this->$name;
-        } elseif ($name === "isDeleted") {
+        }
+        if ($name === "isDeleted") {
             $this->$name = $this->managedObjectContext->deletedObjects->containsElement($this);
             return $this->$name;
-        } else {
-            return $this->valueForKey($name);
         }
+        return $this->valueForKey($name);
     }
 
     public function __set(string $name, mixed $value): void
@@ -488,7 +499,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 //unset($this->reserved[$key]);
             }
             return $value;
-        } elseif ($property instanceof FetchedPropertyDescription) {
+        }
+        if ($property instanceof FetchedPropertyDescription) {
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
@@ -505,7 +517,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                             if ($predicate instanceof ComparisonPredicate) {
                                 $expression = function (Expression $expression) use ($property): Expression {
                                     if (($expression->expressionType == ExpressionType::variable) || (($expression->expressionType == ExpressionType::keyPath) && $expression->operand()?->expressionType == ExpressionType::variable)) {
-                                        $expression = Expression::expressionForConstantValue($expression->expressionValue($this, new Dictionary(["\$FETCH_SOURCE" => $this, "\$FETCHED_PROPERTY" => $property])));
+                                        return Expression::expressionForConstantValue($expression->expressionValue($this, new Dictionary(["\$FETCH_SOURCE" => $this, "\$FETCHED_PROPERTY" => $property])));
                                     }
                                     return $expression;
                                 };
@@ -528,7 +540,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 //unset($this->reserved[$key]);
             }
             return $value;
-        } elseif ($property instanceof RelationshipDescription) {
+        }
+        if ($property instanceof RelationshipDescription) {
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
@@ -547,17 +560,16 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             }
             if ($value instanceof FaultingMutableArray || $value instanceof FaultingMutableSet || $value instanceof ManagedObject) {
                 return $value;
-            } elseif ($value instanceof ManagedObjectID) {
-                return $context->object($value);
-            } else {
-                if ($property->isToMany && !$property->isOptional) {
-                    return new Set();
-                }
-                return null;
             }
-        } else {
-            return parent::valueForKey($key);
+            if ($value instanceof ManagedObjectID) {
+                return $context->object($value);
+            }
+            if ($property->isToMany && !$property->isOptional) {
+                return new Set();
+            }
+            return null;
         }
+        return parent::valueForKey($key);
     }
 
     /**
@@ -692,11 +704,13 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         $managedObject = function (EntityDescription $entity, ManagedObject|ManagedObjectID|Dictionary $object) use (&$managedObjectID): ?ManagedObject {
             if ($object instanceof ManagedObject) {
                 return $object;
-            } elseif ($object instanceof ManagedObjectID) {
+            }
+            if ($object instanceof ManagedObjectID) {
                 $managedObject = $this->managedObjectContext->object($object);
                 $managedObject->awakeFromFetch();
                 return $managedObject;
-            } elseif ($objectID = $managedObjectID($entity, $object)) {
+            }
+            if ($objectID = $managedObjectID($entity, $object)) {
                 $managedObject = $this->managedObjectContext->object($objectID);
                 $managedObject->setValuesForKeys($object);
                 $managedObject->awakeFromFetch();
@@ -885,31 +899,31 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     #[Override]
     public function validateValueForKey(mixed &$value, string $key): bool
     {
-        if (parent::validateValueForKey($value, $key)) {
-            if ($property = $this->entity->propertiesByName[$key]) {
-                return self::coerceValue($value, $property);
-            } elseif (property_exists($this, $key)) {
-                if ($key === SQLEntity::primaryKeyName && (is_int($value) || is_string($value))) {
-                    $this->objectID->referenceObject = $value;
-                    return false;
-                }
-                return true;
-            } else {
-                $store = $this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this);
-                if ($store instanceof SQLCore) {
-                    /** @var SQLEntity $entity */
-                    $entity = $store->model->entitiesByName[$this->entity->name];
-                    if ($entity->propertiesByName[$key]) {
-                        return match ($key) {
-                            SQLEntity::entityKeyName => false,
-                            default => true
-                        };
-                    }
-                }
-                return true;
+        if (!parent::validateValueForKey($value, $key)) {
+            return false;
+        }
+        if ($property = $this->entity->propertiesByName[$key]) {
+            return self::coerceValue($value, $property);
+        }
+        if (property_exists($this, $key)) {
+            if ($key === SQLEntity::primaryKeyName && (is_int($value) || is_string($value))) {
+                $this->objectID->referenceObject = $value;
+                return false;
+            }
+            return true;
+        }
+        $store = $this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this);
+        if ($store instanceof SQLCore) {
+            /** @var SQLEntity $entity */
+            $entity = $store->model->entitiesByName[$this->entity->name];
+            if ($entity->propertiesByName[$key]) {
+                return match ($key) {
+                    SQLEntity::entityKeyName => false,
+                    default => true
+                };
             }
         }
-        return false;
+        return true;
     }
 
     /**
@@ -1045,7 +1059,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         $value = $this->valueForKey($key);
         if ($value instanceof ManagedObject) {
             return $this->serializedObject($value, $relationship);
-        } elseif ($value instanceof Set) {
+        }
+        if ($value instanceof Set) {
             return $value->map(fn(ManagedObject $object): Dictionary => $this->serializedObject($object, $relationship));
         }
         if ($relationship->isToMany && !$relationship->isOptional) {

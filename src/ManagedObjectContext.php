@@ -129,28 +129,33 @@ class ManagedObjectContext extends ObjectClass
         if ($name === "persistentStoreCoordinator") {
             $this->$name = null;
             return $this->$name;
-        } elseif ($name === "userInfo" || $name === "byHashAssociationTable") {
+        }
+        if ($name === "userInfo" || $name === "byHashAssociationTable") {
             $this->$name = new Dictionary();
             return $this->$name;
-        } elseif ($name === "queue") {
+        }
+        if ($name === "queue") {
             $queue = new OperationQueue();
             $queue->setAssociatedValueForKey($this, "managedObjectContext");
             $this->$name = $queue;
             return $this->$name;
-        } elseif ($name === "mergePolicy") {
+        }
+        if ($name === "mergePolicy") {
             $this->$name = MergePolicy::error();
             return $this->$name;
-        } elseif ($name === "queryGenerationToken") {
+        }
+        if ($name === "queryGenerationToken") {
             $this->$name = null;
             return $this->$name;
-        } elseif ($name === "registeredObjects") {
+        }
+        if ($name === "registeredObjects") {
             return new Set($this->byHashAssociationTable->values);
-        } elseif ($name === "unprocessedChanges" || $name === "unprocessedDeletes" || $name === "unprocessedInserts" || $name === "insertedObjects" || $name === "updatedObjects" || $name === "deletedObjects" || $name === "lockedObjects" || $name === "refreshedObjects") {
+        }
+        if ($name === "unprocessedChanges" || $name === "unprocessedDeletes" || $name === "unprocessedInserts" || $name === "insertedObjects" || $name === "updatedObjects" || $name === "deletedObjects" || $name === "lockedObjects" || $name === "refreshedObjects") {
             $this->$name = new Set();
             return $this->$name;
-        } else {
-            return $this->valueForUndefinedKey($name);
         }
+        return $this->valueForUndefinedKey($name);
     }
 
     public function __set(string $name, mixed $value): void
@@ -276,21 +281,26 @@ class ManagedObjectContext extends ObjectClass
     {
         if ($request instanceof AsynchronousFetchRequest) {
             return $this->executeAsynchronousFetchRequest($request);
-        } elseif ($request instanceof FetchRequest) {
-            return $this->executeFetchRequest($request);
-        } elseif ($request instanceof SaveChangesRequest) {
-            return $this->executeSaveChangesRequest($request);
-        } elseif ($request instanceof BatchInsertRequest) {
-            return $this->executeBatchInsertRequest($request);
-        } elseif ($request instanceof BatchUpdateRequest) {
-            return $this->executeBatchUpdateRequest($request);
-        } elseif ($request instanceof BatchDeleteRequest) {
-            return $this->executeBatchDeleteRequest($request);
-        } elseif ($request instanceof PersistentHistoryChangeRequest) {
-            return $this->executePersistentHistoryChangeRequest($request);
-        } else {
-            return $this->executePersistentStoreRequest($request);
         }
+        if ($request instanceof FetchRequest) {
+            return $this->executeFetchRequest($request);
+        }
+        if ($request instanceof SaveChangesRequest) {
+            return $this->executeSaveChangesRequest($request);
+        }
+        if ($request instanceof BatchInsertRequest) {
+            return $this->executeBatchInsertRequest($request);
+        }
+        if ($request instanceof BatchUpdateRequest) {
+            return $this->executeBatchUpdateRequest($request);
+        }
+        if ($request instanceof BatchDeleteRequest) {
+            return $this->executeBatchDeleteRequest($request);
+        }
+        if ($request instanceof PersistentHistoryChangeRequest) {
+            return $this->executePersistentHistoryChangeRequest($request);
+        }
+        return $this->executePersistentStoreRequest($request);
     }
 
     /**
@@ -317,10 +327,8 @@ class ManagedObjectContext extends ObjectClass
         $result = $this->execute($request);
         $subresults = $result->subresults;
         if ($subresults instanceof BatchFaultingArray) {
-            /** @var ArrayClass */
             return $subresults;
         }
-        /** @var ArrayClass */
         return new ArrayClass($subresults->joined());
     }
 
