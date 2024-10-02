@@ -52,6 +52,7 @@ abstract class PropertyDescription extends ObjectClass
     public mixed $maxValue = null;
     /** @internal */
     public ?string $regex = null;
+    public bool $isSensitive = false;
 
     public function __construct()
     {
@@ -104,7 +105,7 @@ abstract class PropertyDescription extends ObjectClass
                 $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class ($regex) extends Validator {
                     public function validate(mixed $object): bool
                     {
-                        return preg_match($this->value, (string) $object) === 1;
+                        return preg_match($this->value, (string)$object) === 1;
                     }
                 }), Expression::expressionForKeyPath($this->name), selector: "validate"));
             }
@@ -198,6 +199,9 @@ abstract class PropertyDescription extends ObjectClass
         }
         if ($this->isTransient) {
             $dictionary["isTransient"] = $this->isTransient;
+        }
+        if ($this->isSensitive) {
+            $dictionary["isSensitive"] = $this->isSensitive;
         }
         if ($this->versionHashModifier) {
             $dictionary["versionHashModifier"] = $this->versionHashModifier;
