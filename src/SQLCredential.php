@@ -9,10 +9,12 @@
 
 namespace Sabatier\CoreData;
 
+use SensitiveParameter;
+
 /** @internal */
 readonly class SQLCredential
 {
-    public function __construct(public string $user, public ?string $password = null)
+    public function __construct(public string $user, #[SensitiveParameter] public ?string $password = null)
     {
     }
 }
