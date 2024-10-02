@@ -35,6 +35,31 @@ readonly class SQLStoreMigrator
     }
 
     /**
+     * @param EntityMapping $mapping
+     * @return SQLEntity[]|null
+     */
+    private function entities(EntityMapping $mapping): ?array
+    {
+        if (!($sourceEntityName = $mapping->sourceEntityName)) {
+            return null;
+        }
+        if (!($destinationEntityName = $mapping->destinationEntityName)) {
+            return null;
+        }
+        /** @var SQLEntity|null $sourceEntity */
+        $sourceEntity = $this->sourceModel->entitiesByName[$sourceEntityName];
+        if (!$sourceEntity) {
+            return null;
+        }
+        /** @var SQLEntity|null $destinationEntity */
+        $destinationEntity = $this->destinationModel->entitiesByName[$destinationEntityName];
+        if (!$destinationEntity) {
+            return null;
+        }
+        return [$sourceEntity, $destinationEntity];
+    }
+
+    /**
      * @throws Exception
      */
     public function perform(): void
@@ -97,22 +122,10 @@ readonly class SQLStoreMigrator
             }
         }
         foreach ($copiedEntityMappings as $mapping) {
-            if (!($sourceEntityName = $mapping->sourceEntityName)) {
+            if (!($entities = $this->entities($mapping))) {
                 continue;
             }
-            if (!($destinationEntityName = $mapping->destinationEntityName)) {
-                continue;
-            }
-            /** @var SQLEntity|null $sourceEntity */
-            $sourceEntity = $sourceModel->entitiesByName[$sourceEntityName];
-            if (!$sourceEntity) {
-                continue;
-            }
-            /** @var SQLEntity|null $destinationEntity */
-            $destinationEntity = $destinationModel->entitiesByName[$destinationEntityName];
-            if (!$destinationEntity) {
-                continue;
-            }
+            [$sourceEntity, $destinationEntity] = $entities;
             foreach ($sourceEntity->indexes as $index) {
                 if (!$destinationEntity->indexes->containsElement($index)) {
                     $connection->execute(SQLStatement::merging($index->dropTableStatements));
@@ -125,23 +138,11 @@ readonly class SQLStoreMigrator
             }
         }
         foreach ($transformedEntityMappings as $mapping) {
-            if (!($sourceEntityName = $mapping->sourceEntityName)) {
+            if (!($entities = $this->entities($mapping))) {
                 continue;
             }
-            if (!($destinationEntityName = $mapping->destinationEntityName)) {
-                continue;
-            }
-            /** @var SQLEntity|null $sourceEntity */
-            $sourceEntity = $sourceModel->entitiesByName[$sourceEntityName];
-            if (!$sourceEntity) {
-                continue;
-            }
-            /** @var SQLEntity|null $destinationEntity */
-            $destinationEntity = $destinationModel->entitiesByName[$destinationEntityName];
-            if (!$destinationEntity) {
-                continue;
-            }
-            if ($sourceEntityName !== $destinationEntityName && !$sourceModel->entitiesByName->offsetExists($destinationEntityName)) {
+            [$sourceEntity, $destinationEntity] = $entities;
+            if ($sourceEntity->tableName !== $destinationEntity->tableName && !$sourceModel->entitiesByName->offsetExists($destinationEntity->tableName)) {
                 $statement = $adapter->newRenameTableStatement($sourceEntity, $destinationEntity);
                 $connection->execute($statement);
             }
