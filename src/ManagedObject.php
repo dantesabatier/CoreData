@@ -658,7 +658,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 } else {
                     $changeKind = KeyValueChange::replacement;
                 }
-                if ($value instanceof ManagedObjectID) {
+                if ($value instanceof ManagedObjectID && $change instanceof ManagedObjectID) {
                     $value = $this->managedObjectContext->object($change);
                 }
                 if ($inverseRelationship->isToMany) {
