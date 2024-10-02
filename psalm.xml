@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
-<psalm errorLevel="3" findUnusedBaselineEntry="true" xmlns="https://getpsalm.org/schema/config">
+<!--suppress XmlDefaultAttributeValue -->
+<psalm errorLevel="3" findUnusedCode="false" findUnusedBaselineEntry="true" xmlns="https://getpsalm.org/schema/config">
     <projectFiles>
         <directory name="src"/>
         <ignoreFiles>
