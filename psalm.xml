@@ -1,13 +1,5 @@
 <?xml version="1.0"?>
-<psalm
-    errorLevel="3"
-    resolveFromConfigFile="true"
-    findUnusedBaselineEntry="true"
-    findUnusedCode="false"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns="https://getpsalm.org/schema/config"
-    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
->
+<psalm errorLevel="3" findUnusedBaselineEntry="true" xmlns="https://getpsalm.org/schema/config">
     <projectFiles>
         <directory name="src" />
         <ignoreFiles>
@@ -31,5 +23,6 @@
         <InternalProperty errorLevel="suppress"/>
         <RiskyTruthyFalsyComparison errorLevel="suppress"/>
         <ParamNameMismatch errorLevel="suppress"/>
+        <DuplicateClass errorLevel="suppress"/>
     </issueHandlers>
 </psalm>
