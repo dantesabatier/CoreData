@@ -105,8 +105,11 @@ readonly class SQLStoreMigrator
             if (!($destinationEntityName = $mapping->destinationEntityName)) {
                 continue;
             }
-            /** @var SQLEntity $destinationEntity */
+            /** @var SQLEntity|null $destinationEntity */
             $destinationEntity = $destinationModel->entitiesByName[$destinationEntityName];
+            if (!$destinationEntity) {
+                continue;
+            }
             $statement = $adapter->newCreateTableStatement($destinationEntity);
             $connection->execute($statement);
             if ($statement = $adapter->newCreateIndexesStatement($destinationEntity)) {
@@ -119,9 +122,15 @@ readonly class SQLStoreMigrator
             }
         }
         foreach ($removedEntityMappings as $mapping) {
-            if (($sourceEntityName = $mapping->sourceEntityName) && ($sourceEntity = $sourceModel->entity($sourceEntityName))) {
-                $this->removedEntities->append($sourceEntity);
+            if (!($sourceEntityName = $mapping->sourceEntityName)) {
+                continue;
             }
+            /** @var SQLEntity|null $sourceEntity */
+            $sourceEntity = $this->sourceModel->entitiesByName[$sourceEntityName];
+            if (!$sourceEntity) {
+                continue;
+            }
+            $this->removedEntities->append($sourceEntity);
         }
         foreach ($copiedEntityMappings as $mapping) {
             if (!($entities = $this->entities($mapping))) {
