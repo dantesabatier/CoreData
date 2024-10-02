@@ -658,8 +658,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 } else {
                     $changeKind = KeyValueChange::replacement;
                 }
-                if ($value instanceof ManagedObjectID && $change instanceof ManagedObjectID) {
-                    $value = $this->managedObjectContext->object($change);
+                if ($value instanceof ManagedObjectID) {
+                    $value = $this->managedObjectContext->object($value);
                 }
                 if ($inverseRelationship->isToMany) {
                     $this->setPrimitiveValueForKey($value?->objectID, $property->name);
