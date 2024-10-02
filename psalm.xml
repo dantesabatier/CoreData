@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <psalm errorLevel="3" findUnusedBaselineEntry="true" xmlns="https://getpsalm.org/schema/config">
     <projectFiles>
-        <directory name="src" />
+        <directory name="src"/>
         <ignoreFiles>
-            <directory name="vendor" />
+            <directory name="vendor"/>
         </ignoreFiles>
     </projectFiles>
     <issueHandlers>
@@ -13,10 +13,10 @@
         <InaccessibleProperty errorLevel="suppress"/>
         <InvalidArgument>
             <errorLevel type="suppress">
-                <file name="src/FaultingMutableSetMutationMethods.php" />
-                <file name="src/ManagedObject.php" />
-                <file name="src/ManagedObjectModel.php" />
-                <file name="src/PersistentStoreCoordinator.php" />
+                <file name="src/FaultingMutableSetMutationMethods.php"/>
+                <file name="src/ManagedObject.php"/>
+                <file name="src/ManagedObjectModel.php"/>
+                <file name="src/PersistentStoreCoordinator.php"/>
             </errorLevel>
         </InvalidArgument>
         <InternalClass errorLevel="suppress"/>
