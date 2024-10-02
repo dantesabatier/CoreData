@@ -1075,12 +1075,15 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         return $this->serializationKeys->reduce(new Dictionary(), function (Dictionary &$dictionary, string $key): Dictionary {
             if ($property = $this->entity->propertiesByName[$key]) {
                 if ($property instanceof AttributeDescription) {
-                    $dictionary[$key] = $this->valueForKey($key) ?? Nil::nil();
+                    $value = $this->valueForKey($key) ?? Nil::nil();
+                    /** @psalm-suppress InvalidArgument */
+                    $dictionary[$key] = $property->isSensitive ? sprintf("%s(SensitiveValue)", typeof($value)) : $value;
                 } elseif ($property instanceof RelationshipDescription) {
                     if (!($value = $this->serializedRelationshipValueForRelationship($property))) {
                         /** @noinspection PhpVoidFunctionResultUsedInspection */
                         $value = $property->isOptional ? Nil::nil() : ($property->isToMany ? new Set() : fatal_error(sprintf("%s property \"%s\" is not optional", $this->debugDescription(), $property->name)));
                     }
+                    /** @psalm-suppress InvalidArgument */
                     $dictionary[$key] = $value;
                 } else {
                     $dictionary[$key] = $this->valueForKey($key);
