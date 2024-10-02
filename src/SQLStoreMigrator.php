@@ -86,14 +86,16 @@ readonly class SQLStoreMigrator
                 $copiedEntityMappings->append($mapping);
             } elseif ($mapping->mappingType === EntityMappingType::transformEntityMappingType) {
                 $transformedEntityMappings->append($mapping);
-                if (($sourceEntityName = $mapping->sourceEntityName) && ($destinationEntityName = $mapping->destinationEntityName) && ($sourceEntity = $sourceModel->entitiesByName[$sourceEntityName]) && ($destinationEntity = $destinationModel->entitiesByName[$destinationEntityName])) {
-                    if ($sourceEntity->isRootEntity) {
-                        if (!$destinationEntity->isRootEntity) {
-                            $removedEntityMappings->append($mapping);
-                        }
-                    } elseif ($destinationEntity->isRootEntity && !$sourceModel->entitiesByName[$destinationEntityName]) {
-                        $addedEntityMappings->append($mapping);
+                if (!($entities = $this->entities($mapping))) {
+                    continue;
+                }
+                [$sourceEntity, $destinationEntity] = $entities;
+                if ($sourceEntity->isRootEntity) {
+                    if (!$destinationEntity->isRootEntity) {
+                        $removedEntityMappings->append($mapping);
                     }
+                } elseif ($destinationEntity->isRootEntity && !$sourceModel->entitiesByName[$destinationEntity->tableName]) {
+                    $addedEntityMappings->append($mapping);
                 }
             }
         }
