@@ -69,7 +69,7 @@ class SQLAdapter extends ObjectClass
                 })) {
                 $string .= "($length)";
             }
-            if (($column->minValue >= 0) && ($unsigned = match ($sqlType) {
+            if (($column->minValue !== null) && ($column->minValue >= 0) && ($unsigned = match ($sqlType) {
                     SQLType::smallint, SQLType::int, SQLType::bigint, SQLType::decimal, SQLType::float, SQLType::double => "UNSIGNED",
                     default => false
                 })) {
