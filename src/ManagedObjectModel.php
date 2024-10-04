@@ -492,7 +492,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     public function setFetchRequestTemplate(FetchRequest $fetchRequest, string $name): void
     {
         $this->throwIfNotEditable();
-        $this->fetchRequestTemplatesByName[$name] = $fetchRequest;
+        $this->fetchRequestTemplatesByName->setValueForKey($fetchRequest, $name);
     }
 
     /**
