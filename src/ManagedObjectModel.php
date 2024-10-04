@@ -509,6 +509,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
         if ($metadata[StoreModelVersionHashesKey]) {
             try {
                 return KeyedArchiver::archivedData($this->entities($configuration)?->reduce(new Dictionary(), function (Dictionary &$result, EntityDescription $entity): Dictionary {
+                        /** @psalm-suppress InvalidArgument */
                         $result[$entity->name] = $entity->versionHash;
                         return $result;
                     }) ?? $this->entityVersionHashesByName) === $metadata[StoreModelVersionHashesKey];
