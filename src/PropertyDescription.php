@@ -64,21 +64,7 @@ abstract class PropertyDescription extends ObjectClass
     public function __get(string $name)
     {
         if ($name === "validationPredicates") {
-            /** @var ArrayClass<Predicate> $validationPredicates */
-            $validationPredicates = new ArrayClass();
-            $minValue = $this->minValue;
-            if ($minValue !== null) {
-                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new ValueValidator($minValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
-            }
-            $maxValue = $this->maxValue;
-            if ($maxValue !== null) {
-                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new ValueValidator($maxValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
-            }
-            $regex = $this->regex;
-            if ($regex) {
-                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new RegexValidator($regex)), Expression::expressionForKeyPath($this->name), selector: "validate"));
-            }
-            $this->$name = $validationPredicates;
+            $this->$name = $this->validationPredicates();
             return $this->$name;
         }
         if ($name === "validationWarnings") {
@@ -118,6 +104,28 @@ abstract class PropertyDescription extends ObjectClass
         if (!$this->isEditable) {
             fatal_error();
         }
+    }
+
+    /**
+     * @return ArrayClass<Predicate>
+     */
+    private function validationPredicates(): ArrayClass
+    {
+        /** @var ArrayClass<Predicate> $validationPredicates */
+        $validationPredicates = new ArrayClass();
+        $minValue = $this->minValue;
+        if ($minValue !== null) {
+            $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new ValueValidator($minValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
+        }
+        $maxValue = $this->maxValue;
+        if ($maxValue !== null) {
+            $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new ValueValidator($maxValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
+        }
+        $regex = $this->regex;
+        if ($regex) {
+            $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new RegexValidator($regex)), Expression::expressionForKeyPath($this->name), selector: "validate"));
+        }
+        return $validationPredicates;
     }
 
     /**
