@@ -68,7 +68,7 @@ abstract class PropertyDescription extends ObjectClass
             return $this->$name;
         }
         if ($name === "validationWarnings") {
-            $this->$name = $this->validationPredicates->map(fn(Predicate $predicate): string => $predicate->predicateFormat());
+            $this->$name = $this->validationWarnings();
             return $this->$name;
         }
         if ($name === "versionHash") {
@@ -126,6 +126,14 @@ abstract class PropertyDescription extends ObjectClass
             $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new RegexValidator($regex)), Expression::expressionForKeyPath($this->name), selector: "validate"));
         }
         return $validationPredicates;
+    }
+
+    /**
+     * @return ArrayClass<string>
+     */
+    private function validationWarnings(): ArrayClass
+    {
+        return $this->validationPredicates->map(fn(Predicate $predicate): string => $predicate->predicateFormat());
     }
 
     /**
