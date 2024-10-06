@@ -115,11 +115,11 @@ abstract class PropertyDescription extends ObjectClass
         $validationPredicates = new ArrayClass();
         $minValue = $this->minValue;
         if ($minValue !== null) {
-            $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new ValueValidator($minValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
+            $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new MinValueValidator($minValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
         }
         $maxValue = $this->maxValue;
         if ($maxValue !== null) {
-            $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new ValueValidator($maxValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
+            $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new MaxValueValidator($maxValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
         }
         $regex = $this->regex;
         if ($regex) {
