@@ -3,11 +3,13 @@
 namespace Sabatier\CoreData;
 
 use BackedEnum;
+use Override;
 use Sabatier\Foundation\Value;
 
 /** @internal */
 class ValueValidator extends Validator
 {
+    #[Override]
     public function validate(mixed $object): bool
     {
         if ($object instanceof Value || $object instanceof BackedEnum) {
