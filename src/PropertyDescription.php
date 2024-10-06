@@ -2,7 +2,6 @@
 
 namespace Sabatier\CoreData;
 
-use BackedEnum;
 use Exception;
 use Override;
 use Sabatier\Foundation\ArrayClass;
@@ -12,7 +11,6 @@ use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\Predicate;
-use Sabatier\Foundation\Value;
 use function Sabatier\Foundation\fatal_error;
 
 /**
@@ -70,44 +68,15 @@ abstract class PropertyDescription extends ObjectClass
             $validationPredicates = new ArrayClass();
             $minValue = $this->minValue;
             if ($minValue !== null) {
-                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class ($minValue) extends Validator {
-                    public function validate(mixed $object): bool
-                    {
-                        if ($object instanceof Value || $object instanceof BackedEnum) {
-                            $object = $object->value;
-                        } elseif ($object instanceof ManagedObjectID) {
-                            $object = $object->referenceObject;
-                        } elseif (is_string($object)) {
-                            $object = strlen($object);
-                        }
-                        return $object >= $this->value;
-                    }
-                }), Expression::expressionForKeyPath($this->name), selector: "validate"));
+                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new ValueValidator($minValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
             }
             $maxValue = $this->maxValue;
             if ($maxValue !== null) {
-                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class ($maxValue) extends Validator {
-                    public function validate(mixed $object): bool
-                    {
-                        if ($object instanceof Value || $object instanceof BackedEnum) {
-                            $object = $object->value;
-                        } elseif ($object instanceof ManagedObjectID) {
-                            $object = $object->referenceObject;
-                        } elseif (is_string($object)) {
-                            $object = strlen($object);
-                        }
-                        return $object <= $this->value;
-                    }
-                }), Expression::expressionForKeyPath($this->name), selector: "validate"));
+                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new ValueValidator($maxValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
             }
             $regex = $this->regex;
             if ($regex) {
-                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new class ($regex) extends Validator {
-                    public function validate(mixed $object): bool
-                    {
-                        return preg_match($this->value, (string)$object) === 1;
-                    }
-                }), Expression::expressionForKeyPath($this->name), selector: "validate"));
+                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new RegexValidator($regex)), Expression::expressionForKeyPath($this->name), selector: "validate"));
             }
             $this->$name = $validationPredicates;
             return $this->$name;
