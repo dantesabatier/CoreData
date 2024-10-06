@@ -3,22 +3,22 @@
 namespace Sabatier\CoreData;
 
 use BackedEnum;
-use Override;
 use Sabatier\Foundation\Value;
 
 /** @internal */
-class ValueValidator extends Validator
+abstract class ValueValidator extends Validator
 {
-    #[Override]
-    public function validate(mixed $object): bool
+    public function coerce(mixed $object): mixed
     {
         if ($object instanceof Value || $object instanceof BackedEnum) {
-            $object = $object->value;
-        } elseif ($object instanceof ManagedObjectID) {
-            $object = $object->referenceObject;
-        } elseif (is_string($object)) {
-            $object = strlen($object);
+            return $object->value;
         }
-        return $object <= $this->value;
+        if ($object instanceof ManagedObjectID) {
+            return $object->referenceObject;
+        }
+        if (is_string($object)) {
+            return strlen($object);
+        }
+        return $object;
     }
 }
