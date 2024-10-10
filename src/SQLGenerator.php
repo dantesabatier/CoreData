@@ -1026,7 +1026,6 @@ class SQLGenerator extends ObjectClass
             $entity = $this->entity;
             $destination ??= $entity->tableName;
             [$keyPathToCollection, $collectionOperator, $keyPathToProperty] = kvc_components($keyPath);
-            error_log("***$keyPathToCollection, $collectionOperator, $keyPathToProperty***");
             if ($keyPathToCollection && $collectionOperator) {
                 /** @var SQLRelationship|null $relationship */
                 $relationship = $entity->propertiesByName[$keyPathToCollection];
@@ -1058,6 +1057,7 @@ class SQLGenerator extends ObjectClass
                     $string .= $generator->whereClause ? " AND " : " WHERE ";
                     if ($relationship instanceof SQLToMany) {
                         if ($destinationEntity->isKindOfSQLEntity($entity)) {
+                            //FIXME: Not working
                             $string .= "{$destinationEntity->tableName}_{$relationship->inverseToOne->name}.{$entity->primaryKey->columnName} = $destination.{$relationship->inverseToOne->foreignKey->columnName}";
                         } else {
                             $string .= "$destinationEntity->tableName.{$relationship->inverseToOne->foreignKey->columnName} = $destination.{$entity->primaryKey->columnName}";
