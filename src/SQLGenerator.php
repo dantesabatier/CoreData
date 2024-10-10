@@ -1026,6 +1026,7 @@ class SQLGenerator extends ObjectClass
             $entity = $this->entity;
             $destination ??= $entity->tableName;
             [$keyPathToCollection, $collectionOperator, $keyPathToProperty] = kvc_components($keyPath);
+            error_log("***$keyPathToCollection, $collectionOperator, $keyPathToProperty***");
             if ($keyPathToCollection && $collectionOperator) {
                 /** @var SQLRelationship|null $relationship */
                 $relationship = $entity->propertiesByName[$keyPathToCollection];
@@ -1040,6 +1041,7 @@ class SQLGenerator extends ObjectClass
                     if ($collectionOperator !== KeyValueOperator::countKeyValueOperator) {
                         $propertiesToFetch->append($keyPathToProperty);
                     }
+                    /** @var SQLFetchRequestContext $requestContext */
                     $requestContext = $this->requestContext;
                     $managedObjectModel = $requestContext->sqlCore->persistentStoreCoordinator->managedObjectModel;
                     /** @var EntityDescription $entityForFetchRequest */
@@ -1055,8 +1057,12 @@ class SQLGenerator extends ObjectClass
                     $string = "($generator->statement";
                     $string .= $generator->whereClause ? " AND " : " WHERE ";
                     if ($relationship instanceof SQLToMany) {
-                        $string .= "$destinationEntity->tableName.{$relationship->inverseToOne->foreignKey->columnName} = $destination";
-                        $string .= $destinationEntity->isKindOfSQLEntity($entity) ? ".{$relationship->inverseToOne->foreignKey->columnName}" : ".{$entity->primaryKey->columnName}";
+                        if ($destinationEntity->isKindOfSQLEntity($entity)) {
+                            $predicate = $requestContext->request->predicate?->predicateFormat() ?? "{$entity->primaryKey->columnName} = $destination.{$relationship->inverseToOne->foreignKey->columnName}";
+                            $string .= "{$destinationEntity->tableName}_{$relationship->inverseToOne->name}.$predicate";
+                        } else {
+                            $string .= "$destinationEntity->tableName.{$relationship->inverseToOne->foreignKey->columnName} = $destination.{$entity->primaryKey->columnName}";
+                        }
                     } else {
                         $string .= "{$destinationEntity->tableName}_$relationship->correlationTableName.$relationship->inverseColumnName = $entity->tableName.{$entity->primaryKey->columnName}";
                     }
