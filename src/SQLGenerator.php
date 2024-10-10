@@ -1058,8 +1058,7 @@ class SQLGenerator extends ObjectClass
                     $string .= $generator->whereClause ? " AND " : " WHERE ";
                     if ($relationship instanceof SQLToMany) {
                         if ($destinationEntity->isKindOfSQLEntity($entity)) {
-                            $predicate = $requestContext->request->predicate?->predicateFormat() ?? "{$entity->primaryKey->columnName} = $destination.{$relationship->inverseToOne->foreignKey->columnName}";
-                            $string .= "{$destinationEntity->tableName}_{$relationship->inverseToOne->name}.$predicate";
+                            $string .= "{$destinationEntity->tableName}_{$relationship->inverseToOne->name}.{$requestContext->request->predicate}";
                         } else {
                             $string .= "$destinationEntity->tableName.{$relationship->inverseToOne->foreignKey->columnName} = $destination.{$entity->primaryKey->columnName}";
                         }
