@@ -23,6 +23,8 @@ use Sabatier\Foundation\Predicates\CompoundPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\ExpressionType;
 use Sabatier\Foundation\Predicates\Predicate;
+use Sabatier\Foundation\SensitiveProperty;
+use Sabatier\Foundation\SensitivePropertyValue;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
@@ -763,6 +765,20 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             }
         }
         parent::setValuesForKeys($representation);
+    }
+
+    public function dictionaryWithValues(ArrayClass $keys): Dictionary
+    {
+        /** @var Dictionary<mixed> $dictionary */
+        $dictionary = new Dictionary();
+        return $keys->reduce($dictionary, function (Dictionary $initial, string $key): Dictionary {
+            $value = $this->valueForKey($key);
+            if ($this->entity->propertiesByName[$key]?->isSensitive) {
+                $value = new SensitivePropertyValue($value);
+            }
+            $initial[$key] = $value;
+            return $initial;
+        });
     }
 
     /**
