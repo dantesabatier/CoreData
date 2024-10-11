@@ -767,6 +767,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         parent::setValuesForKeys($representation);
     }
 
+    #[Override]
     public function dictionaryWithValues(ArrayClass $keys): Dictionary
     {
         return $keys->reduce(new Dictionary(), function (Dictionary $initial, string $key): Dictionary {
