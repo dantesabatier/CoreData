@@ -759,55 +759,55 @@ class ManagedObjectContext extends ObjectClass
     #[Override]
     public function observeValue(string $keyPath, mixed $object, KeyValueObservedChange $change, mixed $context = null): void
     {
-        if ($context === self::observationContext) {
-            if ($this->processingChanges || !($value = $change->newValue) || !$object instanceof ManagedObject || $object->isSuppressingKVO || $object->isSuppressingChangeNotifications) {
-                return;
-            }
-            if (!($property = $object->entity->propertiesByName[$keyPath])) {
-                return;
-            }
-            if ($property instanceof RelationshipDescription) {
-                assert($value instanceof Set || $value instanceof ManagedObject || $value instanceof ManagedObjectID, sprintf("invalid argument: %s(%s) expecting \"%s|%s|%s\", \"%s\" given", $object->entity->name, $keyPath, Set::class, ManagedObject::class, ManagedObjectID::class, typeof($value)));
-                if (!$value instanceof Set) {
-                    if ($value instanceof ManagedObjectID) {
-                        $value = $this->object($value);
-                    }
-                    $value = new Set([$value]);
-                }
-                if ($change->kind !== KeyValueChange::removal && $value->isEmpty) {
-                    return;
-                }
-                foreach ($value as $managedObject) {
-                    assert($managedObject instanceof ManagedObject, sprintf("invalid argument: expecting \"%s\", \"%s\" given", ManagedObject::class, typeof($managedObject)));
-                    $this->obtainPermanentID($managedObject);
-                }
-            }
-            $this->obtainPermanentID($object);
-            $this->hasChanges = true;
-            $node = new IncrementalStoreNode($object->objectID, new Dictionary([$property->name => $value]));
-            switch ($change->kind) {
-                case KeyValueChange::insertion:
-                    if ($member = $this->unprocessedInserts->member($node)) {
-                        $node->updateWithValues($member->values);
-                    }
-                    $this->unprocessedInserts->update($node);
-                    break;
-                case KeyValueChange::removal:
-                    if ($member = $this->unprocessedDeletes->member($node)) {
-                        $node->updateWithValues($member->values);
-                    }
-                    $this->unprocessedDeletes->update($node);
-                    break;
-                case KeyValueChange::setting:
-                case KeyValueChange::replacement:
-                    if ($member = $this->unprocessedChanges->member($node)) {
-                        $node->updateWithValues($member->values);
-                    }
-                    $this->unprocessedChanges->update($node);
-                    break;
-            }
-        } else {
+        if ($context !== self::observationContext) {
             parent::observeValue($keyPath, $object, $change, $context);
+            return;
+        }
+        if ($this->processingChanges || $this->savingInProgress || !($value = $change->newValue) || !$object instanceof ManagedObject || $object->isSuppressingKVO || $object->isSuppressingChangeNotifications) {
+            return;
+        }
+        if (!($property = $object->entity->propertiesByName[$keyPath])) {
+            return;
+        }
+        if ($property instanceof RelationshipDescription) {
+            assert($value instanceof Set || $value instanceof ManagedObject || $value instanceof ManagedObjectID, sprintf("invalid argument: %s(%s) expecting \"%s|%s|%s\", \"%s\" given", $object->entity->name, $keyPath, Set::class, ManagedObject::class, ManagedObjectID::class, typeof($value)));
+            if (!$value instanceof Set) {
+                if ($value instanceof ManagedObjectID) {
+                    $value = $this->object($value);
+                }
+                $value = new Set([$value]);
+            }
+            if ($change->kind !== KeyValueChange::removal && $value->isEmpty) {
+                return;
+            }
+            foreach ($value as $managedObject) {
+                assert($managedObject instanceof ManagedObject, sprintf("invalid argument: expecting \"%s\", \"%s\" given", ManagedObject::class, typeof($managedObject)));
+                $this->obtainPermanentID($managedObject);
+            }
+        }
+        $this->obtainPermanentID($object);
+        $this->hasChanges = true;
+        $node = new IncrementalStoreNode($object->objectID, new Dictionary([$property->name => $value]));
+        switch ($change->kind) {
+            case KeyValueChange::insertion:
+                if ($member = $this->unprocessedInserts->member($node)) {
+                    $node->updateWithValues($member->values);
+                }
+                $this->unprocessedInserts->update($node);
+                break;
+            case KeyValueChange::removal:
+                if ($member = $this->unprocessedDeletes->member($node)) {
+                    $node->updateWithValues($member->values);
+                }
+                $this->unprocessedDeletes->update($node);
+                break;
+            case KeyValueChange::setting:
+            case KeyValueChange::replacement:
+                if ($member = $this->unprocessedChanges->member($node)) {
+                    $node->updateWithValues($member->values);
+                }
+                $this->unprocessedChanges->update($node);
+                break;
         }
     }
 
