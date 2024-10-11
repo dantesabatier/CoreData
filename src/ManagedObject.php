@@ -769,13 +769,12 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     public function dictionaryWithValues(ArrayClass $keys): Dictionary
     {
-        /** @var Dictionary<mixed> $dictionary */
-        $dictionary = new Dictionary();
-        return $keys->reduce($dictionary, function (Dictionary $initial, string $key): Dictionary {
+        return $keys->reduce(new Dictionary(), function (Dictionary $initial, string $key): Dictionary {
             $value = $this->valueForKey($key);
             if ($this->entity->propertiesByName[$key]?->isSensitive) {
                 $value = new SensitivePropertyValue($value);
             }
+            /** @psalm-suppress InvalidArgument */
             $initial[$key] = $value;
             return $initial;
         });
