@@ -6,8 +6,6 @@ use BackedEnum;
 use Exception;
 use JetBrains\PhpStorm\ExpectedValues;
 use Override;
-use ReflectionClass;
-use ReflectionProperty;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\ComparisonResult;
 use Sabatier\Foundation\Date;
@@ -23,7 +21,6 @@ use Sabatier\Foundation\Predicates\CompoundPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\ExpressionType;
 use Sabatier\Foundation\Predicates\Predicate;
-use Sabatier\Foundation\SensitiveProperty;
 use Sabatier\Foundation\SensitivePropertyValue;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
@@ -1090,12 +1087,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     #[Override]
     public function jsonSerialize(): Dictionary
     {
-        $reflectionClass = new ReflectionClass($this);
-        $properties = array_reduce(array_filter($reflectionClass->getProperties(ReflectionProperty::IS_PUBLIC), fn(ReflectionProperty $property): bool => (bool)count($property->getAttributes(SensitiveProperty::class))), function (array $initial, ReflectionProperty $property): array {
-            $initial[$property->name] = $property;
-            return $initial;
-        }, []);
-        return $this->serializationKeys->reduce(new Dictionary(), function (Dictionary &$dictionary, string $key) use ($properties): Dictionary {
+        return $this->serializationKeys->reduce(new Dictionary(), function (Dictionary &$dictionary, string $key): Dictionary {
             if ($property = $this->entity->propertiesByName[$key]) {
                 if ($property instanceof AttributeDescription) {
                     $value = $this->valueForKey($key) ?? Nil::nil();
@@ -1115,12 +1107,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     $dictionary[$key] = $this->valueForKey($key);
                 }
             } else {
-                $value = $this->valueForKey($key) ?? Nil::nil();
-                if (isset($properties[$key])) {
-                    $value = new SensitivePropertyValue($value);
-                }
                 /** @psalm-suppress InvalidArgument */
-                $dictionary[$key] = $value;
+                $dictionary[$key] = $this->valueForKey($key) ?? Nil::nil();
             }
             return $dictionary;
         });
