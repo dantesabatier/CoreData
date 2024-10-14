@@ -618,10 +618,10 @@ class SQLGenerator extends ObjectClass
         $expressions = new Set();
         $predicate ??= $this->request->predicate;
         if ($predicate instanceof ComparisonPredicate) {
-            if ($predicate->leftExpression->expressionType == ExpressionType::keyPath) {
+            if ($predicate->leftExpression->expressionType === ExpressionType::keyPath) {
                 $expressions->append($predicate->leftExpression);
             }
-            if ($predicate->rightExpression->expressionType == ExpressionType::keyPath) {
+            if ($predicate->rightExpression->expressionType === ExpressionType::keyPath) {
                 $expressions->append($predicate->rightExpression);
             }
         } elseif ($predicate instanceof CompoundPredicate) {
@@ -880,7 +880,7 @@ class SQLGenerator extends ObjectClass
         $leftExpression = $predicate->leftExpression;
         $rightExpression = $predicate->rightExpression;
         $right = $rightExpression->constantValue() ?? $rightExpression->collection();
-        assert($right instanceof ArrayClass && $right->count == 2, sprintf("invalid argument: the right expression of a BETWEEN operator must be a \"%s\" with exactly two elements, (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
+        assert($right instanceof ArrayClass && $right->count === 2, sprintf("invalid argument: the right expression of a BETWEEN operator must be a \"%s\" with exactly two elements, (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
         $clause .= "({$this->buildExpression($leftExpression)} BETWEEN ? AND ?)";
         $this->arguments->appendContentsOf($right->map(fn(mixed $element): mixed => $element instanceof Expression ? $element->constantValue() : $element));
     }
@@ -947,7 +947,7 @@ class SQLGenerator extends ObjectClass
             $subpredicates = $predicate->subpredicates;
             $max = $subpredicates->indexBefore($subpredicates->endIndex());
             $type = $predicate->compoundPredicateType;
-            if ($type == CompoundPredicateLogicalType::not) {
+            if ($type === CompoundPredicateLogicalType::not) {
                 $clause .= "NOT ";
             }
             if ($max) {
@@ -956,9 +956,9 @@ class SQLGenerator extends ObjectClass
             foreach ($subpredicates as $idx => $subpredicate) {
                 $this->preparePredicate($subpredicate, $clause);
                 if ($idx < $max) {
-                    if ($type == CompoundPredicateLogicalType::and) {
+                    if ($type === CompoundPredicateLogicalType::and) {
                         $clause .= " AND ";
-                    } elseif ($type == CompoundPredicateLogicalType::or) {
+                    } elseif ($type === CompoundPredicateLogicalType::or) {
                         $clause .= " OR ";
                     }
                 }
@@ -988,7 +988,7 @@ class SQLGenerator extends ObjectClass
     private function buildClauseWithSelectPredicate(ComparisonPredicate $predicate, string &$clause): void
     {
         $expressions = new ArrayClass([$predicate->leftExpression, $predicate->rightExpression]);
-        if (!($expression = $expressions->first(fn(Expression $expression): bool => $expression->expressionType == ExpressionType::keyPath))) {
+        if (!($expression = $expressions->first(fn(Expression $expression): bool => $expression->expressionType === ExpressionType::keyPath))) {
             fatal_error();
         }
         $keyPath = $this->buildKeyPathExpression($expression);
@@ -1182,15 +1182,15 @@ class SQLGenerator extends ObjectClass
         $predicate = "";
         $this->preparePredicate($expression->predicate(), $predicate);
         $true = $expression->true();
-        if ($true->expressionType == ExpressionType::keyPath) {
+        if ($true->expressionType === ExpressionType::keyPath) {
             $true = $this->buildKeyPathExpression($true, $isDeterministic);
-        } elseif ($true->expressionType == ExpressionType::function) {
+        } elseif ($true->expressionType === ExpressionType::function) {
             $true = $this->buildFunctionExpression($true, $isDeterministic);
         }
         $false = $expression->false();
-        if ($false->expressionType == ExpressionType::keyPath) {
+        if ($false->expressionType === ExpressionType::keyPath) {
             $false = $this->buildKeyPathExpression($false, $isDeterministic);
-        } elseif ($false->expressionType == ExpressionType::function) {
+        } elseif ($false->expressionType === ExpressionType::function) {
             $false = $this->buildFunctionExpression($false, $isDeterministic);
         }
         $isDeterministic = false;

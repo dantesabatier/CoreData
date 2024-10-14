@@ -535,7 +535,7 @@ class ManagedObjectContext extends ObjectClass
         if ($object->isDeleted) {
             /** @psalm-suppress InvalidArgument */
             $this->mergePolicy->resolveConflicts($object->entity->relationshipsByName->compactMap(function (RelationshipDescription $relationship) use ($object): ?MergeConflict {
-                if ($relationship->inverseRelationship->deleteRule == DeleteRule::denyDeleteRule) {
+                if ($relationship->inverseRelationship->deleteRule === DeleteRule::denyDeleteRule) {
                     /** @var FetchRequest<ManagedObject> $fetchRequest */
                     $fetchRequest = new FetchRequest();
                     $fetchRequest->entity = $object->entity;
@@ -660,7 +660,7 @@ class ManagedObjectContext extends ObjectClass
     {
         $inverseRelationship = $relationship->inverseRelationship;
         $deleteRule = $relationship->deleteRule;
-        if ($deleteRule == DeleteRule::nullifyDeleteRule) {
+        if ($deleteRule === DeleteRule::nullifyDeleteRule) {
             if ($relationship->isToMany) {
                 if ($inverseRelationship->isToMany) {
                     foreach ($deletions as $deletion) {
@@ -693,7 +693,7 @@ class ManagedObjectContext extends ObjectClass
                 $this->insertedObjects->remove($object);
                 $this->updatedObjects->append($object);
             }
-        } elseif ($deleteRule == DeleteRule::cascadeDeleteRule) {
+        } elseif ($deleteRule === DeleteRule::cascadeDeleteRule) {
             foreach ($deletions as $deletion) {
                 $this->delete($deletion);
             }
@@ -788,27 +788,24 @@ class ManagedObjectContext extends ObjectClass
         $this->obtainPermanentID($object);
         $this->hasChanges = true;
         $node = new IncrementalStoreNode($object->objectID, new Dictionary([$property->name => $value]));
-        switch ($change->kind) {
-            case KeyValueChange::insertion:
-                if ($member = $this->unprocessedInserts->member($node)) {
-                    $node->updateWithValues($member->values);
-                }
-                $this->unprocessedInserts->update($node);
-                break;
-            case KeyValueChange::removal:
-                if ($member = $this->unprocessedDeletes->member($node)) {
-                    $node->updateWithValues($member->values);
-                }
-                $this->unprocessedDeletes->update($node);
-                break;
-            case KeyValueChange::setting:
-            case KeyValueChange::replacement:
-                if ($member = $this->unprocessedChanges->member($node)) {
-                    $node->updateWithValues($member->values);
-                }
-                $this->unprocessedChanges->update($node);
-                break;
+        if ($change->kind === KeyValueChange::insertion) {
+            if ($member = $this->unprocessedInserts->member($node)) {
+                $node->updateWithValues($member->values);
+            }
+            $this->unprocessedInserts->update($node);
+            return;
         }
+        if ($change->kind === KeyValueChange::removal) {
+            if ($member = $this->unprocessedDeletes->member($node)) {
+                $node->updateWithValues($member->values);
+            }
+            $this->unprocessedDeletes->update($node);
+            return;
+        }
+        if ($member = $this->unprocessedChanges->member($node)) {
+            $node->updateWithValues($member->values);
+        }
+        $this->unprocessedChanges->update($node);
     }
 
     /**

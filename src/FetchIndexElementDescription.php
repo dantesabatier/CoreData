@@ -96,7 +96,7 @@ class FetchIndexElementDescription extends ObjectClass
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof FetchIndexElementDescription) {
-            return $this->property->isEqual($other->property) && $this->collationType == $other->collationType;
+            return $this->property->isEqual($other->property) && $this->collationType === $other->collationType;
         }
         return false;
     }

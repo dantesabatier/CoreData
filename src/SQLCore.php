@@ -160,7 +160,7 @@ class SQLCore extends IncrementalStore
                 /** @var ReflectionNamedType $reflectionType */
                 $reflectionType = $property->getType();
                 $type = $reflectionType->getName();
-                if ($type == ArrayClass::class) {
+                if ($type === ArrayClass::class) {
                     $relationship = new RelationshipDescription();
                     $relationship->name = $name;
                     $relationship->entity = $entityDescription;
@@ -173,15 +173,15 @@ class SQLCore extends IncrementalStore
                 $attribute = new AttributeDescription();
                 $attribute->name = $name;
                 $attribute->entity = $entityDescription;
-                if ($type == "string") {
+                if ($type === "string") {
                     $attribute->type = AttributeType::string;
-                } elseif ($type == "int") {
+                } elseif ($type === "int") {
                     $attribute->type = AttributeType::integer64;
                     $attribute->isOptional = false;
-                } elseif ($type == Date::class) {
+                } elseif ($type === Date::class) {
                     $attribute->type = AttributeType::date;
                     $attribute->isOptional = false;
-                } elseif ($type == PersistentHistoryToken::class) {
+                } elseif ($type === PersistentHistoryToken::class) {
                     $attribute->type = AttributeType::transformable;
                 }
                 return $attribute;
@@ -206,7 +206,7 @@ class SQLCore extends IncrementalStore
                 /** @var ReflectionNamedType $reflectionType */
                 $reflectionType = $property->getType();
                 $type = $reflectionType->getName();
-                if ($type == PersistentHistoryTransaction::class) {
+                if ($type === PersistentHistoryTransaction::class) {
                     $relationship = new RelationshipDescription();
                     $relationship->name = $name;
                     $relationship->entity = $entityDescription;
@@ -217,20 +217,20 @@ class SQLCore extends IncrementalStore
                 $attribute = new AttributeDescription();
                 $attribute->name = $name;
                 $attribute->entity = $entityDescription;
-                if ($type == "string") {
+                if ($type === "string") {
                     $attribute->type = AttributeType::string;
-                } elseif ($type == "int") {
+                } elseif ($type === "int") {
                     $attribute->type = AttributeType::integer16;
                     $attribute->isOptional = false;
-                } elseif ($type == Date::class) {
+                } elseif ($type === Date::class) {
                     $attribute->type = AttributeType::date;
                     $attribute->isOptional = false;
-                } elseif ($type == ManagedObjectID::class) {
+                } elseif ($type === ManagedObjectID::class) {
                     $attribute->type = AttributeType::objectID;
                     $attribute->isOptional = false;
-                } elseif ($type == Dictionary::class || $type == Set::class) {
+                } elseif ($type === Dictionary::class || $type === Set::class) {
                     $attribute->type = AttributeType::transformable;
-                } elseif ($type == PersistentHistoryChangeType::class) {
+                } elseif ($type === PersistentHistoryChangeType::class) {
                     $attribute->type = AttributeType::integer16;
                     $attribute->isOptional = false;
                 }
@@ -248,7 +248,7 @@ class SQLCore extends IncrementalStore
     public function recomputePrimaryKeyMaxForEntities(ArrayClass $entities): void
     {
         if (!$entities->isEmpty) {
-            $entities->appendContentsOf($entities->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->entitySpecificRelationships->filter(fn(SQLRelationship $relationship): bool => $relationship->relationshipDescription->deleteRule == DeleteRule::cascadeDeleteRule))->map(fn(SQLRelationship $relationship): SQLEntity => $relationship->destinationEntity));
+            $entities->appendContentsOf($entities->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->entitySpecificRelationships->filter(fn(SQLRelationship $relationship): bool => $relationship->relationshipDescription->deleteRule === DeleteRule::cascadeDeleteRule))->map(fn(SQLRelationship $relationship): SQLEntity => $relationship->destinationEntity));
             /** @var ArrayClass<SQLEntity> $entities */
             $entities = new ArrayClass(new Set($entities->compactMap(fn(SQLEntity $entity): ?SQLEntity => $entity->isRootEntity ? $entity : $entity->rootEntity)));
             $statement = SQLStatement::merging($entities->map(fn(SQLEntity $entity): SQLStatement => new SQLStatement("ALTER TABLE IF EXISTS `$entity->tableName` AUTO_INCREMENT = 0")));
