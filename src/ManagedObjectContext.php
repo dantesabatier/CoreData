@@ -788,24 +788,27 @@ class ManagedObjectContext extends ObjectClass
         $this->obtainPermanentID($object);
         $this->hasChanges = true;
         $node = new IncrementalStoreNode($object->objectID, new Dictionary([$property->name => $value]));
-        if ($change->kind === KeyValueChange::insertion) {
-            if ($member = $this->unprocessedInserts->member($node)) {
-                $node->updateWithValues($member->values);
-            }
-            $this->unprocessedInserts->update($node);
-            return;
+        switch ($change->kind) {
+            case KeyValueChange::insertion:
+                if ($member = $this->unprocessedInserts->member($node)) {
+                    $node->updateWithValues($member->values);
+                }
+                $this->unprocessedInserts->update($node);
+                break;
+            case KeyValueChange::removal:
+                if ($member = $this->unprocessedDeletes->member($node)) {
+                    $node->updateWithValues($member->values);
+                }
+                $this->unprocessedDeletes->update($node);
+                break;
+            case KeyValueChange::setting:
+            case KeyValueChange::replacement:
+                if ($member = $this->unprocessedChanges->member($node)) {
+                    $node->updateWithValues($member->values);
+                }
+                $this->unprocessedChanges->update($node);
+                break;
         }
-        if ($change->kind === KeyValueChange::removal) {
-            if ($member = $this->unprocessedDeletes->member($node)) {
-                $node->updateWithValues($member->values);
-            }
-            $this->unprocessedDeletes->update($node);
-            return;
-        }
-        if ($member = $this->unprocessedChanges->member($node)) {
-            $node->updateWithValues($member->values);
-        }
-        $this->unprocessedChanges->update($node);
     }
 
     /**
