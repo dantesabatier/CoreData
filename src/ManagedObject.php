@@ -746,7 +746,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $property = $entity->propertiesByName[$key];
             if ($property instanceof RelationshipDescription) {
                 $destinationEntity = $property->destinationEntity;
-                if ($value instanceof ArrayClass) {
+                if ($value instanceof ArrayClass || $value instanceof Set) {
                     if ($property->isToMany) {
                         $representation[$key] = $value->compactMap(fn(ManagedObject|ManagedObjectID|Dictionary $object): ?ManagedObject => $managedObject($destinationEntity, $object));
                     } elseif (!$value->isEmpty) {
