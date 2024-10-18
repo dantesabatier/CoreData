@@ -604,7 +604,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $set->setSet($value);
                 $value = $set;
                 $change = $this->mutableSetValueForKey($key);
-                if (!$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications && !$this->objectID->isTemporaryID && !isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
+                if (!$this->isAwakening && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
                     $this->reserved[$key] = true;
                     /** @var FaultingMutableSet $change */
                     $change = $this->valueForKey($key);
@@ -614,7 +614,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                             $managedObject->setValuesForKeys($member->dictionaryWithValues($member->persistentProperties->valueForKey("name")));
                         }
                     }
-                    unset($this->reserved[$key]);
                 }
                 $comparisonResult = $change->compare($value);
                 if ($comparisonResult === ComparisonResult::orderedDescending) {
