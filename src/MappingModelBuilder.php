@@ -32,7 +32,7 @@ class MappingModelBuilder
 
     public function newInferredAttributeMapping(?AttributeDescription $source, ?AttributeDescription $destination): ?PropertyMapping
     {
-        if (!$destination  || $destination->isTransient || $destination instanceof DerivedAttributeDescription) {
+        if (!$destination || $destination->isTransient || $destination instanceof DerivedAttributeDescription) {
             return null;
         }
         if (!$source) {
@@ -118,7 +118,7 @@ class MappingModelBuilder
         /** @var ArrayClass<EntityMapping> $entityMappings */
         $entityMappings = $sourceEntities->compactMap(fn(EntityDescription $sourceEntity): ?EntityMapping => ($entityMapping = $this->newEntityMapping($sourceEntity, $this->destinationModel->entitiesByName->first(fn(EntityDescription $e): bool => $e->renamingIdentifier === $sourceEntity->renamingIdentifier))) && $this->inferPropertyMappingsForEntityMapping($entityMapping) ? $entityMapping : null);
         /** @psalm-suppress InvalidArgument */
-        $entityMappings->appendContentsOf($destinationEntities->compactMap(fn(EntityDescription $destinationEntity): ?EntityMapping => !$sourceEntities->contains(fn(EntityDescription $sourceEntity): bool => $destinationEntity->isKindOf($sourceEntity)) && ($entityMapping = $this->newEntityMapping(null, $destinationEntity)) && $this->inferPropertyMappingsForEntityMapping($entityMapping) ? $entityMapping : null));
+        $entityMappings->appendContentsOf($destinationEntities->compactMap(fn(EntityDescription $destinationEntity): ?EntityMapping => !$sourceEntities->contains(fn(EntityDescription $sourceEntity): bool => $destinationEntity->renamingIdentifier === $sourceEntity->renamingIdentifier) && ($entityMapping = $this->newEntityMapping(null, $destinationEntity)) && $this->inferPropertyMappingsForEntityMapping($entityMapping) ? $entityMapping : null));
         $mappingModel = new MappingModel();
         $mappingModel->entityMappings = $entityMappings;
         return $mappingModel;
