@@ -789,8 +789,10 @@ class SQLGenerator extends ObjectClass
                 $this->prepareNotEqual($predicate, $clause);
                 break;
             case PredicateOperatorType::like:
-            case PredicateOperatorType::matches:
                 $this->prepareLike($predicate, $clause);
+                break;
+            case PredicateOperatorType::matches:
+                $this->prepareMatches($predicate, $clause);
                 break;
             case PredicateOperatorType::beginsWith:
                 $this->prepareBeginsWith($predicate, $clause);
@@ -908,6 +910,15 @@ class SQLGenerator extends ObjectClass
     private function prepareLike(ComparisonPredicate $predicate, string &$clause): void
     {
         $operator = "LIKE";
+        if (!($predicate->options & ComparisonPredicateOptions::caseInsensitive)) {
+            $operator .= " BINARY";
+        }
+        $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator);
+    }
+
+    private function prepareMatches(ComparisonPredicate $predicate, string &$clause): void
+    {
+        $operator = "REGEXP";
         if (!($predicate->options & ComparisonPredicateOptions::caseInsensitive)) {
             $operator .= " BINARY";
         }
