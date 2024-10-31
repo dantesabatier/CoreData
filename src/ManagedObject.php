@@ -1112,8 +1112,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         });
     }
 
-    public function serialized(?Dictionary $serialization = null): self
+    public function serialized(?Dictionary $serialization = null): static
     {
+        /** @psalm-suppress LessSpecificReturnStatement */
         return ManagedObjectSerializer::shared()->serialized($this, $serialization);
     }
 
