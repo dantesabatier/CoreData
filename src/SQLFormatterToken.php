@@ -9,7 +9,7 @@ class SQLFormatterToken
 {
     public int $index = NotFound;
 
-    public function __construct(public ?string $value, public SQLFormatterTokenType $type)
+    public function __construct(public SQLFormatterTokenType $type, public ?string $value = null)
     {
     }
 }
