@@ -205,6 +205,18 @@ class SQLGenerator extends ObjectClass
         return $predicate;
     }
 
+    private function resetSQL(): void
+    {
+        $this->string = "";
+        $this->selectList = "";
+        $this->joinClause = "";
+        $this->whereClause = "";
+        $this->groupByClause = "";
+        $this->havingClause = "";
+        $this->orderByClause = "";
+        $this->arguments->removeAll();
+    }
+
     private function startSQL(PersistentStoreRequest $request): void
     {
         if ($request instanceof FetchRequest) {
@@ -281,18 +293,6 @@ class SQLGenerator extends ObjectClass
         if (str_ends_with($this->string, $delimiter)) {
             $this->string = rtrim($this->string, ";");
         }
-    }
-
-    private function resetSQL(): void
-    {
-        $this->string = "";
-        $this->selectList = "";
-        $this->joinClause = "";
-        $this->whereClause = "";
-        $this->groupByClause = "";
-        $this->havingClause = "";
-        $this->orderByClause = "";
-        $this->arguments->removeAll();
     }
 
     private function appendSQL(string $sql): void
