@@ -10,7 +10,6 @@
 namespace Sabatier\CoreData;
 
 use JetBrains\PhpStorm\ExpectedValues;
-use JetBrains\PhpStorm\Language;
 use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\CompareOptions;
@@ -28,7 +27,7 @@ class SQLStatement extends ObjectClass
      * @param string $string
      * @param ArrayClass $arguments
      */
-    public function __construct(#[Language("SQL")] public readonly string $string, public readonly ArrayClass $arguments = new ArrayClass())
+    public function __construct(public readonly string $string, public readonly ArrayClass $arguments = new ArrayClass())
     {
         if (str_ends_with($this->string, ";")) {
             fatal_error("Invalid sql statement: sql string must not end with a semicolon \";\"");
