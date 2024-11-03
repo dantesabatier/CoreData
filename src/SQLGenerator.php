@@ -44,13 +44,13 @@ use function Sabatier\Foundation\typeof;
 /** @internal */
 class SQLGenerator extends ObjectClass
 {
-    private string $string = "";
-    private string $selectList = "";
-    private string $joinClause = "";
-    private string $whereClause = "";
-    private string $groupByClause = "";
-    private string $havingClause = "";
-    private string $orderByClause = "";
+    private string $string;
+    private string $selectList;
+    private string $joinClause;
+    private string $whereClause;
+    private string $groupByClause;
+    private string $havingClause;
+    private string $orderByClause;
     private FetchRequest $request;
     private SQLEntity $entity;
     /** @var ArrayClass<mixed> */
@@ -207,13 +207,13 @@ class SQLGenerator extends ObjectClass
 
     private function resetSQL(): void
     {
-        $this->string = "";
         $this->selectList = "";
         $this->joinClause = "";
         $this->whereClause = "";
         $this->groupByClause = "";
         $this->havingClause = "";
         $this->orderByClause = "";
+        $this->string = $this->selectList;
         $this->arguments->removeAll();
     }
 
