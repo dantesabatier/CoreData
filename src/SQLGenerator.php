@@ -219,6 +219,7 @@ class SQLGenerator extends ObjectClass
 
     private function startSQL(PersistentStoreRequest $request): void
     {
+        $this->resetSQL();
         if ($request instanceof FetchRequest) {
             $entity = $request->entity;
             /** @var ArrayClass<PropertyDescription> $propertiesToGroupBy */
@@ -231,7 +232,6 @@ class SQLGenerator extends ObjectClass
                 /** @psalm-suppress all */
                 $this->useDistinct = ($request->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $entity->propertiesByName[$property])?->contains(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription)) || ($request->serialization->contains(fn(mixed $e): bool => $e instanceof Dictionary));
             }
-            $this->resetSQL();
             $this->prepareSelectStatementWithFetchRequest($request);
             $this->prepareJoinStatementsForPredicateAndRelationships();
             $predicate = $this->compound($entity, $request->predicate);
