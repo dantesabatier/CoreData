@@ -262,7 +262,6 @@ class SQLGenerator extends ObjectClass
             if ($request->fetchOffset) {
                 $this->appendOffsetClauseToSQL($request->fetchOffset);
             }
-            $this->endSQL();
         } elseif ($request instanceof BatchUpdateRequest) {
             $this->prepareStatementForBatchUpdateRequest();
             $this->prepareJoinStatementsForPredicateAndRelationships();
@@ -273,7 +272,6 @@ class SQLGenerator extends ObjectClass
                 $this->preparePredicate($predicate, $this->whereClause);
                 $this->appendSQL($this->whereClause);
             }
-            $this->endSQL();
         } elseif ($request instanceof BatchDeleteRequest) {
             $this->prepareStatementForBatchDeleteRequest($request);
             $this->prepareJoinStatementsForPredicateAndRelationships();
@@ -283,8 +281,8 @@ class SQLGenerator extends ObjectClass
                 $this->preparePredicate($predicate, $this->whereClause);
                 $this->appendSQL($this->whereClause);
             }
-            $this->endSQL();
         }
+        $this->endSQL();
     }
 
     private function endSQL(): void
