@@ -421,7 +421,6 @@ class SQLGenerator extends ObjectClass
         foreach ($expressions as $expression) {
             $this->appendJoinsForRelationships($this->relationshipsFromKeyPathExpression($expression));
         }
-        $this->joinClause ??= "";
         $this->joinClause = (new Set(explode(" LEFT JOIN ", $this->joinClause)))->join(" LEFT JOIN ");
         $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
     }
