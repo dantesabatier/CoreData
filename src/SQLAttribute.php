@@ -59,6 +59,7 @@ class SQLAttribute extends SQLColumn
                 AttributeType::objectID => SQLType::tinyblob,
                 AttributeType::uuid => SQLType::uuid,
                 AttributeType::uri => SQLType::varbinary,
+                AttributeType::compositeAttributeType => SQLType::text,
                 AttributeType::undefined => fatal_error("{$this->entity->entityDescription->name}.$this->name cannot use an attribute type of \"Undefined\""),
             };
             return $this->$name;
