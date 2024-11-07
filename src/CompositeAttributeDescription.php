@@ -3,6 +3,7 @@
 namespace Sabatier\CoreData;
 
 use JetBrains\PhpStorm\Immutable;
+use Override;
 use Sabatier\Foundation\ArrayClass;
 
 /**
@@ -24,6 +25,7 @@ class CompositeAttributeDescription extends AttributeDescription
         unset($this->elements);
     }
 
+    #[Override]
     public function __get(string $name)
     {
         if ($name === "elements") {
@@ -33,6 +35,7 @@ class CompositeAttributeDescription extends AttributeDescription
         return parent::__get($name);
     }
 
+    #[Override]
     public function __set(string $name, mixed $value): void
     {
         if ($name === "elements") {
