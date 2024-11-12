@@ -8,7 +8,7 @@ use Sabatier\Foundation\Value;
 /** @internal */
 abstract class ValueValidator extends Validator
 {
-    public function coerce(mixed $object): mixed
+    protected function coerce(mixed $object): mixed
     {
         if ($object instanceof Value || $object instanceof BackedEnum) {
             return $object->value;
