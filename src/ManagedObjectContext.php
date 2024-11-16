@@ -48,7 +48,28 @@ class ManagedObjectContext extends ObjectClass
     /** @var PersistentStoreCoordinator|null The persistent store coordinator of the context.
      * The coordinator provides the managed object model and handles persistence.
      * Note that multiple contexts can share a coordinator. May not be nil. */
-    public ?PersistentStoreCoordinator $persistentStoreCoordinator = null;
+    public ?PersistentStoreCoordinator $persistentStoreCoordinator = null {
+        set {
+            $this->persistentStoreCoordinator = $value;
+            NotificationCenter::default()->removeObserver($this, PersistentStoreCoordinatorWillRemoveStore);
+            NotificationCenter::default()->addObserverForName(PersistentStoreCoordinatorWillRemoveStore, $value, function (Notification $notification): void {
+                /** @var Dictionary $userInfo */
+                $userInfo = $notification->userInfo;
+                /** @var ArrayClass<PersistentStore> $stores */
+                $stores = $userInfo[RemovedPersistentStoresKey];
+                foreach ($stores as $store) {
+                    foreach ($this->byHashAssociationTable as $registeredObject) {
+                        if ($store === $registeredObject->objectID->persistentStore) {
+                            $this->unregister($registeredObject);
+                            $this->insertedObjects->remove($registeredObject);
+                            $this->updatedObjects->remove($registeredObject);
+                            $this->deletedObjects->remove($registeredObject);
+                        }
+                    }
+                }
+            });
+        }
+    }
     /** @var ManagedObjectContext|null The parent of the context. */
     public ?ManagedObjectContext $parent = null;
     /** @var string|null The developer-provided name of the context. */
@@ -86,7 +107,12 @@ class ManagedObjectContext extends ObjectClass
     /** @var bool A Boolean value that indicates whether the context automatically merges changes saved to its persistent store coordinator or parent context. */
     public bool $automaticallyMergesChangesFromParent = true;
     /** @var MergePolicy The merge policy of the context. */
-    public MergePolicy $mergePolicy;
+    public MergePolicy $mergePolicy {
+        get => $this->associatedValues[__PROPERTY__] ??= MergePolicy::error();
+        set {
+            $this->associatedValues[__PROPERTY__] = $value;
+        }
+    }
     /** @var QueryGenerationToken|null Returns the token associated with the query generation currently in use by this context. */
     private(set) ?QueryGenerationToken $queryGenerationToken = null;
     /** @var string|null The author for the context that is used as an identifier in persistent history transactions. Set a managed object context's transactionAuthor before saving it to differentiate among multiple call sites that modify the same context. Doing this records an author in subsequent transactions. */
@@ -103,7 +129,9 @@ class ManagedObjectContext extends ObjectClass
      * Note that the staleness interval is a hint and may not be supported by all persistent store types. It is not used by XML and binary stores, because these stores maintain all current values in memory.
      * The default is a negative value, which represents infinite staleness allowed. 0.0 represents "no staleness acceptable". */
     public float $stalenessInterval = -1.0;
-    private OperationQueue $queue;
+    public OperationQueue $queue {
+        get => $this->associatedValues[__PROPERTY__] ??= new OperationQueue();
+    }
 
     /**
      * Initializes a context with a given concurrency type.
@@ -111,69 +139,15 @@ class ManagedObjectContext extends ObjectClass
      */
     public function __construct(public readonly ManagedObjectContextConcurrencyType $concurrencyType = ManagedObjectContextConcurrencyType::mainQueueConcurrencyType)
     {
-        unset($this->queue);
-        unset($this->mergePolicy);
-        unset($this->userInfo);
-        unset($this->byHashAssociationTable);
-        unset($this->unprocessedChanges);
-        unset($this->unprocessedDeletes);
-        unset($this->unprocessedInserts);
-        unset($this->insertedObjects);
-        unset($this->updatedObjects);
-        unset($this->deletedObjects);
-        unset($this->lockedObjects);
-        unset($this->refreshedObjects);
-    }
-
-    public function __get(string $name)
-    {
-        if ($name === "userInfo" || $name === "byHashAssociationTable") {
-            $this->$name = new Dictionary();
-            return $this->$name;
-        }
-        if ($name === "queue") {
-            $queue = new OperationQueue();
-            $queue->setAssociatedValueForKey($this, "managedObjectContext");
-            $this->$name = $queue;
-            return $this->$name;
-        }
-        if ($name === "mergePolicy") {
-            $this->$name = MergePolicy::error();
-            return $this->$name;
-        }
-        if ($name === "unprocessedChanges" || $name === "unprocessedDeletes" || $name === "unprocessedInserts" || $name === "insertedObjects" || $name === "updatedObjects" || $name === "deletedObjects" || $name === "lockedObjects" || $name === "refreshedObjects") {
-            $this->$name = new Set();
-            return $this->$name;
-        }
-        return $this->valueForUndefinedKey($name);
-    }
-
-    public function __set(string $name, mixed $value): void
-    {
-        if ($name === "persistentStoreCoordinator") {
-            $this->$name = $value;
-            NotificationCenter::default()->removeObserver($this, PersistentStoreCoordinatorWillRemoveStore);
-            NotificationCenter::default()->addObserverForName(PersistentStoreCoordinatorWillRemoveStore, $value, function (Notification $notification): void {
-                /** @var Dictionary $userInfo */
-                $userInfo = $notification->userInfo;
-                /** @var ArrayClass<PersistentStore> $stores */
-                $stores = $userInfo[RemovedPersistentStoresKey];
-                foreach ($stores as $store) {
-                    foreach ($this->byHashAssociationTable as $registeredObject) {
-                        if ($store === $registeredObject->objectID->persistentStore) {
-                            $this->unregister($registeredObject);
-                            $this->insertedObjects->remove($registeredObject);
-                            $this->updatedObjects->remove($registeredObject);
-                            $this->deletedObjects->remove($registeredObject);
-                        }
-                    }
-                }
-            });
-        } elseif ($name === "queue" || $name === "mergePolicy" || $name === "queryGenerationToken" || $name === "userInfo" || $name === "byHashAssociationTable" || $name === "unprocessedChanges" || $name === "unprocessedDeletes" || $name === "unprocessedInserts" || $name === "insertedObjects" || $name === "updatedObjects" || $name === "deletedObjects" || $name === "lockedObjects" || $name === "refreshedObjects") {
-            $this->$name = $value;
-        } else {
-            $this->setValueForUndefinedKey($value, $name);
-        }
+        $this->userInfo = new Dictionary();
+        $this->insertedObjects = new Set();
+        $this->updatedObjects = new Set();
+        $this->deletedObjects = new Set();
+        $this->lockedObjects = new Set();
+        $this->unprocessedChanges = new Set();
+        $this->unprocessedDeletes = new Set();
+        $this->unprocessedInserts = new Set();
+        $this->refreshedObjects = new Set();
     }
 
     private function executePersistentStoreRequest(PersistentStoreRequest $request): UnknownRequestTypeResult
