@@ -18,7 +18,7 @@ class ConstraintConflict extends ObjectClass
     /** @var Dictionary The values that the conflicting objects had when the conflict was created. */
     private(set) Dictionary $constraintValues;
     public string $description {
-        get => sprintf("%s %s for constraint (%s): database(%s): conflictedObjects (%s):", get_called_class(), $this->hash, $this->constraint->join(", "), human_readable_value($this->databaseObject), $this->conflictingObjects->join(", "));
+        get => sprintf("%s %s for constraint (%s): database(%s): conflictedObjects (%s):", get_class($this), $this->hash, $this->constraint->join(", "), human_readable_value($this->databaseObject), $this->conflictingObjects->join(", "));
     }
 
     /**
