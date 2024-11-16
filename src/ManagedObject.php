@@ -222,7 +222,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public static function entity(): EntityDescription
     {
-        return static::staticAssociatedValueForKey(__FUNCTION__) ?? fatal_error(sprintf("Class \"%s\" not found", static::class));
+        return static::$staticAssociatedValues[static::class][__FUNCTION__] ?? fatal_error(sprintf("Class \"%s\" not found", static::class));
     }
 
     /**
