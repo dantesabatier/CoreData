@@ -148,6 +148,7 @@ class ManagedObjectContext extends ObjectClass
         $this->unprocessedDeletes = new Set();
         $this->unprocessedInserts = new Set();
         $this->refreshedObjects = new Set();
+        $this->byHashAssociationTable = new Dictionary();
     }
 
     private function executePersistentStoreRequest(PersistentStoreRequest $request): UnknownRequestTypeResult
