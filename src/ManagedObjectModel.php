@@ -128,7 +128,8 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                 $entity->managedObjectClassName = $managedObjectClassName;
             }
             if ($managedObjectClassName = $entity->managedObjectClassName) {
-                $managedObjectClassName::setStaticAssociatedValueForKey($entity, "entity");
+                /** @noinspection PhpUndefinedVariableInspection */
+                $managedObjectClassName::$staticAssociatedValues[$managedObjectClassName]["entity"] = $entity;
             }
             if ($isAbstract = $dictionary["isAbstract"]) {
                 $entity->isAbstract = $isAbstract;
