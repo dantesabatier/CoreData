@@ -38,9 +38,6 @@ use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /**
  * A base class that implements the behavior required of a Core Data model object.
- *
- * @property-read bool $hasChanges A Boolean value that indicates whether the managed object has been inserted, has been deleted, or has unsaved changes.
- * @property-read bool $hasPersistentChangedValues A Boolean value that indicates whether the managed object has persistent changes.
  */
 class ManagedObject extends ObjectClass implements FetchRequestResult
 {
@@ -87,6 +84,12 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public bool $isAwakening = false;
     /** @internal */
     public readonly string $entityName;
+    public string $description {
+        get => sprintf("<%s %s> (entity: %s; id: %s %s; data: %s)", $this->entity->name, $this->hash, $this->entity->name, $this->objectID->hash, $this->objectID->description, $this->isFault ? "<fault>" : $this->dictionaryWithValues($this->entity->propertiesByName->filter(fn(PropertyDescription $property): bool => !$this->isRelationshipForKeyFault($property->name))->keys)->description);
+    }
+    public string $debugDescription {
+        get => sprintf("<%s: %s>", get_called_class(), $this->hash);
+    }
 
     /**
      * Initializes a managed object from an entity description and inserts it into the specified managed object context.
@@ -168,22 +171,17 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->$name = $serializationKeys;
             return $this->$name;
         }
-        if ($name === "hasPersistentChangedValues") {
-            return !$this->changedValues()->isEmpty;
-        }
-        if ($name === "hasChanges") {
-            return $this->isInserted || $this->isUpdated || $this->isDeleted;
-        }
         if ($name === "isInserted") {
-            /** @var FetchRequest<Number> $fetchRequest */
-            $fetchRequest = new FetchRequest();
-            $fetchRequest->entity = $this->entity;
-            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($this->objectID));
-            /** @var PersistentStore $persistentStore */
-            $persistentStore = $this->objectID->persistentStore;
-            $fetchRequest->affectedStores = new ArrayClass([$persistentStore]);
-            /** @noinspection PhpUnhandledExceptionInspection */
-            $this->$name = (bool)$this->managedObjectContext->count($fetchRequest);
+            $isInserted = false;
+            if ($persistentStore = $this->objectID->persistentStore) {
+                /** @var FetchRequest<Number> $fetchRequest */
+                $fetchRequest = $this::fetchRequest();
+                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($this->objectID));
+                $fetchRequest->affectedStores = new ArrayClass([$persistentStore]);
+                /** @noinspection PhpUnhandledExceptionInspection */
+                $isInserted = (bool)$this->managedObjectContext->count($fetchRequest);
+            }
+            $this->$name = $isInserted;
             return $this->$name;
         }
         if ($name === "isUpdated") {
@@ -411,7 +409,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             return $this->valueForUndefinedKey($key);
         }
         if (!$relationship->isToMany) {
-            fatal_error("{$this->debugDescription()} does not contains a to many relationship named \"$key\"");
+            fatal_error("$this->debugDescription does not contains a to many relationship named \"$key\"");
         }
         $mutableSet = $this->primitiveValueForKey($key);
         if (!$mutableSet instanceof FaultingMutableSet) {
@@ -517,7 +515,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         $fn = function (CompoundPredicate|ComparisonPredicate $predicate) use (&$fn, $property): CompoundPredicate|ComparisonPredicate {
                             if ($predicate instanceof ComparisonPredicate) {
                                 $expression = function (Expression $expression) use ($property): Expression {
-                                    if (($expression->expressionType === ExpressionType::variable) || (($expression->expressionType === ExpressionType::keyPath) && $expression->operand()?->expressionType === ExpressionType::variable)) {
+                                    if (($expression->expressionType === ExpressionType::variable) || (($expression->expressionType === ExpressionType::keyPath) && $expression->operand?->expressionType === ExpressionType::variable)) {
                                         return Expression::expressionForConstantValue($expression->expressionValue($this, new Dictionary(["\$FETCH_SOURCE" => $this, "\$FETCHED_PROPERTY" => $property])));
                                     }
                                     return $expression;
@@ -604,7 +602,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $set->setSet($value);
                 $value = $set;
                 $change = $this->mutableSetValueForKey($key);
-                if (!$this->isAwakening && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
+                if (!$this->isAwakening && $this->isInserted && $this->isRelationshipForKeyFault($key)) {
                     $this->reserved[$key] = true;
                     /** @var FaultingMutableSet $change */
                     $change = $this->valueForKey($key);
@@ -645,7 +643,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 assert($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null, sprintf("invalid argument: %s(%s) expecting \"%s|%s|null\", \"%s\" given", $this->entity->name, $key, ManagedObject::class, ManagedObjectID::class, typeof($value)));
                 $change = $value;
                 $current = $this->primitiveValueForKey($key);
-                if (!$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
+                if ($this->isInserted && $this->isRelationshipForKeyFault($key)) {
                     $current = $this->valueForKey($key);
                 }
                 if ($current === null && $value !== null) {
@@ -726,6 +724,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             foreach ($entity->foreignKeyColumns as $foreignKeyColumn) {
                 $key = $foreignKeyColumn->columnName;
                 if ($value = $keyedValues[$key]) {
+                    /** @noinspection PhpHookedPropertyCantBeAccessedByRefInspection */
                     $representation[$foreignKeyColumn->toOneRelationship->name] = $value instanceof Nil ? $value : (function () use ($value, $foreignKeyColumn): ?ManagedObject {
                         /** @var FetchRequest<ManagedObject> $fetchRequest */
                         $fetchRequest = new FetchRequest();
@@ -784,7 +783,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public function objectIDsForRelationshipNamed(string $key): ArrayClass
     {
         if (!($relationship = $this->entity->relationshipsByName[$key])) {
-            fatal_error(sprintf("%s %s() does not contains a relationship named \"%s\"", $this->debugDescription(), __FUNCTION__, $key));
+            fatal_error(sprintf("%s %s() does not contains a relationship named \"%s\"", $this->debugDescription, __FUNCTION__, $key));
         }
         $value = $relationship->isToMany ? $this->mutableSetValueForKey($key) : new Set([$this->primitiveValueForKey($key)]);
         return new ArrayClass($value->map(fn(ManagedObject|ManagedObjectID $e): ManagedObjectID => $e instanceof ManagedObject ? $e->objectID : $e));
@@ -804,7 +803,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 if ($value === null) {
                     $value = false;
                 }
-                return $write ? (new Number($value))->intValue : (new Number($value))->boolValue;
+                return $write ? new Number($value)->intValue : new Number($value)->boolValue;
             })(),
             "float", => (float)$value,
             default => $value
@@ -1096,7 +1095,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 } elseif ($property instanceof RelationshipDescription) {
                     if (!($value = $this->serializedRelationshipValueForRelationship($property))) {
                         /** @noinspection PhpVoidFunctionResultUsedInspection */
-                        $value = $property->isOptional ? Nil::nil() : ($property->isToMany ? new Set() : fatal_error(sprintf("%s property \"%s\" is not optional", $this->debugDescription(), $property->name)));
+                        $value = $property->isOptional ? Nil::nil() : ($property->isToMany ? new Set() : fatal_error(sprintf("%s property \"%s\" is not optional", $this->debugDescription, $property->name)));
                     }
                     /** @psalm-suppress InvalidArgument */
                     $dictionary[$key] = $value;
@@ -1126,17 +1125,5 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             return $this->objectID->isEqual($other->objectID);
         }
         return false;
-    }
-
-    #[Override]
-    public function description(): string
-    {
-        return sprintf("<%s %s> (entity: %s; id: %s %s; data: %s)", $this->entity->name, $this->hash(), $this->entity->name, $this->objectID->hash(), $this->objectID->description(), $this->isFault ? "<fault>" : $this->dictionaryWithValues($this->entity->propertiesByName->filter(fn(PropertyDescription $property): bool => !$this->isRelationshipForKeyFault($property->name))->keys)->description());
-    }
-
-    #[Override]
-    public function debugDescription(): string
-    {
-        return sprintf("<%s: %s>", static::class, $this->hash());
     }
 }

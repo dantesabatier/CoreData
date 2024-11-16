@@ -9,13 +9,14 @@ use Sabatier\Foundation\Number;
 class SQLSaveChangesRequestContext extends SQLStoreRequestContext
 {
     public readonly SQLSavePlan $savePlan;
-    public readonly SQLModel $sqlModel;
+    public SQLModel $sqlModel {
+        get => $this->sqlCore->model;
+    }
 
     public function __construct(public readonly SaveChangesRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         parent::__construct($this->request, $context, $sqlCore);
         $this->savePlan = new SQLSavePlan($this);
-        $this->sqlModel = $this->sqlCore->model;
         $this->isWritingRequest = true;
     }
 

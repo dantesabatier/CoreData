@@ -12,11 +12,11 @@ namespace Sabatier\CoreData;
 /** @internal */
 class SQLPrimaryKey extends SQLColumn
 {
-    public function __construct(SQLEntity $entity, PropertyDescription $propertyDescription)
-    {
-        parent::__construct($entity, $propertyDescription);
-        $this->propertyType = PropertyDescriptionType::private;
-        $this->sqlType = SQLType::int;
-        $this->columnName = $this->name;
+    public PropertyDescriptionType $propertyType {
+        get => PropertyDescriptionType::private;
     }
+    public string $columnName {
+        get => $this->name;
+    }
+    public SQLType $sqlType = SQLType::int;
 }

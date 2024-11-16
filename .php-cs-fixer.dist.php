@@ -1,9 +1,9 @@
 <?php
 
-$finder = (new PhpCsFixer\Finder())->in(__DIR__);
+$finder = new PhpCsFixer\Finder()->in(__DIR__);
 
 /** @psalm-suppress InvalidArgument */
-return (new PhpCsFixer\Config())
+return new PhpCsFixer\Config()
     ->setRiskyAllowed(true)
     ->setRules([
         "@PSR12" => true,

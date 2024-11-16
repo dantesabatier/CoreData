@@ -29,7 +29,7 @@ trait FaultingMutableSetMutationMethods
         if (parent::responds($selector)) {
             return true;
         }
-        return (bool) $this->faultingMutableSetMutationMethods?->offsetExists($selector);
+        return (bool)$this->faultingMutableSetMutationMethods?->offsetExists($selector);
     }
 
     /**
@@ -38,10 +38,8 @@ trait FaultingMutableSetMutationMethods
      */
     public function createMutationMethods(string $key): Dictionary
     {
-        if ($this->faultingMutableSetMutationMethods === null) {
-            $this->faultingMutableSetMutationMethods = new Dictionary();
-        }
-        $this->faultingMutableSetMutationMethods->merge((new ArrayClass([FaultingMutableSetMutationMethod::addObjectMethod($this, $key), FaultingMutableSetMutationMethod::removeObjectMethod($this, $key), FaultingMutableSetMutationMethod::addMethod($this, $key), FaultingMutableSetMutationMethod::removeMethod($this, $key), FaultingMutableSetMutationMethod::intersectMethod($this, $key), FaultingMutableSetMutationMethod::setMethod($this, $key)]))->reduce(new Dictionary(), function (Dictionary $dictionary, FaultingMutableSetMutationMethod $method): Dictionary {
+        $this->faultingMutableSetMutationMethods ??= new Dictionary();
+        $this->faultingMutableSetMutationMethods->merge(new ArrayClass([FaultingMutableSetMutationMethod::addObjectMethod($this, $key), FaultingMutableSetMutationMethod::removeObjectMethod($this, $key), FaultingMutableSetMutationMethod::addMethod($this, $key), FaultingMutableSetMutationMethod::removeMethod($this, $key), FaultingMutableSetMutationMethod::intersectMethod($this, $key), FaultingMutableSetMutationMethod::setMethod($this, $key)])->reduce(new Dictionary(), function (Dictionary $dictionary, FaultingMutableSetMutationMethod $method): Dictionary {
             $dictionary[$method->name] = $method;
             return $dictionary;
         }));

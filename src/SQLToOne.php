@@ -15,7 +15,9 @@ class SQLToOne extends SQLRelationship
     public readonly SQLForeignKey $foreignKey;
     public readonly SQLForeignEntityKey $foreignEntityKey;
     public readonly SQLForeignOrderKey $foreignOrderKey;
-    public readonly bool $isVirtual;
+    public bool $isVirtual {
+        get => false;
+    }
 
     public function __construct(SQLEntity $entity, RelationshipDescription $relationshipDescription)
     {
@@ -23,6 +25,5 @@ class SQLToOne extends SQLRelationship
         $this->foreignKey = new SQLForeignKey($entity, $relationshipDescription, $this);
         $this->foreignEntityKey = new SQLForeignEntityKey($entity, $relationshipDescription, $this->foreignKey);
         $this->foreignOrderKey = new SQLForeignOrderKey($entity, $relationshipDescription->inverseRelationship, new SQLForeignKey($entity, $relationshipDescription->inverseRelationship, $this));
-        $this->isVirtual = false;
     }
 }

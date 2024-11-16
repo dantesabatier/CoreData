@@ -13,9 +13,13 @@ use Sabatier\Foundation\Predicates\Predicate;
 
 interface PredicatedStoreRequest
 {
-    public function entity(): EntityDescription;
-
-    public function includesSubentities(): bool;
-
-    public function predicate(): ?Predicate;
+    public EntityDescription $entity {
+        get;
+    }
+    public bool $includesSubentities {
+        get;
+    }
+    public ?Predicate $predicate {
+        get;
+    }
 }

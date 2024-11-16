@@ -9,7 +9,6 @@
 
 namespace Sabatier\CoreData;
 
-use Override;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
 use function Sabatier\Foundation\human_readable_value;
@@ -26,6 +25,9 @@ class MergeConflict extends ObjectClass
 {
     /** @var Dictionary A dictionary containing the values of the source object. */
     public readonly Dictionary $objectSnapshot;
+    public string $description {
+        get => sprintf("%s (%s) for %s (%s) with objectID %s with oldVersion = %s and newVersion = %s and old object snapshot %s", self::class, $this->hash, ManagedObject::class, $this->sourceObject->hash, $this->sourceObject->objectID->description, $this->oldVersionNumber, $this->newVersionNumber, human_readable_value($this->cachedSnapshot));
+    }
 
     /**
      * Initializes a merge conflict.
@@ -46,11 +48,5 @@ class MergeConflict extends ObjectClass
             "objectSnapshot" => $this->sourceObject->dictionaryWithValues($this->sourceObject->persistentProperties->map(fn(PropertyDescription $property): string => $property->name)),
             default => $this->valueForUndefinedKey($name)
         };
-    }
-
-    #[Override]
-    public function description(): string
-    {
-        return sprintf("%s (%s) for %s (%s) with objectID %s with oldVersion = %s and newVersion = %s and old object snapshot %s", static::class, $this->hash(), ManagedObject::class, $this->sourceObject->hash(), $this->sourceObject->objectID->description(), $this->oldVersionNumber, $this->newVersionNumber, human_readable_value($this->cachedSnapshot));
     }
 }

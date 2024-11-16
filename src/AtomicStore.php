@@ -97,7 +97,7 @@ abstract class AtomicStore extends PersistentStore
             $key = $entity->name;
             /** @var Set<ManagedObject> $value */
             $value = $dictionary[$key] ?? new Set();
-            $value->append($object);
+            $value[] = $object;
             $dictionary[$key] = $value;
         }
         return $dictionary;
@@ -119,10 +119,10 @@ abstract class AtomicStore extends PersistentStore
             $this->updateObject($object);
             if ($request->includesSubentities) {
                 if ($cacheNode->objectID->entity->isKindOf($request->entity)) {
-                    $objects->append($object);
+                    $objects[] = $object;
                 }
             } elseif ($cacheNode->objectID->entity->isEqual($request->entity)) {
-                $objects->append($object);
+                $objects[] = $object;
             }
         }
         if ($resultType === FetchRequestResultType::managedObjectResultType) {

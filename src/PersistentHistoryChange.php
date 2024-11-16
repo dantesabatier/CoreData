@@ -32,17 +32,17 @@ class PersistentHistoryChange extends ObjectClass
     /** @var ManagedObjectID The identifier of the managed object that changed. */
     public readonly ManagedObjectID $changedObjectID;
     /** @var Dictionary|null A dictionary of attributes marked for preservation after deletion, and their values when deleted. This value is expected on changes of type {@see PersistentHistoryChangeType::delete}. */
-    public readonly ?Dictionary $tombstone;
+    private(set) ?Dictionary $tombstone = null;
     /** @var PersistentHistoryTransaction|null The persistent history transaction containing this change. */
-    public readonly ?PersistentHistoryTransaction $transaction;
+    private(set) ?PersistentHistoryTransaction $transaction = null;
     /** @var Set<PropertyDescription>|null The set of properties that were updated on the managed object. This value is expected on changes of type {@see PersistentHistoryChangeType::update}. */
-    public readonly ?Set $updatedProperties;
+    private(set) ?Set $updatedProperties = null;
+    public string $description {
+        get => sprintf("<%s: %s %s %s %s %s>", self::class, $this->changeID, human_readable_value($this->changedObjectID), $this->changeType->name, human_readable_value($this->tombstone), human_readable_value($this->updatedProperties));
+    }
 
     public function __construct(Dictionary $dictionary, ManagedObjectID $changedObjectID)
     {
-        unset($this->tombstone);
-        unset($this->transaction);
-        unset($this->updatedProperties);
         $this->changedObjectID = $changedObjectID;
         /** @var ValueTransformer $valueTransformer */
         $valueTransformer = ValueTransformer::valueTransformerForName(SecureUnarchiveFromDataTransformerName);
@@ -63,14 +63,6 @@ class PersistentHistoryChange extends ObjectClass
             }
             $this->$key = $value;
         }
-    }
-
-    public function __get(string $name)
-    {
-        return $this->$name = match ($name) {
-            "tombstone", "transaction", "updatedProperties" => null,
-            default => $this->valueForUndefinedKey($name)
-        };
     }
 
     /**
@@ -96,12 +88,6 @@ class PersistentHistoryChange extends ObjectClass
     public static function entityDescription(ManagedObjectContext $context): ?EntityDescription
     {
         return $context->persistentStoreCoordinator?->managedObjectModel?->entitiesByName["PersistentHistoryChange"];
-    }
-
-    #[Override]
-    public function description(): string
-    {
-        return sprintf("<%s: %s %s %s %s %s>", self::class, $this->changeID, human_readable_value($this->changedObjectID), $this->changeType->name, human_readable_value($this->tombstone), human_readable_value($this->updatedProperties));
     }
 
     #[Override]

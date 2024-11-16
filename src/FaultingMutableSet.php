@@ -11,7 +11,7 @@ use Sabatier\Foundation\Set;
  */
 class FaultingMutableSet extends Set
 {
-    public bool $isFault = true;
+    private(set) bool $isFault = true;
 
     public function __construct(public readonly ManagedObject $source, public readonly PropertyDescription $relationship)
     {

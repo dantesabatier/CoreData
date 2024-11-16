@@ -22,30 +22,31 @@ use function Sabatier\Foundation\fatal_error;
  */
 class FetchIndexElementDescription extends ObjectClass
 {
-    /** @var FetchIndexElementType $collationType The type of collation that the index element uses, either binary or R-tree. */
-    public FetchIndexElementType $collationType = FetchIndexElementType::bTree;
-    /** @var PropertyDescription A property description. This property may also be an {@see ExpressionDescription} that expresses a function. */
-    public readonly PropertyDescription $property;
     public FetchIndexDescription $indexDescription;
-    /** @var string|null The specified name in the property description. */
-    public ?string $propertyName = null;
+    /** @var string The specified name in the property description. */
+    private(set) string $propertyName = UnknownName;
     /** @var bool A Boolean value that controls whether an index that supports direction is an ascending or descending index. */
     public bool $isAscending = true;
+    /** @internal */
     public bool $isUnique = false;
+    /** @internal */
+    public string $order {
+        get {
+            if ($this->collationType !== FetchIndexElementType::binary) {
+                return $this->isAscending ? "ASC" : "DESC";
+            }
+            return "";
+        }
+    }
 
     /**
      * Creates an index element description using the specified property description and collation type.
-     * @param PropertyDescription|null $property A property description.
-     * @param FetchIndexElementType $collationType The type of collation that the index element uses.
+     * @param PropertyDescription $property A property description. This property may also be an {@see ExpressionDescription} that expresses a function.
+     * @param FetchIndexElementType $collationType The type of collation that the index element uses, either binary or R-tree.
      */
-    public function __construct(?PropertyDescription $property = null, FetchIndexElementType $collationType = FetchIndexElementType::bTree)
+    public function __construct(public readonly PropertyDescription $property, public FetchIndexElementType $collationType = FetchIndexElementType::bTree)
     {
-        unset($this->property);
-        if ($property) {
-            $this->property = $property;
-            $this->propertyName = $property->name;
-        }
-        $this->collationType = $collationType;
+        $this->propertyName = $property->name;
     }
 
     public function __serialize(): array
@@ -65,20 +66,11 @@ class FetchIndexElementDescription extends ObjectClass
 
     public function __unserialize(array $data): void
     {
-        unset($this->property);
         $this->propertyName = $data["propertyName"];
         $this->collationType = $data["collationType"] ?? FetchIndexElementType::bTree;
         $this->isAscending = $data["isAscending"];
         $this->isUnique = $data["isUnique"];
-    }
-
-    public function __get(string $name)
-    {
-        $propertyName = $this->propertyName ?? fatal_error("Property name cannot be null");
-        return $this->$name = match ($name) {
-            "property" => $this->indexDescription->entity->propertiesByName[$propertyName] ?? fatal_error("Entity \"{$this->indexDescription->entity->name}\" does not contains a property named \"$propertyName\""),
-            default => $this->valueForUndefinedKey($name)
-        };
+        $this->property = $this->indexDescription->entity->propertiesByName[$this->propertyName] ?? fatal_error("Entity \"{$this->indexDescription->entity->name}\" does not contains a property named \"$this->propertyName\"");
     }
 
     public function validateCollationType(FetchIndexElementType|Number|Nil|int|null &$collationType): bool
@@ -99,15 +91,6 @@ class FetchIndexElementDescription extends ObjectClass
             return $this->property->isEqual($other->property) && $this->collationType === $other->collationType;
         }
         return false;
-    }
-
-    /** @internal */
-    public function order(): string
-    {
-        if ($this->collationType !== FetchIndexElementType::binary) {
-            return $this->isAscending ? "ASC" : "DESC";
-        }
-        return "";
     }
 
     #[Override]

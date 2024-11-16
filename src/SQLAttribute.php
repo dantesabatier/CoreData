@@ -9,7 +9,6 @@
 
 namespace Sabatier\CoreData;
 
-use Override;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\fatal_error;
@@ -17,101 +16,67 @@ use function Sabatier\Foundation\fatal_error;
 /** @internal */
 class SQLAttribute extends SQLColumn
 {
-    public readonly AttributeDescription $attributeDescription;
+    public AttributeDescription $attributeDescription {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        get => $this->propertyDescription;
+    }
     /** @var Set<string> */
-    public readonly Set $triggerKeys;
-    public readonly bool $isBackedByTrigger;
-    public readonly bool $isDerivedAttribute;
-    public readonly ?Expression $derivationExpression;
+    private(set) Set $triggerKeys;
+    public bool $isBackedByTrigger {
+        get => !$this->triggerKeys->isEmpty;
+    }
+    public bool $isDerivedAttribute {
+        get => $this->attributeDescription instanceof DerivedAttributeDescription;
+    }
+    public ?Expression $derivationExpression {
+        get => $this->attributeDescription instanceof DerivedAttributeDescription ? $this->attributeDescription->derivationExpression : null;
+    }
+    public mixed $defaultValue {
+        get => match ($this->sqlType) {
+            SQLType::uuid => "UUID()",
+            SQLType::timestamp => "CURRENT_TIMESTAMP",
+            default => (function (): mixed {
+                $defaultValue = ManagedObject::coercedValue($this->attributeDescription->defaultValue, $this->attributeDescription->type, $this->attributeDescription->attributeValueClassName, $this->attributeDescription->valueTransformerName, $this->attributeDescription->isOptional, true);
+                if (is_string($defaultValue)) {
+                    return match ($defaultValue) {
+                        "" => $defaultValue,
+                        default => "'$defaultValue'"
+                    };
+                }
+                return $defaultValue;
+            })()
+        };
+    }
+    public SQLType $sqlType {
+        /** @noinspection PhpVoidFunctionResultUsedInspection */
+        get => match ($this->attributeDescription->type) {
+            AttributeType::integer16 => SQLType::smallint,
+            AttributeType::integer32 => SQLType::int,
+            AttributeType::integer64 => SQLType::bigint,
+            AttributeType::decimal => SQLType::decimal,
+            AttributeType::double => SQLType::double,
+            AttributeType::float => SQLType::float,
+            AttributeType::string => SQLType::varchar,
+            AttributeType::boolean => SQLType::tinyint,
+            AttributeType::date => SQLType::timestamp,
+            AttributeType::binaryData => SQLType::longblob,
+            AttributeType::transformable => SQLType::mediumblob,
+            AttributeType::objectID => SQLType::tinyblob,
+            AttributeType::uuid => SQLType::uuid,
+            AttributeType::uri => SQLType::varbinary,
+            AttributeType::compositeAttributeType => SQLType::text,
+            AttributeType::undefined => fatal_error("{$this->entity->entityDescription->name}.$this->name cannot use an attribute type of \"Undefined\""),
+        };
+    }
 
     public function __construct(SQLEntity $entity, AttributeDescription $attributeDescription)
     {
         parent::__construct($entity, $attributeDescription);
-        unset($this->attributeDescription);
-        unset($this->triggerKeys);
-        unset($this->isBackedByTrigger);
-        unset($this->isDerivedAttribute);
-        unset($this->derivationExpression);
-    }
-
-    #[Override]
-    public function __get(string $name)
-    {
-        if ($name === "attributeDescription") {
-            /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->propertyDescription;
-            return $this->$name;
-        }
-        if ($name === "sqlType") {
-            /** @noinspection PhpVoidFunctionResultUsedInspection */
-            $this->$name = match ($this->attributeDescription->type) {
-                AttributeType::integer16 => SQLType::smallint,
-                AttributeType::integer32 => SQLType::int,
-                AttributeType::integer64 => SQLType::bigint,
-                AttributeType::decimal => SQLType::decimal,
-                AttributeType::double => SQLType::double,
-                AttributeType::float => SQLType::float,
-                AttributeType::string => SQLType::varchar,
-                AttributeType::boolean => SQLType::tinyint,
-                AttributeType::date => SQLType::timestamp,
-                AttributeType::binaryData => SQLType::longblob,
-                AttributeType::transformable => SQLType::mediumblob,
-                AttributeType::objectID => SQLType::tinyblob,
-                AttributeType::uuid => SQLType::uuid,
-                AttributeType::uri => SQLType::varbinary,
-                AttributeType::compositeAttributeType => SQLType::text,
-                AttributeType::undefined => fatal_error("{$this->entity->entityDescription->name}.$this->name cannot use an attribute type of \"Undefined\""),
-            };
-            return $this->$name;
-        }
-        if ($name === "triggerKeys") {
-            $this->$name = new Set();
-            return $this->$name;
-        }
-        if ($name === "isBackedByTrigger") {
-            $this->$name = !$this->triggerKeys->isEmpty;
-            return $this->$name;
-        }
-        if ($name === "isDerivedAttribute") {
-            $this->$name = $this->attributeDescription instanceof DerivedAttributeDescription;
-            return $this->$name;
-        }
-        if ($name === "derivationExpression") {
-            $this->$name = $this->attributeDescription instanceof DerivedAttributeDescription ? $this->attributeDescription->derivationExpression : null;
-            return $this->$name;
-        }
-        if ($name === "defaultValue") {
-            $this->$name = match ($this->sqlType) {
-                SQLType::uuid => "UUID()",
-                SQLType::timestamp => "CURRENT_TIMESTAMP",
-                default => (function (): mixed {
-                    $defaultValue = ManagedObject::coercedValue($this->attributeDescription->defaultValue, $this->attributeDescription->type, $this->attributeDescription->attributeValueClassName, $this->attributeDescription->valueTransformerName, $this->attributeDescription->isOptional, true);
-                    if (is_string($defaultValue)) {
-                        return match ($defaultValue) {
-                            "" => $defaultValue,
-                            default => "'$defaultValue'"
-                        };
-                    }
-                    return $defaultValue;
-                })()
-            };
-            return $this->$name;
-        }
-        return parent::__get($name);
-    }
-
-    #[Override]
-    public function __set(string $name, mixed $value): void
-    {
-        if ($name === "attributeDescription" || $name === "triggerKeys" || $name === "isBackedByTrigger" || $name === "isDerivedAttribute" || $name === "derivationExpression") {
-            $this->$name = $value;
-        } else {
-            parent::__set($name, $value);
-        }
+        $this->triggerKeys = new Set();
     }
 
     public function addKeyForTriggerOnRelationship(SQLRelationship $relationship): void
     {
-        $this->triggerKeys->append($relationship->name);
+        $this->triggerKeys[] = $relationship->name;
     }
 }

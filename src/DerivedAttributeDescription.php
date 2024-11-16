@@ -22,18 +22,10 @@ use Sabatier\Foundation\Predicates\Expression;
  */
 class DerivedAttributeDescription extends AttributeDescription
 {
+    /** @internal */
+    public PropertyDescriptionType $propertyType = PropertyDescriptionType::derivedAttribute;
     /** @var Expression|null An expression for generating derived data. */
     public ?Expression $derivationExpression = null;
-
-    #[Override]
-    public function __get(string $name)
-    {
-        if ($name === "propertyType") {
-            $this->$name = PropertyDescriptionType::derivedAttribute;
-            return $this->$name;
-        }
-        return parent::__get($name);
-    }
 
     #[Override]
     public function jsonSerialize(): Dictionary

@@ -9,9 +9,9 @@ use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\URL;
+use Sabatier\Foundation\UUID;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\request_concrete_implementation;
-use function Sabatier\Foundation\uuid_generate;
 
 /**
  * The abstract base class for all Core Data persistent stores.
@@ -26,7 +26,9 @@ abstract class PersistentStore extends ObjectClass
     /** @var Dictionary The metadata for the persistent store. The dictionary must include the store type. */
     public Dictionary $metadata;
     /** @var bool A Boolean value that indicates whether the persistent store is read-only. */
-    public bool $isReadOnly = false;
+    public bool $isReadOnly {
+        get => (bool)$this->options?->valueForKey(ReadOnlyPersistentStoreOption);
+    }
     /** @internal */
     public readonly FaultHandler $faultHandler;
     /** @var Dictionary<Dictionary<ManagedObjectID>> */
@@ -46,7 +48,6 @@ abstract class PersistentStore extends ObjectClass
     {
         unset($this->identifier);
         unset($this->metadata);
-        unset($this->isReadOnly);
         unset($this->faultHandler);
         unset($this->cacheEntities);
     }
@@ -54,9 +55,8 @@ abstract class PersistentStore extends ObjectClass
     public function __get(string $name)
     {
         return $this->$name = match ($name) {
-            "identifier" => uuid_generate(),
+            "identifier" => new UUID()->uuidString,
             "metadata" => new Dictionary([StoreTypeKey => $this->type, StoreUUIDKey => $this->identifier]),
-            "isReadOnly" => (bool)$this->options?->valueForKey(ReadOnlyPersistentStoreOption),
             "faultHandler" => new FaultHandler($this),
             "cacheEntities" => new Dictionary(),
             default => $this->valueForUndefinedKey($name)

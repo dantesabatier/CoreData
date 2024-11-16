@@ -62,6 +62,9 @@ class SQLEntity extends StoreMapping
     //TODO: not implemented
     public int $entityID;
     public readonly int $subentityMaxID;
+    public string $description {
+        get => sprintf("<%s %s>", $this->entityDescription->name, $this->hash);
+    }
 
     public function __construct(public readonly SQLModel $model, public readonly EntityDescription $entityDescription)
     {
@@ -236,10 +239,10 @@ class SQLEntity extends StoreMapping
             }
             /** @psalm-suppress PossiblyInvalidArgument */
             $indexes->merge($this->entityDescription->indexes->reduce(new Dictionary(), function (Dictionary $result, FetchIndexDescription $indexDescription): Dictionary {
-                if ($indexDescription->isSpatial()) {
+                if ($indexDescription->isSpatial) {
                     /** @psalm-suppress InvalidArgument */
                     $result[$indexDescription->name] = new SQLRTreeIndex($indexDescription, $this);
-                } elseif ($indexDescription->isBinary()) {
+                } elseif ($indexDescription->isBinary) {
                     /** @psalm-suppress InvalidArgument */
                     $result[$indexDescription->name] = new SQLBinaryIndex($indexDescription, $this);
                 } else {
@@ -300,8 +303,8 @@ class SQLEntity extends StoreMapping
     public function columnAfter(int $index): SQLColumn
     {
         $properties = $this->properties->filter(fn(SQLProperty $property): bool => !$property->propertyDescription->isTransient);
-        $max = $properties->endIndex();
-        $i = max(min($index, $properties->indexBefore($max)), $properties->startIndex());
+        $max = $properties->endIndex;
+        $i = max(min($index, $properties->indexBefore($max)), $properties->startIndex);
         while ($i < $max) {
             $property = $properties[$i];
             if ($property instanceof SQLAttribute) {
@@ -332,11 +335,5 @@ class SQLEntity extends StoreMapping
             return $this->entityDescription->isEqual($other->entityDescription);
         }
         return false;
-    }
-
-    #[Override]
-    public function description(): string
-    {
-        return sprintf("<%s %s>", $this->entityDescription->name, $this->hash());
     }
 }

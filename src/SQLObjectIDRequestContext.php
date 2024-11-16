@@ -8,7 +8,9 @@ use Sabatier\Foundation\Dictionary;
 /** @internal */
 class SQLObjectIDRequestContext extends SQLStoreRequestContext
 {
-    public readonly SQLModel $model;
+    public SQLModel $sqlModel {
+        get => $this->sqlCore->model;
+    }
 
     public function __construct(public readonly Dictionary $entitiesAndCounts, ManagedObjectContext $context, SQLCore $sqlCore)
     {

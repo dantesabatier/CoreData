@@ -2,7 +2,6 @@
 
 namespace Sabatier\CoreData;
 
-use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
@@ -17,7 +16,10 @@ use function Sabatier\Foundation\human_readable_value;
 class ConstraintConflict extends ObjectClass
 {
     /** @var Dictionary The values that the conflicting objects had when the conflict was created. */
-    public readonly Dictionary $constraintValues;
+    private(set) Dictionary $constraintValues;
+    public string $description {
+        get => sprintf("%s %s for constraint (%s): database(%s): conflictedObjects (%s):", get_called_class(), $this->hash, $this->constraint->join(", "), human_readable_value($this->databaseObject), $this->conflictingObjects->join(", "));
+    }
 
     /**
      * Initializes a constraint conflict.
@@ -29,20 +31,6 @@ class ConstraintConflict extends ObjectClass
      */
     public function __construct(public readonly ArrayClass $constraint, public readonly ?ManagedObject $databaseObject, public readonly ?Dictionary $databaseSnapshot, public readonly ArrayClass $conflictingObjects, public readonly ArrayClass $conflictingSnapshots)
     {
-        unset($this->constraintValues);
-    }
-
-    public function __get(string $name)
-    {
-        return $this->$name = match ($name) {
-            "constraintValues" => new Dictionary(),
-            default => $this->valueForUndefinedKey($name)
-        };
-    }
-
-    #[Override]
-    public function description(): string
-    {
-        return sprintf("%s %s for constraint (%s): database(%s): conflictedObjects (%s):", static::class, $this->hash(), $this->constraint->join(", "), human_readable_value($this->databaseObject), $this->conflictingObjects->join(", "));
+        $this->constraintValues = new Dictionary();
     }
 }

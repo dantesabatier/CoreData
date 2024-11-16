@@ -18,6 +18,7 @@ use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Value;
 use function Sabatier\Foundation\human_readable_value;
+use const Sabatier\Foundation\NotFound;
 
 /**
  * A set of changes in the persistent history based on a context save or batch operation.
@@ -27,35 +28,31 @@ class PersistentHistoryTransaction extends ObjectClass
     /** @var EntityDescription|null The entity description of the persistent history transaction entity. The entity description of {@see PersistentHistoryTransaction} lists the properties of the persistent history change. This can be useful for filtering your request.The entity description of the persistent history transaction entity. The entity description of {@see PersistentHistoryTransaction} lists the properties of the persistent history change. This can be useful for filtering your request. */
     public static ?EntityDescription $entityDescription = null;
     /** @var string|null A granular description of the context that made the persistent history change, if available. This property has a value if the managed object context set a transactionAuthor before the save. */
-    public readonly ?string $author;
+    private(set) ?string $author = null;
     /** @var string The originating bundle's identifier. */
-    public readonly string $bundleID;
+    private(set) string $bundleID = UnknownName;
     /** @var ArrayClass<PersistentHistoryChange>|null The array of persistent history changes. */
-    public readonly ?ArrayClass $changes;
+    private(set) ?ArrayClass $changes = null;
     /** @var string|null The originating context's name. */
-    public readonly ?string $contextName;
+    private(set) ?string $contextName = null;
     /** @var string The originating process's identifier. */
-    public readonly string $processID;
+    private(set) string $processID = UnknownName;
     /** @var string The originating stores identifier. */
-    public readonly string $storeID;
+    private(set) string $storeID = UnknownName;
     /** @var Date The date of the persistent history change. */
-    public readonly Date $timestamp;
+    private(set) Date $timestamp;
     /** @var PersistentHistoryToken The token that represents this transaction in the persistent history. */
-    public readonly PersistentHistoryToken $token;
+    private(set) PersistentHistoryToken $token;
     /** @var int The transaction's numeric identifier. */
-    public readonly int $transactionNumber;
+    private(set) int $transactionNumber = NotFound;
+    public string $description {
+        get => sprintf("<%s: %s %s %s %s %s %s>", self::class, $this->transactionNumber, $this->timestamp->description, $this->bundleID, human_readable_value($this->author), human_readable_value($this->contextName), human_readable_value($this->changes));
+    }
 
     public function __construct(Dictionary $dictionary)
     {
-        unset($this->author);
-        unset($this->bundleID);
-        unset($this->changes);
-        unset($this->contextName);
-        unset($this->processID);
-        unset($this->storeID);
-        unset($this->timestamp);
-        unset($this->token);
-        unset($this->transactionNumber);
+        $this->timestamp = new Date();
+        $this->token = new PersistentHistoryToken(new Dictionary([$this->storeID => new Number($this->transactionNumber)]));
         foreach ($dictionary as $key => $value) {
             if ($value instanceof Value) {
                 $value = $value->value;
@@ -67,18 +64,6 @@ class PersistentHistoryTransaction extends ObjectClass
             }
             $this->$key = $value;
         }
-    }
-
-    public function __get(string $name)
-    {
-        return $this->$name = match ($name) {
-            "author", "changes", "contextName" => null,
-            "bundleID", "storeID", "processID" => UnknownName,
-            "timestamp" => new Date(),
-            "token" => new PersistentHistoryToken(new Dictionary([$this->storeID => new Number($this->transactionNumber)])),
-            "transactionNumber" => 0,
-            default => $this->valueForUndefinedKey($name)
-        };
     }
 
     private function userInfoFromChanges(): ?Dictionary
@@ -138,12 +123,6 @@ class PersistentHistoryTransaction extends ObjectClass
     public static function entityDescription(ManagedObjectContext $context): ?EntityDescription
     {
         return $context->persistentStoreCoordinator?->managedObjectModel?->entitiesByName["PersistentHistoryTransaction"];
-    }
-
-    #[Override]
-    public function description(): string
-    {
-        return sprintf("<%s: %s %s %s %s %s %s>", self::class, $this->transactionNumber, $this->timestamp->description(), $this->bundleID, human_readable_value($this->author), human_readable_value($this->contextName), human_readable_value($this->changes));
     }
 
     #[Override]

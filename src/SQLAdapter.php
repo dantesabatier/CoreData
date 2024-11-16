@@ -13,19 +13,12 @@ use Sabatier\Foundation\Predicates\Expression;
 /** @internal */
 class SQLAdapter extends ObjectClass
 {
-    public readonly SQLModel $model;
+    public SQLModel $model {
+        get => $this->sqlCore->model;
+    }
 
     public function __construct(public readonly SQLCore $sqlCore)
     {
-        unset($this->model);
-    }
-
-    public function __get(string $name)
-    {
-        return $this->$name = match ($name) {
-            "model" => $this->sqlCore->model,
-            default => $this->valueForUndefinedKey($name)
-        };
     }
 
     private function generatedColumnExpression(Expression $expression, EntityDescription $entityDescription): string
@@ -210,7 +203,6 @@ class SQLAdapter extends ObjectClass
         }
         return null;
     }
-
 
     public function newModifyColumnStatement(SQLColumn $column, SQLColumn $after): ?SQLStatement
     {

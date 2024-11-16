@@ -419,7 +419,7 @@ class SQLGenerator extends ObjectClass
         foreach ($expressions as $expression) {
             $this->appendJoinsForRelationships($this->relationshipsFromKeyPathExpression($expression));
         }
-        $this->joinClause = (new Set(explode(" LEFT JOIN ", $this->joinClause)))->join(" LEFT JOIN ");
+        $this->joinClause = new Set(explode(" LEFT JOIN ", $this->joinClause))->join(" LEFT JOIN ");
         $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
     }
 
@@ -644,7 +644,7 @@ class SQLGenerator extends ObjectClass
             return $properties;
         }
         $entity = $this->entity;
-        $keys = new Set(explode(".", $expression->description()));
+        $keys = new Set(explode(".", $expression->description));
         foreach ($keys as $key) {
             $property = $entity->propertiesByName[$key];
             if ($property) {
@@ -690,14 +690,14 @@ class SQLGenerator extends ObjectClass
 
     private function isPrimaryKeyExpression(Expression $expression): bool
     {
-        return $expression->expressionType === ExpressionType::keyPath && str_ends_with($expression->keyPath(), SQLEntity::primaryKeyName);
+        return $expression->expressionType === ExpressionType::keyPath && str_ends_with($expression->keyPath, SQLEntity::primaryKeyName);
     }
 
     private function isNullExpression(Expression $expression): bool
     {
         /** @noinspection PhpVoidFunctionResultUsedInspection */
         return match ($expression->expressionType) {
-            ExpressionType::constantValue => Nil::nil()->isEqual($expression->constantValue()),
+            ExpressionType::constantValue => Nil::nil()->isEqual($expression->constantValue),
             ExpressionType::keyPath => Nil::nil()->isEqual(new Value((string)$expression)) ? fatal_error("Invalid argument: invalid expression $expression") : false,
             default => false
         };
@@ -705,7 +705,7 @@ class SQLGenerator extends ObjectClass
 
     private function isSubqueryKeyPath(Expression $expression): bool
     {
-        return $expression->expressionType === ExpressionType::keyPath && (new Set(explode(".", (string)$expression)))->count > 1;
+        return $expression->expressionType === ExpressionType::keyPath && new Set(explode(".", (string)$expression))->count > 1;
     }
 
     private function isToManyKeyPath(Expression $expression): bool
@@ -714,7 +714,7 @@ class SQLGenerator extends ObjectClass
             return false;
         }
         $keys = new Set(explode(".", (string)$expression));
-        $end = $keys->indexBefore($keys->endIndex());
+        $end = $keys->indexBefore($keys->endIndex);
         $entity = $this->entity;
         foreach ($keys as $index => $key) {
             if (!($property = $entity->propertiesByName[$key])) {
@@ -737,9 +737,9 @@ class SQLGenerator extends ObjectClass
         $tableName = $this->entity->tableName;
         $keyPath = $tableName;
         $destination = $tableName;
-        $description = $expression->description();
+        $description = $expression->description;
         $properties = $this->propertiesFromKeyPathExpression($expression);
-        $max = $properties->indexBefore($properties->endIndex());
+        $max = $properties->indexBefore($properties->endIndex);
         foreach ($properties as $idx => $property) {
             if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
                 if ($property instanceof SQLAttribute && ($expression = $property->derivationExpression) && $expression->usesKVC) {
@@ -816,7 +816,7 @@ class SQLGenerator extends ObjectClass
     {
         return match ($expression->expressionType) {
             ExpressionType::constantValue => (function () use ($expression, &$arguments, $prefix, $suffix): mixed {
-                $constantValue = $expression->constantValue();
+                $constantValue = $expression->constantValue;
                 if (is_string($constantValue)) {
                     $constantValue = addcslashes($constantValue, "%_");
                 } elseif (is_bool($constantValue)) {
@@ -869,20 +869,20 @@ class SQLGenerator extends ObjectClass
     {
         $leftExpression = $predicate->leftExpression;
         $rightExpression = $predicate->rightExpression;
-        $right = $rightExpression->constantValue() ?? $rightExpression->collection();
+        $right = $rightExpression->constantValue ?? $rightExpression->collection;
         assert($right instanceof ArrayClass && !$right->isEmpty, sprintf("invalid argument: the right expression of an IN operator must be an non-empty \"%s\", (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
         $clause .= "{$this->buildExpression($leftExpression)} IN (" . ArrayClass::repeating("?", $right->count)->join(", ") . ")";
-        $this->arguments->appendContentsOf($right->map(fn(mixed $element): mixed => $element instanceof Expression ? $element->constantValue() : $element));
+        $this->arguments->appendContentsOf($right->map(fn(mixed $element): mixed => $element instanceof Expression ? $element->constantValue : $element));
     }
 
     private function prepareBetween(ComparisonPredicate $predicate, string &$clause): void
     {
         $leftExpression = $predicate->leftExpression;
         $rightExpression = $predicate->rightExpression;
-        $right = $rightExpression->constantValue() ?? $rightExpression->collection();
+        $right = $rightExpression->constantValue ?? $rightExpression->collection;
         assert($right instanceof ArrayClass && $right->count === 2, sprintf("invalid argument: the right expression of a BETWEEN operator must be a \"%s\" with exactly two elements, (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
         $clause .= "({$this->buildExpression($leftExpression)} BETWEEN ? AND ?)";
-        $this->arguments->appendContentsOf($right->map(fn(mixed $element): mixed => $element instanceof Expression ? $element->constantValue() : $element));
+        $this->arguments->appendContentsOf($right->map(fn(mixed $element): mixed => $element instanceof Expression ? $element->constantValue : $element));
     }
 
     private function prepareEqual(ComparisonPredicate $predicate, string &$clause): void
@@ -954,7 +954,7 @@ class SQLGenerator extends ObjectClass
     {
         if ($predicate instanceof CompoundPredicate) {
             $subpredicates = $predicate->subpredicates;
-            $max = $subpredicates->indexBefore($subpredicates->endIndex());
+            $max = $subpredicates->indexBefore($subpredicates->endIndex);
             $type = $predicate->compoundPredicateType;
             if ($type === CompoundPredicateLogicalType::not) {
                 $clause .= "NOT ";
@@ -1005,7 +1005,7 @@ class SQLGenerator extends ObjectClass
         $relationship = (function () use ($expression): ?SQLRelationship {
             $relationship = null;
             $entity = $this->entity;
-            $keys = new Set(explode(".", $expression->keyPath()));
+            $keys = new Set(explode(".", $expression->keyPath));
             foreach ($keys as $key) {
                 $property = $entity->propertiesByName[$key];
                 if ($property instanceof SQLRelationship) {
@@ -1094,8 +1094,8 @@ class SQLGenerator extends ObjectClass
 
     private function buildFunctionExpression(Expression $expression, ?bool &$isDeterministic = true): string
     {
-        $arguments = $expression->arguments() ?? fatal_error();
-        $operator = $expression->operand();
+        $arguments = $expression->arguments ?? fatal_error();
+        $operator = $expression->operand;
         if ($operator instanceof ExpressionOperator) {
             $isDeterministic = $operator->isDeterministic;
             switch ($operator->operatorType) {
@@ -1189,14 +1189,14 @@ class SQLGenerator extends ObjectClass
     private function buildConditionalExpression(Expression $expression, ?bool &$isDeterministic = true): string
     {
         $predicate = "";
-        $this->preparePredicate($expression->predicate(), $predicate);
-        $true = $expression->true();
+        $this->preparePredicate($expression->predicate, $predicate);
+        $true = $expression->true;
         if ($true->expressionType === ExpressionType::keyPath) {
             $true = $this->buildKeyPathExpression($true, $isDeterministic);
         } elseif ($true->expressionType === ExpressionType::function) {
             $true = $this->buildFunctionExpression($true, $isDeterministic);
         }
-        $false = $expression->false();
+        $false = $expression->false;
         if ($false->expressionType === ExpressionType::keyPath) {
             $false = $this->buildKeyPathExpression($false, $isDeterministic);
         } elseif ($false->expressionType === ExpressionType::function) {
@@ -1208,7 +1208,7 @@ class SQLGenerator extends ObjectClass
 
     private function buildConstantExpression(/** @noinspection PhpUnusedParameterInspection */ Expression $expression, ?bool &$isDeterministic = true): string
     {
-        $value = $expression->constantValue();
+        $value = $expression->constantValue;
         if ($value instanceof ArrayClass) {
             return $value->join(", ");
         }
@@ -1217,7 +1217,7 @@ class SQLGenerator extends ObjectClass
         }
         return match ($value) {
             "MICROSECOND", "SECOND", "MINUTE", "HOUR", "DAY", "WEEK", "MONTH", "QUARTER", "YEAR" => $value,
-            default => $expression->description()
+            default => $expression->description
         };
     }
 
@@ -1229,13 +1229,13 @@ class SQLGenerator extends ObjectClass
             ExpressionType::function => $this->buildFunctionExpression($expression, $isDeterministic),
             ExpressionType::conditional => $this->buildConditionalExpression($expression, $isDeterministic),
             ExpressionType::aggregate => $this->buildAggregateExpression($expression, $isDeterministic),
-            default => $expression->description(),
+            default => $expression->description,
         };
     }
 
     private function buildAggregateExpression(Expression $expression, ?bool &$isDeterministic = true): string
     {
-        return $expression->collection()->map(fn(Expression $argument): string => $this->buildExpression($argument, $isDeterministic))->join(", ");
+        return $expression->collection->map(fn(Expression $argument): string => $this->buildExpression($argument, $isDeterministic))->join(", ");
     }
 
     private function buildGroupByClause(ArrayClass $propertiesToGroupBy): void
@@ -1253,9 +1253,9 @@ class SQLGenerator extends ObjectClass
             /** @var Dictionary<ArrayClass<SQLToMany>> $byMappingByKeyPathRelationshipsAssociationTable */
             $byMappingByKeyPathRelationshipsAssociationTable = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->reduce(new Dictionary(), function (Dictionary $initialResult, Expression $expression): Dictionary {
                 if ($this->isToManyKeyPath($expression)) {
-                    $keyPath = $expression->keyPath();
+                    $keyPath = $expression->keyPath;
                     $keys = new Set(explode(".", $keyPath));
-                    $relationships = $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLToMany && $property->isOrdered && $property->name === $keys[$keys->indexBefore($keys->endIndex())]);
+                    $relationships = $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLToMany && $property->isOrdered && $property->name === $keys[$keys->indexBefore($keys->endIndex)]);
                     if (!$relationships->isEmpty) {
                         /** @psalm-suppress InvalidArgument */
                         $initialResult[$keyPath] = $relationships;

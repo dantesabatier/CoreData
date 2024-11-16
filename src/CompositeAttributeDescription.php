@@ -2,7 +2,6 @@
 
 namespace Sabatier\CoreData;
 
-use JetBrains\PhpStorm\Immutable;
 use Override;
 use Sabatier\Foundation\ArrayClass;
 
@@ -14,7 +13,8 @@ use Sabatier\Foundation\ArrayClass;
  */
 class CompositeAttributeDescription extends AttributeDescription
 {
-    #[Immutable(allowedWriteScope: Immutable::PRIVATE_WRITE_SCOPE)]
+    /** @internal */
+    public PropertyDescriptionType $propertyType = PropertyDescriptionType::compositeAttribute;
     public AttributeType $type = AttributeType::compositeAttributeType;
     /** @var ArrayClass<AttributeDescription> The composed attribute descriptions. */
     public ArrayClass $elements;

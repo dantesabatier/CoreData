@@ -37,7 +37,6 @@ use function Sabatier\Foundation\typeof;
  * An object space that you use to manipulate and track changes to managed objects.
  *
  * A context consists of a group of related model objects that represent an internally consistent view of one or more persistent stores. Changes to managed objects remain in memory in the associated context until Core Data saves that context to one or more persistent stores. A single managed object instance exists in one and only one context, but multiple copies of an object can exist in different contexts. Therefore, an object is unique to a particular context.
- * @property-read Set<ManagedObject> $registeredObjects The set of objects registered with the context.
  */
 class ManagedObjectContext extends ObjectClass
 {
@@ -64,6 +63,10 @@ class ManagedObjectContext extends ObjectClass
     private readonly Set $unprocessedInserts;
     /** @var Dictionary<ManagedObject> */
     private Dictionary $byHashAssociationTable;
+    /** @var Set<ManagedObject> $registeredObjects The set of objects registered with the context. */
+    public Set $registeredObjects {
+        get => new Set($this->byHashAssociationTable->values);
+    }
     /** @var bool A Boolean value that indicates whether the context keeps strong references to all registered managed objects. If set to true, the receiver keeps strong references to all registered managed objects. If set to false, then the receiver keeps strong references to registered objects only when they are inserted, updated, deleted, or locked. The default is false. */
     public bool $retainsRegisteredObjects = false;
     /** @var bool A Boolean value that determines whether the context turns inaccessible faults into deleted objects. Use this property to control how the context behaves when it encounters an inaccessible fault  an object with no underlying data in the persistent store. For example, you might fetch an object that has a to-many relationship, but then a background context deletes the related objects from the store before you traverse that relationship. */
@@ -85,11 +88,11 @@ class ManagedObjectContext extends ObjectClass
     /** @var MergePolicy The merge policy of the context. */
     public MergePolicy $mergePolicy;
     /** @var QueryGenerationToken|null Returns the token associated with the query generation currently in use by this context. */
-    public readonly ?QueryGenerationToken $queryGenerationToken;
+    private(set) ?QueryGenerationToken $queryGenerationToken = null;
     /** @var string|null The author for the context that is used as an identifier in persistent history transactions. Set a managed object context's transactionAuthor before saving it to differentiate among multiple call sites that modify the same context. Doing this records an author in subsequent transactions. */
     public ?string $transactionAuthor = null;
     /** @var bool A Boolean value that indicates whether the context has uncommitted changes. */
-    public bool $hasChanges = false;
+    private(set) bool $hasChanges = false;
     /** @var bool A Boolean value that indicates whether the context propagates deletes at the end of the event in which a change was made.
      * true if the receiver propagates deletes at the end of the event in which a change was made, false if it propagates deletes only during a save operation. The default is true. */
     public bool $propagatesDeletesAtEndOfEvent = true;
@@ -108,8 +111,6 @@ class ManagedObjectContext extends ObjectClass
      */
     public function __construct(public readonly ManagedObjectContextConcurrencyType $concurrencyType = ManagedObjectContextConcurrencyType::mainQueueConcurrencyType)
     {
-        unset($this->persistentStoreCoordinator);
-        unset($this->queryGenerationToken);
         unset($this->queue);
         unset($this->mergePolicy);
         unset($this->userInfo);
@@ -126,10 +127,6 @@ class ManagedObjectContext extends ObjectClass
 
     public function __get(string $name)
     {
-        if ($name === "persistentStoreCoordinator") {
-            $this->$name = null;
-            return $this->$name;
-        }
         if ($name === "userInfo" || $name === "byHashAssociationTable") {
             $this->$name = new Dictionary();
             return $this->$name;
@@ -143,13 +140,6 @@ class ManagedObjectContext extends ObjectClass
         if ($name === "mergePolicy") {
             $this->$name = MergePolicy::error();
             return $this->$name;
-        }
-        if ($name === "queryGenerationToken") {
-            $this->$name = null;
-            return $this->$name;
-        }
-        if ($name === "registeredObjects") {
-            return new Set($this->byHashAssociationTable->values);
         }
         if ($name === "unprocessedChanges" || $name === "unprocessedDeletes" || $name === "unprocessedInserts" || $name === "insertedObjects" || $name === "updatedObjects" || $name === "deletedObjects" || $name === "lockedObjects" || $name === "refreshedObjects") {
             $this->$name = new Set();
@@ -454,7 +444,7 @@ class ManagedObjectContext extends ObjectClass
             $this->delete($fault);
             return true;
         }
-        fatal_error(sprintf("Inaccessible fault <%s %s:objectID=%s property=%s>", $fault::class, $fault->hash(), $oid->description(), $property->description()));
+        fatal_error(sprintf("Inaccessible fault <%s %s:objectID=%s property=%s>", $fault::class, $fault->hash, $oid->description, $property->description));
     }
 
     /**
@@ -562,7 +552,7 @@ class ManagedObjectContext extends ObjectClass
         $committedValues = $object->committedValuesForKeys(null);
         /** @psalm-suppress InvalidArgument */
         $this->mergePolicy->resolveConstraintConflicts($committedValues->compactMap(function (mixed $value, string $key) use ($object): ?ConstraintConflict {
-            if ($object->entity->indexes->contains(fn(FetchIndexDescription $index): bool => $index->name === $key && $index->isUnique())) {
+            if ($object->entity->indexes->contains(fn(FetchIndexDescription $index): bool => $index->name === $key && $index->isUnique)) {
                 $attributeKeys = $object->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute instanceof DerivedAttributeDescription)->keys;
                 /** @var FetchRequest<ManagedObject> $fetchRequest */
                 $fetchRequest = new FetchRequest();
@@ -637,7 +627,7 @@ class ManagedObjectContext extends ObjectClass
                     /** @var SQLEntity $entity */
                     $entity = $store->model->entitiesByName[$object->entity->name];
                     if ($manyToMany = $entity->manyToManyRelationships->first(fn(SQLManyToMany $manyToMany): bool => $manyToMany->relationshipDescription->isEqual($relationship))) {
-                        (new SQLCorrelationTableUpdateTracker($manyToMany))->track($object->objectID, $insertions);
+                        new SQLCorrelationTableUpdateTracker($manyToMany)->track($object->objectID, $insertions);
                     }
                 }
             } else {
@@ -672,7 +662,7 @@ class ManagedObjectContext extends ObjectClass
                         /** @var SQLEntity $entity */
                         $entity = $store->model->entitiesByName[$object->entity->name];
                         if ($manyToMany = $entity->manyToManyRelationships->first(fn(SQLManyToMany $manyToMany): bool => $manyToMany->relationshipDescription->isEqual($relationship))) {
-                            (new SQLCorrelationTableUpdateTracker($manyToMany))->track($object->objectID, deletes: $deletions);
+                            new SQLCorrelationTableUpdateTracker($manyToMany)->track($object->objectID, deletes: $deletions);
                         }
                     }
                 } else {

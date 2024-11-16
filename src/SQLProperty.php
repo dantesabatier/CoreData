@@ -15,63 +15,40 @@ use Sabatier\Foundation\ObjectClass;
 /** @internal */
 abstract class SQLProperty extends ObjectClass
 {
-    public string $name;
-    public readonly bool $isOptional;
-    public readonly bool $isTransient;
-    public readonly bool $isUnique;
-    public readonly bool $isConstrained;
-    public readonly bool $isReadOnly;
-    public PropertyDescriptionType $propertyType;
+    public string $name {
+        get => $this->propertyDescription->name;
+    }
+    public bool $isOptional {
+        get => $this->propertyDescription->isOptional;
+    }
+    public bool $isTransient {
+        get => $this->propertyDescription->isTransient;
+    }
+    public bool $isUnique {
+        get => $this->entity->indexes->contains(fn(SQLIndex $index, string $key): bool => $index->isUnique && $key === $this->name);
+    }
+    public bool $isConstrained {
+        get => $this->entity->indexes->contains(fn(SQLIndex $index, string $key): bool => $key === $this->name);
+    }
+    public bool $isReadOnly {
+        get => $this->propertyDescription->isReadOnly;
+    }
+    public PropertyDescriptionType $propertyType {
+        get => $this->propertyDescription->propertyType;
+    }
+    public mixed $minValue {
+        get => $this->propertyDescription->minValue;
+    }
+    public mixed $maxValue {
+        get => $this->propertyDescription->maxValue;
+    }
     public SQLType $sqlType = SQLType::unknown;
-    public readonly int $slot;
-    public readonly mixed $minValue;
-    public readonly mixed $maxValue;
+    public string $description {
+        get => sprintf("<%s %s>", $this->name, $this->hash);
+    }
 
     public function __construct(public SQLEntity $entity, public PropertyDescription $propertyDescription)
     {
-        unset($this->name);
-        unset($this->isOptional);
-        unset($this->isTransient);
-        unset($this->isUnique);
-        unset($this->isConstrained);
-        unset($this->isReadOnly);
-        unset($this->propertyType);
-        unset($this->sqlType);
-        unset($this->slot);
-        unset($this->minValue);
-        unset($this->maxValue);
-    }
-
-    public function __get(string $name)
-    {
-        return $this->$name = match ($name) {
-            "name" => $this->propertyDescription->name,
-            "isOptional" => $this->propertyDescription->isOptional,
-            "isTransient" => $this->propertyDescription->isTransient,
-            "isUnique" => $this->entity->indexes->contains(fn(SQLIndex $index, string $key): bool => $index->isUnique && $key === $this->name),
-            "isConstrained" => $this->entity->indexes->contains(fn(SQLIndex $index, string $key): bool => $key === $this->name),
-            "isReadOnly" => $this->propertyDescription->isReadOnly,
-            "propertyType" => $this->propertyDescription->propertyType,
-            "sqlType" => SQLType::unknown,
-            "slot" => 0,
-            "minValue" => $this->propertyDescription->minValue,
-            "maxValue" => $this->propertyDescription->maxValue,
-            default => $this->valueForUndefinedKey($name)
-        };
-    }
-
-    public function __set(string $name, mixed $value): void
-    {
-        $this->$name = match ($name) {
-            "name", "isOptional", "isTransient", "isUnique", "isConstrained", "isReadOnly", "propertyType", "sqlType", "minValue", "maxValue" => $value,
-            default => $this->valueForUndefinedKey($name)
-        };
-    }
-
-    #[Override]
-    public function description(): string
-    {
-        return sprintf("<%s %s>", $this->name, $this->hash());
     }
 
     #[Override]

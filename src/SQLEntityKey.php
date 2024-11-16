@@ -12,10 +12,8 @@ namespace Sabatier\CoreData;
 /** @internal */
 class SQLEntityKey extends SQLColumn
 {
-    public function __construct(SQLEntity $entity, PropertyDescription $propertyDescription)
-    {
-        parent::__construct($entity, $propertyDescription);
-        $this->propertyType = PropertyDescriptionType::private;
-        $this->sqlType = SQLType::varchar;
+    public PropertyDescriptionType $propertyType {
+        get => PropertyDescriptionType::private;
     }
+    public SQLType $sqlType = SQLType::varchar;
 }

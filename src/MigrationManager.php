@@ -25,8 +25,6 @@ use function Sabatier\Foundation\typeof;
 /**
  * A migration manager instance that performs a migration of data from one persistent store to another using a given mapping model.
  * @psalm-consistent-constructor
- * @property-read float $migrationProgress A number between 0 and 1 that indicates the proportion of completeness of the migration. If a migration is not taking place, this property is 1. You can observe this value using key-value observing.
- * @property-read EntityMapping|null $currentEntityMapping The entity mapping currently being processed.
  */
 class MigrationManager extends ObjectClass
 {
@@ -42,7 +40,12 @@ class MigrationManager extends ObjectClass
     public ?Dictionary $userInfo = null;
     /** @var bool A Boolean value that indicates whether the migration manager tries to use a store specific migration manager to perform the migration. */
     public bool $usesStoreSpecificMigrationManager = true;
-    protected float $migrationProgress = 1.0;
+    /** @var EntityMapping|null The entity mapping currently being processed. */
+    public ?EntityMapping $currentEntityMapping {
+        get => $this->migrationContext->currentEntityMapping;
+    }
+    /** @var float A number between 0 and 1 that indicates the proportion of completeness of the migration. If a migration is not taking place, this property is 1. You can observe this value using key-value observing. */
+    private(set) float $migrationProgress = 1.0;
     private bool $migrationWasCancelled = false;
     /** @internal */
     public bool $performedInPlaceMigration = false;
@@ -63,15 +66,6 @@ class MigrationManager extends ObjectClass
     {
         $this->byMappingBySourceRelationshipsAssociationTable = new Dictionary();
         $this->migrationContext = new MigrationContext($this);
-    }
-
-    public function __get(string $name)
-    {
-        return match ($name) {
-            "migrationProgress" => $this->$name,
-            "currentEntityMapping" => $this->migrationContext->currentEntityMapping,
-            default => $this->valueForUndefinedKey($name)
-        };
     }
 
     /**

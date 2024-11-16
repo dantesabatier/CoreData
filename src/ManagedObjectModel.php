@@ -25,22 +25,36 @@ use const Sabatier\Foundation\kCFBundleNameKey;
 /**
  * A programmatic representation of the model file describing your objects.
  * @implements IteratorAggregate<EntityDescription>
- * @property ArrayClass<EntityDescription> $entities The entities in the model. Setting the entities for an object model raises an exception if the object model has been used by an object graph manager.
  */
 class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Countable
 {
     /** @var Dictionary<ArrayClass<EntityDescription>> */
     private Dictionary $entitiesByConfigurationName;
+    /** @var ArrayClass<EntityDescription> $entities The entities in the model. Setting the entities for an object model raises an exception if the object model has been used by an object graph manager. */
+    public ArrayClass $entities {
+        get => $this->entitiesByName->values;
+        set {
+            $this->throwIfNotEditable();
+            $this->entitiesByName->removeAll();
+            $entities = $this->flatten($value);
+            /** @var EntityDescription $entity */
+            foreach ($entities as $entity) {
+                $this->addEntity($entity);
+            }
+        }
+    }
     /** @var Dictionary<EntityDescription> The entities of the model, keyed by name. */
-    public readonly Dictionary $entitiesByName;
+    private(set) Dictionary $entitiesByName;
     /** @var Dictionary<FetchRequest> A dictionary of the receiver's fetch request templates, keyed by name. */
-    public readonly Dictionary $fetchRequestTemplatesByName;
+    private(set) Dictionary $fetchRequestTemplatesByName;
     /** @var ArrayClass<string> $configurations All the available configuration names of the model. */
-    public readonly ArrayClass $configurations;
+    public ArrayClass $configurations {
+        get => $this->entitiesByConfigurationName->keys;
+    }
     /** @var Dictionary<string>|null The localization dictionary of the model. */
     public ?Dictionary $localizationDictionary = null;
     /** @var Dictionary<string> A dictionary of the version hashes for the entities in the model, keyed by entity name. The dictionary of version hash information is used by Core Data to determine schema compatibility. */
-    public readonly Dictionary $entityVersionHashesByName;
+    private(set) Dictionary $entityVersionHashesByName;
     /** @var Set<string> The set of developer-defined version identifiers for the model. Merged models return the combined collection of identifiers. The Core Data framework does not give models a default identifier, nor does it depend on this value at runtime. For models created in Xcode, you set this value in the model inspector. This value is meant to be used as a debugging hint to help you determine the models that were combined to create a merged model. */
     public Set $versionIdentifiers;
     /** @internal */
@@ -50,7 +64,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     /** @internal */
     public bool $isInUse = false;
     /** @internal */
-    public readonly bool $isImmutable;
+    private(set) bool $isImmutable = false;
 
     /**
      * Initializes the managed object model using the model file at the specified URL.
@@ -59,13 +73,11 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     public function __construct(?URL $url = null)
     {
         unset($this->versionHash);
-        unset($this->configurations);
         unset($this->versionIdentifiers);
         unset($this->entitiesByName);
         unset($this->entitiesByConfigurationName);
         unset($this->fetchRequestTemplatesByName);
         unset($this->entityVersionHashesByName);
-        unset($this->isImmutable);
         if ($url) {
             $propertyList = PropertyListSerialization::propertyListWithURL($url);
             if ($propertyList instanceof Dictionary) {
@@ -84,19 +96,8 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             $this->$name = KeyedArchiver::archivedData($this->entityVersionHashesByName);
             return $this->$name;
         }
-        if ($name === "configurations") {
-            $this->$name = $this->entitiesByConfigurationName->keys;
-            return $this->$name;
-        }
         if ($name === "versionIdentifiers") {
             $this->$name = new Set();
-            return $this->$name;
-        }
-        if ($name === "entities") {
-            return $this->entitiesByName->values;
-        }
-        if ($name === "isImmutable") {
-            $this->$name = false;
             return $this->$name;
         }
         return $this->valueForUndefinedKey($name);
@@ -104,16 +105,8 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
 
     public function __set(string $name, mixed $value): void
     {
-        if ($name === "entitiesByName" || $name === "entitiesByConfigurationName" || $name === "fetchRequestTemplatesByName" || $name === "entityVersionHashesByName" || $name === "versionHash" || $name === "isImmutable") {
+        if ($name === "entitiesByName" || $name === "entitiesByConfigurationName" || $name === "fetchRequestTemplatesByName" || $name === "entityVersionHashesByName" || $name === "versionHash") {
             $this->$name = $value;
-        } elseif ($name === "entities") {
-            $this->throwIfNotEditable();
-            $this->entitiesByName->removeAll();
-            $entities = $this->flatten($value);
-            /** @var EntityDescription $entity */
-            foreach ($entities as $entity) {
-                $this->addEntity($entity);
-            }
         } else {
             $this->setValueForUndefinedKey($value, $name);
         }
@@ -122,7 +115,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     /**
      * @throws Exception
      */
-    private function newEntity(Dictionary $dictionary): EntityDescription
+    private function newEntity(Dictionary $dictionary, ?EntityDescription $superentity = null): EntityDescription
     {
         /** @var string $name */
         $name = $dictionary["name"] ?? fatal_error("Entity name cannot be null");
@@ -130,6 +123,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
         if (!$entity instanceof EntityDescription) {
             $entity = new EntityDescription();
             $entity->name = $name;
+            $entity->superentity = $superentity;
             if ($managedObjectClassName = $dictionary["managedObjectClassName"]) {
                 $entity->managedObjectClassName = $managedObjectClassName;
             }
@@ -217,53 +211,63 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             /** @var ArrayClass<Dictionary>|null $subentities */
             $subentities = $dictionary["subentities"];
             if ($subentities) {
-                $entity->subentities = $subentities->map(function (Dictionary $description) use ($entity): EntityDescription {
-                    $subentity = $this->newEntity($description);
-                    $subentity->superentity = $entity;
-                    return $subentity;
-                });
+                $entity->subentities = $subentities->map(fn(Dictionary $description): EntityDescription => $this->newEntity($description, $entity));
             }
             /** @var ArrayClass<ArrayClass<string>> $uniquenessConstraints */
             $uniquenessConstraints = $dictionary["uniquenessConstraints"] ?? new ArrayClass();
             $entity->uniquenessConstraints = $uniquenessConstraints;
-            /** @var ArrayClass<Dictionary> $indexes */
-            $indexes = $dictionary["indexes"] ?? new ArrayClass();
-            $entity->indexes = $indexes->map(function (Dictionary $description) use ($entity): FetchIndexDescription {
-                /** @var string $name */
-                $name = $description["name"] ?? fatal_error(sprintf("%s name cannot be null", FetchIndexDescription::class));
-                $index = new FetchIndexDescription($name);
-                $index->entity = $entity;
-                /** @var string|null $partialIndexPredicateFormat */
-                $partialIndexPredicateFormat = $description["partialIndexPredicateFormat"];
-                if ($partialIndexPredicateFormat) {
-                    $index->partialIndexPredicate = Predicate::format($partialIndexPredicateFormat);
-                }
-                /** @var ArrayClass<Dictionary> $elements */
-                $elements = $description["elements"] ?? new ArrayClass();
-                $index->elements = $elements->map(function (Dictionary $description) use ($name): FetchIndexElementDescription {
-                    $expression = null;
-                    /** @var string|null $expressionFormat */
-                    $expressionFormat = $description["expressionFormat"];
-                    if ($expressionFormat) {
-                        $expression = new ExpressionDescription();
-                        $expression->name = $name;
-                        $expression->expression = Expression::expressionWithFormat($expressionFormat);
-                        $expression->resultType = AttributeType::from($description["expressionResultType"] ?? AttributeType::undefined->value);
-                        $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
-                            "expressionFormat", "expressionResultType", "propertyName" => true,
+            /** @var ArrayClass<Dictionary>|null $indexes */
+            $indexes = $dictionary["indexes"];
+            if ($indexes) {
+                $entity->indexes = $indexes->map(function (Dictionary $dictionary) use ($entity): FetchIndexDescription {
+                    /** @var string $name */
+                    $name = $dictionary["name"] ?? fatal_error(sprintf("%s name cannot be null", FetchIndexDescription::class));
+                    $index = new FetchIndexDescription($name);
+                    $index->entity = $entity;
+                    /** @var string|null $partialIndexPredicateFormat */
+                    $partialIndexPredicateFormat = $dictionary["partialIndexPredicateFormat"];
+                    if ($partialIndexPredicateFormat) {
+                        $index->partialIndexPredicate = Predicate::format($partialIndexPredicateFormat);
+                    }
+                    /** @var ArrayClass<Dictionary> $elements */
+                    $elements = $dictionary["elements"] ?? new ArrayClass();
+                    $index->elements = $elements->map(function (Dictionary $dictionary) use ($name, $entity): FetchIndexElementDescription {
+                        /** @var string|null $expressionFormat */
+                        $expressionFormat = $dictionary["expressionFormat"];
+                        if ($expressionFormat) {
+                            $propertyDescription = new ExpressionDescription();
+                            $propertyDescription->name = $name;
+                            $propertyDescription->expression = Expression::expressionWithFormat($expressionFormat);
+                            $propertyDescription->resultType = AttributeType::from($dictionary["expressionResultType"] ?? AttributeType::undefined->value);
+                            $dictionary->removeAll(fn(mixed $value, string $key): bool => match ($key) {
+                                "expressionFormat", "expressionResultType" => true,
+                                default => false
+                            });
+                        } else {
+                            /** @var string $propertyName */
+                            $propertyName = $dictionary["propertyName"] ?? fatal_error(sprintf("%s name cannot be null", FetchIndexElementDescription::class));
+                            if (!($propertyDescription = $entity->propertiesByName[$propertyName])) {
+                                $superentity = $entity->superentity;
+                                while ($superentity) {
+                                    if ($propertyDescription = $superentity->propertiesByName[$propertyName]) {
+                                        break;
+                                    }
+                                    $superentity = $superentity->superentity;
+                                }
+                            }
+                        }
+                        $dictionary->removeAll(fn(mixed $value, string $key): bool => match ($key) {
+                            "name", "partialIndexPredicateFormat", "elements", "propertyName" => true,
                             default => false
                         });
-                    }
-                    $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
-                        "name", "partialIndexPredicateFormat", "elements" => true,
-                        default => false
+                        $propertyDescription instanceof PropertyDescription ?: fatal_error(sprintf("%s property cannot be null", FetchIndexElementDescription::class));
+                        $element = new FetchIndexElementDescription($propertyDescription);
+                        $element->setValuesForKeys($dictionary);
+                        return $element;
                     });
-                    $element = new FetchIndexElementDescription($expression);
-                    $element->setValuesForKeys($description);
-                    return $element;
+                    return $index;
                 });
-                return $index;
-            });
+            }
             $entity->userInfo = $dictionary["userInfo"];
             $this->entitiesByName[$name] = $entity;
         }
@@ -369,14 +373,8 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
         if ($models->isEmpty) {
             return null;
         }
-        /** @var ArrayClass<EntityDescription> $entities */
-        $entities = new ArrayClass();
-        /** @var ManagedObjectModel $model */
-        foreach ($models as $model) {
-            $entities->appendContentsOf($model->entities);
-        }
         $managedObjectModel = new ManagedObjectModel();
-        $managedObjectModel->entities = $entities;
+        $managedObjectModel->entities = $models->flatMap(fn(ManagedObjectModel $model): ArrayClass => $model->entities);
         return $managedObjectModel;
     }
 
@@ -492,7 +490,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     public function setFetchRequestTemplate(FetchRequest $fetchRequest, string $name): void
     {
         $this->throwIfNotEditable();
-        $this->fetchRequestTemplatesByName->setValueForKey($fetchRequest, $name);
+        $this->fetchRequestTemplatesByName[$name] = $fetchRequest;
     }
 
     /**
@@ -507,14 +505,11 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     public function isConfigurationCompatibleWithStoreMetadata(?string $configuration, Dictionary $metadata): bool
     {
         if ($metadata[StoreModelVersionHashesKey]) {
-            try {
-                return KeyedArchiver::archivedData($this->entities($configuration)?->reduce(new Dictionary(), function (Dictionary &$result, EntityDescription $entity): Dictionary {
-                        /** @psalm-suppress InvalidArgument */
-                        $result[$entity->name] = $entity->versionHash;
-                        return $result;
-                    }) ?? $this->entityVersionHashesByName) === $metadata[StoreModelVersionHashesKey];
-            } catch (Exception) {
-            }
+            return KeyedArchiver::archivedData($this->entities($configuration)?->reduce(new Dictionary(), function (Dictionary &$result, EntityDescription $entity): Dictionary {
+                    /** @psalm-suppress InvalidArgument */
+                    $result[$entity->name] = $entity->versionHash;
+                    return $result;
+                }) ?? $this->entityVersionHashesByName) === $metadata[StoreModelVersionHashesKey];
         }
         return true;
     }
@@ -546,7 +541,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
         /** @var Dictionary<ArrayClass<Dictionary>> $dictionary */
         $dictionary = new Dictionary();
         $dictionary["entities"] = $this->entitiesByName->filter(fn(EntityDescription $entity): bool => !$entity->isPersistentHistoryEntity && $entity->isRootEntity)->map(fn(EntityDescription $entity): Dictionary => $entity->jsonSerialize());
-        $dictionary["fetchRequests"] = $this->fetchRequestTemplatesByName->mapValues(fn(FetchRequest $fetchRequest, string $templateName): Dictionary => new Dictionary(["name" => $templateName, "entityName" => $fetchRequest->entityName, "predicateString" => $fetchRequest->predicate?->predicateFormat(), "resultType" => $fetchRequest->resultType !== FetchRequestResultType::managedObjectResultType ? $fetchRequest->resultType->value : null]))->values;
+        $dictionary["fetchRequests"] = $this->fetchRequestTemplatesByName->mapValues(fn(FetchRequest $fetchRequest, string $templateName): Dictionary => new Dictionary(["name" => $templateName, "entityName" => $fetchRequest->entityName, "predicateString" => $fetchRequest->predicate->predicateFormat, "resultType" => $fetchRequest->resultType !== FetchRequestResultType::managedObjectResultType ? $fetchRequest->resultType->value : null]))->values;
         return $dictionary;
     }
 }

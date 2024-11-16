@@ -46,11 +46,11 @@ class FetchRequestExpression extends Expression
     {
         $managedObjectContext = $this->contextExpression->expressionValue($object, $context);
         if (!$managedObjectContext instanceof ManagedObjectContext) {
-            fatal_error(sprintf("%s expecting \"%s\" given \"%s\" given", $this->debugDescription(), ManagedObjectContext::class, typeof($managedObjectContext)));
+            fatal_error(sprintf("%s expecting \"%s\" given \"%s\" given", $this->debugDescription, ManagedObjectContext::class, typeof($managedObjectContext)));
         }
         $fetchRequest = $this->requestExpression->expressionValue($object, $context);
         if (!$fetchRequest instanceof FetchRequest) {
-            fatal_error(sprintf("%s expecting \"%s\" given \"%s\" given", $this->debugDescription(), FetchRequest::class, typeof($fetchRequest)));
+            fatal_error(sprintf("%s expecting \"%s\" given \"%s\" given", $this->debugDescription, FetchRequest::class, typeof($fetchRequest)));
         }
         if ($this->isCountOnlyRequest) {
             return $managedObjectContext->count($fetchRequest);

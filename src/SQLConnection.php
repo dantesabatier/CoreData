@@ -13,6 +13,7 @@ use BackedEnum;
 use Closure;
 use Exception;
 use PDO;
+use Pdo\Mysql;
 use PDOStatement;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Bundle;
@@ -35,38 +36,37 @@ use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 class SQLConnection extends ObjectClass
 {
     public readonly SQLSchema $schema;
-    public readonly ?SQLCore $sqlCore;
-    public readonly bool $hasMetadataTable;
-    public readonly bool $hasCachedModelTable;
-    public readonly bool $hasPersistentHistoryTables;
-    public readonly ?ManagedObjectModel $cachedModel;
+    public ?SQLCore $sqlCore {
+        get => $this->adapter?->sqlCore;
+    }
+    public bool $hasMetadataTable {
+        get => $this->hasMetadataTable();
+    }
+    public bool $hasCachedModelTable {
+        get => $this->hasCachedModelTable();
+    }
+    public bool $hasPersistentHistoryTables {
+        get => $this->hasPersistentHistoryTables();
+    }
+    public ?ManagedObjectModel $cachedModel {
+        get => $this->fetchCachedModel();
+    }
     private SQLStoreRequestContext $requestContext;
-    private readonly string $bundleID;
-    private ?PDO $pdo = null;
-    private bool $isOpen = false;
+    public string $bundleID {
+        get => Bundle::main()->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString;
+    }
+    private ?Mysql $mysql = null;
+    private(set) bool $isOpen = false;
 
     public function __construct(public readonly ?SQLAdapter $adapter = null)
     {
         unset($this->schema);
-        unset($this->sqlCore);
-        unset($this->bundleID);
-        unset($this->hasMetadataTable);
-        unset($this->hasCachedModelTable);
-        unset($this->hasPersistentHistoryTables);
-        unset($this->cachedModel);
     }
 
     public function __get(string $name)
     {
-        /** @noinspection PhpUnhandledExceptionInspection */
         return $this->$name = match ($name) {
-            "schema" => SQLSchema::schema($this->adapter?->sqlCore?->url?->host),
-            "sqlCore" => $this->adapter?->sqlCore,
-            "bundleID" => Bundle::main()->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString,
-            "hasMetadataTable" => $this->hasMetadataTable(),
-            "hasCachedModelTable" => $this->hasCachedModelTable(),
-            "hasPersistentHistoryTables" => $this->hasPersistentHistoryTables(),
-            "cachedModel" => $this->fetchCachedModel(),
+            "schema" => SQLSchema::schema($this->sqlCore?->url?->host),
             default => $this->valueForUndefinedKey($name)
         };
     }
@@ -91,16 +91,16 @@ class SQLConnection extends ObjectClass
         return true;
     }
 
-    private function pdo(): PDO
+    private function mysql(): Mysql
     {
-        if ($this->pdo === null) {
+        if ($this->mysql === null) {
             $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC];
             if ($timeout = $this->sqlCore?->options?->valueForKey(PersistentStoreTimeoutOption)) {
                 $options[PDO::ATTR_TIMEOUT] = $timeout;
             }
-            $this->pdo = new PDO("mysql:host={$this->schema->host};charset={$this->schema->charset};unix_socket={$this->schema->socket};", $this->schema->credential->user, $this->schema->credential->password, $options);
+            $this->mysql = new Mysql("mysql:host={$this->schema->host};charset={$this->schema->charset};unix_socket={$this->schema->socket};", $this->schema->credential->user, $this->schema->credential->password, $options);
         }
-        return $this->pdo;
+        return $this->mysql;
     }
 
     /**
@@ -119,7 +119,7 @@ class SQLConnection extends ObjectClass
         if ($this->createSchemaIfNeeded()) {
             return true;
         }
-        $this->pdo()->exec("USE `$schemaName`");
+        $this->mysql()->exec("USE `$schemaName`");
         return true;
     }
 
@@ -134,7 +134,7 @@ class SQLConnection extends ObjectClass
         if (SQLCore::$debugDefault) {
             error_log("CoreData: annotation: Disconnecting from sql database \"{$this->schema->name}\"");
         }
-        $this->pdo = null;
+        $this->mysql = null;
         $this->isOpen = false;
         return true;
     }
@@ -158,7 +158,7 @@ class SQLConnection extends ObjectClass
             }
             error_log(sprintf("CoreData: sql: \n%s", $statement->formatted($style)));
         }
-        $pdo = $this->pdo();
+        $pdo = $this->mysql();
         if ($statement->arguments->isEmpty) {
             $prepare = $pdo->query($statement->string);
             if (SQLCore::$debugDefault) {
@@ -537,7 +537,7 @@ class SQLConnection extends ObjectClass
 
     public function lastInsertRowID(): int
     {
-        return (int)$this->pdo()->lastInsertId();
+        return (int)$this->mysql()->lastInsertId();
     }
 
     /**
@@ -694,12 +694,12 @@ class SQLConnection extends ObjectClass
     {
         $adapter = $this->adapter ?? fatal_error();
         /** @var Set<SQLStatement> $statements */
-        $statements = (new Set($entities))->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->manyToManyRelationships)->map(fn(SQLManyToMany $manyToMany): SQLStatement => $adapter->newCreateTableStatementForManyToMany($manyToMany));
+        $statements = new Set($entities)->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->manyToManyRelationships)->map(fn(SQLManyToMany $manyToMany): SQLStatement => $adapter->newCreateTableStatementForManyToMany($manyToMany));
         if (!$statements->isEmpty) {
             $this->execute(SQLStatement::merging(new ArrayClass($statements)));
         }
         /** @var Set<SQLStatement> $statements */
-        $statements = (new Set($entities))->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->manyToManyRelationships)->map(fn(SQLManyToMany $manyToMany): SQLStatement => $adapter->newCreateIndexesStatementForManyToMany($manyToMany));
+        $statements = new Set($entities)->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->manyToManyRelationships)->map(fn(SQLManyToMany $manyToMany): SQLStatement => $adapter->newCreateIndexesStatementForManyToMany($manyToMany));
         if (!$statements->isEmpty) {
             $this->execute(SQLStatement::merging(new ArrayClass($statements)));
         }

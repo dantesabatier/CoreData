@@ -20,18 +20,29 @@ use Sabatier\Foundation\URL;
 
 /**
  * A model instance that specifies how to map a model from a source to a destination managed object model.
- * @property ArrayClass<EntityMapping> $entityMappings The entity mappings for the mapping model.
  */
 class MappingModel extends ObjectClass
 {
     /** @internal */
     public static int $migrationDebugLevel = 0;
     /** @var Dictionary<string> */
-    public readonly Dictionary $sourceEntityVersionHashesByName;
+    private(set) Dictionary $sourceEntityVersionHashesByName;
     /** @var Dictionary<string> */
-    public readonly Dictionary $destinationEntityVersionHashesByName;
+    private(set) Dictionary $destinationEntityVersionHashesByName;
     /** @var Dictionary<EntityMapping> $entityMappingsByName The entity mappings for the mapping model, keyed by name. */
-    public readonly Dictionary $entityMappingsByName;
+    private(set) Dictionary $entityMappingsByName;
+    /** @var ArrayClass<EntityMapping> $entityMappings The entity mappings for the mapping model. */
+    public ArrayClass $entityMappings {
+        get => $this->entityMappingsByName->values;
+        set {
+            $this->sourceEntityVersionHashesByName->removeAll();
+            $this->destinationEntityVersionHashesByName->removeAll();
+            $this->entityMappingsByName->removeAll();
+            foreach ($value as $entityMapping) {
+                $this->addEntityMapping($entityMapping);
+            }
+        }
+    }
 
     /**
      * Returns a mapping model initialized from a given URL.
@@ -95,28 +106,6 @@ class MappingModel extends ObjectClass
         }
     }
 
-    public function __get(string $name)
-    {
-        return match ($name) {
-            "entityMappings" => $this->entityMappingsByName->values,
-            default => $this->valueForUndefinedKey($name)
-        };
-    }
-
-    public function __set(string $name, mixed $value): void
-    {
-        if ($name === "entityMappings") {
-            $this->sourceEntityVersionHashesByName->removeAll();
-            $this->destinationEntityVersionHashesByName->removeAll();
-            $this->entityMappingsByName->removeAll();
-            foreach ($value as $entityMapping) {
-                $this->addEntityMapping($entityMapping);
-            }
-        } else {
-            $this->setValueForUndefinedKey($value, $name);
-        }
-    }
-
     /**
      * Returns the mapping model that will translate data from the source to the destination model.
      *
@@ -162,10 +151,9 @@ class MappingModel extends ObjectClass
      */
     public static function inferredMappingModel(ManagedObjectModel $sourceModel, ManagedObjectModel $destinationModel): MappingModel
     {
-        return (new MappingModelBuilder($sourceModel, $destinationModel))->newInferredMappingModel();
+        return new MappingModelBuilder($sourceModel, $destinationModel)->newInferredMappingModel();
     }
 
-    /** @noinspection PhpSecondWriteToReadonlyPropertyInspection */
     private function addEntityMapping(EntityMapping $entityMapping): void
     {
         if ($sourceEntityName = $entityMapping->sourceEntityName) {

@@ -55,9 +55,9 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             if ($keys->count >= 3) {
                                 $keys->removeAt(0);
                             }
-                            if ($keys[$keys->indexBefore($keys->endIndex())] === $currentEntity->primaryKey->columnName) {
+                            if ($keys[$keys->indexBefore($keys->endIndex)] === $currentEntity->primaryKey->columnName) {
                                 $copy = clone $keys;
-                                $copy->removeAt($copy->indexBefore($copy->endIndex()));
+                                $copy->removeAt($copy->indexBefore($copy->endIndex));
                                 $keyPath = $copy->join(".");
                                 if ($value instanceof Nil) {
                                     $keyPaths->append($keyPath);
@@ -81,7 +81,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 $propertyDescription = $property?->propertyDescription ?? $this->request->propertiesToFetch?->first(fn(string|PropertyDescription $property): bool => $property instanceof PropertyDescription ? $property->name === $key : $property === $key);
                                 if ($property instanceof SQLRelationship) {
                                     if ($current instanceof ArrayClass && !$current->isEmpty) {
-                                        $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID) ?? $current[$current->indexBefore($current->endIndex())];
+                                        $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID) ?? $current[$current->indexBefore($current->endIndex)];
                                         /** @psalm-suppress UnsupportedReferenceUsage */
                                         $current = &$parent;
                                     }
@@ -98,7 +98,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                             $current[] = new Dictionary([$currentEntity->primaryKey->columnName => $value, $currentEntity->entityKey->columnName => $currentEntity->entityDescription->name]);
                                         }
                                         if (!$current->isEmpty) {
-                                            $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID) ?? $current[$current->indexBefore($current->endIndex())];
+                                            $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID) ?? $current[$current->indexBefore($current->endIndex)];
                                             /** @psalm-suppress UnsupportedReferenceUsage */
                                             $current = &$parent;
                                         }

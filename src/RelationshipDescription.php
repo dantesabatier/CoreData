@@ -16,6 +16,8 @@ use function Sabatier\Foundation\human_readable_value;
  */
 class RelationshipDescription extends PropertyDescription
 {
+    /** @internal */
+    public PropertyDescriptionType $propertyType = PropertyDescriptionType::relationship;
     /** @var EntityDescription The entity description of the receiver's destination. */
     public EntityDescription $destinationEntity;
     /** @var RelationshipDescription The relationship that represents the inverse of the receiver. */
@@ -34,6 +36,9 @@ class RelationshipDescription extends PropertyDescription
     public string $lazyDestinationEntityName = UnknownName;
     /** @internal */
     public string $lazyInverseRelationshipName = UnknownName;
+    public string $description {
+        get => sprintf("%s destinationEntityName %s InverseRelationshipName %s minCount %s maxCount %s deleteRule %s", parent::$description->get(), $this->lazyDestinationEntityName, $this->lazyInverseRelationshipName, $this->minCount, $this->maxCount, human_readable_value($this->deleteRule));
+    }
 
     public function __construct()
     {
@@ -47,7 +52,7 @@ class RelationshipDescription extends PropertyDescription
     {
         if ($name === "destinationEntity") {
             if ($this->entity->isEditable) {
-                fatal_error("{$this->debugDescription()} property \"$name\" cannot be accessed before initialization");
+                fatal_error("$this->debugDescription property \"$name\" cannot be accessed before initialization");
             }
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
             $this->$name = $this->entity->managedObjectModel->entitiesByName[$this->lazyDestinationEntityName] ?? $this->entity->managedObjectModel->entitiesByName->first(fn(EntityDescription $entity): bool => $entity->renamingIdentifier === $this->lazyDestinationEntityName) ?? fatal_error("$this->name, destination entity \"$this->lazyDestinationEntityName\" does not exists");
@@ -55,14 +60,10 @@ class RelationshipDescription extends PropertyDescription
         }
         if ($name === "inverseRelationship") {
             if ($this->entity->isEditable) {
-                fatal_error("{$this->debugDescription()} property \"$name\" cannot be accessed before initialization");
+                fatal_error("$this->debugDescription property \"$name\" cannot be accessed before initialization");
             }
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
             $this->$name = $this->destinationEntity->relationshipsByName[$this->lazyInverseRelationshipName] ?? $this->destinationEntity->relationshipsByName->first(fn(RelationshipDescription $relationship): bool => $relationship->renamingIdentifier === $this->lazyInverseRelationshipName) ?? fatal_error("$this->name, inverse relationship \"$this->lazyInverseRelationshipName\" does not exists");
-            return $this->$name;
-        }
-        if ($name === "propertyType") {
-            $this->$name = PropertyDescriptionType::relationship;
             return $this->$name;
         }
         return parent::__get($name);
@@ -98,12 +99,6 @@ class RelationshipDescription extends PropertyDescription
         $dictionary["lazyDestinationEntityName"] = $this->lazyDestinationEntityName;
         $dictionary["lazyInverseRelationshipName"] = $this->lazyInverseRelationshipName;
         $out = KeyedArchiver::archivedData($dictionary);
-    }
-
-    #[Override]
-    public function description(): string
-    {
-        return sprintf("%s destinationEntityName %s InverseRelationshipName %s minCount %s maxCount %s deleteRule %s", parent::description(), $this->lazyDestinationEntityName, $this->lazyInverseRelationshipName, $this->minCount, $this->maxCount, human_readable_value($this->deleteRule));
     }
 
     #[Override]

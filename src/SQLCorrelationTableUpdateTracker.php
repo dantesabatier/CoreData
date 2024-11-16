@@ -11,11 +11,11 @@ use Sabatier\Foundation\Set;
 class SQLCorrelationTableUpdateTracker extends ObjectClass
 {
     /** @var Set<ManagedObject>|null */
-    public readonly ?Set $inserts;
+    private(set) ?Set $inserts = null;
     /** @var Set<ManagedObject>|null */
-    public readonly ?Set $deletes;
+    private(set) ?Set $deletes = null;
     /** @var Set<ManagedObject>|null */
-    public readonly ?Set $reorders;
+    private(set) ?Set $reorders = null;
 
     public function __construct(public readonly SQLManyToMany $relationship)
     {

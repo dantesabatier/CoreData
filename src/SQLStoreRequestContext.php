@@ -8,47 +8,34 @@ use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
 use function Sabatier\Foundation\request_concrete_implementation;
 
-/**
- * @property int $debugLogLevel
- * @property bool $useColoredLogging
- * @internal
- */
+/** * @internal */
 abstract class SQLStoreRequestContext extends ObjectClass
 {
     public SQLConnection $connection;
     public Number $transactionID;
     public ?QueryGenerationToken $queryGenerationToken = null;
-    public readonly bool $shouldRegisterQueryGeneration;
+    private(set) bool $shouldRegisterQueryGeneration = false;
     public bool $isWritingRequest = false;
     public bool $hasHistoryTracking = false;
     public readonly SQLGenerator $generator;
     public mixed $result;
+    public int $debugLogLevel {
+        get => SQLCore::$debugDefault;
+        set {
+            SQLCore::$debugDefault = $value;
+        }
+    }
+    public bool $useColoredLogging {
+        get => SQLCore::$coloredLoggingDefault;
+        set {
+            SQLCore::$coloredLoggingDefault = $value;
+        }
+    }
 
     public function __construct(public readonly PersistentStoreRequest $persistentStoreRequest, public readonly ManagedObjectContext $context, public readonly SQLCore $sqlCore)
     {
         $this->result = new ArrayClass();
-        $this->shouldRegisterQueryGeneration = false;
         $this->generator = new SQLGenerator($this);
-    }
-
-    public function __get(string $name)
-    {
-        return match ($name) {
-            "debugLogLevel" => SQLCore::$debugDefault,
-            "useColoredLogging" => SQLCore::$coloredLoggingDefault,
-            default => $this->valueForUndefinedKey($name)
-        };
-    }
-
-    public function __set(string $name, mixed $value): void
-    {
-        if ($name === "debugLogLevel") {
-            SQLCore::$debugDefault = $value;
-        } elseif ($name === "useColoredLogging") {
-            SQLCore::$coloredLoggingDefault = $value;
-        } else {
-            $this->setValueForUndefinedKey($value, $name);
-        }
     }
 
     /**

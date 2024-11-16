@@ -24,6 +24,10 @@ use function Sabatier\Foundation\string_search;
 /** @internal */
 class SQLStatement extends ObjectClass
 {
+    public string $description {
+        get => $this->formatted();
+    }
+
     /**
      * @param string $string
      * @param ArrayClass $arguments
@@ -56,7 +60,7 @@ class SQLStatement extends ObjectClass
 
     public function formatted(#[ExpectedValues(flagsFromClass: SQLStatementFormatterStyle::class)] int $style = SQLStatementFormatterStyle::string | SQLStatementFormatterStyle::arguments): string
     {
-        return (new SQLStatementFormatter($style))->string($this) ?? $this->string;
+        return new SQLStatementFormatter($style)->string($this) ?? $this->string;
     }
 
     #[Override]
@@ -66,11 +70,5 @@ class SQLStatement extends ObjectClass
             return string_is_equal((string)$this, (string)$other, CompareOptions::caseInsensitive | CompareOptions::diacriticInsensitive);
         }
         return false;
-    }
-
-    #[Override]
-    public function description(): string
-    {
-        return $this->formatted();
     }
 }

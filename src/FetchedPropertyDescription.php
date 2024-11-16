@@ -23,18 +23,10 @@ use Sabatier\Foundation\KeyValueCoding;
  */
 class FetchedPropertyDescription extends PropertyDescription
 {
+    /** @internal */
+    public PropertyDescriptionType $propertyType = PropertyDescriptionType::fetchedProperty;
     /** @var FetchRequest|null The fetch request of the receiver. */
     public ?FetchRequest $fetchRequest = null;
-
-    #[Override]
-    public function __get(string $name)
-    {
-        if ($name === "propertyType") {
-            $this->$name = PropertyDescriptionType::fetchedProperty;
-            return $this->$name;
-        }
-        return parent::__get($name);
-    }
 
     #[Override]
     public function jsonSerialize(): Dictionary
@@ -42,7 +34,7 @@ class FetchedPropertyDescription extends PropertyDescription
         $dictionary = parent::jsonSerialize();
         if ($fetchRequest = $this->fetchRequest) {
             $dictionary["fetchRequestEntityName"] = $fetchRequest->entityName;
-            $dictionary["fetchRequestPredicateFormat"] = $fetchRequest->predicate?->predicateFormat();
+            $dictionary["fetchRequestPredicateFormat"] = $fetchRequest->predicate->predicateFormat;
         }
         return $dictionary;
     }

@@ -38,8 +38,9 @@ abstract class PropertyDescription extends ObjectClass
     public ?string $versionHashModifier = null;
     /** @var string The renaming identifier for the receiver. This is used to resolve naming conflicts between models. When creating an entity mapping between entities in two managed object models, a source entity property and a destination entity property that share the same identifier indicate that a property mapping should be configured to migrate from the source to the destination. If unset, the identifier will return the property's name. */
     public string $renamingIdentifier;
+    public bool $isSensitive = false;
     /** @internal */
-    public readonly PropertyDescriptionType $propertyType;
+    public PropertyDescriptionType $propertyType = PropertyDescriptionType::private;
     /** @internal */
     public bool $isEditable = true;
     /** @internal */
@@ -50,7 +51,9 @@ abstract class PropertyDescription extends ObjectClass
     public mixed $maxValue = null;
     /** @internal */
     public ?string $regex = null;
-    public bool $isSensitive = false;
+    public string $description {
+        get => sprintf("(<%s: %s>), name %s, isOptional %s, isTransient %s, entity %s renamingIdentifier %s, validation predicates %s, warnings %s", get_called_class(), $this->hash, $this->name, (int)$this->isOptional, (int)$this->isTransient, $this->entity->name, $this->renamingIdentifier, $this->validationPredicates->description, $this->validationWarnings->description);
+    }
 
     public function __construct()
     {
@@ -58,7 +61,6 @@ abstract class PropertyDescription extends ObjectClass
         unset($this->validationWarnings);
         unset($this->renamingIdentifier);
         unset($this->versionHash);
-        unset($this->propertyType);
     }
 
     public function __get(string $name)
@@ -82,17 +84,13 @@ abstract class PropertyDescription extends ObjectClass
             $this->$name = $this->name;
             return $this->$name;
         }
-        if ($name === "propertyType") {
-            $this->$name = PropertyDescriptionType::private;
-            return $this->$name;
-        }
         return $this->valueForUndefinedKey($name);
     }
 
     public function __set(string $name, mixed $value): void
     {
         $this->throwIfNotEditable();
-        if ($name === "validationPredicates" || $name === "validationWarnings" || $name === "renamingIdentifier" || $name === "propertyType") {
+        if ($name === "validationPredicates" || $name === "validationWarnings" || $name === "renamingIdentifier") {
             $this->$name = $value;
         } else {
             $this->setValueForUndefinedKey($value, $name);
@@ -115,11 +113,11 @@ abstract class PropertyDescription extends ObjectClass
         $validationPredicates = new ArrayClass();
         $minValue = $this->minValue;
         if ($minValue !== null) {
-            $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new MinValueValidator($minValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
+            $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new MinimumValueValidator($minValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
         }
         $maxValue = $this->maxValue;
         if ($maxValue !== null) {
-            $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new MaxValueValidator($maxValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
+            $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new MaximumValueValidator($maxValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
         }
         $regex = $this->regex;
         if ($regex) {
@@ -133,7 +131,7 @@ abstract class PropertyDescription extends ObjectClass
      */
     private function validationWarnings(): ArrayClass
     {
-        return $this->validationPredicates->map(fn(Predicate $predicate): string => $predicate->predicateFormat());
+        return $this->validationPredicates->map(fn(Predicate $predicate): string => $predicate->predicateFormat);
     }
 
     /**
@@ -165,12 +163,6 @@ abstract class PropertyDescription extends ObjectClass
             return $this->entity->isKindOf($other->entity) && $this->renamingIdentifier === $other->renamingIdentifier;
         }
         return false;
-    }
-
-    #[Override]
-    public function description(): string
-    {
-        return sprintf("(<%s: %s>), name %s, isOptional %s, isTransient %s, entity %s renamingIdentifier %s, validation predicates %s, warnings %s", static::class, $this->hash(), $this->name, (int)$this->isOptional, (int)$this->isTransient, $this->entity->name, $this->renamingIdentifier, $this->validationPredicates->description(), $this->validationWarnings->description());
     }
 
     #[Override]

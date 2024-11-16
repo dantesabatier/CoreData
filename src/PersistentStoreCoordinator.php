@@ -45,17 +45,8 @@ class PersistentStoreCoordinator extends ObjectClass
      */
     public function __construct(public readonly ManagedObjectModel $managedObjectModel)
     {
-        unset($this->persistentStores);
-        unset($this->queue);
-    }
-
-    public function __get(string $name)
-    {
-        return $this->$name = match ($name) {
-            "persistentStores" => new ArrayClass(),
-            "queue" => new OperationQueue(),
-            default => $this->valueForUndefinedKey($name)
-        };
+        $this->persistentStores = new ArrayClass();
+        $this->queue = new OperationQueue();
     }
 
     /**

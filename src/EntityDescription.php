@@ -20,9 +20,6 @@ use function Sabatier\Foundation\fatal_error;
  * A description of an entity in Core Data.
  *
  * @implements IteratorAggregate<PropertyDescription>
- * @property ArrayClass<EntityDescription> $subentities An array containing the sub-entities of the receiver.
- * @property ArrayClass<PropertyDescription> $properties An array containing the properties of the receiver. The elements in the array are instances of {@see AttributeDescription}, {@see RelationshipDescription}, and/or {@see FetchedPropertyDescription}.
- * @property ArrayClass<FetchIndexDescription> $indexes An array of fetch index descriptions for the entity. This value doesn't form part of the entity's version hash, and stores that don't natively support indexing may ignore it. Set indexes last in a model. Changing an entity hierarchy in any way that affects the validity of indexes drops all existing indexes for entities in that hierarchy, such as adding or removing superentities or subentities, or adding and removing properties anywhere in the hierarchy.
  */
 class EntityDescription extends ObjectClass implements IteratorAggregate, Countable
 {
@@ -38,16 +35,62 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     public bool $isAbstract = false;
     /** @var Dictionary|null The user info dictionary of the receiver. */
     public ?Dictionary $userInfo = null;
+    /** @var ArrayClass<EntityDescription> $subentities An array containing the sub-entities of the receiver. */
+    public ArrayClass $subentities {
+        get => $this->subentitiesByName->values;
+        set {
+            $this->throwIfNotEditable();
+            $this->subentitiesByName->removeAll();
+            /** @var EntityDescription $subentity */
+            foreach ($value as $subentity) {
+                $this->subentitiesByName[$subentity->name] = $subentity;
+            }
+        }
+    }
     /** @var Dictionary<EntityDescription> A dictionary containing the receiver's sub-entities. */
     public readonly Dictionary $subentitiesByName;
     /** @var EntityDescription|null The super-entity of the receiver. */
     public ?EntityDescription $superentity = null;
+    /** @var ArrayClass<PropertyDescription> $properties An array containing the properties of the receiver. The elements in the array are instances of {@see AttributeDescription}, {@see RelationshipDescription}, and/or {@see FetchedPropertyDescription}. */
+    public ArrayClass $properties {
+        get => $this->propertiesByName->values;
+        set {
+            $this->throwIfNotEditable();
+            $this->propertiesByName->removeAll();
+            /** @var PropertyDescription $property */
+            foreach ($value as $property) {
+                if ($property->entity !== $this) {
+                    $property = clone $property;
+                    $property->isReadOnly = true;
+                }
+                $property->entity = $this;
+                $this->propertiesByName[$property->name] = $property;
+            }
+        }
+    }
     /** @var Dictionary<PropertyDescription> A dictionary containing the properties of the receiver. */
     public readonly Dictionary $propertiesByName;
     /** @var Dictionary<AttributeDescription> The attributes of the receiver in a dictionary. The keys in the dictionary are the attribute names and the values are instances of {@see AttributeDescription}. */
     public readonly Dictionary $attributesByName;
     /** @var Dictionary<RelationshipDescription> The relationships of the receiver in a dictionary. The keys in the dictionary are the relationship names and the values are instances of {@see RelationshipDescription}. */
     public readonly Dictionary $relationshipsByName;
+    /** @var ArrayClass<FetchIndexDescription> $indexes An array of fetch index descriptions for the entity. This value doesn't form part of the entity's version hash, and stores that don't natively support indexing may ignore it. Set indexes last in a model. Changing an entity hierarchy in any way that affects the validity of indexes drops all existing indexes for entities in that hierarchy, such as adding or removing superentities or subentities, or adding and removing properties anywhere in the hierarchy. */
+    public ArrayClass $indexes {
+        get => $this->indexesByName->values;
+        set {
+            $this->throwIfNotEditable();
+            $this->indexesByName->removeAll();
+            /** @var FetchIndexDescription $index */
+            foreach ($value as $index) {
+                if ($index->entity !== $this) {
+                    $index = clone $index;
+                }
+                $index->entity = $this;
+                $this->indexesByName[$index->name] = $index;
+            }
+            $this->indexesByName->merge($this->uniquenessConstraintsAsFetchIndexes());
+        }
+    }
     /** @var Dictionary<FetchIndexDescription> $indexesByName */
     private readonly Dictionary $indexesByName;
     /** @var ArrayClass<ArrayClass<AttributeDescription|string>> An array of arrays that contains one or more attributes with a value that must be unique over the instances of that entity. Each inner array contains one or more {@see AttributeDescription} objects or strings that contain the names of attributes on the entity. This value forms part of the entity's version hash. Stores that don't support uniqueness constraints must refuse to initialize when receiving a model that contains such constraints. Uniqueness constraint violations can be computationally expensive to handle. The recommendation is to use only one uniqueness constraint per entity hierarchy, although subentites may extend a superentity's constraint. */
@@ -66,6 +109,9 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     public readonly ?EntityDescription $rootEntity;
     /** @internal */
     public readonly bool $isRootEntity;
+    public string $description {
+        get => sprintf("<%s: %s> isAbstract %s", $this->name, $this->hash, (int)$this->isAbstract);
+    }
 
     public function __construct()
     {
@@ -89,15 +135,6 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
             $this->$name = new ArrayClass();
             return $this->$name;
         }
-        if ($name === "subentities") {
-            return $this->subentitiesByName->values;
-        }
-        if ($name === "indexes") {
-            return $this->indexesByName->values;
-        }
-        if ($name === "properties") {
-            return $this->propertiesByName->values;
-        }
         if ($name === "versionHash") {
             $this->$name = $this->versionHashInStyle(VersionHashStyle::default);
             return $this->$name;
@@ -108,7 +145,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         }
         if ($name === "attributesByName") {
             if ($this->isEditable) {
-                fatal_error("{$this->debugDescription()} property \"$name\" cannot be accessed before initialization");
+                fatal_error("$this->debugDescription property \"$name\" cannot be accessed before initialization");
             }
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
@@ -116,7 +153,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         }
         if ($name === "relationshipsByName") {
             if ($this->isEditable) {
-                fatal_error("{$this->debugDescription()} property \"$name\" cannot be accessed before initialization");
+                fatal_error("$this->debugDescription property \"$name\" cannot be accessed before initialization");
             }
             /** @psalm-suppress PropertyTypeCoercion */
             $this->$name = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
@@ -129,37 +166,6 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     {
         if ($name === "versionHash" || $name === "renamingIdentifier" || $name === "attributesByName" || $name === "relationshipsByName" || $name === "subentitiesByName" || $name === "propertiesByName" || $name === "indexesByName" || $name === "uniquenessConstraints") {
             $this->$name = $value;
-        } elseif ($name === "subentities") {
-            $this->throwIfNotEditable();
-            $this->subentitiesByName->removeAll();
-            /** @var EntityDescription $subentity */
-            foreach ($value as $subentity) {
-                $this->subentitiesByName[$subentity->name] = $subentity;
-            }
-        } elseif ($name === "properties") {
-            $this->throwIfNotEditable();
-            $this->propertiesByName->removeAll();
-            /** @var PropertyDescription $property */
-            foreach ($value as $property) {
-                if ($property->entity !== $this) {
-                    $property = clone $property;
-                    $property->isReadOnly = true;
-                }
-                $property->entity = $this;
-                $this->propertiesByName[$property->name] = $property;
-            }
-        } elseif ($name === "indexes") {
-            $this->throwIfNotEditable();
-            $this->indexesByName->removeAll();
-            /** @var FetchIndexDescription $index */
-            foreach ($value as $index) {
-                if ($index->entity !== $this) {
-                    $index = clone $index;
-                }
-                $index->entity = $this;
-                $this->indexesByName[$index->name] = $index;
-            }
-            $this->indexesByName->merge($this->uniquenessConstraintsAsFetchIndexes());
         } else {
             $this->setValueForUndefinedKey($value, $name);
         }
@@ -300,7 +306,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
      */
     public function hasUniquedPropertyNamed(string $name): bool
     {
-        return $this->indexesByName->contains(fn(FetchIndexDescription $index): bool => $index->isUnique() && $index->name === $name);
+        return $this->indexesByName->contains(fn(FetchIndexDescription $index): bool => $index->isUnique && $index->name === $name);
     }
 
     /**
@@ -310,14 +316,23 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     private function constraintAsIndex(ArrayClass $constraint): ?FetchIndexDescription
     {
         /** @var ArrayClass<FetchIndexElementDescription> $elements */
-        $elements = $constraint->compactMap(fn(AttributeDescription|string $e): ?FetchIndexElementDescription => ($property = $e instanceof AttributeDescription ? $e : $this->propertiesByName[$e]) ? new FetchIndexElementDescription($property) : null);
+        $elements = $constraint->compactMap(function (AttributeDescription|string $e): ?FetchIndexElementDescription {
+            if ($e instanceof AttributeDescription) {
+                return new FetchIndexElementDescription($e);
+            }
+            $property = $this->propertiesByName[$e];
+            if ($property instanceof PropertyDescription) {
+                return new FetchIndexElementDescription($property);
+            }
+            return null;
+        });
         if ($elements->isEmpty) {
             return null;
         }
         $name = $elements->map(fn(FetchIndexElementDescription $element): string => $element->property->name)->join("_");
         $index = new FetchIndexDescription($name, $elements);
         $index->entity = $this;
-        $index->setUnique(true);
+        $index->isUnique = true;
         return $index;
     }
 
@@ -357,12 +372,6 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     }
 
     #[Override]
-    public function description(): string
-    {
-        return sprintf("<%s: %s> isAbstract %s", $this->name, $this->hash(), (int)$this->isAbstract);
-    }
-
-    #[Override]
     public function jsonSerialize(): Dictionary
     {
         /** @var Dictionary<mixed> $dictionary */
@@ -389,7 +398,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         if (!$uniquenessConstraints->isEmpty) {
             $dictionary["uniquenessConstraints"] = $uniquenessConstraints;
         }
-        $indexes = $this->indexesByName->filter(fn(FetchIndexDescription $index): bool => !$index->isUnique() && !$this->superentity?->indexesByName?->contains(fn(FetchIndexDescription $e): bool => $e->name === $index->name))->map(fn(FetchIndexDescription $index): Dictionary => $index->jsonSerialize());
+        $indexes = $this->indexesByName->filter(fn(FetchIndexDescription $index): bool => !$index->isUnique && !$this->superentity?->indexesByName?->contains(fn(FetchIndexDescription $e): bool => $e->name === $index->name))->map(fn(FetchIndexDescription $index): Dictionary => $index->jsonSerialize());
         if (!$indexes->isEmpty) {
             $dictionary["indexes"] = $indexes;
         }

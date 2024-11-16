@@ -12,17 +12,24 @@ namespace Sabatier\CoreData;
 /** @internal */
 class SQLForeignEntityKey extends SQLColumn
 {
-    public readonly SQLToOne $toOneRelationship;
-    public readonly RelationshipDescription $relationshipDescription;
+    public string $name {
+        get => $this->relationshipDescription->destinationEntity->name;
+    }
+    public string $columnName {
+        get => $this->entity->entityKey->columnName;
+    }
+    public SQLToOne $toOneRelationship {
+        get => $this->foreignKey->toOneRelationship;
+    }
+    public RelationshipDescription $relationshipDescription {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        get => $this->propertyDescription;
+    }
     public readonly SQLForeignKey $foreignKey;
 
     public function __construct(SQLEntity $entity, RelationshipDescription $relationshipDescription, SQLForeignKey $foreignKey)
     {
         parent::__construct($entity, $relationshipDescription);
-        $this->toOneRelationship = $foreignKey->toOneRelationship;
         $this->foreignKey = $foreignKey;
-        $this->relationshipDescription = $relationshipDescription;
-        $this->name = $relationshipDescription->destinationEntity->name;
-        $this->columnName = $entity->entityKey->columnName;
     }
 }

@@ -24,9 +24,7 @@ class QueryGenerationToken
      */
     public static function current(): QueryGenerationToken
     {
-        if (self::$current === null) {
-            self::$current = new QueryGenerationToken();
-        }
+        self::$current ??= new QueryGenerationToken();
         return self::$current;
     }
 }

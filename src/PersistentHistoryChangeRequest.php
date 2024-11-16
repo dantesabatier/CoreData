@@ -23,15 +23,15 @@ class PersistentHistoryChangeRequest extends PersistentStoreRequest
     /** @var PersistentHistoryResultType The type of result that this request returns. This value defaults to PersistentHistoryResultType.transactionsAndChanges. */
     public PersistentHistoryResultType $resultType = PersistentHistoryResultType::transactionsAndChanges;
     /** @var PersistentHistoryToken|null The specified token, when retrieving history defined by a token. */
-    public readonly ?PersistentHistoryToken $token;
+    private(set) ?PersistentHistoryToken $token;
     /** @internal */
-    public readonly ?ArrayClass $transactionIDs;
+    private(set) ?ArrayClass $transactionIDs;
     /** @internal */
-    public readonly ?Number $transactionNumber;
+    private(set) ?Number $transactionNumber;
     /** @internal */
-    public readonly bool $isDelete;
+    private(set) bool $isDelete = false;
     /** @internal */
-    public readonly ?Date $date;
+    private(set) ?Date $date = null;
 
     private function __construct(?PersistentHistoryToken $token = null, ?FetchRequest $fetchRequest = null, ?ArrayClass $transactionIDs = null, ?int $transactionNumber = null, ?Date $date = null, bool $isDelete = false, bool $isTransactionOnly = false, public readonly bool $isFetchTransactionForToken = false)
     {

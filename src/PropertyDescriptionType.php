@@ -8,7 +8,8 @@ enum PropertyDescriptionType: int
     case private = -1;
     case attribute = 0;
     case derivedAttribute = 1;
-    case fetchedProperty = 2;
-    case expression = 3;
+    case compositeAttribute = 2;
+    case fetchedProperty = 3;
+    case expression = 4;
     case relationship = 1001;
 }

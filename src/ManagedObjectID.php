@@ -19,16 +19,25 @@ use Sabatier\Foundation\URL;
  * This identifier forms the basis for uniquing in the Core Data Framework. A managed object ID uniquely identifies the same managed object both between managed object contexts in a single application, and in multiple applications (as in distributed systems). Identifiers contain the information needed to exactly describe an object in a persistent store (like the primary key in the database), although the detailed information is not exposed. The framework completely encapsulates the “external” information and presents a clean object-oriented interface.
  * Object IDs can be transformed into a URI representation which can be archived and recreated later to refer back to a given object (using {@see PersistentStoreCoordinator::managedObjectID()}) (PersistentStoreCoordinator) and {@see ManagedObjectContext::object()} (ManagedObjectContext). For example, the last selected group in an application could be stored in the user defaults through the group object's ID. You can also use object ID URI representations to store “weak” relationships across persistent stores (where no hard join is possible).
  * @psalm-suppress MissingConstructor
- * @property-read bool $isTemporaryID A Boolean value that indicates whether the object ID is temporary. New objects inserted into a managed object context are assigned a temporary ID which is replaced with a permanent one once the object gets saved to a persistent store.
  */
 class ManagedObjectID extends ObjectClass implements FetchRequestResult
 {
     /** @var PersistentStore|null The persistent store that fetched the object for the object ID. */
     public ?PersistentStore $persistentStore = null;
+    /** @var bool A Boolean value that indicates whether the object ID is temporary. Most object IDs return false. New objects inserted into a managed object context are assigned a temporary ID which is replaced with a permanent one once the object gets saved to a persistent store. */
+    public bool $isTemporaryID {
+        get => $this->persistentStore === null || !is_int($this->referenceObject);
+    }
     /** @internal */
     public readonly string $entityName;
     /** @internal */
     public readonly ?string $storeIdentifier;
+    public string $description {
+        get => sprintf("<%s>", $this->uriRepresentation()->absoluteString);
+    }
+    public string $debugDescription {
+        get => sprintf("<%s: %s> %s", self::class, $this->hash, $this->entityName);
+    }
 
     /**
      * @param EntityDescription $entity The entity description associated with the object ID.
@@ -37,14 +46,6 @@ class ManagedObjectID extends ObjectClass implements FetchRequestResult
     public function __construct(public EntityDescription $entity, /** @internal */ public int|string $referenceObject)
     {
         $this->entityName = $this->entity->name;
-    }
-
-    public function __get(string $name)
-    {
-        return match ($name) {
-            "isTemporaryID" => $this->persistentStore === null || !is_int($this->referenceObject),
-            default => $this->valueForUndefinedKey($name)
-        };
     }
 
     public function __serialize(): array
@@ -86,18 +87,6 @@ class ManagedObjectID extends ObjectClass implements FetchRequestResult
             return $this->uriRepresentation()->isEqual($other->uriRepresentation());
         }
         return false;
-    }
-
-    #[Override]
-    public function description(): string
-    {
-        return sprintf("<%s>", $this->uriRepresentation()->absoluteString);
-    }
-
-    #[Override]
-    public function debugDescription(): string
-    {
-        return sprintf("<%s: %s> %s", self::class, $this->hash(), $this->entity->name);
     }
 
     #[Override]

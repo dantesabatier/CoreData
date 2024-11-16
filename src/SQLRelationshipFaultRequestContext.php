@@ -11,12 +11,13 @@ use function Sabatier\Foundation\fatal_error;
 /** @internal */
 class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
 {
-    public readonly SQLModel $sqlModel;
+    public SQLModel $sqlModel {
+        get => $this->sqlCore->model;
+    }
 
     public function __construct(public readonly ManagedObjectID $objectID, public readonly RelationshipDescription $relationship, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         parent::__construct(new FetchRequest(), $context, $sqlCore);
-        $this->sqlModel = $sqlCore->model;
     }
 
     #[Override]
@@ -26,7 +27,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
         $this->debugLogLevel = 0;
         /** @var SQLEntity $entity */
         $entity = $this->sqlModel->entitiesByName[$this->objectID->entity->name];
-        $relationship = $entity->entitySpecificRelationships->first(fn(SQLRelationship $relationship): bool => $relationship->relationshipDescription->name === $this->relationship->name) ?? fatal_error("Unable to find relationship {$this->relationship->name} in {$entity->entitySpecificRelationships->map(fn(SQLRelationship $relationship): string => $relationship->name)->description()}");
+        $relationship = $entity->entitySpecificRelationships->first(fn(SQLRelationship $relationship): bool => $relationship->relationshipDescription->name === $this->relationship->name) ?? fatal_error("Unable to find relationship {$this->relationship->name} in {$entity->entitySpecificRelationships->map(fn(SQLRelationship $relationship): string => $relationship->name)->description}");
         if ($relationship instanceof SQLToOne) {
             $sourceEntity = $relationship->entity;
             $foreignKey = $relationship->foreignKey;

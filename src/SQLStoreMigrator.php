@@ -11,9 +11,9 @@ use function Sabatier\Foundation\fatal_error;
 /** @internal */
 readonly class SQLStoreMigrator
 {
-    public SQLAdapter $adapter;
-    public SQLConnection $connection;
-    public SQLModel $sourceModel;
+    private SQLAdapter $adapter;
+    private SQLConnection $connection;
+    private SQLModel $sourceModel;
     /** @var ArrayClass<SQLEntity> */
     private ArrayClass $removedEntities;
     /** @var ArrayClass<SQLManyToMany> */

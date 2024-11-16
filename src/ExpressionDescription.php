@@ -9,7 +9,6 @@
 
 namespace Sabatier\CoreData;
 
-use Override;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Predicates\Expression;
@@ -24,20 +23,15 @@ use function Sabatier\Foundation\human_readable_value;
  */
 class ExpressionDescription extends PropertyDescription
 {
+    public string $description {
+        get => sprintf("%s, expression %s", parent::$description->get(), human_readable_value($this->expression));
+    }
+    /** @internal */
+    public PropertyDescriptionType $propertyType = PropertyDescriptionType::expression;
     /** @var Expression|null The expression for the receiver. */
     public ?Expression $expression = null;
     /** @var AttributeType The attribute type of the expression’s result. */
     public AttributeType $resultType = AttributeType::undefined;
-
-    #[Override]
-    public function __get(string $name)
-    {
-        if ($name === "propertyType") {
-            $this->$name = PropertyDescriptionType::expression;
-            return $this->$name;
-        }
-        return parent::__get($name);
-    }
 
     public function validateResultType(AttributeType|Number|Nil|int|null &$resultType): bool
     {
@@ -48,11 +42,5 @@ class ExpressionDescription extends PropertyDescription
             $resultType = AttributeType::from($resultType);
         }
         return true;
-    }
-
-    #[Override]
-    public function description(): string
-    {
-        return sprintf("%s, expression %s", parent::description(), human_readable_value($this->expression));
     }
 }

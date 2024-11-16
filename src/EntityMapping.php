@@ -17,8 +17,6 @@ use Sabatier\Foundation\Predicates\Expression;
 
 /**
  * A mapping instance that specifies how to map an entity from a source to a destination managed object model.
- *
- * @property-read string $name The name of the entity mapping. The name is used only as a means of distinguishing mappings in a model. If not specified, the value defaults to SOURCE->DESTINATION.
  */
 class EntityMapping extends ObjectClass
 {
@@ -44,6 +42,9 @@ class EntityMapping extends ObjectClass
     public ?ArrayClass $relationshipMappings = null;
     /** @var Dictionary|null The user info dictionary for the entity mapping. You can use the info dictionary in any way that might be useful in your migration. */
     public ?Dictionary $userInfo = null;
+    public string $description {
+        get => sprintf("<%s %s %s>", self::class, $this->name, $this->hash);
+    }
 
     public function __construct(?string $name = null)
     {
@@ -76,11 +77,5 @@ class EntityMapping extends ObjectClass
             return $this->name === $other->name;
         }
         return parent::isEqual($other);
-    }
-
-    #[Override]
-    public function description(): string
-    {
-        return sprintf("<%s %s %s>", self::class, $this->name, $this->hash());
     }
 }

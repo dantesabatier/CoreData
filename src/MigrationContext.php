@@ -35,7 +35,7 @@ class MigrationContext
         if ($sourceEntityName = $mapping->sourceEntityName) {
             /** @var ArrayClass<ManagedObject> $sources */
             $sources = $this->byMappingBySourceAssociationTable[$sourceEntityName] ?? new ArrayClass();
-            $sources->append($source);
+            $sources[] = $source;
             $this->byMappingBySourceAssociationTable[$sourceEntityName] = $sources;
         }
         $this->bySourceAssociationTable[(string)$destination->objectID] = $source;
@@ -46,7 +46,7 @@ class MigrationContext
         if ($destinationEntityName = $mapping->destinationEntityName) {
             /** @var ArrayClass<ManagedObject> $destinations */
             $destinations = $this->byMappingByDestinationAssociationTable[$destinationEntityName] ?? new ArrayClass();
-            $destinations->append($destination);
+            $destinations[] = $destination;
             $this->byMappingByDestinationAssociationTable[$destinationEntityName] = $destinations;
         }
         $this->byDestinationAssociationTable[(string)$source->objectID] = $destination;

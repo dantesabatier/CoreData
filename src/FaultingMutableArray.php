@@ -11,7 +11,7 @@ use Sabatier\Foundation\ArrayClass;
  */
 class FaultingMutableArray extends ArrayClass
 {
-    public bool $isFault = true;
+    private(set) bool $isFault = true;
 
     public function __construct(public readonly ManagedObject $source, public readonly PropertyDescription $relationship)
     {

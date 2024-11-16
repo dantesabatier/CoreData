@@ -4,7 +4,6 @@ namespace Sabatier\CoreData;
 
 use Override;
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\Range;
 use function Sabatier\Foundation\invalid_mutation;
 
 /**
@@ -13,8 +12,15 @@ use function Sabatier\Foundation\invalid_mutation;
  */
 class BatchFaultingArray extends ArrayClass
 {
-    private readonly int $count;
-    private readonly int $fetchLimit;
+    private int $length;
+    public int $count {
+        get => $this->length;
+    }
+    private int $fetchLimit;
+    /** @noinspection PhpPropertyOnlyWrittenInspection */
+    private int $fetchOffset {
+        get => max(($this->cursor - 1) * $this->fetchLimit, 0);
+    }
     private int $cursor = 0;
     /** @var ArrayClass<ManagedObjectID> */
     private ArrayClass $objectIDs;
@@ -22,7 +28,6 @@ class BatchFaultingArray extends ArrayClass
     private readonly FetchRequest $request;
     private readonly FetchRequestResultType $resultType;
     private readonly ManagedObjectContext $context;
-    private readonly Range $indices;
 
     public function __construct(FetchRequest $fetchRequest, ManagedObjectContext $context)
     {
@@ -35,14 +40,7 @@ class BatchFaultingArray extends ArrayClass
         $this->context = $context;
         $this->objectIDs = new ArrayClass();
         /** @noinspection PhpUnhandledExceptionInspection */
-        $this->count = $context->count($this->request);
-        $this->indices = new Range(0, $this->count);
-    }
-
-    #[Override]
-    public function indices(): Range
-    {
-        return $this->indices;
+        $this->length = $context->count($this->request);
     }
 
     #[Override]
@@ -75,16 +73,11 @@ class BatchFaultingArray extends ArrayClass
         invalid_mutation();
     }
 
-    private function fetchOffset(): int
-    {
-        return max(($this->cursor - 1) * $this->fetchLimit, 0);
-    }
-
     private function arrayFromObjectIDs(): ArrayClass
     {
         $this->context->reset();
         $request = $this->request;
-        $request->fetchOffset = $this->fetchOffset();
+        $request->fetchOffset = $this->fetchOffset;
         $request->fetchLimit = $this->fetchLimit;
         /** @noinspection PhpUnhandledExceptionInspection */
         $result = $this->context->fetch($request);
@@ -108,7 +101,7 @@ class BatchFaultingArray extends ArrayClass
     {
         parent::next();
         $this->objectIDs->next();
-        if ($this->key() === $this->fetchOffset()) {
+        if ($this->key() === $this->fetchOffset) {
             $this->objectIDs = $this->arrayFromObjectIDs();
         }
     }
@@ -119,12 +112,6 @@ class BatchFaultingArray extends ArrayClass
         parent::rewind();
         $this->cursor = 1;
         $this->objectIDs = $this->arrayFromObjectIDs();
-    }
-
-    #[Override]
-    public function count(): int
-    {
-        return $this->count;
     }
 
     #[Override]

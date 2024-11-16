@@ -8,15 +8,13 @@ use Sabatier\Foundation\Dictionary;
 final class ManagedObjectSerializer
 {
     private static ?ManagedObjectSerializer $shared = null;
-    
+
     public static function shared(): ManagedObjectSerializer
     {
-        if (self::$shared === null) {
-            self::$shared = new ManagedObjectSerializer();
-        }
+        self::$shared ??= new ManagedObjectSerializer();
         return self::$shared;
     }
-    
+
     private function update(ManagedObject $object, Dictionary $dictionary): void
     {
         if ($dictionary->isEmpty) {

@@ -21,6 +21,9 @@ class PropertyMapping extends ObjectClass
 {
     /** @var Dictionary|null The user info for the property mapping. */
     public ?Dictionary $userInfo = null;
+    public string $description {
+        get => sprintf("<%s %s %s>", self::class, $this->name, $this->hash);
+    }
 
     /**
      * @param string $name The name of the property in the destination entity for the property mapping.
@@ -37,11 +40,5 @@ class PropertyMapping extends ObjectClass
             return $this->name === $other->name && $this->valueExpression === $other->valueExpression;
         }
         return parent::isEqual($other);
-    }
-
-    #[Override]
-    public function description(): string
-    {
-        return sprintf("<%s %s %s>", self::class, $this->name, $this->hash());
     }
 }
