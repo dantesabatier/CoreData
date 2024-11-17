@@ -508,7 +508,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     #[Override]
     public function getIterator(): Traversable
     {
-        return new ArrayIterator($this->entities->toArray());
+        return new ArrayIterator($this->entities->array);
     }
 
     #[Override]

@@ -178,7 +178,7 @@ class SQLConnection extends ObjectClass
                 return (int)$e;
             }
             return $e;
-        })->toArray());
+        })->array);
         if (SQLCore::$debugDefault) {
             error_log(sprintf("CoreData: annotation: fetch execution time: %s for %s row(s)", human_readable_time(absolute_time_get_current() - $time), $prepare->rowCount()));
         }

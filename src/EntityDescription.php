@@ -331,7 +331,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     #[Override]
     public function getIterator(): Traversable
     {
-        return new ArrayIterator($this->properties->toArray());
+        return new ArrayIterator($this->properties->array);
     }
 
     #[Override]

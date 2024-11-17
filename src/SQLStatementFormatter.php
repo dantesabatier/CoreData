@@ -22,7 +22,6 @@ class SQLStatementFormatter extends Formatter
     #[Override]
     public function string(mixed $object): ?string
     {
-
         if ($object instanceof SQLStatement) {
             $string = $object->string;
             if ($this->style & SQLStatementFormatterStyle::arguments) {
@@ -40,7 +39,7 @@ class SQLStatementFormatter extends Formatter
                         }
                         return $v;
                     })()
-                })->toArray());
+                })->array);
             }
             $style = SQLFormatterStyle::none;
             if ($this->style & SQLStatementFormatterStyle::highlighted) {

@@ -28,7 +28,7 @@ class PersistentHistoryToken extends ObjectClass
 
     public function __serialize(): array
     {
-        return $this->storeTokens->toArray();
+        return $this->storeTokens->array;
     }
 
     /**
