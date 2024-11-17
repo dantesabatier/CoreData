@@ -43,16 +43,16 @@ class SQLConnection extends ObjectClass
         get => $this->adapter?->sqlCore;
     }
     public bool $hasMetadataTable {
-        get => $this->hasMetadataTable();
+        get => $this->associatedValues[__PROPERTY__] ??= $this->hasMetadataTable();
     }
     public bool $hasCachedModelTable {
-        get => $this->hasCachedModelTable();
+        get => $this->associatedValues[__PROPERTY__] ??= $this->hasCachedModelTable();
     }
     public bool $hasPersistentHistoryTables {
-        get => $this->hasPersistentHistoryTables();
+        get => $this->associatedValues[__PROPERTY__] ??= $this->hasPersistentHistoryTables();
     }
     public ?ManagedObjectModel $cachedModel {
-        get => $this->fetchCachedModel();
+        get => $this->associatedValues[__PROPERTY__] ??= $this->fetchCachedModel();
     }
     private SQLStoreRequestContext $requestContext;
     public string $bundleID {
