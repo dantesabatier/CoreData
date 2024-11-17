@@ -36,7 +36,14 @@ class EntityMapping extends ObjectClass
         set => $this->associatedValues[__PROPERTY__] = $value;
     }
     /** @var EntityMappingType The mapping type for the entity mapping. If you specify a custom entity mapping type, you must specify a value for the migration policy class name as well (see {@see entityMigrationPolicyClassName}). */
-    public EntityMappingType $mappingType = EntityMappingType::undefinedEntityMappingType;
+    public EntityMappingType $mappingType = EntityMappingType::undefinedEntityMappingType {
+        set(EntityMappingType|int $value) {
+            if (is_int($value)) {
+                $value = EntityMappingType::from($value);
+            }
+            $this->mappingType = $value;
+        }
+    }
     /** @var class-string<EntityMigrationPolicy>|null $entityMigrationPolicyClassName The class name of the migration policy for the entity mapping. If not specified, the default migration class name is EntityMigrationPolicy. You can specify a subclass to provide custom behavior. */
     public ?string $entityMigrationPolicyClassName = null;
     /** @var ArrayClass<PropertyMapping>|null The array of attribute mappings for the entity mapping. The order of mappings in the array specifies the order in which the mappings will be processed during a migration. */

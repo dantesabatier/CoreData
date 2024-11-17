@@ -11,10 +11,7 @@ namespace Sabatier\CoreData;
 
 use Override;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\Nil;
-use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
-use Sabatier\Foundation\Value;
 use function Sabatier\Foundation\fatal_error;
 
 /**
@@ -38,15 +35,26 @@ class FetchIndexElementDescription extends ObjectClass
             return "";
         }
     }
+    private(set) PropertyDescription $property;
+    public FetchIndexElementType $collationType = FetchIndexElementType::bTree {
+        set(FetchIndexElementType|int $value) {
+            if (is_int($value)) {
+                $value = FetchIndexElementType::from($value);
+            }
+            $this->collationType = $value;
+        }
+    }
 
     /**
      * Creates an index element description using the specified property description and collation type.
      * @param PropertyDescription $property A property description. This property may also be an {@see ExpressionDescription} that expresses a function.
      * @param FetchIndexElementType $collationType The type of collation that the index element uses, either binary or R-tree.
      */
-    public function __construct(public readonly PropertyDescription $property, public FetchIndexElementType $collationType = FetchIndexElementType::bTree)
+    public function __construct(PropertyDescription $property, FetchIndexElementType $collationType = FetchIndexElementType::bTree)
     {
+        $this->property = $property;
         $this->propertyName = $property->name;
+        $this->collationType = $collationType;
     }
 
     public function __serialize(): array
@@ -71,17 +79,6 @@ class FetchIndexElementDescription extends ObjectClass
         $this->isAscending = $data["isAscending"];
         $this->isUnique = $data["isUnique"];
         $this->property = $this->indexDescription->entity->propertiesByName[$this->propertyName] ?? fatal_error("Entity \"{$this->indexDescription->entity->name}\" does not contains a property named \"$this->propertyName\"");
-    }
-
-    public function validateCollationType(FetchIndexElementType|Number|Nil|int|null &$collationType): bool
-    {
-        if ($collationType instanceof Value) {
-            $collationType = $collationType->value;
-        }
-        if (is_int($collationType)) {
-            $collationType = FetchIndexElementType::from($collationType);
-        }
-        return true;
     }
 
     #[Override]

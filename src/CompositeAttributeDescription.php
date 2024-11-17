@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use InvalidArgumentException;
 use Sabatier\Foundation\ArrayClass;
 
 /**
@@ -20,7 +21,12 @@ class CompositeAttributeDescription extends AttributeDescription
         get => AttributeType::compositeAttributeType;
     }
     /** @var ArrayClass<AttributeDescription> The composed attribute descriptions. */
-    public ArrayClass $elements;
+    public ArrayClass $elements {
+        set {
+            $value->allSatisfy(fn(mixed $e): bool => $e instanceof AttributeDescription) ?: throw new InvalidArgumentException();
+            $this->elements = $value;
+        }
+    }
 
     public function __construct()
     {

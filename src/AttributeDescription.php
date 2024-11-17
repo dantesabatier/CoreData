@@ -24,7 +24,14 @@ class AttributeDescription extends PropertyDescription
     }
 
     /** @var AttributeType The attribute's type. */
-    public AttributeType $type = AttributeType::undefined;
+    public AttributeType $type = AttributeType::undefined {
+        set(AttributeType|int|null $value) {
+            if (is_int($value)) {
+                $value = AttributeType::from($value);
+            }
+            $this->type = $value;
+        }
+    }
     /** @var mixed The default value of the attribute. */
     public mixed $defaultValue = null {
         get {
@@ -57,14 +64,6 @@ class AttributeDescription extends PropertyDescription
     public bool $preservesValueInHistoryOnDeletion = false;
     public string $description {
         get => sprintf("%s, type %s", parent::$description->get(), human_readable_value($this->type));
-    }
-
-    public function validateType(AttributeType|int|null &$type): bool
-    {
-        if (is_int($type)) {
-            $type = AttributeType::from($type);
-        }
-        return true;
     }
 
     #[Override]

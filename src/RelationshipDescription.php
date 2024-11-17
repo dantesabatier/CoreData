@@ -47,7 +47,14 @@ class RelationshipDescription extends PropertyDescription
     /** @var bool A Boolean value that determines whether the relationship preserves the order of the referenced managed objects. The default value is false. */
     public bool $isOrdered = false;
     /** @var DeleteRule The rule to apply when you delete the relationship's owning managed object. The default value is {@see DeleteRule::nullifyDeleteRule}. For possible values, see {@see DeleteRule}. */
-    public DeleteRule $deleteRule = DeleteRule::nullifyDeleteRule;
+    public DeleteRule $deleteRule = DeleteRule::nullifyDeleteRule {
+        set(DeleteRule|int $value) {
+            if (is_int($value)) {
+                $value = DeleteRule::from($value);
+            }
+            $this->deleteRule = $value;
+        }
+    }
     /** @var int The minimum number of managed objects the relationship can reference. If you declare a relationship attribute as optional when defining your entities, the framework only enforces minCount and {@see maxCount} when that attribute is not nil. The default value is 0. */
     public int $minCount = 0;
     /** @var int The maximum number of managed objects the relationship can reference. If you declare a relationship attribute as optional when defining your entities, the framework only enforces {@see minCount} and maxCount when that attribute is not nil. The default value is 0. */
@@ -58,14 +65,6 @@ class RelationshipDescription extends PropertyDescription
     public string $lazyInverseRelationshipName = UnknownName;
     public string $description {
         get => sprintf("%s destinationEntityName %s InverseRelationshipName %s minCount %s maxCount %s deleteRule %s", parent::$description->get(), $this->lazyDestinationEntityName, $this->lazyInverseRelationshipName, $this->minCount, $this->maxCount, human_readable_value($this->deleteRule));
-    }
-
-    public function validateDeleteRule(DeleteRule|int|null &$deleteRule): bool
-    {
-        if (is_int($deleteRule)) {
-            $deleteRule = DeleteRule::from($deleteRule);
-        }
-        return true;
     }
 
     #[Override]
