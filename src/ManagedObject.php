@@ -167,7 +167,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             default => new ArrayClass(),
         };
         $serializationKeys->insertAt(SQLEntity::primaryKeyName, 0);
-        $serializationKeys->insertAt(SQLEntity::primaryKeyName, 0);
+        $serializationKeys->insertAt(SQLEntity::entityKeyName, 1);
         return $serializationKeys;
     }
 
