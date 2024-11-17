@@ -35,7 +35,10 @@ use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 /** @internal */
 class SQLConnection extends ObjectClass
 {
-    public readonly SQLSchema $schema;
+    private(set) SQLSchema $schema {
+        get => $this->associatedValues[__PROPERTY__] ??= SQLSchema::schema($this->sqlCore?->url?->host);
+        set => $this->associatedValues[__PROPERTY__] = $value;
+    }
     public ?SQLCore $sqlCore {
         get => $this->adapter?->sqlCore;
     }
@@ -60,15 +63,6 @@ class SQLConnection extends ObjectClass
 
     public function __construct(public readonly ?SQLAdapter $adapter = null)
     {
-        unset($this->schema);
-    }
-
-    public function __get(string $name)
-    {
-        return $this->$name = match ($name) {
-            "schema" => SQLSchema::schema($this->sqlCore?->url?->host),
-            default => $this->valueForUndefinedKey($name)
-        };
     }
 
     public function __destruct()

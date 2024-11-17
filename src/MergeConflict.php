@@ -24,7 +24,9 @@ use function Sabatier\Foundation\human_readable_value;
 class MergeConflict extends ObjectClass
 {
     /** @var Dictionary A dictionary containing the values of the source object. */
-    public readonly Dictionary $objectSnapshot;
+    public Dictionary $objectSnapshot {
+        get => $this->sourceObject->dictionaryWithValues($this->sourceObject->persistentProperties->map(fn(PropertyDescription $property): string => $property->name));
+    }
     public string $description {
         get => sprintf("%s (%s) for %s (%s) with objectID %s with oldVersion = %s and newVersion = %s and old object snapshot %s", self::class, $this->hash, ManagedObject::class, $this->sourceObject->hash, $this->sourceObject->objectID->description, $this->oldVersionNumber, $this->newVersionNumber, human_readable_value($this->cachedSnapshot));
     }
@@ -39,14 +41,5 @@ class MergeConflict extends ObjectClass
      */
     public function __construct(public readonly ManagedObject $sourceObject, public readonly int $newVersionNumber, public readonly int $oldVersionNumber, public readonly ?Dictionary $cachedSnapshot = null, public readonly ?Dictionary $persistedSnapshot = null)
     {
-        unset($this->objectSnapshot);
-    }
-
-    public function __get(string $name)
-    {
-        return $this->$name = match ($name) {
-            "objectSnapshot" => $this->sourceObject->dictionaryWithValues($this->sourceObject->persistentProperties->map(fn(PropertyDescription $property): string => $property->name)),
-            default => $this->valueForUndefinedKey($name)
-        };
     }
 }

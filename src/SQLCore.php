@@ -41,38 +41,12 @@ class SQLCore extends IncrementalStore
     public function __construct(PersistentStoreCoordinator $coordinator, string $configurationName, URL $url, ?Dictionary $options = null)
     {
         parent::__construct($coordinator, $configurationName, $url, $options);
-        unset($this->adapter);
-        unset($this->schemaValidationConnection);
-        unset($this->queryGenerationTrackingConnection);
-        unset($this->maxPrimaryKeys);
-        unset($this->model);
+        $this->adapter = new SQLAdapter($this);
+        $this->schemaValidationConnection = new SQLConnection($this->adapter);
+        $this->queryGenerationTrackingConnection = new SQLConnection($this->adapter);
+        $this->model = new SQLModel($this->persistentStoreCoordinator->managedObjectModel, $this->configurationName);
+        $this->maxPrimaryKeys = new Dictionary();
         $this->addPersistentHistoryEntities();
-    }
-
-    #[Override]
-    public function __get(string $name)
-    {
-        if ($name === "adapter") {
-            $this->$name = new SQLAdapter($this);
-            return $this->$name;
-        }
-        if ($name === "schemaValidationConnection") {
-            $this->$name = new SQLConnection($this->adapter);
-            return $this->$name;
-        }
-        if ($name === "queryGenerationTrackingConnection") {
-            $this->$name = new SQLConnection($this->adapter);
-            return $this->$name;
-        }
-        if ($name === "maxPrimaryKeys") {
-            $this->$name = new Dictionary();
-            return $this->$name;
-        }
-        if ($name === "model") {
-            $this->$name = new SQLModel($this->persistentStoreCoordinator->managedObjectModel, $this->configurationName);
-            return $this->$name;
-        }
-        return parent::__get($name);
     }
 
     #[Override]

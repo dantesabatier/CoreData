@@ -31,7 +31,10 @@ class EntityMapping extends ObjectClass
     /** @var string|null The version hash for the destination entity for the entity mapping. The version hash is calculated by Core Data based on the property values of the entity (see {@see EntityDescription::versionHash} method). The destinationEntityVersionHash must equal the version hash of the destination entity represented by the mapping. */
     public ?string $destinationEntityVersionHash = null;
     /** @var string The name of the entity mapping. The name is used only as a means of distinguishing mappings in a model. If not specified, the value defaults to SOURCE->DESTINATION. */
-    public readonly string $name;
+    public string $name {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->name();
+        set => $this->associatedValues[__PROPERTY__] = $value;
+    }
     /** @var EntityMappingType The mapping type for the entity mapping. If you specify a custom entity mapping type, you must specify a value for the migration policy class name as well (see {@see entityMigrationPolicyClassName}). */
     public EntityMappingType $mappingType = EntityMappingType::undefinedEntityMappingType;
     /** @var class-string<EntityMigrationPolicy>|null $entityMigrationPolicyClassName The class name of the migration policy for the entity mapping. If not specified, the default migration class name is EntityMigrationPolicy. You can specify a subclass to provide custom behavior. */
@@ -48,26 +51,21 @@ class EntityMapping extends ObjectClass
 
     public function __construct(?string $name = null)
     {
-        unset($this->name);
         if ($name) {
             $this->name = $name;
         }
     }
 
-    public function __get(string $name)
+    private function name(): string
     {
-        if ($name === "name") {
-            $mappingName = "";
-            if ($sourceEntityName = $this->sourceEntityName) {
-                $mappingName = $sourceEntityName;
-            }
-            if ($destinationEntityName = $this->destinationEntityName) {
-                $mappingName .= "To$destinationEntityName";
-            }
-            $this->$name = $mappingName;
-            return $this->$name;
+        $mappingName = "";
+        if ($sourceEntityName = $this->sourceEntityName) {
+            $mappingName = $sourceEntityName;
         }
-        return $this->valueForUndefinedKey($name);
+        if ($destinationEntityName = $this->destinationEntityName) {
+            $mappingName .= "To$destinationEntityName";
+        }
+        return $mappingName;
     }
 
     #[Override]

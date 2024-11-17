@@ -2,7 +2,6 @@
 
 namespace Sabatier\CoreData;
 
-use Override;
 use Sabatier\Foundation\ArrayClass;
 
 /**
@@ -21,27 +20,6 @@ class CompositeAttributeDescription extends AttributeDescription
 
     public function __construct()
     {
-        parent::__construct();
-        unset($this->elements);
-    }
-
-    #[Override]
-    public function __get(string $name)
-    {
-        if ($name === "elements") {
-            $this->$name = new ArrayClass();
-            return $this->$name;
-        }
-        return parent::__get($name);
-    }
-
-    #[Override]
-    public function __set(string $name, mixed $value): void
-    {
-        if ($name === "elements") {
-            $this->$name = $value;
-        } else {
-            parent::__set($name, $value);
-        }
+        $this->elements = new ArrayClass();
     }
 }

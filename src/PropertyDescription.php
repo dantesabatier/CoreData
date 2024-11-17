@@ -29,15 +29,29 @@ abstract class PropertyDescription extends ObjectClass
     /** @var bool A Boolean value that indicates whether the receiver is transient. The transient flag specifies whether a property's value is ignored when an object is saved to a persistent store. Transient properties are not saved to the persistent store, but are still managed for undo, redo, validation, and so on. */
     public bool $isTransient = false;
     /** @var ArrayClass<Predicate> The validation predicates of the receiver. */
-    public readonly ArrayClass $validationPredicates;
+    private(set) ArrayClass $validationPredicates {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->validationPredicates();
+        set => $this->associatedValues[__PROPERTY__] = $value;
+    }
     /** @var ArrayClass<string> The error strings associated with the receiver's validation predicates. */
-    public readonly ArrayClass $validationWarnings;
+    private(set) ArrayClass $validationWarnings {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->validationWarnings();
+        set => $this->associatedValues[__PROPERTY__] = $value;
+    }
     /** @var string The version hash for the receiver. The version hash is used to uniquely identify a property based on its configuration. The version hash uses only values which affect the persistence of data and the user-defined {@see versionHashModifier} value. (The values which affect persistence are the name of the property, and the flags for isOptional, isTransient, and isReadOnly.) This value is stored as part of the version information in the metadata for stores, as well as a definition of a property involved in an PropertyMapping object. */
-    public readonly string $versionHash;
+    public string $versionHash {
+        get {
+            $this->versionHashInStyle($hash, VersionHashStyle::default);
+            return $hash;
+        }
+    }
     /** @var string|null The version hash modifier for the receiver. This value is included in the version hash for the property. You use it to mark or denote a property as being a different “version” than another even if all the values which affect persistence are equal. (Such a difference is important in cases where the attributes of a property are unchanged but the format or content of its data are changed.) */
     public ?string $versionHashModifier = null;
     /** @var string The renaming identifier for the receiver. This is used to resolve naming conflicts between models. When creating an entity mapping between entities in two managed object models, a source entity property and a destination entity property that share the same identifier indicate that a property mapping should be configured to migrate from the source to the destination. If unset, the identifier will return the property's name. */
-    public string $renamingIdentifier;
+    public string $renamingIdentifier {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->name;
+        set => $this->associatedValues[__PROPERTY__] = $value;
+    }
     public bool $isSensitive = false;
     /** @internal */
     public PropertyDescriptionType $propertyType = PropertyDescriptionType::private;
@@ -53,48 +67,6 @@ abstract class PropertyDescription extends ObjectClass
     public ?string $regex = null;
     public string $description {
         get => sprintf("(<%s: %s>), name %s, isOptional %s, isTransient %s, entity %s renamingIdentifier %s, validation predicates %s, warnings %s", get_class($this), $this->hash, $this->name, (int)$this->isOptional, (int)$this->isTransient, $this->entity->name, $this->renamingIdentifier, $this->validationPredicates->description, $this->validationWarnings->description);
-    }
-
-    public function __construct()
-    {
-        unset($this->validationPredicates);
-        unset($this->validationWarnings);
-        unset($this->renamingIdentifier);
-        unset($this->versionHash);
-    }
-
-    public function __get(string $name)
-    {
-        if ($name === "validationPredicates") {
-            $this->$name = $this->validationPredicates();
-            return $this->$name;
-        }
-        if ($name === "validationWarnings") {
-            $this->$name = $this->validationWarnings();
-            return $this->$name;
-        }
-        if ($name === "versionHash") {
-            /** @noinspection PhpUnhandledExceptionInspection */
-            $this->versionHashInStyle($hash, VersionHashStyle::default);
-            /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-            $this->$name = $hash;
-            return $this->$name;
-        }
-        if ($name === "renamingIdentifier") {
-            $this->$name = $this->name;
-            return $this->$name;
-        }
-        return $this->valueForUndefinedKey($name);
-    }
-
-    public function __set(string $name, mixed $value): void
-    {
-        $this->throwIfNotEditable();
-        if ($name === "validationPredicates" || $name === "validationWarnings" || $name === "renamingIdentifier") {
-            $this->$name = $value;
-        } else {
-            $this->setValueForUndefinedKey($value, $name);
-        }
     }
 
     private function throwIfNotEditable(): void

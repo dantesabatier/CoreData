@@ -30,7 +30,10 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     /** @var class-string<ManagedObject>|null $managedObjectClassName The name of the class that represents the receiver's entity. The class specified by name must be {@see ManagedObject} or a subclass of ManagedObject. */
     public ?string $managedObjectClassName = null;
     /** @var string The renaming identifier for the receiver. The renaming identifier is used to resolve naming conflicts between models. When creating a mapping model between two managed object models, a source entity and a destination entity that share the same identifier indicate that an entity mapping should be configured to migrate from the source to the destination. If you do not set this value, the identifier will return the entity's name. */
-    public string $renamingIdentifier;
+    public string $renamingIdentifier {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->name;
+        set => $this->associatedValues[__PROPERTY__] = $value;
+    }
     /** @var bool A Boolean value that indicates whether the receiver represents an abstract entity. An abstract entity might be Shape, with concrete sub-entities such as Rectangle, Triangle, and Circle. */
     public bool $isAbstract = false;
     /** @var Dictionary|null The user info dictionary of the receiver. */
@@ -48,7 +51,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         }
     }
     /** @var Dictionary<EntityDescription> A dictionary containing the receiver's sub-entities. */
-    public readonly Dictionary $subentitiesByName;
+    private(set) Dictionary $subentitiesByName;
     /** @var EntityDescription|null The super-entity of the receiver. */
     public ?EntityDescription $superentity = null;
     /** @var ArrayClass<PropertyDescription> $properties An array containing the properties of the receiver. The elements in the array are instances of {@see AttributeDescription}, {@see RelationshipDescription}, and/or {@see FetchedPropertyDescription}. */
@@ -69,11 +72,27 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         }
     }
     /** @var Dictionary<PropertyDescription> A dictionary containing the properties of the receiver. */
-    public readonly Dictionary $propertiesByName;
+    private(set) Dictionary $propertiesByName;
     /** @var Dictionary<AttributeDescription> The attributes of the receiver in a dictionary. The keys in the dictionary are the attribute names and the values are instances of {@see AttributeDescription}. */
-    public readonly Dictionary $attributesByName;
+    public Dictionary $attributesByName {
+        get {
+            if ($this->isEditable) {
+                fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
+            }
+            /** @psalm-suppress PropertyTypeCoercion */
+            return $this->associatedValues[__PROPERTY__] ??= $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
+        }
+    }
     /** @var Dictionary<RelationshipDescription> The relationships of the receiver in a dictionary. The keys in the dictionary are the relationship names and the values are instances of {@see RelationshipDescription}. */
-    public readonly Dictionary $relationshipsByName;
+    public Dictionary $relationshipsByName {
+        get {
+            if ($this->isEditable) {
+                fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
+            }
+            /** @psalm-suppress PropertyTypeCoercion */
+            return $this->associatedValues[__PROPERTY__] ??= $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
+        }
+    }
     /** @var ArrayClass<FetchIndexDescription> $indexes An array of fetch index descriptions for the entity. This value doesn't form part of the entity's version hash, and stores that don't natively support indexing may ignore it. Set indexes last in a model. Changing an entity hierarchy in any way that affects the validity of indexes drops all existing indexes for entities in that hierarchy, such as adding or removing superentities or subentities, or adding and removing properties anywhere in the hierarchy. */
     public ArrayClass $indexes {
         get => $this->indexesByName->values;
@@ -92,11 +111,14 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         }
     }
     /** @var Dictionary<FetchIndexDescription> $indexesByName */
-    private readonly Dictionary $indexesByName;
+    private Dictionary $indexesByName;
     /** @var ArrayClass<ArrayClass<AttributeDescription|string>> An array of arrays that contains one or more attributes with a value that must be unique over the instances of that entity. Each inner array contains one or more {@see AttributeDescription} objects or strings that contain the names of attributes on the entity. This value forms part of the entity's version hash. Stores that don't support uniqueness constraints must refuse to initialize when receiving a model that contains such constraints. Uniqueness constraint violations can be computationally expensive to handle. The recommendation is to use only one uniqueness constraint per entity hierarchy, although subentites may extend a superentity's constraint. */
     public ArrayClass $uniquenessConstraints;
     /** @var string The version hash is used to uniquely identify an entity based on the collection and configuration of properties for the entity. The version hash uses only values which affect the persistence of data and the user-defined {@see versionHashModifier} value. (The values which affect persistence are: the name of the entity, the version hash of the superentity (if present), if the entity is abstract, and all the version hashes for the properties.) This value is stored as part of the version information in the metadata for stores which use this entity, as well as a definition of an entity involved in an {@see EntityMapping} object. */
-    public readonly string $versionHash;
+    public string $versionHash {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->versionHashInStyle(VersionHashStyle::default);
+        set => $this->associatedValues[__PROPERTY__] = $value;
+    }
     /** @var string|null The version hash modifier for the receiver. This value is included in the version hash for the entity. You use it to mark or denote an entity as being a different “version” than another even if all the values which affect persistence are equal. (Such a difference is important in cases where, for example, the structure of an entity is unchanged but the format or content of data has changed.) */
     public ?string $versionHashModifier = null;
     /** @internal */
@@ -115,60 +137,10 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
 
     public function __construct()
     {
-        unset($this->versionHash);
-        unset($this->renamingIdentifier);
-        unset($this->attributesByName);
-        unset($this->relationshipsByName);
-        unset($this->subentitiesByName);
-        unset($this->propertiesByName);
-        unset($this->indexesByName);
-        unset($this->uniquenessConstraints);
-    }
-
-    public function __get(string $name)
-    {
-        if ($name === "subentitiesByName" || $name === "propertiesByName" || $name === "indexesByName") {
-            $this->$name = new Dictionary();
-            return $this->$name;
-        }
-        if ($name === "uniquenessConstraints") {
-            $this->$name = new ArrayClass();
-            return $this->$name;
-        }
-        if ($name === "versionHash") {
-            $this->$name = $this->versionHashInStyle(VersionHashStyle::default);
-            return $this->$name;
-        }
-        if ($name === "renamingIdentifier") {
-            $this->$name = $this->name;
-            return $this->$name;
-        }
-        if ($name === "attributesByName") {
-            if ($this->isEditable) {
-                fatal_error("$this->debugDescription property \"$name\" cannot be accessed before initialization");
-            }
-            /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
-            return $this->$name;
-        }
-        if ($name === "relationshipsByName") {
-            if ($this->isEditable) {
-                fatal_error("$this->debugDescription property \"$name\" cannot be accessed before initialization");
-            }
-            /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
-            return $this->$name;
-        }
-        return $this->valueForUndefinedKey($name);
-    }
-
-    public function __set(string $name, mixed $value): void
-    {
-        if ($name === "versionHash" || $name === "renamingIdentifier" || $name === "attributesByName" || $name === "relationshipsByName" || $name === "subentitiesByName" || $name === "propertiesByName" || $name === "indexesByName" || $name === "uniquenessConstraints") {
-            $this->$name = $value;
-        } else {
-            $this->setValueForUndefinedKey($value, $name);
-        }
+        $this->subentitiesByName = new Dictionary();
+        $this->propertiesByName = new Dictionary();
+        $this->indexesByName = new Dictionary();
+        $this->uniquenessConstraints = new ArrayClass();
     }
 
     private function throwIfNotEditable(): void
