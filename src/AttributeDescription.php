@@ -54,7 +54,6 @@ class AttributeDescription extends PropertyDescription
             AttributeType::objectID => ManagedObjectID::class,
             default => null,
         };
-        set => $this->attributeValueClassName = $value;
     }
     /** @var string|null The name of the transformer used to transform the attribute value. The attribute must be of type {@see AttributeType::transformable}. The transformer must output data from {@see ValueTransformer::transformedValue()} and must allow reverse transformations. If this value is nil, Core Data uses a default a transformer to archive and unarchive the attribute value. */
     public ?string $valueTransformerName = null;
