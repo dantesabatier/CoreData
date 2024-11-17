@@ -38,14 +38,14 @@ class AttributeDescription extends PropertyDescription
     }
     /** @var string|null The name of the class used to represent the attribute. */
     public ?string $attributeValueClassName = null {
-        get => $this->associatedValues[__PROPERTY__] ??= match ($this->type) {
+        get => $this->attributeValueClassName ??= match ($this->type) {
             AttributeType::date => Date::class,
             AttributeType::uuid => UUID::class,
             AttributeType::uri => URL::class,
             AttributeType::objectID => ManagedObjectID::class,
             default => null,
         };
-        set => $this->associatedValues[__PROPERTY__] = $value;
+        set => $this->attributeValueClassName = $value;
     }
     /** @var string|null The name of the transformer used to transform the attribute value. The attribute must be of type {@see AttributeType::transformable}. The transformer must output data from {@see ValueTransformer::transformedValue()} and must allow reverse transformations. If this value is nil, Core Data uses a default a transformer to archive and unarchive the attribute value. */
     public ?string $valueTransformerName = null;
