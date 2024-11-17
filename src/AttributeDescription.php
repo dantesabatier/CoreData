@@ -19,7 +19,9 @@ use function Sabatier\Foundation\human_readable_value;
 class AttributeDescription extends PropertyDescription
 {
     /** @internal */
-    public PropertyDescriptionType $propertyType = PropertyDescriptionType::attribute;
+    public PropertyDescriptionType $propertyType {
+        get => PropertyDescriptionType::attribute;
+    }
 
     /** @var AttributeType The attribute's type. */
     public AttributeType $type = AttributeType::undefined;

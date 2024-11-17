@@ -23,7 +23,9 @@ use Sabatier\Foundation\Predicates\Expression;
 class DerivedAttributeDescription extends AttributeDescription
 {
     /** @internal */
-    public PropertyDescriptionType $propertyType = PropertyDescriptionType::derivedAttribute;
+    public PropertyDescriptionType $propertyType {
+        get => PropertyDescriptionType::derivedAttribute;
+    }
     /** @var Expression|null An expression for generating derived data. */
     public ?Expression $derivationExpression = null;
 

@@ -17,7 +17,9 @@ use function Sabatier\Foundation\human_readable_value;
 class RelationshipDescription extends PropertyDescription
 {
     /** @internal */
-    public PropertyDescriptionType $propertyType = PropertyDescriptionType::relationship;
+    public PropertyDescriptionType $propertyType {
+        get => PropertyDescriptionType::relationship;
+    }
     /** @var EntityDescription The entity description of the receiver's destination. */
     public EntityDescription $destinationEntity {
         get {

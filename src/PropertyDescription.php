@@ -54,7 +54,9 @@ abstract class PropertyDescription extends ObjectClass
     }
     public bool $isSensitive = false;
     /** @internal */
-    public PropertyDescriptionType $propertyType = PropertyDescriptionType::private;
+    public PropertyDescriptionType $propertyType {
+        get => PropertyDescriptionType::private;
+    }
     /** @internal */
     public bool $isEditable = true;
     /** @internal */
