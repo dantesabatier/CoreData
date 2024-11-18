@@ -51,14 +51,26 @@ class SQLGenerator extends ObjectClass
     private string $groupByClause;
     private string $havingClause;
     private string $orderByClause;
-    private FetchRequest $request;
-    private SQLEntity $entity;
+    private FetchRequest $request {
+        get => $this->request ??= $this->request();
+    }
+    private SQLEntity $entity {
+        get => $this->entity ??= $this->entity();
+    }
     /** @var ArrayClass<mixed> */
-    public ArrayClass $arguments;
-    public readonly ?SQLStatement $statement;
-    private SQLAliasGenerator $aliasGenerator;
+    public ArrayClass $arguments {
+        get => $this->arguments ??= new ArrayClass();
+    }
+    public ?SQLStatement $statement {
+        get => $this->statement ??= $this->statement();
+    }
+    private SQLAliasGenerator $aliasGenerator {
+        get => $this->aliasGenerator ??= new SQLAliasGenerator();
+    }
     /** @var Dictionary<string> */
-    public Dictionary $byMappingByTableAliasAssociationTable;
+    public Dictionary $byMappingByTableAliasAssociationTable {
+        get => $this->byMappingByTableAlias ??= new Dictionary();
+    }
     private bool $useDistinct = false;
     private string $keyValueOperator = KeyValueOperator::countKeyValueOperator;
     public bool $autoDistinct = true;
@@ -66,56 +78,39 @@ class SQLGenerator extends ObjectClass
 
     public function __construct(public readonly SQLStoreRequestContext $requestContext)
     {
-        unset($this->request);
-        unset($this->entity);
-        unset($this->arguments);
-        unset($this->statement);
-        unset($this->aliasGenerator);
-        unset($this->byMappingByTableAliasAssociationTable);
     }
 
-    /** @suppress PHP0416 */
-    public function __get(string $name)
+    private function request(): FetchRequest
     {
-        if ($name === "request") {
-            if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext) {
-                $this->$name = $this->requestContext->fetchContext->request;
-            } elseif ($this->requestContext instanceof SQLFetchRequestContext) {
-                $this->$name = $this->requestContext->request;
-            }
-            return $this->$name;
+        if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext) {
+            return $this->requestContext->fetchContext->request;
+        } elseif ($this->requestContext instanceof SQLFetchRequestContext) {
+            return $this->requestContext->request;
+        } else {
+            return fatal_error("Invalid SQL request context");
         }
-        if ($name === "entity") {
-            if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext) {
-                $this->$name = $this->requestContext->fetchContext->sqlEntityForFetchRequest;
-            } elseif ($this->requestContext instanceof SQLFetchRequestContext) {
-                $this->$name = $this->requestContext->sqlEntityForFetchRequest;
-            }
-            return $this->$name;
+    }
+
+    private function entity(): SQLEntity
+    {
+        if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext) {
+            return $this->requestContext->fetchContext->sqlEntityForFetchRequest;
+        } elseif ($this->requestContext instanceof SQLFetchRequestContext) {
+            return $this->requestContext->sqlEntityForFetchRequest;
+        } else {
+            return fatal_error("Invalid SQL request context");
         }
-        if ($name === "arguments") {
-            $this->$name = new ArrayClass();
-            return $this->$name;
+    }
+
+    private function statement(): ?SQLStatement
+    {
+        if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext || $this->requestContext instanceof SQLFetchRequestContext) {
+            return $this->newSQLStatementForPersistentStoreRequest();
+        } elseif ($this->requestContext instanceof SQLSaveChangesRequestContext) {
+            return $this->newSQLStatementForSaveChangesRequestContext();
+        } else {
+            return null;
         }
-        if ($name === "statement") {
-            if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext || $this->requestContext instanceof SQLFetchRequestContext) {
-                $this->$name = $this->newSQLStatementForPersistentStoreRequest();
-            } elseif ($this->requestContext instanceof SQLSaveChangesRequestContext) {
-                $this->$name = $this->newSQLStatementForSaveChangesRequestContext();
-            } else {
-                $this->$name = null;
-            }
-            return $this->$name;
-        }
-        if ($name === "byMappingByTableAliasAssociationTable") {
-            $this->$name = new Dictionary();
-            return $this->$name;
-        }
-        if ($name === "aliasGenerator") {
-            $this->$name = new SQLAliasGenerator();
-            return $this->$name;
-        }
-        return $this->valueForUndefinedKey($name);
     }
 
     private function newSQLStatementForPersistentStoreRequest(): SQLStatement
@@ -1062,6 +1057,7 @@ class SQLGenerator extends ObjectClass
                     $generator->autoDistinct = false;
                     $generator->raisesForNotApplicableKeys = false;
                     $generator->keyValueOperator = $collectionOperator;
+                    $generator->resetSQL();
                     $string = "($generator->statement";
                     $string .= $generator->whereClause ? " AND " : " WHERE ";
                     if ($relationship instanceof SQLToMany) {
