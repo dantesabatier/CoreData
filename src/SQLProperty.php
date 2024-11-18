@@ -24,11 +24,11 @@ abstract class SQLProperty extends ObjectClass
     public bool $isTransient {
         get => $this->propertyDescription->isTransient;
     }
-    public bool $isUnique {
-        get => $this->entity->indexes->contains(fn(SQLIndex $index, string $key): bool => $index->isUnique && $key === $this->name);
+    private(set) bool $isUnique {
+        get => $this->isUnique ??= $this->entity->indexes->contains(fn(SQLIndex $index, string $key): bool => $index->isUnique && $key === $this->name);
     }
-    public bool $isConstrained {
-        get => $this->entity->indexes->contains(fn(SQLIndex $index, string $key): bool => $key === $this->name);
+    private(set) bool $isConstrained {
+        get => $this->isConstrained ??= $this->entity->indexes->contains(fn(SQLIndex $index, string $key): bool => $key === $this->name);
     }
     public bool $isReadOnly {
         get => $this->propertyDescription->isReadOnly;
