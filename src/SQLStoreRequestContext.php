@@ -17,8 +17,12 @@ abstract class SQLStoreRequestContext extends ObjectClass
     private(set) bool $shouldRegisterQueryGeneration = false;
     public bool $isWritingRequest = false;
     public bool $hasHistoryTracking = false;
-    public readonly SQLGenerator $generator;
-    public mixed $result;
+    private(set) SQLGenerator $generator {
+        get => $this->generator ??= new SQLGenerator($this);
+    }
+    public mixed $result {
+        get => $this->result ??= new ArrayClass();
+    }
     public int $debugLogLevel {
         get => SQLCore::$debugDefault;
         set {
@@ -34,8 +38,6 @@ abstract class SQLStoreRequestContext extends ObjectClass
 
     public function __construct(public readonly PersistentStoreRequest $persistentStoreRequest, public readonly ManagedObjectContext $context, public readonly SQLCore $sqlCore)
     {
-        $this->result = new ArrayClass();
-        $this->generator = new SQLGenerator($this);
     }
 
     /**
