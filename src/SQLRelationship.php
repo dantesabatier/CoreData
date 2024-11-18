@@ -18,11 +18,11 @@ abstract class SQLRelationship extends SQLProperty
         /** @noinspection PhpIncompatibleReturnTypeInspection */
         get => $this->propertyDescription;
     }
-    public SQLEntity $destinationEntity {
-        get => $this->entity->model->entitiesByName[$this->lazyDestinationEntityName] ?? fatal_error("$this->name, destination entity \"$this->lazyDestinationEntityName\" does not exists");
+    private(set) SQLEntity $destinationEntity {
+        get => $this->destinationEntity ??= $this->entity->model->entitiesByName[$this->lazyDestinationEntityName] ?? fatal_error("$this->name, destination entity \"$this->lazyDestinationEntityName\" does not exists");
     }
-    public SQLRelationship $inverseRelationship {
-        get => $this->destinationEntity->propertiesByName[$this->lazyInverseRelationshipName] ?? fatal_error("$this->name, inverse relationship \"$this->lazyInverseRelationshipName\" does not exists");
+    private(set) SQLRelationship $inverseRelationship {
+        get => $this->inverseRelationship ??= $this->destinationEntity->propertiesByName[$this->lazyInverseRelationshipName] ?? fatal_error("$this->name, inverse relationship \"$this->lazyInverseRelationshipName\" does not exists");
     }
     public bool $isOrdered {
         get => $this->relationshipDescription->isOrdered;
