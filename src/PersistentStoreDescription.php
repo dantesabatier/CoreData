@@ -29,22 +29,22 @@ class PersistentStoreDescription extends ObjectClass
     public bool $shouldAddStoreAsynchronously = false;
     /** @var float The connection timeout for the associated store. This is a convenience method for setting the {@see PersistentStoreTimeoutOption} on the associated store. */
     public float $timeout {
-        get => $this->options[PersistentStoreTimeoutOption] ?? 8.0;
+        get => $this->options[PersistentStoreTimeoutOption] ??= 8.0;
         set => $this->options[PersistentStoreTimeoutOption] = $value;
     }
     /** @var bool A flag that indicates whether this store will be read-only. This is a convenience method for setting the {@see ReadOnlyPersistentStoreOption} on the associated store. */
     public bool $isReadOnly {
-        get => (bool)$this->options[ReadOnlyPersistentStoreOption];
+        get => $this->options[ReadOnlyPersistentStoreOption] ??= false;
         set => $this->options[ReadOnlyPersistentStoreOption] = $value;
     }
     /** @var bool A flag indicating whether a mapping model should be created automatically. If this flag is set to true and the value of the {@see shouldMigrateStoreAutomatically} is true, the coordinator attempts to infer a mapping model if none can be found. The default for this flag is true. */
     public bool $shouldInferMappingModelAutomatically {
-        get => $this->options[InferMappingModelAutomaticallyOption] ?? true;
+        get => $this->options[InferMappingModelAutomaticallyOption] ??= true;
         set => $this->options[InferMappingModelAutomaticallyOption] = $value;
     }
     /** @var bool A flag indicating whether the associated persistent store should be migrated automatically. If this is set to false and the store is out of sync, attempting to load the store produces an error. If this is set to true and the store is out of sync, attempting to load the store causes Core Data to attempt a migration. This flag is set to true by default. */
     public bool $shouldMigrateStoreAutomatically {
-        get => $this->options[MigratePersistentStoresAutomaticallyOption] ?? true;
+        get => $this->options[MigratePersistentStoresAutomaticallyOption] ??= true;
         set => $this->options[MigratePersistentStoresAutomaticallyOption] = $value;
     }
 
