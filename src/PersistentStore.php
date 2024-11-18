@@ -22,17 +22,25 @@ abstract class PersistentStore extends ObjectClass
     /** @var string The type string of the persistent store. */
     public string $type;
     /** @var string The unique identifier for the persistent store. */
-    public string $identifier;
+    public string $identifier {
+        get => $this->identifier ??= new UUID()->uuidString;
+    }
     /** @var Dictionary The metadata for the persistent store. The dictionary must include the store type. */
-    public Dictionary $metadata;
+    public Dictionary $metadata {
+        get => $this->metadata ??= new Dictionary([StoreTypeKey => $this->type, StoreUUIDKey => $this->identifier]);
+    }
     /** @var bool A Boolean value that indicates whether the persistent store is read-only. */
     public bool $isReadOnly {
         get => (bool)$this->options?->valueForKey(ReadOnlyPersistentStoreOption);
     }
     /** @internal */
-    public readonly FaultHandler $faultHandler;
+    public FaultHandler $faultHandler {
+        get => $this->faultHandler ??= new FaultHandler($this);
+    }
     /** @var Dictionary<Dictionary<ManagedObjectID>> */
-    private Dictionary $cacheEntities;
+    private Dictionary $cacheEntities {
+        get => $this->cacheEntities ??= new Dictionary();
+    }
 
     /**
      * Returns a store initialized with the given arguments.
@@ -46,21 +54,6 @@ abstract class PersistentStore extends ObjectClass
      */
     public function __construct(public readonly PersistentStoreCoordinator $persistentStoreCoordinator, public readonly string $configurationName, public URL $url, public readonly ?Dictionary $options = null)
     {
-        unset($this->identifier);
-        unset($this->metadata);
-        unset($this->faultHandler);
-        unset($this->cacheEntities);
-    }
-
-    public function __get(string $name)
-    {
-        return $this->$name = match ($name) {
-            "identifier" => new UUID()->uuidString,
-            "metadata" => new Dictionary([StoreTypeKey => $this->type, StoreUUIDKey => $this->identifier]),
-            "faultHandler" => new FaultHandler($this),
-            "cacheEntities" => new Dictionary(),
-            default => $this->valueForUndefinedKey($name)
-        };
     }
 
     /**
