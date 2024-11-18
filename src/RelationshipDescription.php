@@ -21,7 +21,7 @@ class RelationshipDescription extends PropertyDescription
         get => PropertyDescriptionType::relationship;
     }
     /** @var EntityDescription The entity description of the receiver's destination. */
-    public EntityDescription $destinationEntity {
+    private(set) EntityDescription $destinationEntity {
         get {
             if ($this->entity->isEditable) {
                 fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
@@ -31,7 +31,7 @@ class RelationshipDescription extends PropertyDescription
         }
     }
     /** @var RelationshipDescription The relationship that represents the inverse of the receiver. */
-    public RelationshipDescription $inverseRelationship {
+    private(set) RelationshipDescription $inverseRelationship {
         get {
             if ($this->entity->isEditable) {
                 fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
