@@ -12,8 +12,8 @@ namespace Sabatier\CoreData;
 /** @internal */
 class SQLForeignOrderKey extends SQLColumn
 {
-    public string $columnName {
-        get => $relationshipDescription->destinationEntity->attributesByName->first?->name ?? SQLEntity::primaryKeyName;
+    private(set) string $columnName {
+        get => $this->columnName ??= $relationshipDescription->destinationEntity->attributesByName->first?->name ?? SQLEntity::primaryKeyName;
     }
     public SQLToOne $toOneRelationship {
         get => $this->foreignKey->toOneRelationship;
@@ -22,9 +22,11 @@ class SQLForeignOrderKey extends SQLColumn
         /** @noinspection PhpIncompatibleReturnTypeInspection */
         get => $this->propertyDescription;
     }
+    private(set) SQLForeignKey $foreignKey;
 
-    public function __construct(SQLEntity $entity, RelationshipDescription $relationshipDescription, public readonly SQLForeignKey $foreignKey)
+    public function __construct(SQLEntity $entity, RelationshipDescription $relationshipDescription, SQLForeignKey $foreignKey)
     {
         parent::__construct($entity, $relationshipDescription);
+        $this->foreignKey = $foreignKey;
     }
 }
