@@ -572,7 +572,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $set->setSet($value);
                 $value = $set;
                 $change = $this->mutableSetValueForKey($key);
-                if (!$this->isAwakening && $this->isInserted && $this->isRelationshipForKeyFault($key)) {
+                if (!$this->isAwakening && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
                     $this->reserved[$key] = true;
                     /** @var FaultingMutableSet $change */
                     $change = $this->valueForKey($key);
@@ -613,7 +613,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 assert($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null, sprintf("invalid argument: %s(%s) expecting \"%s|%s|null\", \"%s\" given", $this->entity->name, $key, ManagedObject::class, ManagedObjectID::class, typeof($value)));
                 $change = $value;
                 $current = $this->primitiveValueForKey($key);
-                if ($this->isInserted && $this->isRelationshipForKeyFault($key)) {
+                if (!$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
                     $current = $this->valueForKey($key);
                 }
                 if ($current === null && $value !== null) {
