@@ -29,7 +29,7 @@ class RelationshipDescription extends PropertyDescription
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
             return $this->associatedValues[__PROPERTY__] ??= $this->entity->managedObjectModel->entitiesByName[$this->lazyDestinationEntityName] ?? $this->entity->managedObjectModel->entitiesByName->first(fn(EntityDescription $entity): bool => $entity->renamingIdentifier === $this->lazyDestinationEntityName) ?? fatal_error("$this->name, destination entity \"$this->lazyDestinationEntityName\" does not exists");
         }
-        set => $this->associatedValues = $value;
+        set => $this->associatedValues[__PROPERTY__] = $value;
     }
     /** @var RelationshipDescription The relationship that represents the inverse of the receiver. */
     public RelationshipDescription $inverseRelationship {
@@ -40,7 +40,7 @@ class RelationshipDescription extends PropertyDescription
             /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
             return $this->associatedValues[__PROPERTY__] ??= $this->destinationEntity->relationshipsByName[$this->lazyInverseRelationshipName] ?? $this->destinationEntity->relationshipsByName->first(fn(RelationshipDescription $relationship): bool => $relationship->renamingIdentifier === $this->lazyInverseRelationshipName) ?? fatal_error("$this->name, inverse relationship \"$this->lazyInverseRelationshipName\" does not exists");
         }
-        set => $this->associatedValues = $value;
+        set => $this->associatedValues[__PROPERTY__] = $value;
     }
     /** @var bool Returns a Boolean value that indicates whether the relationship can contain many managed objects. If {@see maxCount} is equal to 1, implying a to-one relationship, this property returns false; otherwise, it returns true. */
     public bool $isToMany = false;
