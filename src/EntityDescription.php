@@ -244,7 +244,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
      */
     public static function insertNewObject(string $entityName, ManagedObjectContext $context): ManagedObject
     {
-        $entity = static::entity($entityName, $context);
+        $entity = self::entity($entityName, $context);
         $managedObjectClass = $entity->managedObjectClassName ?? ManagedObject::class;
         /** @psalm-suppress UnsafeInstantiation */
         return new $managedObjectClass($context, $entity);
