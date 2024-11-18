@@ -8,10 +8,10 @@ use Sabatier\Foundation\Number;
 /** @internal */
 class SQLBatchInsertRequestContext extends SQLStoreRequestContext
 {
+    public bool $isWritingRequest = true;
     public function __construct(public readonly BatchInsertRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         parent::__construct($this->request, $context, $sqlCore);
-        $this->isWritingRequest = true;
     }
 
     #[Override]
