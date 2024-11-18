@@ -9,17 +9,19 @@ use Sabatier\Foundation\Number;
 /** @internal */
 class SQLBatchUpdateRequestContext extends SQLStoreRequestContext
 {
-    public readonly SQLFetchRequestContext $fetchContext;
-    public readonly ?SQLStatement $updateStatement;
+    public bool $isWritingRequest = true;
+    private(set) SQLFetchRequestContext $fetchContext {
+        get => $this->fetchContext ??= $this->createFetchRequestContextForObjectsToUpdate();
+    }
+    private(set) ?SQLStatement $updateStatement {
+        get => $this->updateStatement ??= $this->generator->statement;
+    }
     /** @var ArrayClass<ManagedObjectID> */
-    public readonly ArrayClass $affectedObjectIDs;
+    private(set) ArrayClass $affectedObjectIDs;
 
     public function __construct(public readonly BatchUpdateRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         parent::__construct($this->request, $context, $sqlCore);
-        $this->fetchContext = $this->createFetchRequestContextForObjectsToUpdate();
-        $this->updateStatement = $this->generator->statement;
-        $this->isWritingRequest = true;
     }
 
     private function createFetchRequestContextForObjectsToUpdate(): SQLFetchRequestContext
