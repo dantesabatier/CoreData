@@ -93,7 +93,7 @@ class RelationshipDescription extends PropertyDescription
             $dictionary["isOrdered"] = $this->isOrdered;
         }
         if ($this->deleteRule !== DeleteRule::nullifyDeleteRule) {
-            $dictionary["deleteRule"] = $this->deleteRule->value;
+            $dictionary["deleteRule"] = $this->deleteRule;
         }
         if ($this->maxCount) {
             $dictionary["maxCount"] = $this->maxCount;
