@@ -15,16 +15,21 @@ use function Sabatier\Foundation\human_readable_time;
 /** @internal */
 class SQLFetchRequestContext extends SQLStoreRequestContext
 {
-    public readonly SQLModel $sqlModel;
-    public readonly SQLEntity $sqlEntityForFetchRequest;
-    public readonly SQLStatement $fetchStatement;
+    public SQLModel $sqlModel {
+        get => $this->sqlCore->model;
+    }
+    private(set) SQLEntity $sqlEntityForFetchRequest {
+        get => $this->sqlEntityForFetchRequest ??= $this->sqlModel->entity($this->request->entity->name) ?? fatal_error("Entity \"{$this->request->entity->name}\" does not exists");
+    }
+    private(set) SQLStatement $fetchStatement {
+        get => $this->fetchStatement ??= $this->generator->statement ?? fatal_error();
+    }
+    private(set) FetchRequest $request;
 
-    public function __construct(public readonly FetchRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
+    public function __construct(FetchRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
     {
-        parent::__construct($this->request, $context, $sqlCore);
-        $this->sqlModel = $this->sqlCore->model;
-        $this->sqlEntityForFetchRequest = $this->sqlModel->entity($this->request->entity->name) ?? fatal_error("Entity \"{$this->request->entity->name}\" does not exists");
-        $this->fetchStatement = $this->generator->statement ?? fatal_error();
+        parent::__construct($request, $context, $sqlCore);
+        $this->request = $request;
     }
 
     #[Override]
