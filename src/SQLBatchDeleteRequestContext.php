@@ -9,22 +9,31 @@ use Sabatier\Foundation\Number;
 /** @internal */
 class SQLBatchDeleteRequestContext extends SQLStoreRequestContext
 {
+    public bool $isWritingRequest = true;
     /** @var FetchRequest<ManagedObjectID> */
-    public readonly FetchRequest $fetchRequestForObjectsToDelete;
+    private(set) FetchRequest $fetchRequestForObjectsToDelete {
+        get => $this->fetchRequestForObjectsToDelete ??= $this->fetchRequestForObjectsToDelete();
+    }
     /** @var ArrayClass<ManagedObjectID> */
     public readonly ArrayClass $affectedObjectIDs;
-    public readonly SQLFetchRequestContext $fetchContext;
-    public readonly ?SQLStatement $deleteStatement;
+    private(set) SQLFetchRequestContext $fetchContext {
+        get => $this->fetchContext ??= new SQLFetchRequestContext($this->fetchRequestForObjectsToDelete, $this->context, $this->sqlCore);
+    }
+    private(set) ?SQLStatement $deleteStatement {
+        get => $this->deleteStatement ??= $this->generator->statement;
+    }
 
     public function __construct(public readonly BatchDeleteRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         parent::__construct($this->request, $context, $sqlCore);
-        $this->fetchRequestForObjectsToDelete = clone $this->request->fetchRequest;
-        $this->fetchRequestForObjectsToDelete->resultType = FetchRequestResultType::managedObjectIDResultType;
-        $this->fetchRequestForObjectsToDelete->includesPropertyValues = false;
-        $this->fetchContext = new SQLFetchRequestContext($this->fetchRequestForObjectsToDelete, $this->context, $this->sqlCore);
-        $this->deleteStatement = $this->generator->statement;
-        $this->isWritingRequest = true;
+    }
+
+    private function fetchRequestForObjectsToDelete(): FetchRequest
+    {
+        $fetchRequestForObjectsToDelete = clone $this->request->fetchRequest;
+        $fetchRequestForObjectsToDelete->resultType = FetchRequestResultType::managedObjectIDResultType;
+        $fetchRequestForObjectsToDelete->includesPropertyValues = false;
+        return $fetchRequestForObjectsToDelete;
     }
 
     #[Override]
