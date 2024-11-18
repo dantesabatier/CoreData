@@ -8,10 +8,6 @@ use function Sabatier\Foundation\human_readable_value;
 /** @internal */
 class SQLRTreeIndex extends SQLIndex
 {
-    public string $tableName {
-        get => $this->entity->tableName;
-    }
-
     public function __construct(FetchIndexDescription $indexDescription, SQLEntity $entity)
     {
         parent::__construct($indexDescription, $entity);
