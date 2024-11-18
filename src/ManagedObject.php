@@ -49,25 +49,19 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public readonly EntityDescription $entity;
     /** @var ManagedObjectID The object ID of the managed object. If the receiver is a fault, accessing this property does not cause it to fire. If the receiver has not yet been saved, the object ID is a temporary value that will change when the object is saved. */
     public ManagedObjectID $objectID {
-        get => $this->associatedValues[__PROPERTY__] ??= new ManagedObjectID($this->entity, new UUID()->uuidString);
-        set {
-            $this->associatedValues[__PROPERTY__] = $value;
-        }
+        get => $this->objectID ??= new ManagedObjectID($this->entity, new UUID()->uuidString);
     }
     /** @var bool A Boolean value that indicates whether the managed object has been inserted in a managed object context. */
     public bool $isInserted {
-        get => $this->associatedValues[__PROPERTY__] ??= $this->isInserted();
-        set {
-            $this->associatedValues[__PROPERTY__] = $value;
-        }
+        get => $this->isInserted ??= $this->isInserted();
     }
     /** @var bool A Boolean value that indicates whether the managed object has unsaved changes. */
     public bool $isUpdated {
-        get => $this->associatedValues[__PROPERTY__] ??= $this->isInserted && !$this->changedValuesForCurrentEvent->isEmpty;
+        get => $this->isUpdated ??= $this->isInserted && !$this->changedValuesForCurrentEvent->isEmpty;
     }
     /** @var bool A Boolean value that indicates whether the managed object will be deleted during the next save. */
     public bool $isDeleted {
-        get => $this->associatedValues[__PROPERTY__] ??= $this->managedObjectContext->deletedObjects->containsElement($this);
+        get => $this->isDeleted ??= $this->managedObjectContext->deletedObjects->containsElement($this);
     }
     public readonly ManagedObjectContext $managedObjectContext;
     private Dictionary $changedValues;
@@ -79,19 +73,16 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public SerializationRule $serializationRule = SerializationRule::attributesAndRelationships;
     /** @var ArrayClass<string> */
     public ArrayClass $serializationKeys {
-        get => $this->associatedValues[__PROPERTY__] ??= $this->serializationKeys();
-        set {
-            $this->associatedValues[__PROPERTY__] = $value;
-        }
+        get => $this->serializationKeys ??= $this->serializationKeys();
     }
     private array $reserved = [];
     /** @internal */
     public FaultHandler $faultHandler {
-        get => $this->associatedValues[__PROPERTY__] ??= ($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null"))->faultHandler;
+        get => $this->faultHandler ??= ($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null"))->faultHandler;
     }
     /** @internal */
     public ArrayClass $allProperties {
-        get => $this->associatedValues[__PROPERTY__] ??= $this->entity->properties;
+        get => $this->allProperties ??= $this->entity->properties;
     }
     /** @internal */
     public ArrayClass $modeledProperties {
@@ -99,11 +90,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     }
     /** @internal */
     public ArrayClass $persistentProperties {
-        get => $this->associatedValues[__PROPERTY__] ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => !$property->isTransient && !$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription);
+        get => $this->persistentProperties ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => !$property->isTransient && !$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription);
     }
     /** @internal */
     public ArrayClass $transientProperties {
-        get => $this->associatedValues[__PROPERTY__] ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property->isTransient);
+        get => $this->transientProperties ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property->isTransient);
     }
     /** @internal */
     public bool $isSuppressingKVO = false;

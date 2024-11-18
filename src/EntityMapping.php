@@ -32,8 +32,7 @@ class EntityMapping extends ObjectClass
     public ?string $destinationEntityVersionHash = null;
     /** @var string The name of the entity mapping. The name is used only as a means of distinguishing mappings in a model. If not specified, the value defaults to SOURCE->DESTINATION. */
     public string $name {
-        get => $this->associatedValues[__PROPERTY__] ??= $this->name();
-        set => $this->associatedValues[__PROPERTY__] = $value;
+        get => $this->name ??= $this->name();
     }
     /** @var EntityMappingType The mapping type for the entity mapping. If you specify a custom entity mapping type, you must specify a value for the migration policy class name as well (see {@see entityMigrationPolicyClassName}). */
     public EntityMappingType $mappingType = EntityMappingType::undefinedEntityMappingType {

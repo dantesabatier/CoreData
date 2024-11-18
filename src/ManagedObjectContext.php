@@ -108,10 +108,7 @@ class ManagedObjectContext extends ObjectClass
     public bool $automaticallyMergesChangesFromParent = true;
     /** @var MergePolicy The merge policy of the context. */
     public MergePolicy $mergePolicy {
-        get => $this->associatedValues[__PROPERTY__] ??= MergePolicy::error();
-        set {
-            $this->associatedValues[__PROPERTY__] = $value;
-        }
+        get => $this->mergePolicy ??= MergePolicy::error();
     }
     /** @var QueryGenerationToken|null Returns the token associated with the query generation currently in use by this context. */
     private(set) ?QueryGenerationToken $queryGenerationToken = null;
@@ -130,7 +127,7 @@ class ManagedObjectContext extends ObjectClass
      * The default is a negative value, which represents infinite staleness allowed. 0.0 represents "no staleness acceptable". */
     public float $stalenessInterval = -1.0;
     public OperationQueue $queue {
-        get => $this->associatedValues[__PROPERTY__] ??= new OperationQueue();
+        get => $this->queue ??= new OperationQueue();
     }
 
     /**

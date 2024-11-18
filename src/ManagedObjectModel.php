@@ -59,7 +59,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     public Set $versionIdentifiers;
     /** @internal */
     public string $versionHash {
-        get => $this->associatedValues[__PROPERTY__] ??= KeyedArchiver::archivedData($this->entityVersionHashesByName);
+        get => $this->versionHash ??= KeyedArchiver::archivedData($this->entityVersionHashesByName);
     }
     /** @internal */
     public bool $isEditable = true;

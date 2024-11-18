@@ -30,13 +30,11 @@ abstract class PropertyDescription extends ObjectClass
     public bool $isTransient = false;
     /** @var ArrayClass<Predicate> The validation predicates of the receiver. */
     private(set) ArrayClass $validationPredicates {
-        get => $this->associatedValues[__PROPERTY__] ??= $this->validationPredicates();
-        set => $this->associatedValues[__PROPERTY__] = $value;
+        get => $this->validationPredicates ??= $this->validationPredicates();
     }
     /** @var ArrayClass<string> The error strings associated with the receiver's validation predicates. */
     private(set) ArrayClass $validationWarnings {
-        get => $this->associatedValues[__PROPERTY__] ??= $this->validationWarnings();
-        set => $this->associatedValues[__PROPERTY__] = $value;
+        get => $this->validationWarnings ??= $this->validationWarnings();
     }
     /** @var string The version hash for the receiver. The version hash is used to uniquely identify a property based on its configuration. The version hash uses only values which affect the persistence of data and the user-defined {@see versionHashModifier} value. (The values which affect persistence are the name of the property, and the flags for isOptional, isTransient, and isReadOnly.) This value is stored as part of the version information in the metadata for stores, as well as a definition of a property involved in an PropertyMapping object. */
     public string $versionHash {
@@ -49,8 +47,7 @@ abstract class PropertyDescription extends ObjectClass
     public ?string $versionHashModifier = null;
     /** @var string The renaming identifier for the receiver. This is used to resolve naming conflicts between models. When creating an entity mapping between entities in two managed object models, a source entity property and a destination entity property that share the same identifier indicate that a property mapping should be configured to migrate from the source to the destination. If unset, the identifier will return the property's name. */
     public string $renamingIdentifier {
-        get => $this->associatedValues[__PROPERTY__] ??= $this->name;
-        set => $this->associatedValues[__PROPERTY__] = $value;
+        get => $this->renamingIdentifier ??= $this->name;
     }
     public bool $isSensitive = false;
     /** @internal */

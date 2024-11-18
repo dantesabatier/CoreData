@@ -36,23 +36,22 @@ use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 class SQLConnection extends ObjectClass
 {
     private(set) SQLSchema $schema {
-        get => $this->associatedValues[__PROPERTY__] ??= SQLSchema::schema($this->sqlCore?->url?->host);
-        set => $this->associatedValues[__PROPERTY__] = $value;
+        get => $this->schema ??= SQLSchema::schema($this->sqlCore?->url?->host);
     }
     public ?SQLCore $sqlCore {
         get => $this->adapter?->sqlCore;
     }
     public bool $hasMetadataTable {
-        get => $this->associatedValues[__PROPERTY__] ??= $this->hasMetadataTable();
+        get => $this->hasMetadataTable ??= $this->hasMetadataTable();
     }
     public bool $hasCachedModelTable {
-        get => $this->associatedValues[__PROPERTY__] ??= $this->hasCachedModelTable();
+        get => $this->hasCachedModelTable ??= $this->hasCachedModelTable();
     }
     public bool $hasPersistentHistoryTables {
-        get => $this->associatedValues[__PROPERTY__] ??= $this->hasPersistentHistoryTables();
+        get => $this->hasPersistentHistoryTables ??= $this->hasPersistentHistoryTables();
     }
     public ?ManagedObjectModel $cachedModel {
-        get => $this->associatedValues[__PROPERTY__] ??= $this->fetchCachedModel();
+        get => $this->cachedModel ??= $this->fetchCachedModel();
     }
     private SQLStoreRequestContext $requestContext;
     public string $bundleID {

@@ -31,8 +31,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     public ?string $managedObjectClassName = null;
     /** @var string The renaming identifier for the receiver. The renaming identifier is used to resolve naming conflicts between models. When creating a mapping model between two managed object models, a source entity and a destination entity that share the same identifier indicate that an entity mapping should be configured to migrate from the source to the destination. If you do not set this value, the identifier will return the entity's name. */
     public string $renamingIdentifier {
-        get => $this->associatedValues[__PROPERTY__] ??= $this->name;
-        set => $this->associatedValues[__PROPERTY__] = $value;
+        get => $this->renamingIdentifier ??= $this->name;
     }
     /** @var bool A Boolean value that indicates whether the receiver represents an abstract entity. An abstract entity might be Shape, with concrete sub-entities such as Rectangle, Triangle, and Circle. */
     public bool $isAbstract = false;
@@ -80,7 +79,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
                 fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
             }
             /** @psalm-suppress PropertyTypeCoercion */
-            return $this->associatedValues[__PROPERTY__] ??= $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
+            return $this->attributesByName ??= $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
         }
     }
     /** @var Dictionary<RelationshipDescription> The relationships of the receiver in a dictionary. The keys in the dictionary are the relationship names and the values are instances of {@see RelationshipDescription}. */
@@ -90,7 +89,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
                 fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
             }
             /** @psalm-suppress PropertyTypeCoercion */
-            return $this->associatedValues[__PROPERTY__] ??= $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
+            return $this->relationshipsByName ??= $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
         }
     }
     /** @var ArrayClass<FetchIndexDescription> $indexes An array of fetch index descriptions for the entity. This value doesn't form part of the entity's version hash, and stores that don't natively support indexing may ignore it. Set indexes last in a model. Changing an entity hierarchy in any way that affects the validity of indexes drops all existing indexes for entities in that hierarchy, such as adding or removing superentities or subentities, or adding and removing properties anywhere in the hierarchy. */
@@ -116,8 +115,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     public ArrayClass $uniquenessConstraints;
     /** @var string The version hash is used to uniquely identify an entity based on the collection and configuration of properties for the entity. The version hash uses only values which affect the persistence of data and the user-defined {@see versionHashModifier} value. (The values which affect persistence are: the name of the entity, the version hash of the superentity (if present), if the entity is abstract, and all the version hashes for the properties.) This value is stored as part of the version information in the metadata for stores which use this entity, as well as a definition of an entity involved in an {@see EntityMapping} object. */
     public string $versionHash {
-        get => $this->associatedValues[__PROPERTY__] ??= $this->versionHashInStyle(VersionHashStyle::default);
-        set => $this->associatedValues[__PROPERTY__] = $value;
+        get => $this->versionHash ??= $this->versionHashInStyle(VersionHashStyle::default);
     }
     /** @var string|null The version hash modifier for the receiver. This value is included in the version hash for the entity. You use it to mark or denote an entity as being a different “version” than another even if all the values which affect persistence are equal. (Such a difference is important in cases where, for example, the structure of an entity is unchanged but the format or content of data has changed.) */
     public ?string $versionHashModifier = null;
