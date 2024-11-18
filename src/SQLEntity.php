@@ -13,58 +13,58 @@ class SQLEntity extends StoreMapping
 {
     public const string primaryKeyName = "objectID";
     public const string entityKeyName = "entityName";
-    public string $tableName {
+    private(set) string $tableName {
         get => $this->tableName ??= $this->tableName();
     }
-    public SQLPrimaryKey $primaryKey {
+    private(set) SQLPrimaryKey $primaryKey {
         get => $this->primaryKey ??= $this->primaryKey();
     }
-    public SQLEntityKey $entityKey {
+    private(set) SQLEntityKey $entityKey {
         get => $this->entityKey ??= $this->entityKey();
     }
     /** @var ArrayClass<SQLEntity> */
-    public ArrayClass $subentities {
+    private(set) ArrayClass $subentities {
         get => $this->subentities ??= $this->entityDescription->subentities->map(fn(EntityDescription $subentity): SQLEntity => $this->model->entitiesByName[$subentity->name]);
     }
-    public ?SQLEntity $superentity {
+    private(set) ?SQLEntity $superentity {
         get => $this->superentity ??= $this->model->entitiesByName->first(fn(SQLEntity $entity): bool => $entity->entityDescription->isEqual($this->entityDescription->superentity));
     }
-    public ?SQLEntity $rootEntity {
+    private(set) ?SQLEntity $rootEntity {
         get => $this->rootEntity ??= $this->rootEntity();
     }
-    public bool $isRootEntity {
+    private(set) bool $isRootEntity {
         get => $this->isRootEntity ??= $this->superentity === null;
     }
     /** @var Dictionary<SQLProperty> */
-    public Dictionary $propertiesByName {
+    private(set) Dictionary $propertiesByName {
         get => $this->propertiesByName ??= $this->propertiesByName();
     }
     /** @var ArrayClass<SQLProperty> */
-    public ArrayClass $properties {
+    private(set) ArrayClass $properties {
         get => $this->properties ??= $this->propertiesByName->values;
     }
     /** @var ArrayClass<SQLProperty> */
-    public ArrayClass $uniqueProperties {
+    private(set) ArrayClass $uniqueProperties {
         get => $this->uniqueProperties ??= $this->properties->filter(fn(SQLProperty $property): bool => $property->isUnique);
     }
     /** @var ArrayClass<SQLAttribute> */
-    public ArrayClass $attributes {
+    private(set) ArrayClass $attributes {
         get => $this->attributes ??= $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute);
     }
     /** @var ArrayClass<SQLAttribute> */
-    public ArrayClass $derivedAttributes {
+    private(set) ArrayClass $derivedAttributes {
         get => $this->derivedAttributes ??= $this->attributes->filter(fn(SQLAttribute $attribute): bool => $attribute->attributeDescription instanceof DerivedAttributeDescription);
     }
     /** @var ArrayClass<ArrayClass<SQLAttribute>> */
-    public ArrayClass $multiColumnUniquenessConstraints {
+    private(set) ArrayClass $multiColumnUniquenessConstraints {
         get => $this->multiColumnUniquenessConstraints ??= $this->entityDescription->uniquenessConstraints->map(fn(ArrayClass $uniquenessConstraints): ArrayClass => $uniquenessConstraints->compactMap(fn(AttributeDescription|string $description): ?SQLAttribute => $this->attributes->first(fn(SQLAttribute $attribute): bool => $attribute->name === ($description instanceof AttributeDescription ? $description->name : $description))));
     }
     /** @var Dictionary<SQLIndex> */
-    public Dictionary $indexes {
+    private(set) Dictionary $indexes {
         get => $this->indexes ??= $this->indexes();
     }
     /** @var Dictionary<SQLRTreeIndex> */
-    public Dictionary $rTreeIndexes {
+    private(set) Dictionary $rTreeIndexes {
         get => $this->rTreeIndexes ??= $this->indexes->filter(fn(SQLIndex $index): bool => $index instanceof SQLRTreeIndex);
     }
     // TODO: implement optimistic locking
@@ -72,46 +72,48 @@ class SQLEntity extends StoreMapping
         get => null;
     }
     /** @var ArrayClass<SQLForeignKey> */
-    public ArrayClass $foreignKeyColumns {
+    private(set) ArrayClass $foreignKeyColumns {
         get => $this->foreignKeyColumns ??= $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLRelationship)->compactMap(fn(SQLRelationship $relationship): ?SQLForeignKey => $relationship instanceof SQLToOne ? $relationship->foreignKey : null);
     }
     /** @var ArrayClass<SQLForeignKey> */
-    public ArrayClass $virtualForeignKeyColumns {
+    private(set) ArrayClass $virtualForeignKeyColumns {
         get => $this->virtualForeignKeyColumns ??= $this->foreignKeyColumns->filter(fn(SQLForeignKey $foreignKey): bool => $foreignKey->toOneRelationship->isVirtual);
     }
     /** @var ArrayClass<SQLForeignEntityKey> */
-    public ArrayClass $foreignEntityKeyColumns {
+    private(set) ArrayClass $foreignEntityKeyColumns {
         get => $this->foreignEntityKeyColumns ??= new ArrayClass();
     }
     /** @var ArrayClass<SQLForeignOrderKey> */
-    public ArrayClass $foreignOrderKeyColumns {
+    private(set) ArrayClass $foreignOrderKeyColumns {
         get => $this->foreignOrderKeyColumns ??= new ArrayClass();
     }
     /** @var ArrayClass<SQLAttribute> */
-    public ArrayClass $entitySpecificAttributes {
+    private(set) ArrayClass $entitySpecificAttributes {
         get => $this->entitySpecificAttributes ??= $this->entityDescription->relationshipsByName->map(fn(RelationshipDescription $relationshipDescription): SQLRelationship => $this->propertiesByName[$relationshipDescription->name]);
     }
     /** @var ArrayClass<SQLRelationship> */
-    public ArrayClass $entitySpecificRelationships {
+    private(set) ArrayClass $entitySpecificRelationships {
         get => $this->entitySpecificRelationships ??= $this->entityDescription->relationshipsByName->map(fn(RelationshipDescription $relationshipDescription): SQLRelationship => $this->propertiesByName[$relationshipDescription->name]);
     }
     /** @var ArrayClass<SQLToMany> */
-    public ArrayClass $toManyRelationships {
+    private(set) ArrayClass $toManyRelationships {
         get => $this->toManyRelationships ??= $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLToMany);
     }
     /** @var ArrayClass<SQLManyToMany> */
-    public ArrayClass $manyToManyRelationships {
+    private(set) ArrayClass $manyToManyRelationships {
         get => $this->manyToManyRelationships ??= $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLManyToMany);
     }
     /** @var ArrayClass<SQLColumn> */
-    public ArrayClass $columnsToFetch {
+    private(set) ArrayClass $columnsToFetch {
         get => $this->columnsToFetch ??= $this->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient && (($property instanceof SQLAttribute ? ($property->isDerivedAttribute && !$property->derivationExpression?->usesKVC || !$property->isDerivedAttribute) : !$property instanceof SQLRelationship && !$property instanceof SQLForeignKey)));
     }
     /** @var ArrayClass<SQLColumn> */
-    public ArrayClass $columnsToCreate {
+    private(set) ArrayClass $columnsToCreate {
         get => $this->columnsToCreate ??= $this->properties->filter(fn(SQLProperty $property): bool => !$property instanceof SQLRelationship && !($property instanceof SQLAttribute && $property->isDerivedAttribute && $property->derivationExpression?->usesKVC));
     }
-    public readonly Dictionary $compositeAttributeNameToSQLProperties;
+    private(set) Dictionary $compositeAttributeNameToSQLProperties {
+        get => $this->compositeAttributeNameToSQLProperties ??= new Dictionary();
+    }
     //TODO: not implemented
     public int $entityID = 0;
     public int $subentityMaxID {
