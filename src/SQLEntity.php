@@ -13,273 +13,213 @@ class SQLEntity extends StoreMapping
 {
     public const string primaryKeyName = "objectID";
     public const string entityKeyName = "entityName";
-    public readonly string $tableName;
+    public string $tableName {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->tableName();
+    }
+    public SQLPrimaryKey $primaryKey {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->primaryKey();
+    }
+    public SQLEntityKey $entityKey {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->entityKey();
+    }
     /** @var ArrayClass<SQLEntity> */
-    public readonly ArrayClass $subentities;
-    public readonly ?SQLEntity $superentity;
-    public readonly ?SQLEntity $rootEntity;
+    public ArrayClass $subentities {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->entityDescription->subentities->map(fn(EntityDescription $subentity): SQLEntity => $this->model->entitiesByName[$subentity->name]);
+    }
+    public ?SQLEntity $superentity {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->model->entitiesByName->first(fn(SQLEntity $entity): bool => $entity->entityDescription->isEqual($this->entityDescription->superentity));
+    }
+    public ?SQLEntity $rootEntity {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->rootEntity();
+    }
+    public bool $isRootEntity {
+        get => $this->superentity === null;
+    }
     /** @var Dictionary<SQLProperty> */
-    public readonly Dictionary $propertiesByName;
+    public Dictionary $propertiesByName {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->propertiesByName();
+    }
     /** @var ArrayClass<SQLProperty> */
-    public readonly ArrayClass $properties;
+    public ArrayClass $properties {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->propertiesByName->values;
+    }
     /** @var ArrayClass<SQLProperty> */
-    public readonly ArrayClass $uniqueProperties;
+    public ArrayClass $uniqueProperties {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->properties->filter(fn(SQLProperty $property): bool => $property->isUnique);
+    }
     /** @var ArrayClass<SQLAttribute> */
-    public readonly ArrayClass $attributes;
+    public ArrayClass $attributes {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute);
+    }
     /** @var ArrayClass<SQLAttribute> */
-    public readonly ArrayClass $derivedAttributes;
+    public ArrayClass $derivedAttributes {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->attributes->filter(fn(SQLAttribute $attribute): bool => $attribute->attributeDescription instanceof DerivedAttributeDescription);
+    }
     /** @var ArrayClass<ArrayClass<SQLAttribute>> */
-    public readonly ArrayClass $multiColumnUniquenessConstraints;
+    public ArrayClass $multiColumnUniquenessConstraints {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->entityDescription->uniquenessConstraints->map(fn(ArrayClass $uniquenessConstraints): ArrayClass => $uniquenessConstraints->compactMap(fn(AttributeDescription|string $description): ?SQLAttribute => $this->attributes->first(fn(SQLAttribute $attribute): bool => $attribute->name === ($description instanceof AttributeDescription ? $description->name : $description))));
+    }
     /** @var Dictionary<SQLIndex> */
-    public readonly Dictionary $indexes;
+    public Dictionary $indexes {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->indexes();
+    }
     /** @var Dictionary<SQLRTreeIndex> */
-    public readonly Dictionary $rTreeIndexes;
+    public Dictionary $rTreeIndexes {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->indexes->filter(fn(SQLIndex $index): bool => $index instanceof SQLRTreeIndex);
+    }
     // TODO: implement optimistic locking
-    public readonly ?SQLOptLockKey $optLockKey;
-    public readonly SQLPrimaryKey $primaryKey;
-    public readonly SQLEntityKey $entityKey;
+    public ?SQLOptLockKey $optLockKey {
+        get => null;
+    }
     /** @var ArrayClass<SQLForeignKey> */
-    public readonly ArrayClass $foreignKeyColumns;
+    public ArrayClass $foreignKeyColumns {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLRelationship)->compactMap(fn(SQLRelationship $relationship): ?SQLForeignKey => $relationship instanceof SQLToOne ? $relationship->foreignKey : null);
+    }
     /** @var ArrayClass<SQLForeignKey> */
-    public readonly ArrayClass $virtualForeignKeyColumns;
+    public ArrayClass $virtualForeignKeyColumns {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->foreignKeyColumns->filter(fn(SQLForeignKey $foreignKey): bool => $foreignKey->toOneRelationship->isVirtual);
+    }
     /** @var ArrayClass<SQLForeignEntityKey> */
-    public readonly ArrayClass $foreignEntityKeyColumns;
+    public ArrayClass $foreignEntityKeyColumns {
+        get => $this->associatedValues[__PROPERTY__] ??= new ArrayClass();
+    }
     /** @var ArrayClass<SQLForeignOrderKey> */
-    public readonly ArrayClass $foreignOrderKeyColumns;
-    public readonly bool $isRootEntity;
+    public ArrayClass $foreignOrderKeyColumns {
+        get => $this->associatedValues[__PROPERTY__] ??= new ArrayClass();
+    }
     /** @var ArrayClass<SQLAttribute> */
-    public readonly ArrayClass $entitySpecificAttributes;
+    public ArrayClass $entitySpecificAttributes {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->entityDescription->relationshipsByName->map(fn(RelationshipDescription $relationshipDescription): SQLRelationship => $this->propertiesByName[$relationshipDescription->name]);
+    }
     /** @var ArrayClass<SQLRelationship> */
-    public readonly ArrayClass $entitySpecificRelationships;
+    public ArrayClass $entitySpecificRelationships {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->entityDescription->relationshipsByName->map(fn(RelationshipDescription $relationshipDescription): SQLRelationship => $this->propertiesByName[$relationshipDescription->name]);
+    }
     /** @var ArrayClass<SQLToMany> */
-    public readonly ArrayClass $toManyRelationships;
+    public ArrayClass $toManyRelationships {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLToMany);
+    }
     /** @var ArrayClass<SQLManyToMany> */
-    public readonly ArrayClass $manyToManyRelationships;
+    public ArrayClass $manyToManyRelationships {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLManyToMany);
+    }
     /** @var ArrayClass<SQLColumn> */
-    public readonly ArrayClass $columnsToFetch;
+    public ArrayClass $columnsToFetch {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient && (($property instanceof SQLAttribute ? ($property->isDerivedAttribute && !$property->derivationExpression?->usesKVC || !$property->isDerivedAttribute) : !$property instanceof SQLRelationship && !$property instanceof SQLForeignKey)));
+    }
     /** @var ArrayClass<SQLColumn> */
-    public readonly ArrayClass $columnsToCreate;
+    public ArrayClass $columnsToCreate {
+        get => $this->associatedValues[__PROPERTY__] ??= $this->properties->filter(fn(SQLProperty $property): bool => !$property instanceof SQLRelationship && !($property instanceof SQLAttribute && $property->isDerivedAttribute && $property->derivationExpression?->usesKVC));
+    }
+    public readonly Dictionary $compositeAttributeNameToSQLProperties;
     //TODO: not implemented
-    public int $entityID;
-    public readonly int $subentityMaxID;
+    public int $entityID = 0;
+    public int $subentityMaxID {
+        get => 0;
+    }
     public string $description {
         get => sprintf("<%s %s>", $this->entityDescription->name, $this->hash);
     }
 
     public function __construct(public readonly SQLModel $model, public readonly EntityDescription $entityDescription)
     {
-        unset($this->optLockKey);
-        unset($this->primaryKey);
-        unset($this->entityKey);
-        unset($this->tableName);
-        unset($this->isRootEntity);
-        unset($this->rootEntity);
-        unset($this->superentity);
-        unset($this->subentities);
-        unset($this->foreignKeyColumns);
-        unset($this->virtualForeignKeyColumns);
-        unset($this->uniqueProperties);
-        unset($this->multiColumnUniquenessConstraints);
-        unset($this->derivedAttributes);
-        unset($this->entitySpecificAttributes);
-        unset($this->entitySpecificRelationships);
-        unset($this->toManyRelationships);
-        unset($this->manyToManyRelationships);
-        unset($this->propertiesByName);
-        unset($this->properties);
-        unset($this->attributes);
-        unset($this->indexes);
-        unset($this->rTreeIndexes);
-        unset($this->columnsToFetch);
-        unset($this->columnsToCreate);
-        unset($this->entityID);
-        unset($this->subentityMaxID);
     }
 
-    public function __get(string $name)
+    private function tableName(): string
     {
-        if ($name === "tableName") {
-            /** @var SQLEntity $entity */
-            $entity = $this->isRootEntity ? $this : $this->rootEntity;
-            $this->$name = $entity->entityDescription->name;
-            return $this->$name;
-        }
-        if ($name === "superentity") {
-            $this->$name = $this->model->entitiesByName->first(fn(SQLEntity $entity): bool => $entity->entityDescription->isEqual($this->entityDescription->superentity));
-            return $this->$name;
-        }
-        if ($name === "subentities") {
-            /** @psalm-suppress all */
-            $this->$name = $this->entityDescription->subentities->map(fn(EntityDescription $subentity): SQLEntity => $this->model->entitiesByName[$subentity->name]);
-            return $this->$name;
-        }
-        if ($name === "isRootEntity") {
-            $this->$name = $this->superentity === null;
-            return $this->$name;
-        }
-        if ($name === "rootEntity") {
-            $superentity = $this->superentity;
-            $rootEntity = $superentity;
-            while ($superentity) {
-                $superentity = $superentity->superentity;
-                if ($superentity) {
-                    $rootEntity = $superentity;
-                }
-            }
-            $this->$name = $rootEntity;
-            return $this->$name;
-        }
-        if ($name === "entityKey") {
-            $attribute = new AttributeDescription();
-            $attribute->entity = $this->entityDescription;
-            $attribute->name = self::entityKeyName;
-            $attribute->type = AttributeType::string;
-            $attribute->isOptional = false;
-            $this->$name = new SQLEntityKey($this, $attribute);
-            return $this->$name;
-        }
-        if ($name === "primaryKey") {
-            $attribute = new AttributeDescription();
-            $attribute->entity = $this->entityDescription;
-            $attribute->name = match ($this->entityDescription->name) {
-                "PersistentHistoryTransaction" => "transactionID",
-                "PersistentHistoryChange" => "changeID",
-                default => self::primaryKeyName,
-            };
-            $attribute->type = AttributeType::integer32;
-            $attribute->isOptional = false;
-            $this->$name = new SQLPrimaryKey($this, $attribute);
-            return $this->$name;
-        }
-        if ($name === "optLockKey") {
-            $this->$name = null;
-            return $this->$name;
-        }
-        if ($name === "propertiesByName") {
-            $transform = function (PropertyDescription $propertyDescription): ?SQLProperty {
-                if ($propertyDescription instanceof AttributeDescription) {
-                    return new SQLAttribute($this, $propertyDescription);
-                }
-                if ($propertyDescription instanceof RelationshipDescription) {
-                    if ($propertyDescription->isToMany) {
-                        if ($propertyDescription->inverseRelationship->isToMany) {
-                            return new SQLManyToMany($this, $propertyDescription);
-                        }
-                        return new SQLToMany($this, $propertyDescription);
-                    }
-                    return new SQLToOne($this, $propertyDescription);
-                }
-                return null;
-            };
-            /** @var Dictionary<SQLProperty> $propertiesByName */
-            $propertiesByName = $this->entityDescription->propertiesByName->compactMapValues($transform);
-            foreach ($this->entityDescription->subentities as $subentity) {
-                /** @psalm-suppress InvalidArgument */
-                $propertiesByName->merge($subentity->propertiesByName->compactMapValues($transform));
-            }
-            $this->$name = $propertiesByName;
-            return $this->$name;
-        }
-        if ($name === "properties") {
-            $this->$name = $this->propertiesByName->values;
-            return $this->$name;
-        }
-        if ($name === "uniqueProperties") {
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property->isUnique);
-            return $this->$name;
-        }
-        if ($name === "attributes") {
-            /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute);
-            return $this->$name;
-        }
-        if ($name === "derivedAttributes") {
-            $this->$name = $this->attributes->filter(fn(SQLAttribute $attribute): bool => $attribute->attributeDescription instanceof DerivedAttributeDescription);
-            return $this->$name;
-        }
-        if ($name === "entitySpecificAttributes") {
-            /** @psalm-suppress all */
-            $this->$name = $this->entityDescription->attributesByName->map(fn(AttributeDescription $attributeDescription): SQLAttribute => $this->propertiesByName[$attributeDescription->name]);
-            return $this->$name;
-        }
-        if ($name === "entitySpecificRelationships") {
-            /** @psalm-suppress all */
-            $this->$name = $this->entityDescription->relationshipsByName->map(fn(RelationshipDescription $relationshipDescription): SQLRelationship => $this->propertiesByName[$relationshipDescription->name]);
-            return $this->$name;
-        }
-        if ($name === "toManyRelationships") {
-            /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLToMany);
-            return $this->$name;
-        }
-        if ($name === "manyToManyRelationships") {
-            /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLManyToMany);
-            return $this->$name;
-        }
-        if ($name === "foreignKeyColumns") {
-            /** @psalm-suppress all */
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLRelationship)->compactMap(fn(SQLRelationship $relationship): ?SQLForeignKey => $relationship instanceof SQLToOne ? $relationship->foreignKey : null);
-            return $this->$name;
-        }
-        if ($name === "virtualForeignKeyColumns") {
-            $this->$name = $this->foreignKeyColumns->filter(fn(SQLForeignKey $foreignKey): bool => $foreignKey->toOneRelationship->isVirtual);
-            return $this->$name;
-        }
-        if ($name === "multiColumnUniquenessConstraints") {
-            /** @psalm-suppress InvalidPropertyAssignmentValue */
-            $this->$name = $this->entityDescription->uniquenessConstraints->map(fn(ArrayClass $uniquenessConstraints): ArrayClass => $uniquenessConstraints->compactMap(fn(AttributeDescription|string $description): ?SQLAttribute => $this->attributes->first(fn(SQLAttribute $attribute): bool => $attribute->name === ($description instanceof AttributeDescription ? $description->name : $description))));
-            return $this->$name;
-        }
-        if ($name === "indexes") {
-            /** @var Dictionary<SQLIndex> $indexes */
-            $indexes = new Dictionary();
-            if (!$this->entityDescription->isPersistentHistoryEntity) {
-                $indexes[self::entityKeyName] = new SQLIndex(new FetchIndexDescription(self::entityKeyName, new ArrayClass([new FetchIndexElementDescription($this->entityKey->propertyDescription)])), $this);
-            }
-            /** @psalm-suppress PossiblyInvalidArgument */
-            $indexes->merge($this->entityDescription->indexes->reduce(new Dictionary(), function (Dictionary $result, FetchIndexDescription $indexDescription): Dictionary {
-                if ($indexDescription->isSpatial) {
-                    /** @psalm-suppress InvalidArgument */
-                    $result[$indexDescription->name] = new SQLRTreeIndex($indexDescription, $this);
-                } elseif ($indexDescription->isBinary) {
-                    /** @psalm-suppress InvalidArgument */
-                    $result[$indexDescription->name] = new SQLBinaryIndex($indexDescription, $this);
-                } else {
-                    /** @psalm-suppress InvalidArgument */
-                    $result[$indexDescription->name] = new SQLIndex($indexDescription, $this);
-                }
-                return $result;
-            }));
-            $this->$name = $indexes;
-            return $this->$name;
-        }
-        if ($name === "rTreeIndexes") {
-            /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->indexes->filter(fn(SQLIndex $index): bool => $index instanceof SQLRTreeIndex);
-            return $this->$name;
-        }
-        if ($name === "columnsToFetch") {
-            /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient && (($property instanceof SQLAttribute ? ($property->isDerivedAttribute && !$property->derivationExpression?->usesKVC || !$property->isDerivedAttribute) : !$property instanceof SQLRelationship && !$property instanceof SQLForeignKey)));
-            return $this->$name;
-        }
-        if ($name === "columnsToCreate") {
-            /** @psalm-suppress PropertyTypeCoercion */
-            $this->$name = $this->properties->filter(fn(SQLProperty $property): bool => !$property instanceof SQLRelationship && !($property instanceof SQLAttribute && $property->isDerivedAttribute && $property->derivationExpression?->usesKVC));
-            return $this->$name;
-        }
-        if ($name === "entityID") {
-            $this->$name = 0;
-            return $this->$name;
-        }
-        if ($name === "subentityMaxID") {
-            $this->$name = 0;
-            return $this->$name;
-        }
-        return $this->valueForUndefinedKey($name);
+        /** @var SQLEntity $entity */
+        $entity = $this->isRootEntity ? $this : $this->rootEntity;
+        return $entity->entityDescription->name;
     }
 
+    private function rootEntity(): ?SQLEntity
+    {
+        $superentity = $this->superentity;
+        $rootEntity = $superentity;
+        while ($superentity) {
+            $superentity = $superentity->superentity;
+            if ($superentity) {
+                $rootEntity = $superentity;
+            }
+        }
+        return $rootEntity;
+    }
+
+    private function entityKey(): SQLEntityKey
+    {
+        $attribute = new AttributeDescription();
+        $attribute->entity = $this->entityDescription;
+        $attribute->name = self::entityKeyName;
+        $attribute->type = AttributeType::string;
+        $attribute->isOptional = false;
+        return new SQLEntityKey($this, $attribute);
+    }
+
+    private function primaryKey(): SQLPrimaryKey
+    {
+        $attribute = new AttributeDescription();
+        $attribute->entity = $this->entityDescription;
+        $attribute->name = match ($this->entityDescription->name) {
+            "PersistentHistoryTransaction" => "transactionID",
+            "PersistentHistoryChange" => "changeID",
+            default => self::primaryKeyName,
+        };
+        $attribute->type = AttributeType::integer32;
+        $attribute->isOptional = false;
+        return new SQLPrimaryKey($this, $attribute);
+    }
+
+    private function propertiesByName(): Dictionary
+    {
+        $transform = function (PropertyDescription $propertyDescription): ?SQLProperty {
+            if ($propertyDescription instanceof AttributeDescription) {
+                return new SQLAttribute($this, $propertyDescription);
+            }
+            if ($propertyDescription instanceof RelationshipDescription) {
+                if ($propertyDescription->isToMany) {
+                    if ($propertyDescription->inverseRelationship->isToMany) {
+                        return new SQLManyToMany($this, $propertyDescription);
+                    }
+                    return new SQLToMany($this, $propertyDescription);
+                }
+                return new SQLToOne($this, $propertyDescription);
+            }
+            return null;
+        };
+        /** @var Dictionary<SQLProperty> $propertiesByName */
+        $propertiesByName = $this->entityDescription->propertiesByName->compactMapValues($transform);
+        foreach ($this->entityDescription->subentities as $subentity) {
+            /** @psalm-suppress InvalidArgument */
+            $propertiesByName->merge($subentity->propertiesByName->compactMapValues($transform));
+        }
+        return $propertiesByName;
+    }
+
+    private function indexes(): Dictionary
+    {
+        /** @var Dictionary<SQLIndex> $indexes */
+        $indexes = new Dictionary();
+        if (!$this->entityDescription->isPersistentHistoryEntity) {
+            $indexes[self::entityKeyName] = new SQLIndex(new FetchIndexDescription(self::entityKeyName, new ArrayClass([new FetchIndexElementDescription($this->entityKey->propertyDescription)])), $this);
+        }
+        /** @psalm-suppress PossiblyInvalidArgument */
+        $indexes->merge($this->entityDescription->indexes->reduce(new Dictionary(), function (Dictionary $result, FetchIndexDescription $indexDescription): Dictionary {
+            if ($indexDescription->isSpatial) {
+                /** @psalm-suppress InvalidArgument */
+                $result[$indexDescription->name] = new SQLRTreeIndex($indexDescription, $this);
+            } elseif ($indexDescription->isBinary) {
+                /** @psalm-suppress InvalidArgument */
+                $result[$indexDescription->name] = new SQLBinaryIndex($indexDescription, $this);
+            } else {
+                /** @psalm-suppress InvalidArgument */
+                $result[$indexDescription->name] = new SQLIndex($indexDescription, $this);
+            }
+            return $result;
+        }));
+        return $indexes;
+    }
+
+    /** @noinspection PhpHookedPropertyCantBeAccessedByRefInspection */
     public function generateInverseRelationshipsAndMore(): void
     {
         $propertiesByName = $this->propertiesByName;
