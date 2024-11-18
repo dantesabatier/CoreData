@@ -41,9 +41,7 @@ class AttributeDescription extends PropertyDescription
             }
             return $defaultValue;
         }
-        set {
-            $this->defaultValue = new Value($value)->value;
-        }
+        set => new Value($value)->value;
     }
     /** @var string|null The name of the class used to represent the attribute. */
     public ?string $attributeValueClassName = null {
