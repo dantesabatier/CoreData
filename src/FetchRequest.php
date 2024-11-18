@@ -49,7 +49,9 @@ class FetchRequest extends PersistentStoreRequest
     /** @var FetchRequestResultType The result type of the fetch request. If you set the value to {@see FetchRequestResultType::objectID}, and do not include property values in the request, sort orderings are demoted to “best efforts” hints. {@see includesPendingChanges} discusses with whether pending changes are taken into account when the resultType is set to {@see FetchRequestResultType::object}. {@see includesPropertyValues} discusses whether property values are included or not by default when the resultType is set to {@see FetchRequestResultType::object}. */
     public FetchRequestResultType $resultType = FetchRequestResultType::managedObjectResultType;
     /** @var EntityDescription The entity specified for the fetch request. When a FetchRequest instance is created without {@see entityName}, it is expected that the entity property will be set. If this property is not set, the fetch request fails upon execution. */
-    public EntityDescription $entity;
+    public EntityDescription $entity {
+        get => $this->entity ??= EntityDescription::entity($this->entityName ?? fatal_error("Invalid fetch request: expecting an entity or an entity name"), $this->context());
+    }
     /** @var Predicate|null The predicate of the fetch request. The predicate instance constrains the selection of objects the FetchRequest instance is to fetch. If the predicate is empty for example, if it is an AND predicate whose array of elements contains no predicates the request has its predicate set to nil. */
     public ?Predicate $predicate = null;
     /** @var ArrayClass<string|PropertyDescription>|null A collection of either property descriptions or string property names that specify which properties should be returned by the fetch. You must set the entity for the fetch request before setting this value; otherwise, FetchRequest throws an {@see InvalidArgumentException} exception. Property descriptions can either be instances of {@see PropertyDescription} or string. The property descriptions may represent attributes, to-one relationships, or expressions. The name of an attribute or relationship description must match the name of a description on the fetch request's entity. This property can be set with {@see FetchRequestResultType::object} and thereby implement a partial faulting (whereby only some of the properties are populated) of the returned objects, as well as the {@see FetchRequestResultType::dictionary} to define what properties are included in the resulting {@see Dictionary}. */
@@ -57,9 +59,26 @@ class FetchRequest extends PersistentStoreRequest
     /** @var ArrayClass<string|PropertyDescription>|null An array of objects that indicates how data should be grouped before a select statement is run in an SQL database. An array of {@see PropertyDescription} or {@see ExpressionDescription} objects or key-path strings that indicate how data should be grouped before a select statement is run in an SQL database. If you use this setting, you must set the resultType to {@see FetchRequestResultType::dictionary}, and the SELECT values must be literals, aggregates, or columns specified in propertiesToGroupBy. Aggregates will operate on the groups specified in propertiesToGroupBy rather than the whole table. If you set propertiesToGroupBy, you can also set a predicate to filter rows that are returned by propertiesToGroupBy. */
     public ?ArrayClass $propertiesToGroupBy = null;
     /** @var Dictionary A dictionary with the property names as keys and attribute types ({@see AttributeType} as values, if key is a relationship you must provide another dictionary ({@see Dictionary}). */
-    public Dictionary $serialization;
+    public Dictionary $serialization {
+        get => $this->serialization ??= ($this->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $this->entity->propertiesByName[$property]) ?? $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient && (!$attribute instanceof DerivedAttributeDescription || !$attribute->derivationExpression?->usesKVC))->values)->reduce(new Dictionary(), function (Dictionary $result, PropertyDescription $propertyDescription): Dictionary {
+            if ($propertyDescription instanceof AttributeDescription) {
+                $result[$propertyDescription->name] = $propertyDescription->type;
+            } elseif ($propertyDescription instanceof RelationshipDescription) {
+                $destinationEntity = $propertyDescription->destinationEntity;
+                $result[$propertyDescription->name] = $destinationEntity->attributesByName->reduce(new Dictionary(), function (Dictionary $result, AttributeDescription $attribute): Dictionary {
+                    if (!$attribute->isTransient && !$attribute instanceof DerivedAttributeDescription) {
+                        $result[$attribute->name] = $attribute->type;
+                    }
+                    return $result;
+                });
+            }
+            return $result;
+        });
+    }
     /** @var string|null The name of the entity to fetch. */
-    public readonly ?string $entityName;
+    public ?string $entityName {
+        get => $this->entityName ??= $this->entity->name;
+    }
 
     /**
      * Initializes a fetch request configured with a given entity name.
@@ -69,44 +88,9 @@ class FetchRequest extends PersistentStoreRequest
     public function __construct(?string $entityName = null)
     {
         parent::__construct();
-        unset($this->entity);
-        unset($this->entityName);
-        unset($this->serialization);
         if ($entityName) {
             $this->entityName = $entityName;
         }
-    }
-
-    public function __get(string $name)
-    {
-        if ($name === "entityName") {
-            $this->$name = $this->entity->name;
-            return $this->$name;
-        }
-        if ($name === "entity") {
-            $entityName = $this->entityName ?? fatal_error("Invalid fetch request: expecting an entity or an entity name");
-            $this->$name = EntityDescription::entity($entityName, $this->context());
-            return $this->$name;
-        }
-        if ($name === "serialization") {
-            /** @psalm-suppress all */
-            $this->$name = ($this->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $this->entity->propertiesByName[$property]) ?? $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient && (!$attribute instanceof DerivedAttributeDescription || !$attribute->derivationExpression?->usesKVC))->values)->reduce(new Dictionary(), function (Dictionary $result, PropertyDescription $propertyDescription): Dictionary {
-                if ($propertyDescription instanceof AttributeDescription) {
-                    $result[$propertyDescription->name] = $propertyDescription->type;
-                } elseif ($propertyDescription instanceof RelationshipDescription) {
-                    $destinationEntity = $propertyDescription->destinationEntity;
-                    $result[$propertyDescription->name] = $destinationEntity->attributesByName->reduce(new Dictionary(), function (Dictionary $result, AttributeDescription $attribute): Dictionary {
-                        if (!$attribute->isTransient && !$attribute instanceof DerivedAttributeDescription) {
-                            $result[$attribute->name] = $attribute->type;
-                        }
-                        return $result;
-                    });
-                }
-                return $result;
-            });
-            return $this->$name;
-        }
-        return $this->valueForUndefinedKey($name);
     }
 
     /**
