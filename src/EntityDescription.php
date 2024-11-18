@@ -73,7 +73,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     /** @var Dictionary<PropertyDescription> A dictionary containing the properties of the receiver. */
     private(set) Dictionary $propertiesByName;
     /** @var Dictionary<AttributeDescription> The attributes of the receiver in a dictionary. The keys in the dictionary are the attribute names and the values are instances of {@see AttributeDescription}. */
-    public Dictionary $attributesByName {
+    private(set) Dictionary $attributesByName {
         get {
             if ($this->isEditable) {
                 fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
@@ -83,7 +83,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         }
     }
     /** @var Dictionary<RelationshipDescription> The relationships of the receiver in a dictionary. The keys in the dictionary are the relationship names and the values are instances of {@see RelationshipDescription}. */
-    public Dictionary $relationshipsByName {
+    private(set) Dictionary $relationshipsByName {
         get {
             if ($this->isEditable) {
                 fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
@@ -114,7 +114,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     /** @var ArrayClass<ArrayClass<AttributeDescription|string>> An array of arrays that contains one or more attributes with a value that must be unique over the instances of that entity. Each inner array contains one or more {@see AttributeDescription} objects or strings that contain the names of attributes on the entity. This value forms part of the entity's version hash. Stores that don't support uniqueness constraints must refuse to initialize when receiving a model that contains such constraints. Uniqueness constraint violations can be computationally expensive to handle. The recommendation is to use only one uniqueness constraint per entity hierarchy, although subentites may extend a superentity's constraint. */
     public ArrayClass $uniquenessConstraints;
     /** @var string The version hash is used to uniquely identify an entity based on the collection and configuration of properties for the entity. The version hash uses only values which affect the persistence of data and the user-defined {@see versionHashModifier} value. (The values which affect persistence are: the name of the entity, the version hash of the superentity (if present), if the entity is abstract, and all the version hashes for the properties.) This value is stored as part of the version information in the metadata for stores which use this entity, as well as a definition of an entity involved in an {@see EntityMapping} object. */
-    public string $versionHash {
+    private(set) string $versionHash {
         get => $this->versionHash ??= $this->versionHashInStyle(VersionHashStyle::default);
     }
     /** @var string|null The version hash modifier for the receiver. This value is included in the version hash for the entity. You use it to mark or denote an entity as being a different “version” than another even if all the values which affect persistence are equal. (Such a difference is important in cases where, for example, the structure of an entity is unchanged but the format or content of data has changed.) */
