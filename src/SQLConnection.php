@@ -41,16 +41,16 @@ class SQLConnection extends ObjectClass
     public ?SQLCore $sqlCore {
         get => $this->adapter?->sqlCore;
     }
-    public bool $hasMetadataTable {
+    private(set) bool $hasMetadataTable {
         get => $this->hasMetadataTable ??= $this->hasMetadataTable();
     }
-    public bool $hasCachedModelTable {
+    private(set) bool $hasCachedModelTable {
         get => $this->hasCachedModelTable ??= $this->hasCachedModelTable();
     }
-    public bool $hasPersistentHistoryTables {
+    private(set) bool $hasPersistentHistoryTables {
         get => $this->hasPersistentHistoryTables ??= $this->hasPersistentHistoryTables();
     }
-    public ?ManagedObjectModel $cachedModel {
+    private(set) ?ManagedObjectModel $cachedModel {
         get => $this->cachedModel ??= $this->fetchCachedModel();
     }
     private SQLStoreRequestContext $requestContext;
