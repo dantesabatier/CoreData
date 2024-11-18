@@ -25,7 +25,7 @@ class AttributeDescription extends PropertyDescription
 
     /** @var AttributeType The attribute's type. */
     public AttributeType $type = AttributeType::undefined {
-        set(AttributeType|int|null $value) {
+        set(AttributeType|int $value) {
             if (is_int($value)) {
                 $value = AttributeType::from($value);
             }
@@ -82,7 +82,7 @@ class AttributeDescription extends PropertyDescription
     {
         $dictionary = parent::jsonSerialize();
         if ($this->type !== AttributeType::undefined) {
-            $dictionary["type"] = $this->type->value;
+            $dictionary["type"] = $this->type;
         }
         $defaultValue = $this->defaultValue;
         if ($defaultValue !== null) {
