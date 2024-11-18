@@ -16,9 +16,4 @@ class SQLToMany extends SQLRelationship
         /** @noinspection PhpIncompatibleReturnTypeInspection */
         get => $this->inverseRelationship;
     }
-
-    public function __construct(SQLEntity $entity, RelationshipDescription $relationshipDescription)
-    {
-        parent::__construct($entity, $relationshipDescription);
-    }
 }
