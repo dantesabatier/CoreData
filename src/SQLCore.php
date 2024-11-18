@@ -30,22 +30,27 @@ class SQLCore extends IncrementalStore
     public static int $debugDefault = 0;
     public static bool $coloredLoggingDefault = false;
     public string $type = SQLStoreType;
-    public readonly SQLModel $model;
-    public readonly SQLAdapter $adapter;
-    public readonly SQLConnection $schemaValidationConnection;
-    public readonly SQLConnection $queryGenerationTrackingConnection;
+    private(set) SQLModel $model {
+        get => $this->model ??= new SQLModel($this->persistentStoreCoordinator->managedObjectModel, $this->configurationName);
+    }
+    private(set) SQLAdapter $adapter {
+        get => $this->adapter ??= new SQLAdapter($this);
+    }
+    private(set) SQLConnection $schemaValidationConnection {
+        get => $this->schemaValidationConnection ??= new SQLConnection($this->adapter);
+    }
+    private(set) SQLConnection $queryGenerationTrackingConnection {
+        get => $this->queryGenerationTrackingConnection ??= new SQLConnection($this->adapter);
+    }
     /** @var Dictionary<int> */
-    private Dictionary $maxPrimaryKeys;
+    private Dictionary $maxPrimaryKeys {
+        get => $this->maxPrimaryKeys ??= new Dictionary();
+    }
     public ?PersistentHistoryToken $remoteNotificationToken = null;
 
     public function __construct(PersistentStoreCoordinator $coordinator, string $configurationName, URL $url, ?Dictionary $options = null)
     {
         parent::__construct($coordinator, $configurationName, $url, $options);
-        $this->adapter = new SQLAdapter($this);
-        $this->schemaValidationConnection = new SQLConnection($this->adapter);
-        $this->queryGenerationTrackingConnection = new SQLConnection($this->adapter);
-        $this->model = new SQLModel($this->persistentStoreCoordinator->managedObjectModel, $this->configurationName);
-        $this->maxPrimaryKeys = new Dictionary();
         $this->addPersistentHistoryEntities();
     }
 
