@@ -137,7 +137,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                         return $derivedAttribute;
                     }
                     if ($description["type"] === AttributeType::compositeAttributeType->value) {
-                        $compositeType = $compositeTypes?->first(fn(Dictionary $dictionary): bool => $dictionary["name"] === $description["attributeValueClassName"]);
+                        $compositeType = $compositeTypes?->first(fn(Dictionary $compositeType): bool => $compositeType["name"] === $description["attributeValueClassName"]);
                         if ($compositeType) {
                             /** @var ArrayClass<Dictionary<mixed>> $elements */
                             $elements = $compositeType["elements"] ?? fatal_error(sprintf("%s elements cannot be null", CompositeAttributeDescription::class));
