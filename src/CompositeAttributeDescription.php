@@ -17,9 +17,6 @@ class CompositeAttributeDescription extends AttributeDescription
     public PropertyDescriptionType $propertyType {
         get => PropertyDescriptionType::compositeAttribute;
     }
-    public AttributeType $type {
-        get => AttributeType::compositeAttributeType;
-    }
     /** @var ArrayClass<AttributeDescription> The composed attribute descriptions. */
     public ArrayClass $elements {
         set {
