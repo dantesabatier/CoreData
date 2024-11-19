@@ -141,7 +141,10 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                         if ($compositeType) {
                             /** @var ArrayClass<Dictionary<mixed>> $elements */
                             $elements = $compositeType["elements"] ?? fatal_error(sprintf("%s elements cannot be null", CompositeAttributeDescription::class));
-                            $description->removeValueForKey("elements");
+                            $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
+                                "attributeValueClassName", "elements" => true,
+                                default => false
+                            });
                             $compositeAttribute = new CompositeAttributeDescription();
                             $compositeAttribute->entity = $entity;
                             $compositeAttribute->elements = $elements->map(function (Dictionary $element) use ($entity, $compositeAttribute): AttributeDescription {
