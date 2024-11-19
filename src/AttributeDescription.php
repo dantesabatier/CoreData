@@ -62,6 +62,8 @@ class AttributeDescription extends PropertyDescription
     public string $description {
         get => sprintf("%s, type %s", parent::$description->get(), human_readable_value($this->type));
     }
+    /** @internal */
+    public ?CompositeAttributeDescription $superCompositeAttribute = null;
 
     #[Override]
     public function versionHashInStyle(?string &$out, VersionHashStyle $style): void
