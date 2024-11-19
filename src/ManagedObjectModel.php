@@ -115,12 +115,14 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                 $entity->renamingIdentifier = $renamingIdentifier;
             }
             $entity->versionHashModifier = $dictionary["versionHashModifier"];
+            /** @var ArrayClass<Dictionary<mixed>>|null $compositeTypes */
+            $compositeTypes = $dictionary["compositeTypes"];
             /** @var ArrayClass<PropertyDescription> $properties */
             $properties = new ArrayClass();
             /** @var ArrayClass<Dictionary>|null $attributes */
             $attributes = $dictionary["attributes"];
             if ($attributes) {
-                $properties->appendContentsOf($attributes->map(function (Dictionary $description) use ($entity): AttributeDescription {
+                $properties->appendContentsOf($attributes->map(function (Dictionary $description) use ($entity, $compositeTypes): AttributeDescription {
                     /** @var string|null $derivationExpressionFormat */
                     $derivationExpressionFormat = $description["derivationExpressionFormat"];
                     $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
@@ -128,16 +130,35 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                         default => false
                     });
                     if ($derivationExpressionFormat) {
-                        $instance = new DerivedAttributeDescription();
-                        $instance->entity = $entity;
-                        $instance->derivationExpression = Expression::expressionWithFormat(trim($derivationExpressionFormat));
-                        $instance->setValuesForKeys($description);
-                        return $instance;
+                        $derivedAttribute = new DerivedAttributeDescription();
+                        $derivedAttribute->entity = $entity;
+                        $derivedAttribute->derivationExpression = Expression::expressionWithFormat(trim($derivationExpressionFormat));
+                        $derivedAttribute->setValuesForKeys($description);
+                        return $derivedAttribute;
                     }
-                    $instance = new AttributeDescription();
-                    $instance->entity = $entity;
-                    $instance->setValuesForKeys($description);
-                    return $instance;
+                    if ($description["type"] === AttributeType::compositeAttributeType->value) {
+                        $compositeType = $compositeTypes?->first(fn(Dictionary $dictionary): bool => $dictionary["name"] === $description["attributeValueClassName"]);
+                        if ($compositeType) {
+                            /** @var ArrayClass<Dictionary<mixed>> $elements */
+                            $elements = $compositeType["elements"] ?? fatal_error(sprintf("%s elements cannot be null", CompositeAttributeDescription::class));
+                            $description->removeValueForKey("elements");
+                            $compositeAttribute = new CompositeAttributeDescription();
+                            $compositeAttribute->entity = $entity;
+                            $compositeAttribute->elements = $elements->map(function (Dictionary $element) use ($entity, $compositeAttribute): AttributeDescription {
+                                $attribute = new AttributeDescription();
+                                $attribute->entity = $entity;
+                                $attribute->superCompositeAttribute = $compositeAttribute;
+                                $attribute->setValuesForKeys($element);
+                                return $attribute;
+                            });
+                            $compositeAttribute->setValuesForKeys($description);
+                            return $compositeAttribute;
+                        }
+                    }
+                    $attribute = new AttributeDescription();
+                    $attribute->entity = $entity;
+                    $attribute->setValuesForKeys($description);
+                    return $attribute;
                 }));
             }
             /** @var ArrayClass<Dictionary>|null $relationships */
