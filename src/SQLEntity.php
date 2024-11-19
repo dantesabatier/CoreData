@@ -111,8 +111,8 @@ class SQLEntity extends StoreMapping
     private(set) ArrayClass $columnsToCreate {
         get => $this->columnsToCreate ??= $this->properties->filter(fn(SQLProperty $property): bool => !$property instanceof SQLRelationship && !($property instanceof SQLAttribute && $property->isDerivedAttribute && $property->derivationExpression?->usesKVC));
     }
-    private(set) Dictionary $compositeAttributeNamesToSQLProperties {
-        get => $this->compositeAttributeNamesToSQLProperties ??= $this->attributes->reduce(new Dictionary(), function (Dictionary $result, SQLAttribute $attribute): Dictionary {
+    private(set) Dictionary $compositeAttributeNameToSQLProperties {
+        get => $this->compositeAttributeNameToSQLProperties ??= $this->attributes->reduce(new Dictionary(), function (Dictionary $result, SQLAttribute $attribute): Dictionary {
             if ($attribute->attributeDescription->type === AttributeType::compositeAttributeType) {
                 $compositeAttribute = $attribute->attributeDescription;
                 if ($compositeAttribute instanceof CompositeAttributeDescription) {
