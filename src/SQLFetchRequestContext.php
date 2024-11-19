@@ -61,9 +61,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 $keys->removeAt(0);
                             }
                             if ($keys[$keys->indexBefore($keys->endIndex)] === $currentEntity->primaryKey->columnName) {
-                                $copy = clone $keys;
-                                $copy->removeAt($copy->indexBefore($copy->endIndex));
-                                $keyPath = $copy->join(".");
+                                $slice = $keys->dropLast(1);
+                                $keyPath = $slice->join(".");
                                 if ($value instanceof Nil) {
                                     $keyPaths->append($keyPath);
                                 } else {
