@@ -306,7 +306,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
         /** @var ArrayClass<Dictionary>|null $entities */
         $entities = $dictionary["entities"];
         if ($entities) {
-            $this->entities = $entities->map(fn(Dictionary $dictionary): EntityDescription => $this->newEntity($dictionary, $compositeTypes));
+            $this->entities = $entities->map(fn(Dictionary $dictionary): EntityDescription => $this->newEntity($dictionary, null, $compositeTypes));
         }
         /** @var ArrayClass<Dictionary>|null $fetchRequestTemplates */
         $fetchRequestTemplates = $dictionary["fetchRequests"];
