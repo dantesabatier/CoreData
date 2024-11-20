@@ -81,20 +81,30 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             $parentKey = $parentKeys->join("_");
                             $parentID = $data[$parentKey] ?? null;
                             foreach ($keys as $key) {
-                                $property = $currentEntity->propertiesByName[$key];
-                                $propertyDescription = $property?->propertyDescription ?? $this->request->propertiesToFetch?->first(fn(string|PropertyDescription $property): bool => $property instanceof PropertyDescription ? $property->name === $key : $property === $key);
-                                if ($property instanceof SQLRelationship) {
+                                $property = $currentEntity->propertiesByName[$key] ?? $currentEntity->attributes->first(fn(SQLAttribute $attribute): bool => $attribute->attributeDescription instanceof CompositeAttributeDescription && $attribute->attributeDescription->elements->contains(fn(AttributeDescription $attributeDescription): bool => $attributeDescription->name === $key));
+                                $propertyDescription = $property?->propertyDescription;
+                                if ($property instanceof SQLRelationship || ($property instanceof SQLAttribute && $property->isCompositeAttribute)) {
                                     if ($current instanceof ArrayClass && !$current->isEmpty) {
                                         $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID) ?? $current[$current->indexBefore($current->endIndex)];
                                         /** @psalm-suppress UnsupportedReferenceUsage */
                                         $current = &$parent;
                                     }
                                     if ($current instanceof Dictionary) {
-                                        $current[$key] ??= $property instanceof SQLToOne ? new Dictionary() : new ArrayClass();
-                                        $current = &$current[$key];
+                                        if ($property instanceof SQLToOne) {
+                                            $current[$key] ??= new Dictionary();
+                                            $current = &$current[$key];
+                                        } elseif ($property instanceof SQLAttribute) {
+                                            $current[$propertyDescription->name] ??= new Dictionary();
+                                            $current = &$current[$propertyDescription->name];
+                                        } else {
+                                            $current[$key] ??= new ArrayClass();
+                                            $current = &$current[$key];
+                                        }
                                     }
-                                    $relationship = $property;
-                                    $currentEntity = $relationship->destinationEntity;
+                                    if ($property instanceof SQLRelationship) {
+                                        $relationship = $property;
+                                        $currentEntity = $relationship->destinationEntity;
+                                    }
                                 }
                                 if ($property instanceof SQLColumn || $propertyDescription instanceof ExpressionDescription) {
                                     if ($current instanceof ArrayClass) {
@@ -112,7 +122,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                             $value = ManagedObject::coercedValue($value, $propertyDescription->resultType, isOptional: $propertyDescription->isOptional);
                                         }
                                         $current[$key] = $value;
-                                        if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
+                                        if (!$propertyDescription instanceof CompositeAttributeDescription && $this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
                                             $current["isInserted"] = true;
                                         }
                                     }
