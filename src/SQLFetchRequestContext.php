@@ -81,7 +81,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             $parentKey = $parentKeys->join("_");
                             $parentID = $data[$parentKey] ?? null;
                             foreach ($keys as $key) {
-                                $property = $currentEntity->propertiesByName[$key] ?? $currentEntity->attributes->first(fn(SQLAttribute $attribute): bool => $attribute->attributeDescription instanceof CompositeAttributeDescription && $attribute->attributeDescription->elements->contains(fn(AttributeDescription $attributeDescription): bool => $attributeDescription->name === $key));
+                                $property = $currentEntity->propertiesByName[$key] ?? $currentEntity->compositeAttributeNameToSQLProperty[$key];
                                 $propertyDescription = $property?->propertyDescription;
                                 if ($property instanceof SQLRelationship || ($property instanceof SQLAttribute && $property->isCompositeAttribute)) {
                                     if ($current instanceof ArrayClass && !$current->isEmpty) {
