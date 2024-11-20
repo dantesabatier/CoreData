@@ -31,6 +31,9 @@ class SQLAttribute extends SQLColumn
     public ?Expression $derivationExpression {
         get => $this->attributeDescription instanceof DerivedAttributeDescription ? $this->attributeDescription->derivationExpression : null;
     }
+    public bool $isCompositeAttribute {
+        get => $this->attributeDescription instanceof CompositeAttributeDescription;
+    }
     public mixed $defaultValue {
         get => match ($this->sqlType) {
             SQLType::uuid => "UUID()",
