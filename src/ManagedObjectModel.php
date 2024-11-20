@@ -137,27 +137,25 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                         $derivedAttribute->setValuesForKeys($description);
                         return $derivedAttribute;
                     }
-                    if ($description["type"] === AttributeType::compositeAttributeType->value) {
-                        $compositeType = $compositeTypes?->first(fn(Dictionary $compositeType): bool => $compositeType["name"] === $description["attributeValueClassName"]);
-                        if ($compositeType) {
-                            /** @var ArrayClass<Dictionary<mixed>> $elements */
-                            $elements = $compositeType["elements"] ?? fatal_error(sprintf("%s elements cannot be null", CompositeAttributeDescription::class));
-                            $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
-                                "attributeValueClassName", "elements" => true,
-                                default => false
-                            });
-                            $compositeAttribute = new CompositeAttributeDescription();
-                            $compositeAttribute->entity = $entity;
-                            $compositeAttribute->elements = $elements->map(function (Dictionary $element) use ($entity, $compositeAttribute): AttributeDescription {
-                                $attribute = new AttributeDescription();
-                                $attribute->entity = $entity;
-                                $attribute->superCompositeAttribute = $compositeAttribute;
-                                $attribute->setValuesForKeys($element);
-                                return $attribute;
-                            });
-                            $compositeAttribute->setValuesForKeys($description);
-                            return $compositeAttribute;
-                        }
+                    $compositeType = $compositeTypes?->first(fn(Dictionary $compositeType): bool => $compositeType["name"] === $description["attributeValueClassName"]);
+                    if ($compositeType) {
+                        /** @var ArrayClass<Dictionary<mixed>> $elements */
+                        $elements = $compositeType["elements"] ?? fatal_error(sprintf("%s elements cannot be null", CompositeAttributeDescription::class));
+                        $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
+                            "attributeValueClassName", "elements" => true,
+                            default => false
+                        });
+                        $compositeAttribute = new CompositeAttributeDescription();
+                        $compositeAttribute->entity = $entity;
+                        $compositeAttribute->elements = $elements->map(function (Dictionary $element) use ($entity, $compositeAttribute): AttributeDescription {
+                            $attribute = new AttributeDescription();
+                            $attribute->entity = $entity;
+                            $attribute->superCompositeAttribute = $compositeAttribute;
+                            $attribute->setValuesForKeys($element);
+                            return $attribute;
+                        });
+                        $compositeAttribute->setValuesForKeys($description);
+                        return $compositeAttribute;
                     }
                     $attribute = new AttributeDescription();
                     $attribute->entity = $entity;
@@ -173,10 +171,10 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                         "isMinValueBounded", "isMaxValueBounded", "isMinCountBounded", "isMaxCountBounded" => true,
                         default => false
                     });
-                    $instance = new RelationshipDescription();
-                    $instance->entity = $entity;
-                    $instance->setValuesForKeys($description);
-                    return $instance;
+                    $relationship = new RelationshipDescription();
+                    $relationship->entity = $entity;
+                    $relationship->setValuesForKeys($description);
+                    return $relationship;
                 }));
             }
             /** @var ArrayClass<Dictionary>|null $fetchedProperties */
@@ -198,11 +196,11 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                         default => false
                     });
                     $fetchRequest->setValuesForKeys($description);
-                    $instance = new FetchedPropertyDescription();
-                    $instance->entity = $entity;
-                    $instance->name = $name;
-                    $instance->fetchRequest = $fetchRequest;
-                    return $instance;
+                    $fetchedProperty = new FetchedPropertyDescription();
+                    $fetchedProperty->entity = $entity;
+                    $fetchedProperty->name = $name;
+                    $fetchedProperty->fetchRequest = $fetchRequest;
+                    return $fetchedProperty;
                 }));
             }
             $entity->properties = $properties;
@@ -225,16 +223,16 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                 $entity->indexes = $indexes->map(function (Dictionary $dictionary) use ($entity): FetchIndexDescription {
                     /** @var string $name */
                     $name = $dictionary["name"] ?? fatal_error(sprintf("%s name cannot be null", FetchIndexDescription::class));
-                    $index = new FetchIndexDescription($name);
-                    $index->entity = $entity;
+                    $fetchIndex = new FetchIndexDescription($name);
+                    $fetchIndex->entity = $entity;
                     /** @var string|null $partialIndexPredicateFormat */
                     $partialIndexPredicateFormat = $dictionary["partialIndexPredicateFormat"];
                     if ($partialIndexPredicateFormat) {
-                        $index->partialIndexPredicate = Predicate::format($partialIndexPredicateFormat);
+                        $fetchIndex->partialIndexPredicate = Predicate::format($partialIndexPredicateFormat);
                     }
                     /** @var ArrayClass<Dictionary> $elements */
                     $elements = $dictionary["elements"] ?? new ArrayClass();
-                    $index->elements = $elements->map(function (Dictionary $dictionary) use ($name, $entity): FetchIndexElementDescription {
+                    $fetchIndex->elements = $elements->map(function (Dictionary $dictionary) use ($name, $entity): FetchIndexElementDescription {
                         /** @var string|null $expressionFormat */
                         $expressionFormat = $dictionary["expressionFormat"];
                         if ($expressionFormat) {
@@ -263,12 +261,12 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                             "name", "partialIndexPredicateFormat", "elements", "propertyName" => true,
                             default => false
                         });
-                        $propertyDescription instanceof PropertyDescription ?: fatal_error(sprintf("%s property cannot be null", FetchIndexElementDescription::class));
-                        $element = new FetchIndexElementDescription($propertyDescription);
-                        $element->setValuesForKeys($dictionary);
-                        return $element;
+                        assert($propertyDescription instanceof PropertyDescription, sprintf("%s property cannot be null", FetchIndexElementDescription::class));
+                        $fetchIndexElement = new FetchIndexElementDescription($propertyDescription);
+                        $fetchIndexElement->setValuesForKeys($dictionary);
+                        return $fetchIndexElement;
                     });
-                    return $index;
+                    return $fetchIndex;
                 });
             }
             $entity->userInfo = $dictionary["userInfo"];
