@@ -13,7 +13,6 @@ use BackedEnum;
 use Closure;
 use Exception;
 use PDO;
-use Pdo\Mysql;
 use PDOStatement;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Bundle;
@@ -57,7 +56,7 @@ class SQLConnection extends ObjectClass
     public string $bundleID {
         get => Bundle::main()->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString;
     }
-    private ?Mysql $mysql = null;
+    private ?PDO $pdo = null;
     private(set) bool $isOpen = false;
 
     public function __construct(public readonly ?SQLAdapter $adapter = null)
@@ -84,16 +83,16 @@ class SQLConnection extends ObjectClass
         return true;
     }
 
-    private function mysql(): Mysql
+    private function pdo(): PDO
     {
-        if ($this->mysql === null) {
+        if ($this->pdo === null) {
             $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC];
             if ($timeout = $this->sqlCore?->options?->valueForKey(PersistentStoreTimeoutOption)) {
                 $options[PDO::ATTR_TIMEOUT] = $timeout;
             }
-            $this->mysql = new Mysql("mysql:host={$this->schema->host};charset={$this->schema->charset};unix_socket={$this->schema->socket};", $this->schema->credential->user, $this->schema->credential->password, $options);
+            $this->pdo = PDO::connect("mysql:host={$this->schema->host};charset={$this->schema->charset};unix_socket={$this->schema->socket};", $this->schema->credential->user, $this->schema->credential->password, $options);
         }
-        return $this->mysql;
+        return $this->pdo;
     }
 
     /**
@@ -112,7 +111,7 @@ class SQLConnection extends ObjectClass
         if ($this->createSchemaIfNeeded()) {
             return true;
         }
-        $this->mysql()->exec("USE `$schemaName`");
+        $this->pdo()->exec("USE `$schemaName`");
         return true;
     }
 
@@ -127,7 +126,7 @@ class SQLConnection extends ObjectClass
         if (SQLCore::$debugDefault) {
             error_log("CoreData: annotation: Disconnecting from sql database \"{$this->schema->name}\"");
         }
-        $this->mysql = null;
+        $this->pdo = null;
         $this->isOpen = false;
         return true;
     }
@@ -151,7 +150,7 @@ class SQLConnection extends ObjectClass
             }
             error_log(sprintf("CoreData: sql: \n%s", $statement->formatted($style)));
         }
-        $pdo = $this->mysql();
+        $pdo = $this->pdo();
         if ($statement->arguments->isEmpty) {
             $prepare = $pdo->query($statement->string);
             if (SQLCore::$debugDefault) {
@@ -530,7 +529,7 @@ class SQLConnection extends ObjectClass
 
     public function lastInsertRowID(): int
     {
-        return (int)$this->mysql()->lastInsertId();
+        return (int)$this->pdo()->lastInsertId();
     }
 
     /**
