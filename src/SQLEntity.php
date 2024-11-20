@@ -114,14 +114,12 @@ class SQLEntity extends StoreMapping
     /** @var Dictionary<Dictionary<SQLAttribute>> */
     private(set) Dictionary $compositeAttributeNameToSQLProperties {
         get => $this->compositeAttributeNameToSQLProperties ??= $this->attributes->reduce(new Dictionary(), function (Dictionary $result, SQLAttribute $attribute): Dictionary {
-            if ($attribute->attributeDescription->type === AttributeType::compositeAttributeType) {
-                $compositeAttribute = $attribute->attributeDescription;
-                if ($compositeAttribute instanceof CompositeAttributeDescription) {
-                    $result[$attribute->name] = $compositeAttribute->elements->reduce(new Dictionary(), function (Dictionary $result, AttributeDescription $attributeDescription): Dictionary {
-                        $result[$attributeDescription->name] = new SQLAttribute($this, $attributeDescription);
-                        return $result;
-                    });
-                }
+            $compositeAttribute = $attribute->attributeDescription;
+            if ($compositeAttribute instanceof CompositeAttributeDescription) {
+                $result[$attribute->name] = $compositeAttribute->elements->reduce(new Dictionary(), function (Dictionary $result, AttributeDescription $attributeDescription): Dictionary {
+                    $result[$attributeDescription->name] = new SQLAttribute($this, $attributeDescription);
+                    return $result;
+                });
             }
             return $result;
         });
