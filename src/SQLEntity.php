@@ -127,7 +127,7 @@ class SQLEntity extends StoreMapping
     //TODO: not implemented
     public int $entityID = 0;
     public int $subentityMaxID {
-        get => 0;
+        get => $this->subentities->map(fn(SQLEntity $entity): int => $entity->entityID)->max();
     }
     public string $description {
         get => sprintf("<%s %s>", $this->entityDescription->name, $this->hash);
