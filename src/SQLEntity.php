@@ -112,14 +112,26 @@ class SQLEntity extends StoreMapping
         get => $this->columnsToCreate ??= $this->columnsToCreate();
     }
     /** @var Dictionary<Dictionary<SQLAttribute>> */
-    private(set) Dictionary $compositeAttributeNameToSQLProperties {
-        get => $this->compositeAttributeNameToSQLProperties ??= $this->attributes->reduce(new Dictionary(), function (Dictionary $result, SQLAttribute $attribute): Dictionary {
+    private(set) Dictionary $compositeAttributeNameToSQLAttributes {
+        get => $this->compositeAttributeNameToSQLAttributes ??= $this->attributes->reduce(new Dictionary(), function (Dictionary $result, SQLAttribute $attribute): Dictionary {
             $compositeAttribute = $attribute->attributeDescription;
             if ($compositeAttribute instanceof CompositeAttributeDescription) {
                 $result[$attribute->name] = $compositeAttribute->elements->reduce(new Dictionary(), function (Dictionary $result, AttributeDescription $attributeDescription): Dictionary {
                     $result[$attributeDescription->name] = new SQLAttribute($this, $attributeDescription);
                     return $result;
                 });
+            }
+            return $result;
+        });
+    }
+    /** @var Dictionary<SQLAttribute> */
+    private(set) Dictionary $compositeAttributeNameToSQLProperty {
+        get => $this->compositeAttributeNameToSQLProperty ??= $this->attributes->reduce(new Dictionary(), function (Dictionary $result, SQLAttribute $attribute): Dictionary {
+            $compositeAttribute = $attribute->attributeDescription;
+            if ($compositeAttribute instanceof CompositeAttributeDescription) {
+                foreach ($compositeAttribute->elements as $element) {
+                    $result[$element->name] = $attribute;
+                }
             }
             return $result;
         });
@@ -234,7 +246,7 @@ class SQLEntity extends StoreMapping
     private function columnsToCreate(): ArrayClass
     {
         $columns = $this->properties->filter(fn(SQLProperty $property): bool => !$property instanceof SQLRelationship && ((!$property instanceof SQLAttribute || (($property->isDerivedAttribute ? !$property->derivationExpression?->usesKVC : !$property->isCompositeAttribute)))));
-        $columns->appendContentsOf($this->compositeAttributeNameToSQLProperties->values->flatMap(fn(Dictionary $dictionary
+        $columns->appendContentsOf($this->compositeAttributeNameToSQLAttributes->values->flatMap(fn(Dictionary $dictionary
         ): ArrayClass => $dictionary->values));
         return $columns;
     }
@@ -242,7 +254,7 @@ class SQLEntity extends StoreMapping
     private function columnsToFetch(): ArrayClass
     {
         $columns = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute ? ($property->isDerivedAttribute ? !$property->derivationExpression?->usesKVC : !$property->isCompositeAttribute) : !$property instanceof SQLRelationship && !$property instanceof SQLForeignKey && !$property->isTransient);
-        $columns->appendContentsOf($this->compositeAttributeNameToSQLProperties->values->flatMap(fn(Dictionary $dictionary
+        $columns->appendContentsOf($this->compositeAttributeNameToSQLAttributes->values->flatMap(fn(Dictionary $dictionary
         ): ArrayClass => $dictionary->values));
         return $columns;
     }
