@@ -362,7 +362,7 @@ class SQLGenerator extends ObjectClass
             }
             $properties->appendContentsOf($keys->filter(fn(string $key): bool => $request->entity->attributesByName->contains(fn(AttributeDescription $attribute): bool => !$attribute->isTransient && $attribute->name === $key)));
             /** @psalm-suppress InvalidArgument */
-            $columnNames->appendContentsOf($properties->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => is_string($property) ? $entity->attributes->first(fn(SQLAttribute $attribute): bool => !$attribute->isTransient && $attribute->name === $property)?->attributeDescription : ($property instanceof AttributeDescription || $property instanceof ExpressionDescription ? $property : null))->map(function (PropertyDescription $property) use ($entity): string {
+            $columnNames->appendContentsOf($properties->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => is_string($property) ? $entity->attributes->first(fn(SQLAttribute $attribute): bool => !$attribute->isCompositeAttribute && !$attribute->isTransient && $attribute->name === $property)?->attributeDescription : (($property instanceof AttributeDescription && !$property instanceof CompositeAttributeDescription) || $property instanceof ExpressionDescription ? $property : null))->map(function (PropertyDescription $property) use ($entity): string {
                 if ($property instanceof AttributeDescription) {
                     if ($property instanceof DerivedAttributeDescription && $property->derivationExpression?->usesKVC) {
                         return "{$this->buildDerivationExpression($property->derivationExpression)} AS $property->name";
@@ -379,6 +379,7 @@ class SQLGenerator extends ObjectClass
                 return "$entity->tableName.$property->name";
             }));
         }
+        $columnNames->appendContentsOf($entity->compositeAttributeNameToSQLProperties->values->flatMap(fn(Dictionary $dictionary): ArrayClass => $dictionary->values->map(fn(SQLAttribute $attribute): string => "$entity->tableName.$attribute->name")));
         $this->selectList .= $columnNames->join(", ");
     }
 
@@ -643,6 +644,12 @@ class SQLGenerator extends ObjectClass
         foreach ($keys as $key) {
             $property = $entity->propertiesByName[$key];
             if ($property) {
+                if ($property instanceof SQLAttribute && $property->isCompositeAttribute) {
+                    if ($predicate($property)) {
+                        $properties[] = $entity->compositeAttributeNameToSQLProperties->valueForKeyPath($expression->keyPath);
+                    }
+                    break;
+                }
                 if ($property instanceof SQLRelationship) {
                     $entity = $property->destinationEntity;
                 }
