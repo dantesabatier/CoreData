@@ -210,6 +210,10 @@ readonly class SQLStoreMigrator
                                 $statement = $adapter->newCreateTableStatementForManyToMany($destination);
                                 $connection->execute($statement);
                                 $createIndexStatements->append($adapter->newCreateIndexesStatementForManyToMany($destination));
+                            } elseif ($destination instanceof SQLToMany) {
+                                if ($statement = $adapter->newCreateColumnStatement($destination->inverseToOne->foreignKey)) {
+                                    $connection->execute($statement);
+                                }
                             }
                         }
                     }
