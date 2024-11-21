@@ -62,7 +62,7 @@ class RelationshipDescription extends PropertyDescription
     /** @internal */
     public string $lazyInverseRelationshipName = UnknownName;
     public string $description {
-        get => sprintf("%s destinationEntityName %s InverseRelationshipName %s minCount %s maxCount %s deleteRule %s", parent::$description->get(), $this->lazyDestinationEntityName, $this->lazyInverseRelationshipName, $this->minCount, $this->maxCount, human_readable_value($this->deleteRule));
+        get => sprintf("%s destinationEntityName %s InverseRelationshipName %s minCount %s maxCount %s deleteRule %s", parent::$description::get(), $this->lazyDestinationEntityName, $this->lazyInverseRelationshipName, $this->minCount, $this->maxCount, human_readable_value($this->deleteRule));
     }
 
     #[Override]
