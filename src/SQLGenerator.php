@@ -379,7 +379,7 @@ class SQLGenerator extends ObjectClass
                 return "$entity->tableName.$property->name";
             }));
         }
-        $columnNames->appendContentsOf($entity->compositeAttributeNameToSQLAttributes->values->flatMap(fn(Dictionary $dictionary): ArrayClass => $dictionary->values->map(fn(SQLAttribute $attribute): string => "$entity->tableName.$attribute->name")));
+        $columnNames->appendContentsOf($entity->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary): ArrayClass => $dictionary->values->map(fn(SQLAttribute $attribute): string => "$entity->tableName.$attribute->name")));
         $this->selectList .= $columnNames->join(", ");
     }
 
@@ -646,7 +646,7 @@ class SQLGenerator extends ObjectClass
             if ($property) {
                 if ($property instanceof SQLAttribute && $property->isCompositeAttribute) {
                     if ($predicate($property)) {
-                        $properties[] = $entity->compositeAttributeNameToSQLAttributes->valueForKeyPath($expression->keyPath);
+                        $properties[] = $entity->byMappingByCompositeNameAssociationTable->valueForKeyPath($expression->keyPath);
                     }
                     break;
                 }
