@@ -60,7 +60,7 @@ class AttributeDescription extends PropertyDescription
     /** @var bool A Boolean value that indicates whether the attribute records its value in the persistent history transaction for a managed object's deletion. */
     public bool $preservesValueInHistoryOnDeletion = false;
     public string $description {
-        get => sprintf("%s, type %s", parent::$description->get(), human_readable_value($this->type));
+        get => sprintf("%s, type %s", parent::$description::get(), human_readable_value($this->type));
     }
     /** @internal */
     public ?CompositeAttributeDescription $superCompositeAttribute = null;
