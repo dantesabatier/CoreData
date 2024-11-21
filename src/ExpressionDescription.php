@@ -24,7 +24,7 @@ use function Sabatier\Foundation\human_readable_value;
 class ExpressionDescription extends PropertyDescription
 {
     public string $description {
-        get => sprintf("%s, expression %s", parent::$description->get(), human_readable_value($this->expression));
+        get => sprintf("%s, expression %s", parent::$description::get(), human_readable_value($this->expression));
     }
     /** @internal */
     public PropertyDescriptionType $propertyType {
