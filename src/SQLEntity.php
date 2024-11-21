@@ -112,8 +112,8 @@ class SQLEntity extends StoreMapping
         get => $this->columnsToCreate ??= $this->columnsToCreate();
     }
     /** @var Dictionary<Dictionary<SQLAttribute>> */
-    private(set) Dictionary $compositeAttributeNameToSQLAttributes {
-        get => $this->compositeAttributeNameToSQLAttributes ??= $this->attributes->reduce(new Dictionary(), function (Dictionary $result, SQLAttribute $attribute): Dictionary {
+    private(set) Dictionary $byMappingByCompositeNameAssociationTable {
+        get => $this->byMappingByCompositeNameAssociationTable ??= $this->attributes->reduce(new Dictionary(), function (Dictionary $result, SQLAttribute $attribute): Dictionary {
             $compositeAttribute = $attribute->attributeDescription;
             if ($compositeAttribute instanceof CompositeAttributeDescription) {
                 $result[$attribute->name] = $compositeAttribute->elements->reduce(new Dictionary(), function (Dictionary $result, AttributeDescription $attributeDescription): Dictionary {
@@ -246,7 +246,7 @@ class SQLEntity extends StoreMapping
     private function columnsToCreate(): ArrayClass
     {
         $columns = $this->properties->filter(fn(SQLProperty $property): bool => !$property instanceof SQLRelationship && ((!$property instanceof SQLAttribute || (($property->isDerivedAttribute ? !$property->derivationExpression?->usesKVC : !$property->isCompositeAttribute)))));
-        $columns->appendContentsOf($this->compositeAttributeNameToSQLAttributes->values->flatMap(fn(Dictionary $dictionary
+        $columns->appendContentsOf($this->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary
         ): ArrayClass => $dictionary->values));
         return $columns;
     }
@@ -256,7 +256,7 @@ class SQLEntity extends StoreMapping
         $columns = $this->properties->filter(function (SQLProperty $property): bool {
             return !($property->isTransient || $property instanceof SQLRelationship || $property instanceof SQLForeignKey) && (!$property instanceof SQLAttribute || (($property->isDerivedAttribute ? !$property->derivationExpression?->usesKVC : !$property->isCompositeAttribute)));
         });
-        $columns->appendContentsOf($this->compositeAttributeNameToSQLAttributes->values->flatMap(fn(Dictionary $dictionary
+        $columns->appendContentsOf($this->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary
         ): ArrayClass => $dictionary->values));
         return $columns;
     }
