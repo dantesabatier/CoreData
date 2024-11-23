@@ -386,24 +386,16 @@ class SQLGenerator extends ObjectClass
     private function prepareSelectStatementWithFetchRequest(FetchRequest $request): void
     {
         $this->selectList = "SELECT ";
-        switch ($request->resultType) {
-            case FetchRequestResultType::managedObjectResultType:
-            case FetchRequestResultType::managedObjectIDResultType:
-            case FetchRequestResultType::dictionaryResultType:
-                if ($this->useDistinct) {
-                    $this->selectList .= "DISTINCT ";
-                }
-                $this->appendSelectListToSQLForRequest($request);
-                break;
-            case FetchRequestResultType::countResultType:
-                $this->selectList .= strtoupper($this->keyValueOperator);
-                $this->selectList .= "(";
-                if ($this->useDistinct) {
-                    $this->selectList .= "DISTINCT ";
-                }
-                $this->appendSelectListToSQLForRequest($request);
-                $this->selectList .= ")";
-                break;
+        if ($request->resultType === FetchRequestResultType::countResultType) {
+            $this->selectList .= strtoupper($this->keyValueOperator);
+            $this->selectList .= "(";
+        }
+        if ($this->useDistinct) {
+            $this->selectList .= "DISTINCT ";
+        }
+        $this->appendSelectListToSQLForRequest($request);
+        if ($request->resultType === FetchRequestResultType::countResultType) {
+            $this->selectList .= ")";
         }
     }
 
@@ -419,17 +411,19 @@ class SQLGenerator extends ObjectClass
         $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
     }
 
-    private function appendJoinDestinationEntity(SQLEntity $destinationEntity, string $destinationPath = ""): void
+    private function appendJoinDestinationEntity(SQLEntity $destinationEntity, string $destinationPath): void
     {
-        if (!empty($destinationPath)) {
-            /** @var EntityDescription $rootEntity */
-            $rootEntity = $destinationEntity->isRootEntity ? $destinationEntity->entityDescription : $destinationEntity->rootEntity?->entityDescription;
-            $subentities = $destinationEntity->entityDescription->managedObjectModel->flatten($rootEntity->subentities);
-            if ($subentities->count > 1) {
-                $this->joinClause .= " AND ";
-                $this->joinClause .= "$destinationPath.{$destinationEntity->entityKey->columnName} = '{$destinationEntity->entityDescription->name}'";
-            }
+        if ($destinationPath === "") {
+            return;
         }
+        /** @var EntityDescription $rootEntity */
+        $rootEntity = $destinationEntity->isRootEntity ? $destinationEntity->entityDescription : $destinationEntity->rootEntity?->entityDescription;
+        $subentities = $destinationEntity->entityDescription->managedObjectModel->flatten($rootEntity->subentities);
+        if ($subentities->count <= 1) {
+            return;
+        }
+        $this->joinClause .= " AND ";
+        $this->joinClause .= "$destinationPath.{$destinationEntity->entityKey->columnName} = '{$destinationEntity->entityDescription->name}'";
     }
 
     private function addJoinForToOneRelationship(SQLToOne $toOne, string $sourcePath = "", string $destinationPath = ""): void
@@ -438,10 +432,10 @@ class SQLGenerator extends ObjectClass
         $inverseRelationship = $toOne->inverseRelationship;
         $destinationEntity = $toOne->destinationEntity;
         $columnName = $inverseRelationship instanceof SQLToOne ? $inverseRelationship->foreignKey->columnName : $destinationEntity->primaryKey->columnName;
-        if (empty($sourcePath)) {
+        if ($sourcePath === "") {
             $sourcePath = $sourceEntity->tableName;
         }
-        if (empty($destinationPath)) {
+        if ($destinationPath === "") {
             $destinationPath = "{$sourceEntity->tableName}_$toOne->name";
         }
         $this->appendJoinClauseToSQL();
@@ -457,10 +451,10 @@ class SQLGenerator extends ObjectClass
         $sourceEntity = $toMany->entity;
         $inverseToOne = $toMany->inverseToOne;
         $destinationEntity = $toMany->destinationEntity;
-        if (empty($sourcePath)) {
+        if ($sourcePath === "") {
             $sourcePath = $sourceEntity->tableName;
         }
-        if (empty($destinationPath)) {
+        if ($destinationPath === "") {
             $destinationPath = "{$sourceEntity->tableName}_$toMany->name";
         }
         $this->appendJoinClauseToSQL();
@@ -476,7 +470,7 @@ class SQLGenerator extends ObjectClass
         $correlationTableName = $manyToMany->correlationTableName;
         $inverseManyToMany = $manyToMany->inverseManyToMany;
         $sourceEntity = $inverseManyToMany->destinationEntity;
-        if (empty($sourcePath)) {
+        if ($sourcePath === "") {
             $sourcePath = $sourceEntity->tableName;
         }
         $correlationTableAlias = "{$sourcePath}_$correlationTableName";
@@ -487,7 +481,6 @@ class SQLGenerator extends ObjectClass
         $this->joinClause .= "$correlationTableAlias.$manyToMany->inverseColumnName";
         $this->joinClause .= " = ";
         $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
-        $this->appendJoinDestinationEntity($destinationEntity);
         $this->appendJoinClauseToSQL();
         $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $correlationTableAlias.$manyToMany->columnName = $destinationPath.{$destinationEntity->primaryKey->columnName}";
         $this->appendJoinDestinationEntity($destinationEntity, $destinationPath);
@@ -679,10 +672,7 @@ class SQLGenerator extends ObjectClass
     private function isPrimaryKeyPredicate(Predicate $predicate): bool
     {
         if ($predicate instanceof ComparisonPredicate) {
-            if ($this->isPrimaryKeyExpression($predicate->leftExpression)) {
-                return true;
-            }
-            return $this->isPrimaryKeyExpression($predicate->rightExpression);
+            return $this->isPrimaryKeyExpression($predicate->leftExpression) || $this->isPrimaryKeyExpression($predicate->rightExpression);
         }
         if ($predicate instanceof CompoundPredicate) {
             return $predicate->subpredicates->contains(fn($subpredicate): bool => $this->isPrimaryKeyPredicate($subpredicate));
@@ -814,30 +804,33 @@ class SQLGenerator extends ObjectClass
         }
     }
 
+    private function buildConstantValueExpression(Expression $expression, ArrayClass &$arguments, string $prefix = "", string $suffix = ""): mixed
+    {
+        $constantValue = $expression->constantValue;
+        if (is_string($constantValue)) {
+            $constantValue = addcslashes($constantValue, "%_");
+        } elseif (is_bool($constantValue)) {
+            $constantValue = (int)$constantValue;
+        } elseif ($constantValue instanceof ManagedObject) {
+            $constantValue = $constantValue->objectID;
+        }
+        $argument = $constantValue;
+        if (is_string($argument) || $prefix || $suffix) {
+            $argument = "$prefix$argument$suffix";
+            if ($prefix || $suffix || str_contains($argument, "\%") || str_contains($argument, "\_")) {
+                $constantValue = "?";
+            }
+        }
+        $arguments[] = $argument;
+        return $constantValue;
+    }
+
     private function buildComparisonExpression(Expression $expression, ArrayClass &$arguments, string $prefix = "", string $suffix = ""): mixed
     {
-        return match ($expression->expressionType) {
-            ExpressionType::constantValue => (function () use ($expression, &$arguments, $prefix, $suffix): mixed {
-                $constantValue = $expression->constantValue;
-                if (is_string($constantValue)) {
-                    $constantValue = addcslashes($constantValue, "%_");
-                } elseif (is_bool($constantValue)) {
-                    $constantValue = (int)$constantValue;
-                } elseif ($constantValue instanceof ManagedObject) {
-                    $constantValue = $constantValue->objectID;
-                }
-                $argument = $constantValue;
-                if (is_string($argument) || $prefix || $suffix) {
-                    $argument = "$prefix$argument$suffix";
-                    if ($prefix || $suffix || str_contains($argument, "\%") || str_contains($argument, "\_")) {
-                        $constantValue = "?";
-                    }
-                }
-                $arguments[] = $argument;
-                return $constantValue;
-            })(),
-            default => $this->buildExpression($expression)
-        };
+        if ($expression->expressionType === ExpressionType::constantValue) {
+            return $this->buildConstantValueExpression($expression, $arguments, $prefix, $suffix);
+        }
+        return $this->buildExpression($expression);
     }
 
     private function prepareClauseWithSimplePredicate(ComparisonPredicate $predicate, string &$clause, string $operator, string $prefix = "", string $suffix = ""): void
