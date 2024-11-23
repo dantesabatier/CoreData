@@ -371,16 +371,16 @@ class SQLFormatter extends Formatter
     #[Override]
     public function string(mixed $object): ?string
     {
-        if (is_string($object)) {
-            $highlight = ($this->style & SQLFormatterStyle::highlighted) !== 0;
-            if (!($this->style & SQLFormatterStyle::prettyPrint)) {
-                if ($highlight) {
-                    return $this->highlight($object);
-                }
-                return $object;
-            }
-            return $this->format($object, $highlight);
+        if (!is_string($object)) {
+            return null;
         }
-        return null;
+        $highlight = ($this->style & SQLFormatterStyle::highlighted) !== 0;
+        if (!($this->style & SQLFormatterStyle::prettyPrint)) {
+            if ($highlight) {
+                return $this->highlight($object);
+            }
+            return $object;
+        }
+        return $this->format($object, $highlight);
     }
 }
