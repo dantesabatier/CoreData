@@ -759,48 +759,32 @@ class SQLGenerator extends ObjectClass
 
     private function buildClauseWithSimplePredicate(ComparisonPredicate $predicate, string &$clause): void
     {
-        switch ($predicate->predicateOperatorType) {
-            case PredicateOperatorType::lessThan:
-                $this->prepareClauseWithSimplePredicate($predicate, $clause, "<");
-                break;
-            case PredicateOperatorType::lessThanOrEqualTo:
-                $this->prepareClauseWithSimplePredicate($predicate, $clause, "<=");
-                break;
-            case PredicateOperatorType::greaterThan:
-                $this->prepareClauseWithSimplePredicate($predicate, $clause, ">");
-                break;
-            case PredicateOperatorType::greaterThanOrEqualTo:
-                $this->prepareClauseWithSimplePredicate($predicate, $clause, ">=");
-                break;
-            case PredicateOperatorType::equalTo:
-                $this->prepareEqual($predicate, $clause);
-                break;
-            case PredicateOperatorType::notEqualTo:
-                $this->prepareNotEqual($predicate, $clause);
-                break;
-            case PredicateOperatorType::like:
-                $this->prepareLike($predicate, $clause);
-                break;
-            case PredicateOperatorType::matches:
-                $this->prepareMatches($predicate, $clause);
-                break;
-            case PredicateOperatorType::beginsWith:
-                $this->prepareBeginsWith($predicate, $clause);
-                break;
-            case PredicateOperatorType::endsWith:
-                $this->prepareEndsWith($predicate, $clause);
-                break;
-            case PredicateOperatorType::contains:
-                $this->prepareContains($predicate, $clause);
-                break;
-            case PredicateOperatorType::in:
-                $this->prepareIn($predicate, $clause);
-                break;
-            case PredicateOperatorType::between:
-                $this->prepareBetween($predicate, $clause);
-                break;
-            default:
-                break;
+        if ($predicate->predicateOperatorType == PredicateOperatorType::lessThan) {
+            $this->prepareClauseWithSimplePredicate($predicate, $clause, "<");
+        } elseif ($predicate->predicateOperatorType == PredicateOperatorType::lessThanOrEqualTo) {
+            $this->prepareClauseWithSimplePredicate($predicate, $clause, "<=");
+        } elseif ($predicate->predicateOperatorType == PredicateOperatorType::greaterThan) {
+            $this->prepareClauseWithSimplePredicate($predicate, $clause, ">");
+        } elseif ($predicate->predicateOperatorType == PredicateOperatorType::greaterThanOrEqualTo) {
+            $this->prepareClauseWithSimplePredicate($predicate, $clause, ">=");
+        } elseif ($predicate->predicateOperatorType == PredicateOperatorType::equalTo) {
+            $this->prepareEqual($predicate, $clause);
+        } elseif ($predicate->predicateOperatorType == PredicateOperatorType::notEqualTo) {
+            $this->prepareNotEqual($predicate, $clause);
+        } elseif ($predicate->predicateOperatorType == PredicateOperatorType::like) {
+            $this->prepareLike($predicate, $clause);
+        } elseif ($predicate->predicateOperatorType == PredicateOperatorType::matches) {
+            $this->prepareMatches($predicate, $clause);
+        } elseif ($predicate->predicateOperatorType == PredicateOperatorType::beginsWith) {
+            $this->prepareBeginsWith($predicate, $clause);
+        } elseif ($predicate->predicateOperatorType == PredicateOperatorType::endsWith) {
+            $this->prepareEndsWith($predicate, $clause);
+        } elseif ($predicate->predicateOperatorType == PredicateOperatorType::contains) {
+            $this->prepareContains($predicate, $clause);
+        } elseif ($predicate->predicateOperatorType == PredicateOperatorType::in) {
+            $this->prepareIn($predicate, $clause);
+        } elseif ($predicate->predicateOperatorType == PredicateOperatorType::between) {
+            $this->prepareBetween($predicate, $clause);
         }
     }
 
@@ -970,22 +954,24 @@ class SQLGenerator extends ObjectClass
             if ($max) {
                 $clause .= ")";
             }
-        } elseif ($predicate instanceof ComparisonPredicate) {
+            return;
+        }
+        if ($predicate instanceof ComparisonPredicate) {
             $this->prepareComparisonPredicate($predicate, $clause);
         }
     }
 
     private function prepareComparisonPredicate(ComparisonPredicate $predicate, string &$clause): void
     {
-        if ($predicate->comparisonPredicateModifier !== ComparisonPredicateModifier::direct) {
-            if ($this->isSubqueryKeyPath($predicate->leftExpression)) {
-                $this->buildClauseWithSelectPredicate($predicate, $clause);
-            }
-            if ($this->isSubqueryKeyPath($predicate->rightExpression)) {
-                $this->buildClauseWithSelectPredicate($predicate, $clause);
-            }
-        } else {
+        if ($predicate->comparisonPredicateModifier === ComparisonPredicateModifier::direct) {
             $this->buildClauseWithSimplePredicate($predicate, $clause);
+            return;
+        }
+        if ($this->isSubqueryKeyPath($predicate->leftExpression)) {
+            $this->buildClauseWithSelectPredicate($predicate, $clause);
+        }
+        if ($this->isSubqueryKeyPath($predicate->rightExpression)) {
+            $this->buildClauseWithSelectPredicate($predicate, $clause);
         }
     }
 
@@ -1025,57 +1011,57 @@ class SQLGenerator extends ObjectClass
 
     private function buildDerivedKeyPathExpression(Expression $expression, ?string $destination = null, ?bool &$isDeterministic = true): string
     {
-        $keyPath = (string)$expression;
-        if ($expression->usesKVC) {
-            $entity = $this->entity;
-            $destination ??= $entity->tableName;
-            [$keyPathToCollection, $collectionOperator, $keyPathToProperty] = kvc_components($keyPath);
-            if ($keyPathToCollection && $collectionOperator) {
-                /** @var SQLRelationship|null $relationship */
-                $relationship = $entity->propertiesByName[$keyPathToCollection];
-                if ($relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany) {
-                    $inverseRelationship = $relationship->inverseRelationship;
-                    $destinationEntity = $relationship->destinationEntity;
-                    if (($collectionOperator === KeyValueOperator::countKeyValueOperator && $keyPathToProperty) || ($collectionOperator !== KeyValueOperator::countKeyValueOperator && !$keyPathToProperty)) {
-                        fatal_error("Invalid expression \"$expression\"");
-                    }
-                    /** @var ArrayClass<string|PropertyDescription> $propertiesToFetch */
-                    $propertiesToFetch = new ArrayClass([$inverseRelationship->relationshipDescription]);
-                    if ($collectionOperator !== KeyValueOperator::countKeyValueOperator) {
-                        $propertiesToFetch->append($keyPathToProperty);
-                    }
-                    /** @var SQLFetchRequestContext $requestContext */
-                    $requestContext = $this->requestContext;
-                    $managedObjectModel = $requestContext->sqlCore->persistentStoreCoordinator->managedObjectModel;
-                    /** @var EntityDescription $entityForFetchRequest */
-                    $entityForFetchRequest = $managedObjectModel->entitiesByName[$destinationEntity->entityDescription->name];
-                    $fetchRequest = new FetchRequest();
-                    $fetchRequest->entity = $entityForFetchRequest;
-                    $fetchRequest->propertiesToFetch = $propertiesToFetch;
-                    $fetchRequest->resultType = FetchRequestResultType::countResultType;
-                    $generator = new SQLGenerator(new SQLFetchRequestContext($fetchRequest, $requestContext->context, $requestContext->sqlCore));
-                    $generator->autoDistinct = false;
-                    $generator->raisesForNotApplicableKeys = false;
-                    $generator->keyValueOperator = $collectionOperator;
-                    $generator->resetSQL();
-                    $string = "($generator->statement";
-                    $string .= $generator->whereClause ? " AND " : " WHERE ";
-                    if ($relationship instanceof SQLToMany) {
-                        if ($destinationEntity->isKindOfSQLEntity($entity)) {
-                            //FIXME: It doesn't work, the right side of the predicate requires a constant
-                            $string .= "{$destinationEntity->tableName}_{$relationship->inverseToOne->name}.{$entity->primaryKey->columnName} = $destination.{$relationship->inverseToOne->foreignKey->columnName}";
-                        } else {
-                            $string .= "$destinationEntity->tableName.{$relationship->inverseToOne->foreignKey->columnName} = $destination.{$entity->primaryKey->columnName}";
-                        }
-                    } else {
-                        $string .= "{$destinationEntity->tableName}_$relationship->correlationTableName.$relationship->inverseColumnName = $entity->tableName.{$entity->primaryKey->columnName}";
-                    }
-                    return "$string)";
-                }
-            }
+        if (!$expression->usesKVC) {
+            return $this->buildKeyPathExpression($expression, $isDeterministic);
+        }
+        $entity = $this->entity;
+        $destination ??= $entity->tableName;
+        [$keyPathToCollection, $collectionOperator, $keyPathToProperty] = kvc_components((string)$expression);
+        if (!$keyPathToCollection || !$collectionOperator) {
             fatal_error("Invalid argument: unsupported expression \"$expression\"");
         }
-        return $this->buildKeyPathExpression($expression, $isDeterministic);
+        /** @var SQLRelationship|null $relationship */
+        $relationship = $entity->propertiesByName[$keyPathToCollection];
+        if ($relationship instanceof SQLToOne) {
+            fatal_error("Invalid argument: unsupported expression \"$expression\"");
+        }
+        $inverseRelationship = $relationship->inverseRelationship;
+        $destinationEntity = $relationship->destinationEntity;
+        if (($collectionOperator === KeyValueOperator::countKeyValueOperator && $keyPathToProperty) || ($collectionOperator !== KeyValueOperator::countKeyValueOperator && !$keyPathToProperty)) {
+            fatal_error("Invalid expression \"$expression\"");
+        }
+        /** @var ArrayClass<string|PropertyDescription> $propertiesToFetch */
+        $propertiesToFetch = new ArrayClass([$inverseRelationship->relationshipDescription]);
+        if ($collectionOperator !== KeyValueOperator::countKeyValueOperator) {
+            $propertiesToFetch->append($keyPathToProperty);
+        }
+        /** @var SQLFetchRequestContext $requestContext */
+        $requestContext = $this->requestContext;
+        $managedObjectModel = $requestContext->sqlCore->persistentStoreCoordinator->managedObjectModel;
+        /** @var EntityDescription $entityForFetchRequest */
+        $entityForFetchRequest = $managedObjectModel->entitiesByName[$destinationEntity->entityDescription->name];
+        $fetchRequest = new FetchRequest();
+        $fetchRequest->entity = $entityForFetchRequest;
+        $fetchRequest->propertiesToFetch = $propertiesToFetch;
+        $fetchRequest->resultType = FetchRequestResultType::countResultType;
+        $generator = new SQLGenerator(new SQLFetchRequestContext($fetchRequest, $requestContext->context, $requestContext->sqlCore));
+        $generator->autoDistinct = false;
+        $generator->raisesForNotApplicableKeys = false;
+        $generator->keyValueOperator = $collectionOperator;
+        $generator->resetSQL();
+        $string = "($generator->statement";
+        $string .= $generator->whereClause ? " AND " : " WHERE ";
+        if ($relationship instanceof SQLToMany) {
+            if ($destinationEntity->isKindOfSQLEntity($entity)) {
+                //FIXME: It doesn't work, the right side of the predicate requires a constant
+                $string .= "{$destinationEntity->tableName}_{$relationship->inverseToOne->name}.{$entity->primaryKey->columnName} = $destination.{$relationship->inverseToOne->foreignKey->columnName}";
+            } else {
+                $string .= "$destinationEntity->tableName.{$relationship->inverseToOne->foreignKey->columnName} = $destination.{$entity->primaryKey->columnName}";
+            }
+        } elseif ($relationship instanceof SQLManyToMany) {
+            $string .= "{$destinationEntity->tableName}_$relationship->correlationTableName.$relationship->inverseColumnName = $entity->tableName.{$entity->primaryKey->columnName}";
+        }
+        return "$string)";
     }
 
     public function buildDerivationExpression(Expression $expression, ?string $destination = null, ?bool &$isDeterministic = true): string
@@ -1090,96 +1076,96 @@ class SQLGenerator extends ObjectClass
 
     private function buildFunctionExpression(Expression $expression, ?bool &$isDeterministic = true): string
     {
-        $arguments = $expression->arguments ?? fatal_error();
         $operator = $expression->operand;
-        if ($operator instanceof ExpressionOperator) {
-            $isDeterministic = $operator->isDeterministic;
-            switch ($operator->operatorType) {
-                case ExpressionOperatorType::addTo:
-                case ExpressionOperatorType::fromSubtract:
-                case ExpressionOperatorType::multiplyBy:
-                case ExpressionOperatorType::divideBy:
-                case ExpressionOperatorType::modulusBy:
-                case ExpressionOperatorType::bitwiseAndWith:
-                case ExpressionOperatorType::bitwiseOrWith:
-                case ExpressionOperatorType::bitwiseXorWith:
-                case ExpressionOperatorType::leftshiftBy:
-                case ExpressionOperatorType::rightshiftBy:
-                    return "({$arguments->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(" $operator->operatorSymbol ")})";
-                case ExpressionOperatorType::sum:
-                case ExpressionOperatorType::count:
-                case ExpressionOperatorType::min:
-                case ExpressionOperatorType::max:
-                case ExpressionOperatorType::stddev:
-                case ExpressionOperatorType::sqrt:
-                case ExpressionOperatorType::ln:
-                case ExpressionOperatorType::log:
-                case ExpressionOperatorType::exp:
-                case ExpressionOperatorType::ceiling:
-                case ExpressionOperatorType::abs:
-                case ExpressionOperatorType::floor:
-                case ExpressionOperatorType::cast:
-                case ExpressionOperatorType::now:
-                case ExpressionOperatorType::year:
-                case ExpressionOperatorType::month:
-                case ExpressionOperatorType::week:
-                case ExpressionOperatorType::day:
-                case ExpressionOperatorType::hour:
-                case ExpressionOperatorType::minute:
-                case ExpressionOperatorType::second:
-                case ExpressionOperatorType::date:
-                case ExpressionOperatorType::uuid:
-                case ExpressionOperatorType::substring:
-                case ExpressionOperatorType::length:
-                case ExpressionOperatorType::isNull:
-                case ExpressionOperatorType::ifNull:
-                case ExpressionOperatorType::nullIf:
-                    $function = strtoupper($operator->operatorSymbol);
-                    break;
-                case ExpressionOperatorType::average:
-                    $function = "AVG";
-                    break;
-                case ExpressionOperatorType::raiseToPower:
-                    $function = "POW";
-                    break;
-                case ExpressionOperatorType::random:
-                    $function = "RAND";
-                    break;
-                case ExpressionOperatorType::trunc:
-                    $function = "TRUNCATE";
-                    break;
-                case ExpressionOperatorType::uppercase:
-                    $function = "UPPER";
-                    break;
-                case ExpressionOperatorType::lowercase:
-                    $function = "LOWER";
-                    break;
-                case ExpressionOperatorType::concat:
-                    $function = "CONCAT_WS";
-                    break;
-                case ExpressionOperatorType::index:
-                    $function = "ELT";
-                    break;
-                case ExpressionOperatorType::currentDate:
-                    $function = "CURDATE";
-                    break;
-                case ExpressionOperatorType::dateFormat:
-                    $function = "DATE_FORMAT";
-                    break;
-                case ExpressionOperatorType::dateDiff:
-                    $function = "TIMESTAMPDIFF";
-                    break;
-                default:
-                    $function = "";
-                    break;
-            }
-            $function ?: fatal_error("Invalid argument: unsupported expression \"$expression\"");
-            return "$function(" . $arguments->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(match ($operator->operatorType) {
-                    ExpressionOperatorType::cast => " AS ",
-                    default => ", ",
-                }) . ")";
+        if (!$operator instanceof ExpressionOperator) {
+            fatal_error("Invalid argument: unsupported expression \"$expression\"");
         }
-        fatal_error("Invalid argument: unsupported expression \"$expression\"");
+        $isDeterministic = $operator->isDeterministic;
+        $arguments = $expression->arguments ?? fatal_error("Invalid argument: unsupported expression \"$expression\"");
+        switch ($operator->operatorType) {
+            case ExpressionOperatorType::addTo:
+            case ExpressionOperatorType::fromSubtract:
+            case ExpressionOperatorType::multiplyBy:
+            case ExpressionOperatorType::divideBy:
+            case ExpressionOperatorType::modulusBy:
+            case ExpressionOperatorType::bitwiseAndWith:
+            case ExpressionOperatorType::bitwiseOrWith:
+            case ExpressionOperatorType::bitwiseXorWith:
+            case ExpressionOperatorType::leftshiftBy:
+            case ExpressionOperatorType::rightshiftBy:
+                return "({$arguments->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(" $operator->operatorSymbol ")})";
+            case ExpressionOperatorType::sum:
+            case ExpressionOperatorType::count:
+            case ExpressionOperatorType::min:
+            case ExpressionOperatorType::max:
+            case ExpressionOperatorType::stddev:
+            case ExpressionOperatorType::sqrt:
+            case ExpressionOperatorType::ln:
+            case ExpressionOperatorType::log:
+            case ExpressionOperatorType::exp:
+            case ExpressionOperatorType::ceiling:
+            case ExpressionOperatorType::abs:
+            case ExpressionOperatorType::floor:
+            case ExpressionOperatorType::cast:
+            case ExpressionOperatorType::now:
+            case ExpressionOperatorType::year:
+            case ExpressionOperatorType::month:
+            case ExpressionOperatorType::week:
+            case ExpressionOperatorType::day:
+            case ExpressionOperatorType::hour:
+            case ExpressionOperatorType::minute:
+            case ExpressionOperatorType::second:
+            case ExpressionOperatorType::date:
+            case ExpressionOperatorType::uuid:
+            case ExpressionOperatorType::substring:
+            case ExpressionOperatorType::length:
+            case ExpressionOperatorType::isNull:
+            case ExpressionOperatorType::ifNull:
+            case ExpressionOperatorType::nullIf:
+                $function = strtoupper($operator->operatorSymbol);
+                break;
+            case ExpressionOperatorType::average:
+                $function = "AVG";
+                break;
+            case ExpressionOperatorType::raiseToPower:
+                $function = "POW";
+                break;
+            case ExpressionOperatorType::random:
+                $function = "RAND";
+                break;
+            case ExpressionOperatorType::trunc:
+                $function = "TRUNCATE";
+                break;
+            case ExpressionOperatorType::uppercase:
+                $function = "UPPER";
+                break;
+            case ExpressionOperatorType::lowercase:
+                $function = "LOWER";
+                break;
+            case ExpressionOperatorType::concat:
+                $function = "CONCAT_WS";
+                break;
+            case ExpressionOperatorType::index:
+                $function = "ELT";
+                break;
+            case ExpressionOperatorType::currentDate:
+                $function = "CURDATE";
+                break;
+            case ExpressionOperatorType::dateFormat:
+                $function = "DATE_FORMAT";
+                break;
+            case ExpressionOperatorType::dateDiff:
+                $function = "TIMESTAMPDIFF";
+                break;
+            default:
+                $function = "";
+                break;
+        }
+        $function ?: fatal_error("Invalid argument: unsupported expression \"$expression\"");
+        return "$function({$arguments->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(match ($operator->operatorType) {
+                ExpressionOperatorType::cast => " AS ",
+                default => ", ",
+            })})";
     }
 
     private function buildConditionalExpression(Expression $expression, ?bool &$isDeterministic = true): string
