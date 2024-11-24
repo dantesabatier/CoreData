@@ -148,7 +148,6 @@ abstract class AtomicStore extends PersistentStore
                 return new CompoundPredicate($predicate->compoundPredicateType, $predicate->subpredicates->map(fn(CompoundPredicate|ComparisonPredicate $subpredicate): CompoundPredicate|ComparisonPredicate => $fn($subpredicate)));
             };
             $predicate = $fn($predicate);
-            error_log("*$predicate*");
         }
         if ($resultType === FetchRequestResultType::managedObjectResultType) {
             if ($predicate) {
