@@ -21,31 +21,32 @@ readonly class FaultHandler
         $entity = $object->entity;
         /** @var IncrementalStoreNode|AtomicStoreCacheNode|null $newValues */
         $newValues = $this->persistentStore->newValuesForObjectWithID($object->objectID, $context);
-        if ($newValues) {
-            if ($newValues instanceof IncrementalStoreNode) {
-                $newValues = $newValues->values;
-            }
-            $object->isSuppressingKVO = true;
-            $committedValues = $object->committedValuesForKeys(null);
-            foreach ($entity as $property) {
-                if ($property instanceof AttributeDescription) {
-                    $value = $newValues->valueForKey($property->name);
-                    if ($value !== null) {
-                        $object->setValueForKey($value, $property->name);
-                    }
-                } elseif ($property instanceof RelationshipDescription) {
-                    if ($committedValues[$property->name]) {
-                        $object->valueForKey($property->name);
-                    }
+        if ($newValues === null) {
+            return;
+        }
+        if ($newValues instanceof IncrementalStoreNode) {
+            $newValues = $newValues->values;
+        }
+        $object->isSuppressingKVO = true;
+        $committedValues = $object->committedValuesForKeys(null);
+        foreach ($entity as $property) {
+            if ($property instanceof AttributeDescription) {
+                $value = $newValues->valueForKey($property->name);
+                if ($value !== null) {
+                    $object->setValueForKey($value, $property->name);
+                }
+            } elseif ($property instanceof RelationshipDescription) {
+                if ($committedValues[$property->name]) {
+                    $object->valueForKey($property->name);
                 }
             }
-            $object->faultingState = 0;
-            $object->isFault = false;
-            $object->isSuppressingKVO = false;
-            if (!$object->isAwakening) {
-                $object->isAwakening = true;
-                $object->awakeFromFetch();
-            }
+        }
+        $object->faultingState = 0;
+        $object->isFault = false;
+        $object->isSuppressingKVO = false;
+        if (!$object->isAwakening) {
+            $object->isAwakening = true;
+            $object->awakeFromFetch();
         }
     }
 
