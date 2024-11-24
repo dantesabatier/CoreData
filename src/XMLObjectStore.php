@@ -189,11 +189,12 @@ class XMLObjectStore extends AtomicStore
     private function updateXMLNode(DOMNode $node, ManagedObject $object): void
     {
         foreach ($object->entity->attributesByName as $attribute) {
-            if (!$attribute->isTransient && !$attribute instanceof DerivedAttributeDescription) {
-                $value = $this->getXMLAttributeValueFromObject($object, $attribute);
-                if ($value !== null) {
-                    $this->createAttributeChildOnNode($node, $attribute, $value);
-                }
+            if ($attribute->isTransient || $attribute instanceof DerivedAttributeDescription || $attribute instanceof CompositeAttributeDescription) {
+                continue;
+            }
+            $value = $this->getXMLAttributeValueFromObject($object, $attribute);
+            if ($value !== null) {
+                $this->createAttributeChildOnNode($node, $attribute, $value);
             }
         }
         foreach ($object->entity->relationshipsByName as $key => $relationship) {
@@ -361,10 +362,14 @@ class XMLObjectStore extends AtomicStore
     {
         $entity = $object->entity;
         foreach ($entity->attributesByName as $key => $attribute) {
-            if (!$attribute->isTransient) {
-                $value = $object->primitiveValueForKey($key);
-                $node->setValueForKey($value, $key);
+            if ($attribute->isTransient) {
+                continue;
             }
+            $value = $object->primitiveValueForKey($key);
+            if (!$object->validateValueForKey($value, $key)) {
+                continue;
+            }
+            $node->setValueForKey($value, $key);
         }
         foreach ($entity->relationshipsByName as $key => $relationship) {
             $value = $object->primitiveValueForKey($key);
