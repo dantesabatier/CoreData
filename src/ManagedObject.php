@@ -57,11 +57,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     }
     /** @var bool A Boolean value that indicates whether the managed object has unsaved changes. */
     public bool $isUpdated {
-        get => $this->isUpdated ??= $this->isInserted && !$this->changedValuesForCurrentEvent->isEmpty;
+        get => $this->isInserted && !$this->changedValuesForCurrentEvent->isEmpty;
     }
     /** @var bool A Boolean value that indicates whether the managed object will be deleted during the next save. */
     public bool $isDeleted {
-        get => $this->isDeleted ??= $this->managedObjectContext->deletedObjects->containsElement($this);
+        get => $this->managedObjectContext->deletedObjects->containsElement($this);
     }
     public readonly ManagedObjectContext $managedObjectContext;
     private Dictionary $changedValues;
