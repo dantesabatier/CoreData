@@ -362,14 +362,10 @@ class XMLObjectStore extends AtomicStore
     {
         $entity = $object->entity;
         foreach ($entity->attributesByName as $key => $attribute) {
-            if ($attribute->isTransient) {
+            if ($attribute->isTransient || $attribute instanceof DerivedAttributeDescription || $attribute instanceof CompositeAttributeDescription) {
                 continue;
             }
-            $value = $object->primitiveValueForKey($key);
-            if (!$object->validateValueForKey($value, $key)) {
-                continue;
-            }
-            $node->setValueForKey($value, $key);
+            $node->setValueForKey($object->primitiveValueForKey($key), $key);
         }
         foreach ($entity->relationshipsByName as $key => $relationship) {
             $value = $object->primitiveValueForKey($key);
