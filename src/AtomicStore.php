@@ -8,7 +8,9 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
+use Sabatier\Foundation\Predicates\CompoundPredicate;
 use Sabatier\Foundation\Predicates\Expression;
+use Sabatier\Foundation\Predicates\ExpressionType;
 use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
@@ -40,28 +42,32 @@ abstract class AtomicStore extends PersistentStore
     private function addObject(ManagedObject $object): void
     {
         $key = (string)$object->objectID;
-        if (!$this->nodeCache[$key]) {
-            $cacheNode = $this->newCacheNode($object);
-            $this->nodeCache[$key] = $cacheNode;
-            $this->updateObject($object);
-            if (!$object->isAwakening) {
-                $object->isAwakening = true;
-                $object->awakeFromFetch();
-            }
+        if ($this->nodeCache[$key]) {
+            return;
         }
+        $cacheNode = $this->newCacheNode($object);
+        $this->nodeCache[$key] = $cacheNode;
+        $this->updateObject($object);
+        if ($object->isAwakening) {
+            return;
+        }
+        $object->isAwakening = true;
+        $object->awakeFromFetch();
     }
 
     private function updateObject(ManagedObject $object): void
     {
         $cacheNode = $this->cacheNode($object->objectID) ?? fatal_error("Invalid argument: object \"$object\" does not exists ");
         foreach ($object->entity as $property) {
-            if (!$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription) {
-                $key = $property->name;
-                $value = $cacheNode->valueForKey($key);
-                if ($value !== null) {
-                    $object->setValueForKey($value, $key);
-                }
+            if ($property instanceof DerivedAttributeDescription || $property instanceof FetchedPropertyDescription) {
+                continue;
             }
+            $key = $property->name;
+            $value = $cacheNode->valueForKey($key);
+            if ($value === null) {
+                continue;
+            }
+            $object->setValueForKey($value, $key);
         }
         $this->updateCacheNode($cacheNode, $object);
     }
@@ -125,8 +131,27 @@ abstract class AtomicStore extends PersistentStore
                 $objects[] = $object;
             }
         }
+        /** @var CompoundPredicate|ComparisonPredicate|null $predicate */
+        $predicate = $request->predicate;
+        if ($predicate) {
+            $fn = function (CompoundPredicate|ComparisonPredicate $predicate) use ($request, &$fn): CompoundPredicate|ComparisonPredicate {
+                if ($predicate instanceof ComparisonPredicate) {
+                    $expressions = new ArrayClass([$predicate->rightExpression, $predicate->leftExpression]);
+                    if (($keyPathExpression = $expressions->first(fn(Expression $expression): bool => $expression->expressionType === ExpressionType::keyPath && str_ends_with($expression->keyPath, SQLEntity::primaryKeyName))) && ($constantValueExpression = $expressions->first(fn(Expression $expression): bool => !$expression->isEqual($keyPathExpression))) && !$constantValueExpression->constantValue instanceof ManagedObjectID) {
+                        $expressionForConstantValue = Expression::expressionForConstantValue($this->objectID($request->entity, $constantValueExpression->constantValue));
+                        $rightExpression = $keyPathExpression === $predicate->rightExpression ? $keyPathExpression : $expressionForConstantValue;
+                        $leftExpression = $constantValueExpression === $predicate->leftExpression ? $expressionForConstantValue : $keyPathExpression;
+                        return new ComparisonPredicate($rightExpression, $leftExpression, $predicate->predicateOperatorType, $predicate->comparisonPredicateModifier, $predicate->options);
+                    }
+                    return $predicate;
+                }
+                return new CompoundPredicate($predicate->compoundPredicateType, $predicate->subpredicates->map(fn(CompoundPredicate|ComparisonPredicate $subpredicate): CompoundPredicate|ComparisonPredicate => $fn($subpredicate)));
+            };
+            $predicate = $fn($predicate);
+            error_log("*$predicate*");
+        }
         if ($resultType === FetchRequestResultType::managedObjectResultType) {
-            if ($predicate = $request->predicate) {
+            if ($predicate) {
                 $objects = $objects->filtered($predicate);
             }
             $objects = $objects->map(fn(ManagedObject $object): ManagedObject => $object->serialized($request->serialization));
@@ -134,7 +159,7 @@ abstract class AtomicStore extends PersistentStore
                 $objects = $objects->sorted($descriptors);
             }
         } elseif ($resultType === FetchRequestResultType::managedObjectIDResultType) {
-            if ($predicate = $request->predicate) {
+            if ($predicate) {
                 $objects = $objects->filtered($predicate);
             }
             if ($descriptors = $request->sortDescriptors) {
@@ -162,7 +187,7 @@ abstract class AtomicStore extends PersistentStore
                     $objects = $objects->filtered($havingPredicate);
                 }
             }
-            if ($predicate = $request->predicate) {
+            if ($predicate) {
                 $objects = $objects->filtered($predicate);
             }
             $objects = $objects->map(fn(ManagedObject $object): Dictionary => $object->jsonSerialize());
@@ -170,10 +195,11 @@ abstract class AtomicStore extends PersistentStore
                 /** @var ArrayClass<ExpressionDescription> $expressionDescriptions */
                 $expressionDescriptions = $propertiesToFetch->filter(fn(PropertyDescription|string $property): bool => $property instanceof ExpressionDescription);
                 foreach ($expressionDescriptions as $expressionDescription) {
-                    if ($expression = $expressionDescription->expression) {
-                        foreach ($objects as $object) {
-                            $object[$expressionDescription->name] = ManagedObject::coercedValue($expression->expressionValue(new ArrayClass([$object])), $expressionDescription->resultType);
-                        }
+                    if (!($expression = $expressionDescription->expression)) {
+                        continue;
+                    }
+                    foreach ($objects as $object) {
+                        $object[$expressionDescription->name] = ManagedObject::coercedValue($expression->expressionValue(new ArrayClass([$object])), $expressionDescription->resultType);
                     }
                 }
                 $keys = $propertiesToFetch->map(fn(PropertyDescription|string $property): string => $property instanceof PropertyDescription ? $property->name : $property);
@@ -181,9 +207,10 @@ abstract class AtomicStore extends PersistentStore
                 $keys->insertAt(SQLEntity::entityKeyName, 1);
                 foreach ($objects as $object) {
                     foreach ($object->keys as $key) {
-                        if (!$keys->containsElement($key)) {
-                            $object->removeValueForKey($key);
+                        if ($keys->containsElement($key)) {
+                            continue;
                         }
+                        $object->removeValueForKey($key);
                     }
                 }
             }
@@ -191,6 +218,9 @@ abstract class AtomicStore extends PersistentStore
                 $objects = $objects->sorted($descriptors);
             }
         } else {
+            if ($predicate) {
+                $objects = $objects->filtered($predicate);
+            }
             $objects = new ArrayClass([new Number($objects->count)]);
         }
         return $objects;
