@@ -126,9 +126,7 @@ class ManagedObjectContext extends ObjectClass
      * Note that the staleness interval is a hint and may not be supported by all persistent store types. It is not used by XML and binary stores, because these stores maintain all current values in memory.
      * The default is a negative value, which represents infinite staleness allowed. 0.0 represents "no staleness acceptable". */
     public float $stalenessInterval = -1.0;
-    public OperationQueue $queue {
-        get => $this->queue ??= new OperationQueue();
-    }
+    private readonly OperationQueue $queue;
 
     /**
      * Initializes a context with a given concurrency type.
@@ -146,6 +144,7 @@ class ManagedObjectContext extends ObjectClass
         $this->unprocessedInserts = new Set();
         $this->refreshedObjects = new Set();
         $this->byHashAssociationTable = new Dictionary();
+        $this->queue = new OperationQueue();
     }
 
     private function executePersistentStoreRequest(PersistentStoreRequest $request): UnknownRequestTypeResult
