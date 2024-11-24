@@ -17,6 +17,7 @@ use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\PropertyListSerialization;
 use Sabatier\Foundation\URL;
+use function Sabatier\Foundation\fatal_error;
 
 /**
  * A model instance that specifies how to map a model from a source to a destination managed object model.
@@ -64,12 +65,11 @@ class MappingModel extends ObjectClass
                 $this->entityMappings = $entities->map(function (Dictionary $dictionary): EntityMapping {
                     $transform = function (Dictionary $dictionary): PropertyMapping {
                         /** @var string $name */
-                        $name = $dictionary["name"] ?? throw new InferredMappingModelException(sprintf("%s name cannot be null", PropertyMapping::class));
+                        $name = $dictionary["name"] ?? fatal_error(sprintf("%s name cannot be null", PropertyMapping::class));
                         $property = new PropertyMapping($name);
                         /** @var string|null $valueExpressionFormat */
                         $valueExpressionFormat = $dictionary["valueExpressionFormat"];
                         if ($valueExpressionFormat) {
-                            $dictionary->removeValueForKey("valueExpressionFormat");
                             $property->valueExpression = Expression::expressionWithFormat($valueExpressionFormat);
                         }
                         return $property;
@@ -78,27 +78,27 @@ class MappingModel extends ObjectClass
                     /** @var string|null $sourceExpressionFormat */
                     $sourceExpressionFormat = $dictionary["sourceExpressionFormat"];
                     if ($sourceExpressionFormat) {
-                        $dictionary->removeValueForKey("sourceExpressionFormat");
                         $mapping->sourceExpression = Expression::expressionWithFormat($sourceExpressionFormat);
                     }
                     /** @var int|null $mappingType */
                     $mappingType = $dictionary["mappingType"];
                     if ($mappingType) {
-                        $dictionary->removeValueForKey("mappingType");
                         $mapping->mappingType = EntityMappingType::from($mappingType);
                     }
                     /** @var ArrayClass<Dictionary>|null $attributes */
                     $attributes = $dictionary["attributes"];
                     if ($attributes) {
-                        $dictionary->removeValueForKey("attributes");
                         $mapping->attributeMappings = $attributes->map($transform);
                     }
                     /** @var ArrayClass<Dictionary>|null $relationships */
                     $relationships = $dictionary["relationships"];
                     if ($relationships) {
-                        $dictionary->removeValueForKey("relationships");
                         $mapping->relationshipMappings = $relationships->map($transform);
                     }
+                    $dictionary->removeAll(fn(mixed $value, string $key): bool => match ($key) {
+                        "sourceExpressionFormat", "mappingType", "attributes", "relationships" => true,
+                        default => false
+                    });
                     $mapping->setValuesForKeys($dictionary);
                     return $mapping;
                 });
@@ -162,6 +162,7 @@ class MappingModel extends ObjectClass
         if ($destinationEntityName = $entityMapping->destinationEntityName) {
             $this->destinationEntityVersionHashesByName[$destinationEntityName] = $entityMapping->destinationEntityVersionHash;
         }
+        /** @noinspection PhpHookedPropertyCantBeAccessedByRefInspection */
         $this->entityMappingsByName[$entityMapping->name] = $entityMapping;
     }
 }
