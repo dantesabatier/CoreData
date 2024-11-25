@@ -219,12 +219,12 @@ readonly class SQLStoreMigrator
                     }
                 } elseif ($source instanceof SQLAttribute || $source instanceof SQLForeignKey) {
                     if ($sourceEntity->isEqual($destinationEntity) && !$destinationEntity->properties->containsElement($source)) {
-                        if ($statement = $adapter->newDropIndexStatement($source)) {
-                            $connection->execute($statement);
-                        }
                         if ($attributes = $sourceEntity->byMappingByCompositeNameAssociationTable->valueForKey($source->name)?->values) {
                             $this->removedColumns->appendContentsOf($attributes);
                         } else {
+                            if ($statement = $adapter->newDropIndexStatement($source)) {
+                                $connection->execute($statement);
+                            }
                             $this->removedColumns->append($source);
                         }
                     }
