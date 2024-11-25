@@ -214,10 +214,13 @@ class SQLAdapter extends ObjectClass
 
     public function newCreateColumnStatement(SQLColumn $column, ?SQLColumn $after = null): ?SQLStatement
     {
-        if ($string = $this->typeStringForColumn($column)) {
-            return $after ? new SQLStatement("ALTER TABLE `{$column->entity->tableName}` ADD COLUMN IF NOT EXISTS $string AFTER `$after->columnName`") : new SQLStatement("ALTER TABLE `{$column->entity->tableName}` ADD COLUMN IF NOT EXISTS $string");
+        if ($column->entity->byMappingByCompositeNameAssociationTable->offsetExists($column->columnName)) {
+            return null;
         }
-        return null;
+        if (!($string = $this->typeStringForColumn($column))) {
+            return null;
+        }
+        return $after ? new SQLStatement("ALTER TABLE `{$column->entity->tableName}` ADD COLUMN IF NOT EXISTS $string AFTER `$after->columnName`") : new SQLStatement("ALTER TABLE `{$column->entity->tableName}` ADD COLUMN IF NOT EXISTS $string");
     }
 
     public function newDropTableStatementForManyToMany(SQLManyToMany $manyToMany): SQLStatement
