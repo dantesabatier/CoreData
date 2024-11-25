@@ -222,7 +222,11 @@ readonly class SQLStoreMigrator
                         if ($statement = $adapter->newDropIndexStatement($source)) {
                             $connection->execute($statement);
                         }
-                        $this->removedColumns->append($source);
+                        if ($attributes = $sourceEntity->byMappingByCompositeNameAssociationTable->valueForKey($source->name)?->values) {
+                            $this->removedColumns->appendContentsOf($attributes);
+                        } else {
+                            $this->removedColumns->append($source);
+                        }
                     }
                 } elseif ($source instanceof SQLManyToMany) {
                     $this->removedManyToMany->append($source);
@@ -231,7 +235,13 @@ readonly class SQLStoreMigrator
             $properties = $destinationEntity->properties->filter(fn(SQLProperty $property): bool => !$property->propertyDescription->isTransient);
             foreach ($properties as $property) {
                 if ($property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
-                    if ($statement = $adapter->newCreateColumnStatement($property)) {
+                    if ($attributes = $destinationEntity->byMappingByCompositeNameAssociationTable->valueForKey($property->name)?->values) {
+                        foreach ($attributes as $attribute) {
+                            if ($statement = $adapter->newCreateColumnStatement($attribute)) {
+                                $connection->execute($statement);
+                            }
+                        }
+                    } elseif ($statement = $adapter->newCreateColumnStatement($property)) {
                         $connection->execute($statement);
                         if ($statement = $adapter->newCreateIndexStatement($property)) {
                             $connection->execute($statement);
