@@ -3,7 +3,11 @@
 namespace Sabatier\CoreData;
 
 use InvalidArgumentException;
+use Override;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\KeyedArchiver;
+use Sabatier\Foundation\KeyedUnarchiver;
 
 /**
  * A description of an attribute that derives its value by composing other attributes.
@@ -28,5 +32,29 @@ class CompositeAttributeDescription extends AttributeDescription
     public function __construct()
     {
         $this->elements = new ArrayClass();
+    }
+
+    #[Override]
+    public function versionHashInStyle(?string &$out, VersionHashStyle $style): void
+    {
+        parent::versionHashInStyle($data, $style);
+        /** @var Dictionary $dictionary */
+        $dictionary = KeyedUnarchiver::unarchiveTopLevelObjectWithData((string)$data);
+        $dictionary["elements"] = $this->elements->map(function (AttributeDescription $element) use ($style): Dictionary {
+            $element->versionHashInStyle($data, $style);
+            return KeyedUnarchiver::unarchiveTopLevelObjectWithData((string)$data);
+        });
+        $out = KeyedArchiver::archivedData($dictionary);
+    }
+
+    #[Override]
+    public function jsonSerialize(): Dictionary
+    {
+        $dictionary = parent::jsonSerialize();
+        $elements = $this->elements->map(fn(AttributeDescription $element): Dictionary => $element->jsonSerialize());
+        if (!$elements->isEmpty) {
+            $dictionary["elements"] = $elements;
+        }
+        return $dictionary;
     }
 }
