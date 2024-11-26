@@ -168,7 +168,13 @@ readonly class SQLStoreMigrator
                         if ($source->name !== $destination->name && ($statement = $adapter->newRenameColumnStatement($source, $destination))) {
                             $connection->execute($statement);
                         }
-                        if (($source->sqlType !== $destination->sqlType || $source->isOptional !== $destination->isOptional || $source->isUnique !== $destination->isUnique || $source->minValue !== $destination->minValue || $source->maxValue !== $destination->maxValue || $source->defaultValue !== $destination->defaultValue || ($source->isDerivedAttribute !== $destination->isDerivedAttribute) || ($source->isDerivedAttribute && $destination->isDerivedAttribute && (string)$source->derivationExpression !== (string)$destination->derivationExpression)) && ($statement = $adapter->newRenameColumnStatement($source, $destination))) {
+                        if ($source->isCompositeAttribute !== $destination->isCompositeAttribute) {
+                            if ($attributes = $sourceEntity->byMappingByCompositeNameAssociationTable->valueForKey($source->name)?->values) {
+                                $this->removedColumns->appendContentsOf($attributes);
+                            } else {
+                                $this->removedColumns->append($source);
+                            }
+                        } elseif (($source->sqlType !== $destination->sqlType || $source->isOptional !== $destination->isOptional || $source->isUnique !== $destination->isUnique || $source->minValue !== $destination->minValue || $source->maxValue !== $destination->maxValue || $source->defaultValue !== $destination->defaultValue || ($source->isDerivedAttribute !== $destination->isDerivedAttribute) || ($source->isDerivedAttribute && $destination->isDerivedAttribute && (string)$source->derivationExpression !== (string)$destination->derivationExpression)) && ($statement = $adapter->newRenameColumnStatement($source, $destination))) {
                             $connection->execute($statement);
                         }
                         if ($source->isConstrained !== $destination->isConstrained || $source->isTransient !== $destination->isTransient) {
@@ -232,7 +238,7 @@ readonly class SQLStoreMigrator
                     $this->removedManyToMany->append($source);
                 }
             }
-            $properties = $destinationEntity->properties->filter(fn(SQLProperty $property): bool => !$property->propertyDescription->isTransient);
+            $properties = $destinationEntity->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient);
             foreach ($properties as $property) {
                 if ($property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
                     if ($attributes = $destinationEntity->byMappingByCompositeNameAssociationTable->valueForKey($property->name)?->values) {
@@ -264,7 +270,7 @@ readonly class SQLStoreMigrator
                 }
             }
             foreach ($properties as $index => $property) {
-                if ($property instanceof SQLAttribute && ($statement = $adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($properties->indexBefore($index))))) {
+                if ($property instanceof SQLAttribute && !$property->isCompositeAttribute && ($statement = $adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($properties->indexBefore($index))))) {
                     $connection->execute($statement);
                 }
             }
