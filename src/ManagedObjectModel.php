@@ -90,10 +90,9 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     /**
      * @param Dictionary $dictionary
      * @param EntityDescription|null $superentity
-     * @param ArrayClass<Dictionary<mixed>>|null $compositeTypes
      * @return EntityDescription
      */
-    private function newEntity(Dictionary $dictionary, ?EntityDescription $superentity = null, ?ArrayClass $compositeTypes = null): EntityDescription
+    private function newEntity(Dictionary $dictionary, ?EntityDescription $superentity = null): EntityDescription
     {
         /** @var string $name */
         $name = $dictionary["name"] ?? fatal_error("Entity name cannot be null");
@@ -123,7 +122,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             /** @var ArrayClass<Dictionary>|null $attributes */
             $attributes = $dictionary["attributes"];
             if ($attributes) {
-                $properties->appendContentsOf($attributes->map(function (Dictionary $description) use ($entity, $compositeTypes): AttributeDescription {
+                $properties->appendContentsOf($attributes->map(function (Dictionary $description) use ($entity): AttributeDescription {
                     /** @var string|null $derivationExpressionFormat */
                     $derivationExpressionFormat = $description["derivationExpressionFormat"];
                     $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
@@ -137,10 +136,9 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                         $derivedAttribute->setValuesForKeys($description);
                         return $derivedAttribute;
                     }
-                    $compositeType = $description["elements"] ? $description : $compositeTypes?->first(fn(Dictionary $compositeType): bool => $compositeType["name"] === $description["attributeValueClassName"]);
-                    if ($compositeType) {
+                    if ($description["elements"]) {
                         /** @var ArrayClass<Dictionary<mixed>> $elements */
-                        $elements = $compositeType["elements"] ?? fatal_error(sprintf("%s elements cannot be null", CompositeAttributeDescription::class));
+                        $elements = $description["elements"];
                         $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
                             "attributeValueClassName", "elements" => true,
                             default => false
@@ -207,12 +205,12 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             /** @var Dictionary|null $superentity */
             $superentity = $dictionary["superentity"];
             if ($superentity) {
-                $entity->superentity = $this->newEntity($superentity, $compositeTypes);
+                $entity->superentity = $this->newEntity($superentity);
             }
             /** @var ArrayClass<Dictionary>|null $subentities */
             $subentities = $dictionary["subentities"];
             if ($subentities) {
-                $entity->subentities = $subentities->map(fn(Dictionary $description): EntityDescription => $this->newEntity($description, $entity, $compositeTypes));
+                $entity->subentities = $subentities->map(fn(Dictionary $description): EntityDescription => $this->newEntity($description, $entity));
             }
             /** @var ArrayClass<ArrayClass<string>> $uniquenessConstraints */
             $uniquenessConstraints = $dictionary["uniquenessConstraints"] ?? new ArrayClass();
@@ -299,12 +297,10 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
 
     private function recreate(Dictionary $dictionary): void
     {
-        /** @var ArrayClass<Dictionary<mixed>>|null $compositeTypes */
-        $compositeTypes = $dictionary["compositeTypes"];
         /** @var ArrayClass<Dictionary>|null $entities */
         $entities = $dictionary["entities"];
         if ($entities) {
-            $this->entities = $entities->map(fn(Dictionary $dictionary): EntityDescription => $this->newEntity($dictionary, null, $compositeTypes));
+            $this->entities = $entities->map(fn(Dictionary $dictionary): EntityDescription => $this->newEntity($dictionary));
         }
         /** @var ArrayClass<Dictionary>|null $fetchRequestTemplates */
         $fetchRequestTemplates = $dictionary["fetchRequests"];
