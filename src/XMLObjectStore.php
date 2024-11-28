@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use BackedEnum;
 use DOMAttr;
 use DOMDocument;
 use DOMElement;
@@ -22,6 +23,7 @@ use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
+use Sabatier\Foundation\Value;
 use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
@@ -292,6 +294,9 @@ class XMLObjectStore extends AtomicStore
             case AttributeType::decimal:
             case AttributeType::double:
             case AttributeType::float:
+                if ($value instanceof BackedEnum || $value instanceof Value) {
+                    $value = $value->value;
+                }
                 $value = json_encode($value, JSON_THROW_ON_ERROR);
                 break;
             case AttributeType::uri:
