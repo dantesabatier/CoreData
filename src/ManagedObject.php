@@ -101,7 +101,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /** @internal */
     public bool $isSuppressingChangeNotifications = false;
     /** @internal */
-    public bool $isAwakening = false;
+    public bool $isAwake = false;
     /** @internal */
     private(set) string $entityName;
     public string $description {
@@ -563,7 +563,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $set->setSet($value);
                 $value = $set;
                 $change = $this->mutableSetValueForKey($key);
-                if (!$this->isAwakening && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
+                if (!$this->isAwake && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
                     $this->reserved[$key] = true;
                     /** @var FaultingMutableSet $change */
                     $change = $this->valueForKey($key);

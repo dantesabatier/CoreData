@@ -48,11 +48,6 @@ abstract class AtomicStore extends PersistentStore
         $cacheNode = $this->newCacheNode($object);
         $this->nodeCache[$key] = $cacheNode;
         $this->updateObject($object);
-        if ($object->isAwakening) {
-            return;
-        }
-        $object->isAwakening = true;
-        $object->awakeFromFetch();
     }
 
     private function updateObject(ManagedObject $object): void
@@ -122,8 +117,10 @@ abstract class AtomicStore extends PersistentStore
         /** @var AtomicStoreCacheNode $cacheNode */
         foreach ($this->nodeCache as $cacheNode) {
             $object = $context->object($cacheNode->objectID);
-            if ($object->isAwakening) {
+            if (!$object->isAwake) {
+                $object->isAwake = true;
                 $this->updateObject($object);
+                $object->awakeFromFetch();
             }
             if ($request->includesSubentities) {
                 if ($cacheNode->objectID->entity->isKindOf($request->entity)) {

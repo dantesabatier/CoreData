@@ -44,8 +44,8 @@ readonly class FaultHandler
         $object->faultingState = 0;
         $object->isFault = false;
         $object->isSuppressingKVO = false;
-        if (!$object->isAwakening) {
-            $object->isAwakening = true;
+        if (!$object->isAwake) {
+            $object->isAwake = true;
             $object->awakeFromFetch();
         }
     }
