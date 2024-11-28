@@ -15,7 +15,6 @@ use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use function Sabatier\Foundation\fatal_error;
-use function Sabatier\Foundation\get_calling_class;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\request_concrete_implementation;
 use const Sabatier\Foundation\NotFound;
@@ -112,7 +111,6 @@ abstract class AtomicStore extends PersistentStore
 
     private function executeFetchRequest(FetchRequest $request, ManagedObjectContext $context): ArrayClass
     {
-        error_log(__METHOD__ . " " . get_calling_class());
         $resultType = $request->resultType;
         /** @var ArrayClass<PropertyDescription|string> $propertiesToGroupBy */
         $propertiesToGroupBy = $request->propertiesToGroupBy ?? new ArrayClass();
