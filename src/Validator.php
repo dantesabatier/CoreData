@@ -9,5 +9,5 @@ abstract class Validator
     {
     }
 
-    abstract public function validate(mixed $object): bool;
+    public abstract function validate(mixed $object): bool;
 }
