@@ -1235,12 +1235,11 @@ class SQLGenerator extends ObjectClass
             /** @var Dictionary<ArrayClass<SQLToMany>> $byMappingByKeyPathRelationshipsAssociationTable */
             $byMappingByKeyPathRelationshipsAssociationTable = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->reduce(new Dictionary(), function (Dictionary $initialResult, Expression $expression): Dictionary {
                 if ($this->isToManyKeyPath($expression)) {
-                    $keyPath = $expression->keyPath;
-                    $keys = new Set(explode(".", $keyPath));
-                    $relationships = $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLToMany && $property->isOrdered && $property->name === $keys[$keys->indexBefore($keys->endIndex)]);
+                    $keys = new Set(explode(".", $expression->keyPath));
+                    $relationships = $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLToMany && $property->isOrdered && $property->name === $keys->last);
                     if (!$relationships->isEmpty) {
                         /** @psalm-suppress InvalidArgument */
-                        $initialResult[$keyPath] = $relationships;
+                        $initialResult[$expression->keyPath] = $relationships;
                     }
                 }
                 return $initialResult;
