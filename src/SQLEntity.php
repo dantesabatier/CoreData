@@ -142,7 +142,7 @@ class SQLEntity extends StoreMapping
         get => $this->subentityMaxID ??= $this->subentities->map(fn(SQLEntity $entity): int => $entity->entityID)->max();
     }
     public string $description {
-        get => sprintf("<%s %s>", $this->entityDescription->name, $this->hash);
+        get => sprintf("<%s %s> %s", $this->entityDescription->name, $this->hash, $this->tableName);
     }
 
     public function __construct(public readonly SQLModel $model, public readonly EntityDescription $entityDescription)

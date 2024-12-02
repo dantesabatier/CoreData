@@ -14,8 +14,8 @@ use Override;
 /** @internal */
 class SQLColumn extends SQLProperty
 {
-    public string $columnName {
-        get => $this->propertyDescription->name;
+    protected(set) string $columnName {
+        get => $this->columnName ??= $this->propertyDescription->name;
     }
     public int $precision {
         get => match ($this->sqlType) {

@@ -15,8 +15,8 @@ class SQLPrimaryKey extends SQLColumn
     public PropertyDescriptionType $propertyType {
         get => PropertyDescriptionType::private;
     }
-    public string $columnName {
-        get => $this->name;
+    protected(set) string $columnName {
+        get => $this->columnName ??= $this->name;
     }
-    public SQLType $sqlType = SQLType::int;
+    protected(set) SQLType $sqlType = SQLType::int;
 }

@@ -52,7 +52,7 @@ class SQLAttribute extends SQLColumn
     }
     public SQLType $sqlType {
         /** @noinspection PhpVoidFunctionResultUsedInspection */
-        get => match ($this->attributeDescription->type) {
+        get => $this->sqlType ??= match ($this->attributeDescription->type) {
             AttributeType::integer16 => SQLType::smallint,
             AttributeType::integer32 => SQLType::int,
             AttributeType::integer64 => SQLType::bigint,

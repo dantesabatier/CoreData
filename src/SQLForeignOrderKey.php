@@ -12,8 +12,8 @@ namespace Sabatier\CoreData;
 /** @internal */
 class SQLForeignOrderKey extends SQLColumn
 {
-    private(set) string $columnName {
-        get => $this->columnName ??= $relationshipDescription->destinationEntity->attributesByName->first?->name ?? SQLEntity::primaryKeyName;
+    public string $columnName {
+        get => $this->columnName ??= $this->relationshipDescription->destinationEntity->attributesByName->first?->name ?? SQLEntity::primaryKeyName;
     }
     public SQLToOne $toOneRelationship {
         get => $this->foreignKey->toOneRelationship;

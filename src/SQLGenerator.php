@@ -700,30 +700,6 @@ class SQLGenerator extends ObjectClass
         return $expression->expressionType === ExpressionType::keyPath && new Set(explode(".", (string)$expression))->count > 1;
     }
 
-    private function isToManyKeyPath(Expression $expression): bool
-    {
-        if ($expression->expressionType !== ExpressionType::keyPath) {
-            return false;
-        }
-        $keys = new Set(explode(".", (string)$expression));
-        $end = $keys->indexBefore($keys->endIndex);
-        $entity = $this->entity;
-        foreach ($keys as $index => $key) {
-            if (!($property = $entity->propertiesByName[$key])) {
-                break;
-            }
-            if (!$property instanceof SQLToMany && !$property instanceof SQLManyToMany) {
-                continue;
-            }
-            $entity = $property->destinationEntity;
-            if ($index < $end) {
-                continue;
-            }
-            return true;
-        }
-        return false;
-    }
-
     private function buildKeyPathExpression(Expression $expression, ?bool &$isDeterministic = true): string
     {
         $tableName = $this->entity->tableName;
@@ -1232,19 +1208,20 @@ class SQLGenerator extends ObjectClass
         $this->raisesForNotApplicableKeys = false;
         /** @psalm-suppress RedundantCondition, TypeDoesNotContainType */
         if (SS_COREDATA_USES_RELATIONSHIPS_SORT_DESCRIPTORS):
-            /** @var Dictionary<ArrayClass<SQLToMany>> $byMappingByKeyPathRelationshipsAssociationTable */
-            $byMappingByKeyPathRelationshipsAssociationTable = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->reduce(new Dictionary(), function (Dictionary $initialResult, Expression $expression): Dictionary {
-                if ($this->isToManyKeyPath($expression)) {
-                    $keys = new Set(explode(".", $expression->keyPath));
-                    $relationships = $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLToMany && $property->isOrdered && $property->name === $keys->last);
-                    if (!$relationships->isEmpty) {
-                        /** @psalm-suppress InvalidArgument */
-                        $initialResult[$expression->keyPath] = $relationships;
-                    }
+            /** @var Set<SQLToMany> $toManyRelationships */
+            $toManyRelationships = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->flatMap(fn(Expression $expression): ArrayClass => $this->propertiesFromKeyPathExpression($expression)->compactMap(function (SQLProperty $property): ?SQLProperty {
+                $relationship = null;
+                if ($property instanceof SQLForeignKey) {
+                    $relationship = $property->toOneRelationship->inverseRelationship;
+                } elseif ($property instanceof SQLToMany) {
+                    $relationship = $property;
                 }
-                return $initialResult;
-            });
-            $descriptors->appendContentsOf($byMappingByKeyPathRelationshipsAssociationTable->flatMap(fn(ArrayClass $relationships, string $keyPath): ArrayClass => $relationships->map(fn(SQLToMany $many): SortDescriptor => ($index = $many->inverseToOne->foreignOrderKey->toOneRelationship->destinationEntity->indexes->flatMap(fn(SQLIndex $index): ArrayClass => $index->indexDescription->elements)->first(fn(FetchIndexElementDescription $element): bool => $element->property->name === $many->inverseToOne->foreignOrderKey->columnName)) ? new SortDescriptor("$keyPath.{$index->property->name}", $index->isAscending) : new SortDescriptor("$keyPath.{$many->inverseToOne->foreignOrderKey->columnName}"))));
+                if ($relationship?->isOrdered) {
+                    return $relationship;
+                }
+                return null;
+            }));
+            $descriptors->appendContentsOf($toManyRelationships->map(fn(SQLToMany $toMany) => new SortDescriptor($toMany->inverseToOne->foreignOrderKey->columnName)));
         endif;
         if (!$descriptors->isEmpty) {
             $clauses = new Set($descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? "ASC" : "DESC"))->filter(fn(string $string): bool => str_contains($string, ".")));

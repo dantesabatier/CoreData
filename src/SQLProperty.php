@@ -15,34 +15,34 @@ use Sabatier\Foundation\ObjectClass;
 /** @internal */
 abstract class SQLProperty extends ObjectClass
 {
-    public string $name {
-        get => $this->propertyDescription->name;
+    protected(set) string $name {
+        get => $this->name ??= $this->propertyDescription->name;
     }
-    public bool $isOptional {
-        get => $this->propertyDescription->isOptional;
+    protected(set) bool $isOptional {
+        get => $this->isOptional ??= $this->propertyDescription->isOptional;
     }
-    public bool $isTransient {
-        get => $this->propertyDescription->isTransient;
+    protected(set) bool $isTransient {
+        get => $this->isTransient ??= $this->propertyDescription->isTransient;
     }
-    private(set) bool $isUnique {
+    protected(set) bool $isUnique {
         get => $this->isUnique ??= $this->entity->indexes->contains(fn(SQLIndex $index, string $key): bool => $index->isUnique && $key === $this->name);
     }
-    private(set) bool $isConstrained {
+    protected(set) bool $isConstrained {
         get => $this->isConstrained ??= $this->entity->indexes->contains(fn(SQLIndex $index, string $key): bool => $key === $this->name);
     }
-    public bool $isReadOnly {
-        get => $this->propertyDescription->isReadOnly;
+    protected(set) bool $isReadOnly {
+        get => $this->isReadOnly ??= $this->propertyDescription->isReadOnly;
     }
-    public PropertyDescriptionType $propertyType {
-        get => $this->propertyDescription->propertyType;
+    protected(set) PropertyDescriptionType $propertyType {
+        get => $this->propertyType ??= $this->propertyDescription->propertyType;
     }
-    public mixed $minValue {
-        get => $this->propertyDescription->minValue;
+    protected(set) mixed $minValue {
+        get => $this->minValue ??= $this->propertyDescription->minValue;
     }
-    public mixed $maxValue {
-        get => $this->propertyDescription->maxValue;
+    protected(set) mixed $maxValue {
+        get => $this->maxValue ??= $this->propertyDescription->maxValue;
     }
-    public SQLType $sqlType = SQLType::unknown;
+    protected(set) SQLType $sqlType = SQLType::unknown;
     public string $description {
         get => sprintf("<%s %s>", $this->name, $this->hash);
     }

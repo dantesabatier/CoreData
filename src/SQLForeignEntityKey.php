@@ -12,11 +12,11 @@ namespace Sabatier\CoreData;
 /** @internal */
 class SQLForeignEntityKey extends SQLColumn
 {
-    public string $name {
-        get => $this->relationshipDescription->destinationEntity->name;
+    protected(set) string $name {
+        get => $this->name ??= $this->relationshipDescription->destinationEntity->name;
     }
-    public string $columnName {
-        get => $this->entity->entityKey->columnName;
+    protected(set) string $columnName {
+        get => $this->columnName ??= $this->entity->entityKey->columnName;
     }
     public SQLToOne $toOneRelationship {
         get => $this->foreignKey->toOneRelationship;
