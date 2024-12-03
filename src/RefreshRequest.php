@@ -15,12 +15,8 @@ use Sabatier\Foundation\Set;
 class RefreshRequest extends PersistentStoreRequest
 {
     /** @var Set<ManagedObject> */
-    public Set $refreshObjects;
-    public RefreshRequestType $refreshType = RefreshRequestType::default;
-
-    public function __construct()
-    {
-        parent::__construct();
-        $this->refreshObjects = new Set();
+    private(set) Set $refreshObjects {
+        get => $this->refreshObjects ??= new Set();
     }
+    public RefreshRequestType $refreshType = RefreshRequestType::default;
 }
