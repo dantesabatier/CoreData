@@ -62,7 +62,7 @@ readonly class FaultHandler
             if ($property instanceof AttributeDescription && !$property->preservesValueInHistoryOnDeletion) {
                 $object->setValueForKey(null, $property->name);
             } elseif ($property instanceof FetchedPropertyDescription || $property instanceof RelationshipDescription) {
-                if (($value = $object->primitiveValueForKey($property->name)) && ($value instanceof FaultingMutableSet || $value instanceof FaultingMutableArray)) {
+                if (($value = $object->primitiveValueForKey($property->name)) && ($value instanceof FaultingSet || $value instanceof FaultingArray)) {
                     $value->turnIntoFault();
                 }
             }

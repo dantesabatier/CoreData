@@ -9,7 +9,7 @@ use Sabatier\Foundation\Set;
  * @extends Set<mixed>
  * @internal
  */
-class FaultingMutableSet extends Set
+class FaultingSet extends Set
 {
     private(set) bool $isFault = true;
 

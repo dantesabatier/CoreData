@@ -9,7 +9,7 @@ use Sabatier\Foundation\ArrayClass;
  * @extends ArrayClass<ManagedObject>
  * @internal
  */
-class FaultingMutableArray extends ArrayClass
+class FaultingArray extends ArrayClass
 {
     private(set) bool $isFault = true;
 

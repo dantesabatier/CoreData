@@ -41,7 +41,7 @@ use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
  */
 class ManagedObject extends ObjectClass implements FetchRequestResult
 {
-    use FaultingMutableSetMutationMethods;
+    use FaultingSetMutationMethods;
 
     /** @var bool A Boolean value that indicates whether to mark instances of the class as having changes when an unmodeled property changes. false if instances of the class should be marked as having changes if an unmodeled property is changed, otherwise true. The default value is true. */
     public static bool $contextShouldIgnoreUnmodeledPropertyChanges = true;
@@ -208,7 +208,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     {
         $value = $this->primitiveValueForKey($key);
         $property = $this->entity->propertiesByName[$key];
-        if (($property instanceof FetchedPropertyDescription && $value instanceof FaultingMutableArray) || ($property instanceof RelationshipDescription && $value instanceof FaultingMutableSet)) {
+        if (($property instanceof FetchedPropertyDescription && $value instanceof FaultingArray) || ($property instanceof RelationshipDescription && $value instanceof FaultingSet)) {
             return $value->isFault;
         }
         return !isset($this->reserved[$key]) && !isset($this->changedValues[$key]);
@@ -247,7 +247,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     if ($this->isSubclass(ManagedObject::class)) {
                         $this->createMutationMethods($key);
                     }
-                    $value ??= new FaultingMutableSet($this, $property);
+                    $value ??= new FaultingSet($this, $property);
                 }
             }
             $this->setPrimitiveValueForKey($value, $key);
@@ -373,8 +373,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             fatal_error("$this->debugDescription does not contains a to many relationship named \"$key\"");
         }
         $mutableSet = $this->primitiveValueForKey($key);
-        if (!$mutableSet instanceof FaultingMutableSet) {
-            $set = new FaultingMutableSet($this, $relationship);
+        if (!$mutableSet instanceof FaultingSet) {
+            $set = new FaultingSet($this, $relationship);
             if ($mutableSet instanceof Set) {
                 $set->formUnion($mutableSet);
             }
@@ -391,8 +391,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             return $this->valueForUndefinedKey($key);
         }
         $mutableArray = $this->primitiveValueForKey($key);
-        if (!$mutableArray instanceof FaultingMutableArray) {
-            $array = new FaultingMutableArray($this, $property);
+        if (!$mutableArray instanceof FaultingArray) {
+            $array = new FaultingArray($this, $property);
             if ($mutableArray instanceof ArrayClass) {
                 /** @psalm-suppress InvalidArgument */
                 $array->appendContentsOf($mutableArray);
@@ -466,7 +466,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->didAccessValueForKey($key);
             if (!isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
                 $this->reserved[$key] = true;
-                $value ??= new FaultingMutableArray($this, $property);
+                $value ??= new FaultingArray($this, $property);
                 if ($property->fetchRequest !== null) {
                     $fetchRequest = clone $property->fetchRequest;
                     if ($entityName = $fetchRequest->entityName) {
@@ -510,7 +510,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $store = $context->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null");
                 $newValue = $store->newValueForRelationship($property, $this->objectID, $context);
                 if ($property->isToMany) {
-                    $value ??= new FaultingMutableSet($this, $property);
+                    $value ??= new FaultingSet($this, $property);
                     $value->setSet(new Set($newValue));
                 } else {
                     $value = $newValue;
@@ -518,7 +518,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $this->setPrimitiveValueForKey($value, $key);
                 //unset($this->reserved[$key]);
             }
-            if ($value instanceof FaultingMutableArray || $value instanceof FaultingMutableSet || $value instanceof ManagedObject) {
+            if ($value instanceof FaultingArray || $value instanceof FaultingSet || $value instanceof ManagedObject) {
                 return $value;
             }
             if ($value instanceof ManagedObjectID) {
@@ -559,13 +559,13 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $inverseRelationship = $property->inverseRelationship;
             if ($property->isToMany) {
                 assert($value instanceof Set, sprintf("invalid argument: expecting \"%s\", \"%s\" given", Set::class, typeof($value)));
-                $set = new FaultingMutableSet($this, $property);
+                $set = new FaultingSet($this, $property);
                 $set->setSet($value);
                 $value = $set;
                 $change = $this->mutableSetValueForKey($key);
                 if (!$this->isAwake && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
                     $this->reserved[$key] = true;
-                    /** @var FaultingMutableSet $change */
+                    /** @var FaultingSet $change */
                     $change = $this->valueForKey($key);
                     /** @var ManagedObject $managedObject */
                     foreach ($change as $managedObject) {
