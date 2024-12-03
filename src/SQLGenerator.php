@@ -727,7 +727,7 @@ class SQLGenerator extends ObjectClass
                 }
             }
         }
-        if ($keyPath === $tableName) {
+        if ($this->raisesForNotApplicableKeys && $keyPath === $tableName) {
             fatal_error("Failed to generate an alias for entity \"$tableName\", invalid key path \"$description\"");
         }
         return $keyPath;
@@ -1209,7 +1209,7 @@ class SQLGenerator extends ObjectClass
         /** @psalm-suppress RedundantCondition, TypeDoesNotContainType */
         if (SS_COREDATA_USES_RELATIONSHIPS_SORT_DESCRIPTORS):
             /** @var Set<SQLToMany> $toManyRelationships */
-            $toManyRelationships = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->flatMap(fn(Expression $expression): ArrayClass => $this->propertiesFromKeyPathExpression($expression)->compactMap(function (SQLProperty $property): ?SQLProperty {
+            $toManyRelationships = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->flatMap(fn(Expression $expression): ArrayClass => $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLForeignKey || $property instanceof SQLToMany)->compactMap(function (SQLProperty $property): ?SQLProperty {
                 $relationship = null;
                 if ($property instanceof SQLForeignKey) {
                     $relationship = $property->toOneRelationship->inverseRelationship;
