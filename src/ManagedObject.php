@@ -456,7 +456,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $this->reserved[$key] = true;
                 $value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional);
                 $this->setPrimitiveValueForKey($value, $key);
-                //unset($this->reserved[$key]);
             }
             return $value;
         }
@@ -464,8 +463,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if (!isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
-                $this->reserved[$key] = true;
+            if ($this->isAwake && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
                 $value ??= new FaultingArray($this, $property);
                 if ($property->fetchRequest !== null) {
                     $fetchRequest = clone $property->fetchRequest;
@@ -497,7 +495,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     $value->setArray($context->fetch($fetchRequest));
                 }
                 $this->setPrimitiveValueForKey($value, $key);
-                //unset($this->reserved[$key]);
             }
             return $value;
         }
@@ -505,8 +502,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if (!isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
-                $this->reserved[$key] = true;
+            if ($this->isAwake && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
                 $store = $context->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null");
                 $newValue = $store->newValueForRelationship($property, $this->objectID, $context);
                 if ($property->isToMany) {
@@ -516,7 +512,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     $value = $newValue;
                 }
                 $this->setPrimitiveValueForKey($value, $key);
-                //unset($this->reserved[$key]);
             }
             if ($value instanceof FaultingArray || $value instanceof FaultingSet || $value instanceof ManagedObject) {
                 return $value;
@@ -564,7 +559,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $value = $set;
                 $change = $this->mutableSetValueForKey($key);
                 if (!$this->isAwake && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
-                    $this->reserved[$key] = true;
                     /** @var FaultingSet $change */
                     $change = $this->valueForKey($key);
                     /** @var ManagedObject $managedObject */
@@ -664,12 +658,14 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             }
             if ($object instanceof ManagedObjectID) {
                 $managedObject = $this->managedObjectContext->object($object);
+                $managedObject->isAwake = true;
                 $managedObject->awakeFromFetch();
                 return $managedObject;
             }
             if ($objectID = $managedObjectID($entity, $object)) {
                 $managedObject = $this->managedObjectContext->object($objectID);
                 $managedObject->setValuesForKeys($object);
+                $managedObject->isAwake = true;
                 $managedObject->awakeFromFetch();
                 return $managedObject;
             }
