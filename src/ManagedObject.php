@@ -53,7 +53,20 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     }
     /** @var bool A Boolean value that indicates whether the managed object has been inserted in a managed object context. */
     public bool $isInserted {
-        get => $this->isInserted ??= $this->isInserted();
+        get {
+            if (isset($this->isInserted)) {
+                if ($persistentStore = $this->objectID->persistentStore) {
+                    /** @var FetchRequest<Number> $fetchRequest */
+                    $fetchRequest = $this::fetchRequest();
+                    $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($this->objectID));
+                    $fetchRequest->affectedStores = new ArrayClass([$persistentStore]);
+                    /** @noinspection PhpUnhandledExceptionInspection */
+                    $this->isInserted = (bool)$this->managedObjectContext->count($fetchRequest);
+                }
+                $this->isInserted ??= false;
+            }
+            return $this->isInserted;
+        }
     }
     /** @var bool A Boolean value that indicates whether the managed object has unsaved changes. */
     public bool $isUpdated {
@@ -73,7 +86,28 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public SerializationRule $serializationRule = SerializationRule::attributesAndRelationships;
     /** @var ArrayClass<string> */
     public ArrayClass $serializationKeys {
-        get => $this->serializationKeys ??= $this->serializationKeys();
+        get {
+            if (isset($this->serializationKeys)) {
+                /** @var ArrayClass<string> $serializationKeys */
+                $serializationKeys = match ($this->serializationRule) {
+                    SerializationRule::attributesOnly => $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient)->keys,
+                    SerializationRule::attributesAndRelationships => $this->entity->propertiesByName->filter(function (PropertyDescription $property): bool {
+                        if ($property instanceof AttributeDescription) {
+                            return !$property->isTransient;
+                        }
+                        if ($property instanceof RelationshipDescription) {
+                            return $property->isToMany && !$property->inverseRelationship->isToMany;
+                        }
+                        return $property instanceof FetchedPropertyDescription;
+                    })->keys,
+                    default => new ArrayClass(),
+                };
+                $serializationKeys->insertAt(SQLEntity::primaryKeyName, 0);
+                $serializationKeys->insertAt(SQLEntity::entityKeyName, 1);
+                $this->serializationKeys = $serializationKeys;
+            }
+            return $this->serializationKeys;
+        }
     }
     private array $reserved = [];
     /** @internal */
@@ -107,9 +141,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public string $description {
         get => sprintf("<%s %s> (entity: %s; id: %s %s; data: %s)", $this->entity->name, $this->hash, $this->entity->name, $this->objectID->hash, $this->objectID->description, $this->isFault ? "<fault>" : $this->dictionaryWithValues($this->entity->propertiesByName->filter(fn(PropertyDescription $property): bool => !$this->isRelationshipForKeyFault($property->name))->keys)->description);
     }
-    public string $debugDescription {
-        get => sprintf("<%s: %s>", get_class($this), $this->hash);
-    }
 
     /**
      * Initializes a managed object from an entity description and inserts it into the specified managed object context.
@@ -139,40 +170,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public function __set(string $name, mixed $value): void
     {
         $this->setValueForKey($value, $name);
-    }
-
-    private function serializationKeys(): ArrayClass
-    {
-        /** @var ArrayClass<string> $serializationKeys */
-        $serializationKeys = match ($this->serializationRule) {
-            SerializationRule::attributesOnly => $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient)->keys,
-            SerializationRule::attributesAndRelationships => $this->entity->propertiesByName->filter(function (PropertyDescription $property): bool {
-                if ($property instanceof AttributeDescription) {
-                    return !$property->isTransient;
-                }
-                if ($property instanceof RelationshipDescription) {
-                    return $property->isToMany && !$property->inverseRelationship->isToMany;
-                }
-                return $property instanceof FetchedPropertyDescription;
-            })->keys,
-            default => new ArrayClass(),
-        };
-        $serializationKeys->insertAt(SQLEntity::primaryKeyName, 0);
-        $serializationKeys->insertAt(SQLEntity::entityKeyName, 1);
-        return $serializationKeys;
-    }
-
-    private function isInserted(): bool
-    {
-        if ($persistentStore = $this->objectID->persistentStore) {
-            /** @var FetchRequest<Number> $fetchRequest */
-            $fetchRequest = $this::fetchRequest();
-            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($this->objectID));
-            $fetchRequest->affectedStores = new ArrayClass([$persistentStore]);
-            /** @noinspection PhpUnhandledExceptionInspection */
-            return (bool)$this->managedObjectContext->count($fetchRequest);
-        }
-        return false;
     }
 
     /**

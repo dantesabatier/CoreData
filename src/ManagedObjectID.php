@@ -36,7 +36,7 @@ class ManagedObjectID extends ObjectClass implements FetchRequestResult
         get => sprintf("<%s>", $this->uriRepresentation()->absoluteString);
     }
     public string $debugDescription {
-        get => sprintf("<%s: %s> %s", self::class, $this->hash, $this->entityName);
+        get => sprintf("<%s: %s> %s", $this->class, $this->hash, $this->entityName);
     }
 
     /**
