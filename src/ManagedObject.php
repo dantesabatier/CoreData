@@ -54,7 +54,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /** @var bool A Boolean value that indicates whether the managed object has been inserted in a managed object context. */
     public bool $isInserted {
         get {
-            if (isset($this->isInserted)) {
+            if (!isset($this->isInserted)) {
                 if ($persistentStore = $this->objectID->persistentStore) {
                     /** @var FetchRequest<Number> $fetchRequest */
                     $fetchRequest = $this::fetchRequest();
@@ -91,7 +91,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /** @var ArrayClass<string> */
     public ArrayClass $serializationKeys {
         get {
-            if (isset($this->serializationKeys)) {
+            if (!isset($this->serializationKeys)) {
                 /** @var ArrayClass<string> $serializationKeys */
                 $serializationKeys = match ($this->serializationRule) {
                     SerializationRule::attributesOnly => $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient)->keys,
