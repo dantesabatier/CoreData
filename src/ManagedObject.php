@@ -77,8 +77,12 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         get => $this->managedObjectContext->deletedObjects->containsElement($this);
     }
     public readonly ManagedObjectContext $managedObjectContext;
-    private Dictionary $changedValues;
-    private Dictionary $changedValuesForCurrentEvent;
+    private Dictionary $changedValues {
+        get => $this->changedValues ??= new Dictionary();
+    }
+    private Dictionary $changedValuesForCurrentEvent {
+        get => $this->changedValuesForCurrentEvent ??= new Dictionary();
+    }
     /** @var bool A Boolean value that indicates whether the managed object is a fault. Knowing whether an object is a fault is useful in many situations when computations are optional. It can also be used to avoid growing the object graph unnecessarily (which may improve performance as it can avoid time-consuming fetches from data stores). If this property is false, then the receiver's data must be in memory. However, if this property is true, it does not mean that the data is not in memory. The data may be in memory, or it may not, depending on many factors influencing caching. If the receiver is a fault, accessing this property does not cause it to fire. */
     public bool $isFault = true;
     /** @var int The faulting state of the managed object. 0 if the object is fully initialized as a managed object and not transitioning to or from another state, otherwise some other value. */
@@ -137,7 +141,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /** @internal */
     public bool $isAwake = false;
     /** @internal */
-    private(set) string $entityName;
+    private(set) string $entityName {
+        get => $this->entityName ??= $this->entity->name;
+    }
     public string $description {
         get => sprintf("<%s %s> (entity: %s; id: %s %s; data: %s)", $this->class, $this->hash, $this->entity->name, $this->objectID->hash, $this->objectID->description, $this->isFault ? "<fault>" : $this->dictionaryWithValues($this->entity->propertiesByName->filter(fn(PropertyDescription $property): bool => !$this->isRelationshipForKeyFault($property->name))->keys)->description);
     }
@@ -151,13 +157,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function __construct(ManagedObjectContext $managedObjectContext, ?EntityDescription $entity = null)
     {
-        $this->changedValues = new Dictionary();
-        $this->changedValuesForCurrentEvent = new Dictionary();
         if ($this->isSubclass(ManagedObject::class)) {
             $entity ??= static::entity();
         }
         $this->entity = $entity ?? fatal_error("Invalid argument: entity cannot be null");
-        $this->entityName = $entity->name;
         $this->managedObjectContext = $managedObjectContext;
         $this->managedObjectContext->insert($this);
     }
