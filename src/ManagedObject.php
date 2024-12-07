@@ -139,7 +139,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /** @internal */
     private(set) string $entityName;
     public string $description {
-        get => sprintf("<%s %s> (entity: %s; id: %s %s; data: %s)", $this->entity->name, $this->hash, $this->entity->name, $this->objectID->hash, $this->objectID->description, $this->isFault ? "<fault>" : $this->dictionaryWithValues($this->entity->propertiesByName->filter(fn(PropertyDescription $property): bool => !$this->isRelationshipForKeyFault($property->name))->keys)->description);
+        get => sprintf("<%s %s> (entity: %s; id: %s %s; data: %s)", $this->class, $this->hash, $this->entity->name, $this->objectID->hash, $this->objectID->description, $this->isFault ? "<fault>" : $this->dictionaryWithValues($this->entity->propertiesByName->filter(fn(PropertyDescription $property): bool => !$this->isRelationshipForKeyFault($property->name))->keys)->description);
     }
 
     /**
