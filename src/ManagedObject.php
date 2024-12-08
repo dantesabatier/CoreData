@@ -303,11 +303,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function committedValuesForKeys(?ArrayClass $keys): Dictionary
     {
-        $values = $this->changedValuesForCurrentEvent;
-        if ($keys === null) {
-            return $values;
-        }
-        return $values->filter(fn(mixed $value, string $key): bool => $keys->containsElement($key));
+        return $keys === null ? $this->changedValuesForCurrentEvent : $this->changedValuesForCurrentEvent->filter(fn(mixed $value, string $key): bool => $keys->containsElement($key));
     }
 
     /**
