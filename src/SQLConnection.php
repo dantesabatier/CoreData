@@ -41,16 +41,26 @@ class SQLConnection extends ObjectClass
         get => $this->adapter?->sqlCore;
     }
     private(set) bool $hasMetadataTable {
-        get => $this->hasMetadataTable ??= $this->hasMetadataTable();
+        get => $this->hasMetadataTable ??= (bool)$this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?", new ArrayClass([$this->schema->name, "PersistentStoreMetadata"])))->fetchColumn();
     }
     private(set) bool $hasCachedModelTable {
-        get => $this->hasCachedModelTable ??= $this->hasCachedModelTable();
+        get => $this->hasCachedModelTable ??= (bool)$this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?", new ArrayClass([$this->schema->name, "ManagedObjectModel"])))->fetchColumn();
     }
     private(set) bool $hasPersistentHistoryTables {
-        get => $this->hasPersistentHistoryTables ??= $this->hasPersistentHistoryTables();
+        get => $this->hasPersistentHistoryTables ??= (bool)$this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name IN (?, ?)", new ArrayClass([$this->schema->name, "PersistentHistoryTransaction", "PersistentHistoryChange"])))->fetchColumn();
     }
     private(set) ?ManagedObjectModel $cachedModel {
-        get => $this->cachedModel ??= $this->fetchCachedModel();
+        get {
+            if (!isset($this->cachedModel)) {
+                $this->connect();
+                $this->createCachedModelTable();
+                if ($array = $this->execute(new SQLStatement("SELECT * FROM `ManagedObjectModel`"))->fetch()) {
+                    $this->cachedModel = $this->decompressedModelWithData($array["data"]);
+                }
+                $this->cachedModel ??= null;
+            }
+            return $this->cachedModel;
+        }
     }
     private SQLStoreRequestContext $requestContext;
     public string $bundleID {
@@ -470,14 +480,6 @@ class SQLConnection extends ObjectClass
     /**
      * @throws Exception
      */
-    private function hasPersistentHistoryTables(): bool
-    {
-        return (bool)$this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name IN (?, ?)", new ArrayClass([$this->schema->name, "PersistentHistoryTransaction", "PersistentHistoryChange"])))->fetchColumn();
-    }
-
-    /**
-     * @throws Exception
-     */
     private function createHistoryTrackingTables(): void
     {
         if (!$this->hasPersistentHistoryTables) {
@@ -544,14 +546,6 @@ class SQLConnection extends ObjectClass
     /**
      * @throws Exception
      */
-    private function hasCachedModelTable(): bool
-    {
-        return (bool)$this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?", new ArrayClass([$this->schema->name, "ManagedObjectModel"])))->fetchColumn();
-    }
-
-    /**
-     * @throws Exception
-     */
     public function saveCachedModel(SQLModel $model): void
     {
         $this->createCachedModelTable();
@@ -568,19 +562,6 @@ class SQLConnection extends ObjectClass
     private function compressedDataWithModel(ManagedObjectModel $model): string
     {
         return KeyedArchiver::archivedData($model->jsonSerialize());
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function fetchCachedModel(): ?ManagedObjectModel
-    {
-        $this->connect();
-        $this->createCachedModelTable();
-        if ($array = $this->execute(new SQLStatement("SELECT * FROM `ManagedObjectModel`"))->fetch()) {
-            return $this->decompressedModelWithData($array["data"]);
-        }
-        return null;
     }
 
     /**
@@ -609,14 +590,6 @@ class SQLConnection extends ObjectClass
         if (!$this->hasMetadataTable) {
             $this->execute(new SQLStatement("CREATE TABLE IF NOT EXISTS `PersistentStoreMetadata` (`metadataID` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT, `data` LONGBLOB NOT NULL, PRIMARY KEY (`metadataID`)) ENGINE={$this->schema->engine} DEFAULT CHARSET={$this->schema->charset} COLLATE={$this->schema->collation}"));
         }
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function hasMetadataTable(): bool
-    {
-        return (bool)$this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?", new ArrayClass([$this->schema->name, "PersistentStoreMetadata"])))->fetchColumn();
     }
 
     /**
