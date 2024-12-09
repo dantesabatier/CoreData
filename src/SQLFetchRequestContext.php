@@ -24,12 +24,14 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     private(set) SQLStatement $fetchStatement {
         get => $this->fetchStatement ??= $this->generator->statement ?? fatal_error();
     }
-    private(set) FetchRequest $request;
+    public FetchRequest $request {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        get => $this->persistentStoreRequest;
+    }
 
     public function __construct(FetchRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         parent::__construct($request, $context, $sqlCore);
-        $this->request = $request;
     }
 
     #[Override]
