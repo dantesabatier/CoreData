@@ -32,21 +32,21 @@ class XMLObjectStore extends AtomicStore
     public string $type = XMLStoreType;
     private ?DOMDocument $document = null;
     /** @var Dictionary<EntityDescription> */
-    private readonly Dictionary $entitiesForConfiguration;
-    private Dictionary $xmlInfo;
-
-    public function __construct(PersistentStoreCoordinator $coordinator, string $configurationName, URL $url, ?Dictionary $options = null)
-    {
-        parent::__construct($coordinator, $configurationName, $url, $options);
-        /** @var Dictionary<EntityDescription> $entitiesForConfiguration */
-        $entitiesForConfiguration = new Dictionary();
-        $model = $coordinator->managedObjectModel;
-        $entities = $model->entities($configurationName) ?? $model->entities;
-        foreach ($entities as $entity) {
-            $entitiesForConfiguration[$entity->name] = $entity;
+    private Dictionary $entitiesForConfiguration {
+        get {
+            if (!isset($this->entitiesForConfiguration)) {
+                $model = $this->persistentStoreCoordinator->managedObjectModel;
+                $entities = $model->entities($this->configurationName) ?? $model->entities;
+                $this->entitiesForConfiguration = $entities->reduce(new Dictionary(), function (Dictionary $result, EntityDescription $entityDescription): Dictionary {
+                    $result[$entityDescription->name] = $entityDescription;
+                    return $result;
+                });
+            }
+            return $this->entitiesForConfiguration;
         }
-        $this->entitiesForConfiguration = $entitiesForConfiguration;
-        $this->xmlInfo = new Dictionary();
+    }
+    private Dictionary $xmlInfo {
+        get => $this->xmlInfo ??= new Dictionary();
     }
 
     private static function loadMetadataFromDocument(DOMDocument $document): Dictionary
