@@ -16,7 +16,9 @@ use function Sabatier\Foundation\human_readable_value;
 class ConstraintConflict extends ObjectClass
 {
     /** @var Dictionary The values that the conflicting objects had when the conflict was created. */
-    private(set) Dictionary $constraintValues;
+    private(set) Dictionary $constraintValues {
+        get => $this->constraintValues ??= new Dictionary();
+    }
     public string $description {
         get => sprintf("%s %s for constraint (%s): database(%s): conflictedObjects (%s):", get_class($this), $this->hash, $this->constraint->join(", "), human_readable_value($this->databaseObject), $this->conflictingObjects->join(", "));
     }
@@ -31,6 +33,5 @@ class ConstraintConflict extends ObjectClass
      */
     public function __construct(public readonly ArrayClass $constraint, public readonly ?ManagedObject $databaseObject, public readonly ?Dictionary $databaseSnapshot, public readonly ArrayClass $conflictingObjects, public readonly ArrayClass $conflictingSnapshots)
     {
-        $this->constraintValues = new Dictionary();
     }
 }
