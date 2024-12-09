@@ -12,6 +12,6 @@ namespace Sabatier\CoreData;
 /**
  * The abstract base class for results returned from a persistent store coordinator.
  */
-class PersistentStoreResult
+abstract class PersistentStoreResult
 {
 }
