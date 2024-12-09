@@ -13,7 +13,6 @@ use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\ExpressionType;
 use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Set;
-use Sabatier\Foundation\URL;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\request_concrete_implementation;
@@ -30,14 +29,10 @@ use const Sabatier\Foundation\NotFound;
 abstract class AtomicStore extends PersistentStore
 {
     /** @var Dictionary<AtomicStoreCacheNode> */
-    private Dictionary $nodeCache;
-    private int $nextReference = NotFound;
-
-    public function __construct(PersistentStoreCoordinator $coordinator, string $configurationName, URL $url, ?Dictionary $options = null)
-    {
-        parent::__construct($coordinator, $configurationName, $url, $options);
-        $this->nodeCache = new Dictionary();
+    private Dictionary $nodeCache {
+        get => $this->nodeCache ??= new Dictionary();
     }
+    private int $nextReference = NotFound;
 
     private function addObject(ManagedObject $object): void
     {
