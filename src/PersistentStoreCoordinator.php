@@ -34,10 +34,14 @@ class PersistentStoreCoordinator extends ObjectClass
     /** @var Dictionary<class-string<PersistentStore>>|null */
     private static ?Dictionary $registeredStoreTypes = null;
     /** @var ArrayClass<PersistentStore> The persistent stores associated with the coordinator. */
-    public readonly ArrayClass $persistentStores;
+    private(set) ArrayClass $persistentStores {
+        get => $this->persistentStores ??= new ArrayClass();
+    }
     /** @var string|null Name of the coordinator. */
     public ?string $name = null;
-    private readonly OperationQueue $queue;
+    private OperationQueue $queue {
+        get => $this->queue ??= new OperationQueue();
+    }
 
     /**
      * Initializes the coordinator with a managed object model.
@@ -45,8 +49,6 @@ class PersistentStoreCoordinator extends ObjectClass
      */
     public function __construct(public readonly ManagedObjectModel $managedObjectModel)
     {
-        $this->persistentStores = new ArrayClass();
-        $this->queue = new OperationQueue();
     }
 
     /**
