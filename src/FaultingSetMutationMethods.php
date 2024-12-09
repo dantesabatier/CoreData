@@ -12,12 +12,14 @@ use Sabatier\Foundation\ObjectProtocol;
  */
 trait FaultingSetMutationMethods
 {
-    /** @var Dictionary<FaultingSetMutationMethod>|null */
-    public ?Dictionary $faultingSetMutationMethods = null;
+    /** @var Dictionary<FaultingSetMutationMethod> */
+    public Dictionary $faultingSetMutationMethods {
+        get => $this->faultingSetMutationMethods ??= new Dictionary();
+    }
 
     public function __call(string $name, array $arguments)
     {
-        if ($method = $this->faultingSetMutationMethods?->valueForKey($name)) {
+        if ($method = $this->faultingSetMutationMethods->valueForKey($name)) {
             ($method->closure)(...$arguments);
             return;
         }
@@ -29,7 +31,7 @@ trait FaultingSetMutationMethods
         if (parent::responds($selector)) {
             return true;
         }
-        return (bool)$this->faultingSetMutationMethods?->offsetExists($selector);
+        return $this->faultingSetMutationMethods->offsetExists($selector);
     }
 
     /**
@@ -38,7 +40,6 @@ trait FaultingSetMutationMethods
      */
     public function createMutationMethods(string $key): Dictionary
     {
-        $this->faultingSetMutationMethods ??= new Dictionary();
         $this->faultingSetMutationMethods->merge(new ArrayClass([FaultingSetMutationMethod::addObjectMethod($this, $key), FaultingSetMutationMethod::removeObjectMethod($this, $key), FaultingSetMutationMethod::addMethod($this, $key), FaultingSetMutationMethod::removeMethod($this, $key), FaultingSetMutationMethod::intersectMethod($this, $key), FaultingSetMutationMethod::setMethod($this, $key)])->reduce(new Dictionary(), function (Dictionary $dictionary, FaultingSetMutationMethod $method): Dictionary {
             $dictionary[$method->name] = $method;
             return $dictionary;
