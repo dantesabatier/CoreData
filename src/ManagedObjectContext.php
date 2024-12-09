@@ -75,15 +75,25 @@ class ManagedObjectContext extends ObjectClass
     /** @var string|null The developer-provided name of the context. */
     public ?string $name = null;
     /** @var Dictionary The user information for the context. */
-    public readonly Dictionary $userInfo;
+    private(set) Dictionary $userInfo {
+        get => $this->userInfo ??= new Dictionary();
+    }
     /** @var Set<IncrementalStoreNode> */
-    private readonly Set $unprocessedChanges;
+    private Set $unprocessedChanges {
+        get => $this->unprocessedChanges ??= new Set();
+    }
     /** @var Set<IncrementalStoreNode> */
-    private readonly Set $unprocessedDeletes;
+    private Set $unprocessedDeletes {
+        get => $this->unprocessedDeletes ??= new Set();
+    }
     /** @var Set<IncrementalStoreNode> */
-    private readonly Set $unprocessedInserts;
+    private Set $unprocessedInserts {
+        get => $this->unprocessedInserts ??= new Set();
+    }
     /** @var Dictionary<ManagedObject> */
-    private Dictionary $byHashAssociationTable;
+    private Dictionary $byHashAssociationTable {
+        get => $this->byHashAssociationTable ??= new Dictionary();
+    }
     /** @var Set<ManagedObject> $registeredObjects The set of objects registered with the context. */
     public Set $registeredObjects {
         get => new Set($this->byHashAssociationTable->values);
@@ -93,15 +103,25 @@ class ManagedObjectContext extends ObjectClass
     /** @var bool A Boolean value that determines whether the context turns inaccessible faults into deleted objects. Use this property to control how the context behaves when it encounters an inaccessible fault  an object with no underlying data in the persistent store. For example, you might fetch an object that has a to-many relationship, but then a background context deletes the related objects from the store before you traverse that relationship. */
     public bool $shouldDeleteInaccessibleFaults = true;
     /** @var Set<ManagedObject> The set of objects that have been inserted into the context but not yet saved in a persistent store. */
-    public readonly Set $insertedObjects;
+    private(set) Set $insertedObjects {
+        get => $this->insertedObjects ??= new Set();
+    }
     /** @var Set<ManagedObject> The set of objects registered with the context that have uncommitted changes. */
-    public readonly Set $updatedObjects;
+    private(set) Set $updatedObjects {
+        get => $this->updatedObjects ??= new Set();
+    }
     /** @var Set<ManagedObject> The set of objects that will be removed from their persistent store during the next save operation. */
-    public readonly Set $deletedObjects;
+    private(set) Set $deletedObjects {
+        get => $this->deletedObjects ??= new Set();
+    }
     /** @var Set<ManagedObject> */
-    public readonly Set $lockedObjects;
+    private(set) Set $lockedObjects {
+        get => $this->lockedObjects ??= new Set();
+    }
     /** @var Set<ManagedObject> $refreshedObjects */
-    private readonly Set $refreshedObjects;
+    private Set $refreshedObjects {
+        get => $this->refreshedObjects ??= new Set();
+    }
     private bool $processingChanges = false;
     private bool $savingInProgress = false;
     /** @var bool A Boolean value that indicates whether the context automatically merges changes saved to its persistent store coordinator or parent context. */
@@ -126,7 +146,9 @@ class ManagedObjectContext extends ObjectClass
      * Note that the staleness interval is a hint and may not be supported by all persistent store types. It is not used by XML and binary stores, because these stores maintain all current values in memory.
      * The default is a negative value, which represents infinite staleness allowed. 0.0 represents "no staleness acceptable". */
     public float $stalenessInterval = -1.0;
-    private readonly OperationQueue $queue;
+    private OperationQueue $queue {
+        get => $this->queue ??= new OperationQueue();
+    }
 
     /**
      * Initializes a context with a given concurrency type.
@@ -134,17 +156,6 @@ class ManagedObjectContext extends ObjectClass
      */
     public function __construct(public readonly ManagedObjectContextConcurrencyType $concurrencyType = ManagedObjectContextConcurrencyType::mainQueueConcurrencyType)
     {
-        $this->userInfo = new Dictionary();
-        $this->insertedObjects = new Set();
-        $this->updatedObjects = new Set();
-        $this->deletedObjects = new Set();
-        $this->lockedObjects = new Set();
-        $this->unprocessedChanges = new Set();
-        $this->unprocessedDeletes = new Set();
-        $this->unprocessedInserts = new Set();
-        $this->refreshedObjects = new Set();
-        $this->byHashAssociationTable = new Dictionary();
-        $this->queue = new OperationQueue();
     }
 
     private function executePersistentStoreRequest(PersistentStoreRequest $request): UnknownRequestTypeResult
