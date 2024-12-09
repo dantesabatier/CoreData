@@ -20,12 +20,14 @@ use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
 {
     public bool $hasHistoryTracking = true;
-    private(set) PersistentHistoryChangeRequest $request;
+    public PersistentHistoryChangeRequest $request {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        get => $this->persistentStoreRequest;
+    }
 
     public function __construct(PersistentHistoryChangeRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         parent::__construct($request, $context, $sqlCore);
-        $this->request = $request;
         $this->isWritingRequest = $request->isDelete;
     }
 
