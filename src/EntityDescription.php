@@ -50,7 +50,9 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         }
     }
     /** @var Dictionary<EntityDescription> A dictionary containing the receiver's sub-entities. */
-    private(set) Dictionary $subentitiesByName;
+    private(set) Dictionary $subentitiesByName {
+        get => $this->subentitiesByName ??= new Dictionary();
+    }
     /** @var EntityDescription|null The super-entity of the receiver. */
     public ?EntityDescription $superentity = null;
     /** @var ArrayClass<PropertyDescription> $properties An array containing the properties of the receiver. The elements in the array are instances of {@see AttributeDescription}, {@see RelationshipDescription}, and/or {@see FetchedPropertyDescription}. */
@@ -71,7 +73,9 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         }
     }
     /** @var Dictionary<PropertyDescription> A dictionary containing the properties of the receiver. */
-    private(set) Dictionary $propertiesByName;
+    private(set) Dictionary $propertiesByName {
+        get => $this->propertiesByName ??= new Dictionary();
+    }
     /** @var Dictionary<AttributeDescription> The attributes of the receiver in a dictionary. The keys in the dictionary are the attribute names and the values are instances of {@see AttributeDescription}. */
     private(set) Dictionary $attributesByName {
         get {
@@ -110,9 +114,13 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         }
     }
     /** @var Dictionary<FetchIndexDescription> $indexesByName */
-    private Dictionary $indexesByName;
+    private Dictionary $indexesByName {
+        get => $this->indexesByName ??= new Dictionary();
+    }
     /** @var ArrayClass<ArrayClass<AttributeDescription|string>> An array of arrays that contains one or more attributes with a value that must be unique over the instances of that entity. Each inner array contains one or more {@see AttributeDescription} objects or strings that contain the names of attributes on the entity. This value forms part of the entity's version hash. Stores that don't support uniqueness constraints must refuse to initialize when receiving a model that contains such constraints. Uniqueness constraint violations can be computationally expensive to handle. The recommendation is to use only one uniqueness constraint per entity hierarchy, although subentites may extend a superentity's constraint. */
-    public ArrayClass $uniquenessConstraints;
+    public ArrayClass $uniquenessConstraints {
+        get => $this->uniquenessConstraints ??= new ArrayClass();
+    }
     /** @var string The version hash is used to uniquely identify an entity based on the collection and configuration of properties for the entity. The version hash uses only values which affect the persistence of data and the user-defined {@see versionHashModifier} value. (The values which affect persistence are: the name of the entity, the version hash of the superentity (if present), if the entity is abstract, and all the version hashes for the properties.) This value is stored as part of the version information in the metadata for stores which use this entity, as well as a definition of an entity involved in an {@see EntityMapping} object. */
     private(set) string $versionHash {
         get => $this->versionHash ??= $this->versionHashInStyle(VersionHashStyle::default);
@@ -131,14 +139,6 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     public readonly bool $isRootEntity;
     public string $description {
         get => sprintf("<%s: %s> isAbstract %s", $this->name, $this->hash, (int)$this->isAbstract);
-    }
-
-    public function __construct()
-    {
-        $this->subentitiesByName = new Dictionary();
-        $this->propertiesByName = new Dictionary();
-        $this->indexesByName = new Dictionary();
-        $this->uniquenessConstraints = new ArrayClass();
     }
 
     private function throwIfNotEditable(): void
