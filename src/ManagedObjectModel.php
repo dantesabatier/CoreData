@@ -29,7 +29,9 @@ use const Sabatier\Foundation\kCFBundleNameKey;
 class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Countable
 {
     /** @var Dictionary<ArrayClass<EntityDescription>> */
-    private Dictionary $entitiesByConfigurationName;
+    private Dictionary $entitiesByConfigurationName {
+        get => $this->entitiesByConfigurationName ??= new Dictionary();
+    }
     /** @var ArrayClass<EntityDescription> $entities The entities in the model. Setting the entities for an object model raises an exception if the object model has been used by an object graph manager. */
     public ArrayClass $entities {
         get => $this->entitiesByName->values;
@@ -44,9 +46,13 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
         }
     }
     /** @var Dictionary<EntityDescription> The entities of the model, keyed by name. */
-    private(set) Dictionary $entitiesByName;
+    private(set) Dictionary $entitiesByName {
+        get => $this->entitiesByName ??= new Dictionary();
+    }
     /** @var Dictionary<FetchRequest> A dictionary of the receiver's fetch request templates, keyed by name. */
-    private(set) Dictionary $fetchRequestTemplatesByName;
+    private(set) Dictionary $fetchRequestTemplatesByName {
+        get => $this->fetchRequestTemplatesByName ??= new Dictionary();
+    }
     /** @var ArrayClass<string> $configurations All the available configuration names of the model. */
     public ArrayClass $configurations {
         get => $this->entitiesByConfigurationName->keys;
@@ -54,9 +60,13 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     /** @var Dictionary<string>|null The localization dictionary of the model. */
     public ?Dictionary $localizationDictionary = null;
     /** @var Dictionary<string> A dictionary of the version hashes for the entities in the model, keyed by entity name. The dictionary of version hash information is used by Core Data to determine schema compatibility. */
-    private(set) Dictionary $entityVersionHashesByName;
+    private(set) Dictionary $entityVersionHashesByName {
+        get => $this->entityVersionHashesByName ??= new Dictionary();
+    }
     /** @var Set<string> The set of developer-defined version identifiers for the model. Merged models return the combined collection of identifiers. The Core Data framework does not give models a default identifier, nor does it depend on this value at runtime. For models created in Xcode, you set this value in the model inspector. This value is meant to be used as a debugging hint to help you determine the models that were combined to create a merged model. */
-    public Set $versionIdentifiers;
+    public Set $versionIdentifiers {
+        get => $this->versionIdentifiers ??= new Set();
+    }
     /** @internal */
     private(set) string $versionHash {
         get => $this->versionHash ??= KeyedArchiver::archivedData($this->entityVersionHashesByName);
@@ -74,11 +84,6 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
      */
     public function __construct(?URL $url = null)
     {
-        $this->versionIdentifiers = new Set();
-        $this->entitiesByName = new Dictionary();
-        $this->entitiesByConfigurationName = new Dictionary();
-        $this->fetchRequestTemplatesByName = new Dictionary();
-        $this->entityVersionHashesByName = new Dictionary();
         if ($url) {
             $propertyList = PropertyListSerialization::propertyListWithURL($url);
             if ($propertyList instanceof Dictionary) {
