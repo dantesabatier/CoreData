@@ -30,13 +30,12 @@ class ExpressionDescription extends PropertyDescription
     /** @var Expression|null The expression for the receiver. */
     public ?Expression $expression = null;
     /** @var AttributeType The attribute type of the expression’s result. */
-    public AttributeType $resultType = AttributeType::undefined;
-
-    public function validateResultType(AttributeType|int &$resultType): bool
-    {
-        if (is_int($resultType)) {
-            $resultType = AttributeType::from($resultType);
+    public AttributeType $resultType = AttributeType::undefined {
+        set(AttributeType|int $value) {
+            if (is_int($value)) {
+                $value = AttributeType::from($value);
+            }
+            $this->resultType = $value;
         }
-        return true;
     }
 }
