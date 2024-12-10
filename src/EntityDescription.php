@@ -134,9 +134,9 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     /** @internal */
     public bool $isPersistentHistoryEntity = false;
     /** @internal */
-    public readonly ?EntityDescription $rootEntity;
+    private(set) ?EntityDescription $rootEntity = null;
     /** @internal */
-    public readonly bool $isRootEntity;
+    private(set) bool $isRootEntity = false;
     public string $description {
         get => sprintf("<%s: %s> isAbstract %s", $this->name, $this->hash, (int)$this->isAbstract);
     }
