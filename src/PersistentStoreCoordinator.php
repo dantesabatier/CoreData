@@ -390,10 +390,7 @@ class PersistentStoreCoordinator extends ObjectClass
      */
     public function persistentStoreForObjectID(ManagedObjectID $objectID): PersistentStore
     {
-        if ($store = $objectID->persistentStore) {
-            return $store;
-        }
-        return $this->persistentStores->first(fn(PersistentStore $store): bool => ($this->managedObjectModel->entities($store->configurationName)?->contains(fn(EntityDescription $entity): bool => $entity->isKindOf($objectID->entity))) ?? false) ?? $this->persistentStores[0];
+        return $objectID->persistentStore ?? $this->persistentStores->first(fn(PersistentStore $store): bool => ($this->managedObjectModel->entities($store->configurationName)?->contains(fn(EntityDescription $entity): bool => $entity->isKindOf($objectID->entity))) ?? false) ?? $this->persistentStores[0];
     }
 
     /**
