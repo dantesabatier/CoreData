@@ -25,7 +25,7 @@ class PersistentStoreDescription extends ObjectClass
     public ?string $configuration = null;
     /** @var Dictionary A dictionary containing key-value pairs that specify numerous settings for the persistent store. For key definitions, see {@see PersistentStoreCoordinator}. */
     private(set) Dictionary $options {
-        get => $this->options ?? new Dictionary();
+        get => $this->options ??= new Dictionary();
     }
     /** @var bool A flag that determines whether the store is added asynchronously. By default, the store is added to the {@see PersistentStoreCoordinator} synchronously on the calling thread. If this flag is set to true, the store is added asynchronously on a background queue. The default for this flag is false. */
     public bool $shouldAddStoreAsynchronously = false;
