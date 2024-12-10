@@ -16,6 +16,7 @@ use Sabatier\Foundation\Set;
 use Sabatier\Foundation\Value;
 use Sabatier\Foundation\ValueTransformer;
 use function Sabatier\Foundation\human_readable_value;
+use const Sabatier\Foundation\NotFound;
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /**
@@ -26,11 +27,11 @@ class PersistentHistoryChange extends ObjectClass
     /** @var EntityDescription|null The entity description of the persistent history change entity. The entity description of a {@see PersistentHistoryChange}, includes its properties, which can be useful for filtering your persistent history change request. */
     public static ?EntityDescription $entityDescription = null;
     /** @var int The change's numeric identifier */
-    public readonly int $changeID;
+    private(set) int $changeID = NotFound;
     /** @var PersistentHistoryChangeType The type of change to the managed object in the persistent store. */
-    public readonly PersistentHistoryChangeType $changeType;
+    private(set) PersistentHistoryChangeType $changeType = PersistentHistoryChangeType::insert;
     /** @var ManagedObjectID The identifier of the managed object that changed. */
-    public readonly ManagedObjectID $changedObjectID;
+    private(set) ManagedObjectID $changedObjectID;
     /** @var Dictionary|null A dictionary of attributes marked for preservation after deletion, and their values when deleted. This value is expected on changes of type {@see PersistentHistoryChangeType::delete}. */
     private(set) ?Dictionary $tombstone = null;
     /** @var PersistentHistoryTransaction|null The persistent history transaction containing this change. */
