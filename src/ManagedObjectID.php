@@ -29,9 +29,11 @@ class ManagedObjectID extends ObjectClass implements FetchRequestResult
         get => $this->persistentStore === null || !is_int($this->referenceObject);
     }
     /** @internal */
-    public readonly string $entityName;
+    private(set) string $entityName {
+        get => $this->entityName ??= $this->entity->name;
+    }
     /** @internal */
-    public readonly ?string $storeIdentifier;
+    private(set) ?string $storeIdentifier = null;
     public string $description {
         get => sprintf("<%s>", $this->uriRepresentation()->absoluteString);
     }
@@ -45,7 +47,6 @@ class ManagedObjectID extends ObjectClass implements FetchRequestResult
      */
     public function __construct(public EntityDescription $entity, /** @internal */ public int|string $referenceObject)
     {
-        $this->entityName = $this->entity->name;
     }
 
     public function __serialize(): array
