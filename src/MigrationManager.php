@@ -51,7 +51,7 @@ class MigrationManager extends ObjectClass
     public bool $performedInPlaceMigration = false;
     private ?Error $migrationCancellationError = null;
     private(set) MigrationContext $migrationContext {
-        get => $this->migrationContext ??= new MigrationContext($this);
+        get => $this->migrationContext ??= new MigrationContext();
     }
     private EntityMigrationPolicy $entityMigrationPolicy;
     /** @var Dictionary<Dictionary<ArrayClass<ManagedObject>>> */
