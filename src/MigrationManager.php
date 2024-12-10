@@ -31,11 +31,11 @@ class MigrationManager extends ObjectClass
     /** @internal */
     public static int $migrationDebugLevel = 0;
     /** @var ManagedObjectContext The managed object context the migration manager uses for writing the destination persistent store. This context is created on demand as part of the initialization of the Core Data stacks used for migration. */
-    public readonly ManagedObjectContext $destinationContext;
+    private(set) ManagedObjectContext $destinationContext;
     /** @var MappingModel The mapping model for the migration manager. */
-    public readonly MappingModel $mappingModel;
+    private(set) MappingModel $mappingModel;
     /** @var ManagedObjectContext The managed object context the migration manager uses for reading the source persistent store. This context is created on demand as part of the initialization of the Core Data stacks used for migration. */
-    public readonly ManagedObjectContext $sourceContext;
+    private(set) ManagedObjectContext $sourceContext;
     /** @var Dictionary|null The user info for the migration manager. */
     public ?Dictionary $userInfo = null;
     /** @var bool A Boolean value that indicates whether the migration manager tries to use a store specific migration manager to perform the migration. */
@@ -50,10 +50,14 @@ class MigrationManager extends ObjectClass
     /** @internal */
     public bool $performedInPlaceMigration = false;
     private ?Error $migrationCancellationError = null;
-    private readonly MigrationContext $migrationContext;
+    private(set) MigrationContext $migrationContext {
+        get => $this->migrationContext ??= new MigrationContext($this);
+    }
     private EntityMigrationPolicy $entityMigrationPolicy;
     /** @var Dictionary<Dictionary<ArrayClass<ManagedObject>>> */
-    private Dictionary $byMappingBySourceRelationshipsAssociationTable;
+    private Dictionary $byMappingBySourceRelationshipsAssociationTable {
+        get => $this->byMappingBySourceRelationshipsAssociationTable ??= new Dictionary();
+    }
     private float $timestamp = 0.0;
     private bool $initialized = false;
 
@@ -64,8 +68,6 @@ class MigrationManager extends ObjectClass
      */
     public function __construct(public readonly ManagedObjectModel $sourceModel, public readonly ManagedObjectModel $destinationModel)
     {
-        $this->byMappingBySourceRelationshipsAssociationTable = new Dictionary();
-        $this->migrationContext = new MigrationContext($this);
     }
 
     /**
