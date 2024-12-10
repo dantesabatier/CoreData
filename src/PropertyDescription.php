@@ -30,11 +30,30 @@ abstract class PropertyDescription extends ObjectClass
     public bool $isTransient = false;
     /** @var ArrayClass<Predicate> The validation predicates of the receiver. */
     private(set) ArrayClass $validationPredicates {
-        get => $this->validationPredicates ??= $this->validationPredicates();
+        get {
+            if (!isset($this->validationPredicates)) {
+                /** @var ArrayClass<Predicate> $validationPredicates */
+                $validationPredicates = new ArrayClass();
+                $minValue = $this->minValue;
+                if ($minValue !== null) {
+                    $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new MinimumValueValidator($minValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
+                }
+                $maxValue = $this->maxValue;
+                if ($maxValue !== null) {
+                    $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new MaximumValueValidator($maxValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
+                }
+                $regex = $this->regex;
+                if ($regex) {
+                    $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new RegexValidator($regex)), Expression::expressionForKeyPath($this->name), selector: "validate"));
+                }
+                $this->validationPredicates = $validationPredicates;
+            }
+            return $this->validationPredicates;
+        }
     }
     /** @var ArrayClass<string> The error strings associated with the receiver's validation predicates. */
     private(set) ArrayClass $validationWarnings {
-        get => $this->validationWarnings ??= $this->validationWarnings();
+        get => $this->validationWarnings ??= $this->validationPredicates->map(fn(Predicate $predicate): string => $predicate->predicateFormat);
     }
     /** @var string The version hash for the receiver. The version hash is used to uniquely identify a property based on its configuration. The version hash uses only values which affect the persistence of data and the user-defined {@see versionHashModifier} value. (The values which affect persistence are the name of the property, and the flags for isOptional, isTransient, and isReadOnly.) This value is stored as part of the version information in the metadata for stores, as well as a definition of a property involved in an PropertyMapping object. */
     public string $versionHash {
@@ -51,9 +70,7 @@ abstract class PropertyDescription extends ObjectClass
     }
     public bool $isSensitive = false;
     /** @internal */
-    public PropertyDescriptionType $propertyType {
-        get => PropertyDescriptionType::private;
-    }
+    public PropertyDescriptionType $propertyType = PropertyDescriptionType::private;
     /** @internal */
     public bool $isEditable = true;
     /** @internal */
@@ -73,36 +90,6 @@ abstract class PropertyDescription extends ObjectClass
         if (!$this->isEditable) {
             fatal_error();
         }
-    }
-
-    /**
-     * @return ArrayClass<Predicate>
-     */
-    private function validationPredicates(): ArrayClass
-    {
-        /** @var ArrayClass<Predicate> $validationPredicates */
-        $validationPredicates = new ArrayClass();
-        $minValue = $this->minValue;
-        if ($minValue !== null) {
-            $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new MinimumValueValidator($minValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
-        }
-        $maxValue = $this->maxValue;
-        if ($maxValue !== null) {
-            $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new MaximumValueValidator($maxValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
-        }
-        $regex = $this->regex;
-        if ($regex) {
-            $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new RegexValidator($regex)), Expression::expressionForKeyPath($this->name), selector: "validate"));
-        }
-        return $validationPredicates;
-    }
-
-    /**
-     * @return ArrayClass<string>
-     */
-    private function validationWarnings(): ArrayClass
-    {
-        return $this->validationPredicates->map(fn(Predicate $predicate): string => $predicate->predicateFormat);
     }
 
     /**

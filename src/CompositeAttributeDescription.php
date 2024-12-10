@@ -18,9 +18,7 @@ use Sabatier\Foundation\KeyedUnarchiver;
 class CompositeAttributeDescription extends AttributeDescription
 {
     /** @internal */
-    public PropertyDescriptionType $propertyType {
-        get => PropertyDescriptionType::compositeAttribute;
-    }
+    public PropertyDescriptionType $propertyType = PropertyDescriptionType::compositeAttribute;
     /** @var ArrayClass<AttributeDescription> The composed attribute descriptions. */
     public ArrayClass $elements {
         get => $this->elements ??= new ArrayClass();

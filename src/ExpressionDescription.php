@@ -24,9 +24,7 @@ class ExpressionDescription extends PropertyDescription
         get => sprintf("%s, expression %s", parent::$description::get(), human_readable_value($this->expression));
     }
     /** @internal */
-    public PropertyDescriptionType $propertyType {
-        get => PropertyDescriptionType::expression;
-    }
+    public PropertyDescriptionType $propertyType = PropertyDescriptionType::expression;
     /** @var Expression|null The expression for the receiver. */
     public ?Expression $expression = null;
     /** @var AttributeType The attribute type of the expression’s result. */
