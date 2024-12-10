@@ -15,7 +15,9 @@ class SQLBatchDeleteRequestContext extends SQLStoreRequestContext
         get => $this->fetchRequestForObjectsToDelete ??= $this->fetchRequestForObjectsToDelete();
     }
     /** @var ArrayClass<ManagedObjectID> */
-    public readonly ArrayClass $affectedObjectIDs;
+    private(set) ArrayClass $affectedObjectIDs {
+        get => $this->affectedObjectIDs ??= new ArrayClass();
+    }
     private(set) SQLFetchRequestContext $fetchContext {
         get => $this->fetchContext ??= new SQLFetchRequestContext($this->fetchRequestForObjectsToDelete, $this->context, $this->sqlCore);
     }
