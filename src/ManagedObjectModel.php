@@ -84,7 +84,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
      */
     public function __construct(?URL $url = null)
     {
-        if ($url) {
+        if ($url instanceof URL) {
             $propertyList = PropertyListSerialization::propertyListWithURL($url);
             if ($propertyList instanceof Dictionary) {
                 $this->recreate($propertyList);
