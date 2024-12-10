@@ -11,24 +11,24 @@ use Sabatier\Foundation\Dictionary;
 class MigrationContext
 {
     /** @var Dictionary<ManagedObject> */
-    private Dictionary $bySourceAssociationTable;
+    private Dictionary $bySourceAssociationTable {
+        get => $this->bySourceAssociationTable ??= new Dictionary();
+    }
     /** @var Dictionary<ManagedObject> */
-    private Dictionary $byDestinationAssociationTable;
+    private Dictionary $byDestinationAssociationTable {
+        get => $this->byDestinationAssociationTable ??= new Dictionary();
+    }
     /** @var Dictionary<ArrayClass<ManagedObject>> */
-    private Dictionary $byMappingBySourceAssociationTable;
+    private Dictionary $byMappingBySourceAssociationTable {
+        get => $this->byMappingBySourceAssociationTable ??= new Dictionary();
+    }
     /** @var Dictionary<ArrayClass<ManagedObject>> */
-    private Dictionary $byMappingByDestinationAssociationTable;
+    private Dictionary $byMappingByDestinationAssociationTable {
+        get => $this->byMappingByDestinationAssociationTable ??= new Dictionary();
+    }
     public ?EntityMapping $currentEntityMapping = null;
     public ?PropertyMapping $currentPropertyMapping = null;
     public int $currentMigrationStep = 0;
-
-    public function __construct(public readonly MigrationManager $migrationManager)
-    {
-        $this->bySourceAssociationTable = new Dictionary();
-        $this->byDestinationAssociationTable = new Dictionary();
-        $this->byMappingBySourceAssociationTable = new Dictionary();
-        $this->byMappingByDestinationAssociationTable = new Dictionary();
-    }
 
     private function createAssociationsBySource(ManagedObject $source, ManagedObject $destination, EntityMapping $mapping): void
     {
