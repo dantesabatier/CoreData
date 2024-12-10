@@ -23,15 +23,11 @@ class CompositeAttributeDescription extends AttributeDescription
     }
     /** @var ArrayClass<AttributeDescription> The composed attribute descriptions. */
     public ArrayClass $elements {
+        get => $this->elements ??= new ArrayClass();
         set {
             $value->allSatisfy(fn(mixed $e): bool => $e instanceof AttributeDescription) ?: throw new InvalidArgumentException();
             $this->elements = $value;
         }
-    }
-
-    public function __construct()
-    {
-        $this->elements = new ArrayClass();
     }
 
     #[Override]
