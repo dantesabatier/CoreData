@@ -33,7 +33,7 @@ class SQLManyToMany extends SQLRelationship
     public string $orderColumnName {
         get => $this->orderColumnName ??= $this->isReflexive ? $this->columnName : new ArrayClass([$this->columnName, $this->inverseColumnName])->sort(fn(string $e, string $e1): int => ComparisonResult::orderedAscending->value * ($e <=> $e1))[0];
     }
-    public readonly SQLType $orderColumnSQLType;
+    private(set) SQLType $orderColumnSQLType = SQLType::int;
     public string $inverseColumnName {
         get => $this->inverseManyToMany->columnName;
     }
