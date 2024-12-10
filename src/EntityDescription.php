@@ -79,21 +79,27 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     /** @var Dictionary<AttributeDescription> The attributes of the receiver in a dictionary. The keys in the dictionary are the attribute names and the values are instances of {@see AttributeDescription}. */
     private(set) Dictionary $attributesByName {
         get {
-            if ($this->isEditable) {
-                fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
+            if (!isset($this->attributesByName)) {
+                if ($this->isEditable) {
+                    fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
+                }
+                /** @psalm-suppress PropertyTypeCoercion */
+                $this->attributesByName = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
             }
-            /** @psalm-suppress PropertyTypeCoercion */
-            return $this->attributesByName ??= $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
+            return $this->attributesByName;
         }
     }
     /** @var Dictionary<RelationshipDescription> The relationships of the receiver in a dictionary. The keys in the dictionary are the relationship names and the values are instances of {@see RelationshipDescription}. */
     private(set) Dictionary $relationshipsByName {
         get {
-            if ($this->isEditable) {
-                fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
+            if (!isset($this->relationshipsByName)) {
+                if ($this->isEditable) {
+                    fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
+                }
+                /** @psalm-suppress PropertyTypeCoercion */
+                $this->relationshipsByName = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
             }
-            /** @psalm-suppress PropertyTypeCoercion */
-            return $this->relationshipsByName ??= $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
+            return $this->relationshipsByName;
         }
     }
     /** @var ArrayClass<FetchIndexDescription> $indexes An array of fetch index descriptions for the entity. This value doesn't form part of the entity's version hash, and stores that don't natively support indexing may ignore it. Set indexes last in a model. Changing an entity hierarchy in any way that affects the validity of indexes drops all existing indexes for entities in that hierarchy, such as adding or removing superentities or subentities, or adding and removing properties anywhere in the hierarchy. */
@@ -151,35 +157,36 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     /** @internal */
     public function flattenProperties(): void
     {
-        if (!$this->isFlattened) {
-            /** @var Set<FetchIndexDescription> $indexes */
-            $indexes = new Set();
-            /** @var Set<PropertyDescription> $properties */
-            $properties = new Set();
-            $superentity = $this->superentity;
-            $rootEntity = $superentity;
-            while ($superentity) {
-                $properties->appendContentsOf($superentity->properties);
-                $indexes->appendContentsOf($superentity->indexes);
-                $superentity = $superentity->superentity;
-                if ($superentity) {
-                    $rootEntity = $superentity;
-                }
-            }
-            $properties->appendContentsOf($this->properties);
-            $indexes->appendContentsOf($this->indexes);
-            foreach ($this->subentities as $subentity) {
-                $properties->appendContentsOf($subentity->properties);
-                $indexes->appendContentsOf($subentity->indexes);
-            }
-            $this->rootEntity = $rootEntity;
-            $this->isRootEntity = $rootEntity === null;
-            $properties->sort(fn(PropertyDescription $e0, PropertyDescription $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);
-            $this->properties = new ArrayClass($properties);
-            $this->indexes = new ArrayClass($indexes);
-            $this->isFlattened = true;
-            $this->isEditable = false;
+        if ($this->isFlattened) {
+            return;
         }
+        /** @var Set<FetchIndexDescription> $indexes */
+        $indexes = new Set();
+        /** @var Set<PropertyDescription> $properties */
+        $properties = new Set();
+        $superentity = $this->superentity;
+        $rootEntity = $superentity;
+        while ($superentity) {
+            $properties->appendContentsOf($superentity->properties);
+            $indexes->appendContentsOf($superentity->indexes);
+            $superentity = $superentity->superentity;
+            if ($superentity) {
+                $rootEntity = $superentity;
+            }
+        }
+        $properties->appendContentsOf($this->properties);
+        $indexes->appendContentsOf($this->indexes);
+        foreach ($this->subentities as $subentity) {
+            $properties->appendContentsOf($subentity->properties);
+            $indexes->appendContentsOf($subentity->indexes);
+        }
+        $this->rootEntity = $rootEntity;
+        $this->isRootEntity = $rootEntity === null;
+        $properties->sort(fn(PropertyDescription $e0, PropertyDescription $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);
+        $this->properties = new ArrayClass($properties);
+        $this->indexes = new ArrayClass($indexes);
+        $this->isFlattened = true;
+        $this->isEditable = false;
     }
 
     /**
