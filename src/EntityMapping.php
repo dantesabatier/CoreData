@@ -64,7 +64,7 @@ class EntityMapping extends ObjectClass
     /** @var Dictionary|null The user info dictionary for the entity mapping. You can use the info dictionary in any way that might be useful in your migration. */
     public ?Dictionary $userInfo = null;
     public string $description {
-        get => sprintf("<%s %s %s>", self::class, $this->name, $this->hash);
+        get => sprintf("<%s %s %s>", $this->class, $this->name, $this->hash);
     }
 
     public function __construct(?string $name = null)

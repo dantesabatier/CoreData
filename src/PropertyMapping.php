@@ -22,7 +22,7 @@ class PropertyMapping extends ObjectClass
     /** @var Dictionary|null The user info for the property mapping. */
     public ?Dictionary $userInfo = null;
     public string $description {
-        get => sprintf("<%s %s %s>", self::class, $this->name, $this->hash);
+        get => sprintf("<%s %s %s>", $this->class, $this->name, $this->hash);
     }
 
     /**

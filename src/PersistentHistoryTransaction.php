@@ -40,19 +40,21 @@ class PersistentHistoryTransaction extends ObjectClass
     /** @var string The originating stores identifier. */
     private(set) string $storeID = UnknownName;
     /** @var Date The date of the persistent history change. */
-    private(set) Date $timestamp;
+    private(set) Date $timestamp {
+        get => $this->timestamp ??= new Date();
+    }
     /** @var PersistentHistoryToken The token that represents this transaction in the persistent history. */
-    private(set) PersistentHistoryToken $token;
+    private(set) PersistentHistoryToken $token {
+        get => $this->token ??= new PersistentHistoryToken(new Dictionary([$this->storeID => new Number($this->transactionNumber)]));
+    }
     /** @var int The transaction's numeric identifier. */
     private(set) int $transactionNumber = NotFound;
     public string $description {
-        get => sprintf("<%s: %s %s %s %s %s %s>", self::class, $this->transactionNumber, $this->timestamp->description, $this->bundleID, human_readable_value($this->author), human_readable_value($this->contextName), human_readable_value($this->changes));
+        get => sprintf("<%s: %s %s %s %s %s %s>", $this->class, $this->transactionNumber, $this->timestamp->description, $this->bundleID, human_readable_value($this->author), human_readable_value($this->contextName), human_readable_value($this->changes));
     }
 
     public function __construct(Dictionary $dictionary)
     {
-        $this->timestamp = new Date();
-        $this->token = new PersistentHistoryToken(new Dictionary([$this->storeID => new Number($this->transactionNumber)]));
         foreach ($dictionary as $key => $value) {
             if ($value instanceof Value) {
                 $value = $value->value;

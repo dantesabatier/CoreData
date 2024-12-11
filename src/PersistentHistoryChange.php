@@ -39,7 +39,7 @@ class PersistentHistoryChange extends ObjectClass
     /** @var Set<PropertyDescription>|null The set of properties that were updated on the managed object. This value is expected on changes of type {@see PersistentHistoryChangeType::update}. */
     private(set) ?Set $updatedProperties = null;
     public string $description {
-        get => sprintf("<%s: %s %s %s %s %s>", self::class, $this->changeID, human_readable_value($this->changedObjectID), $this->changeType->name, human_readable_value($this->tombstone), human_readable_value($this->updatedProperties));
+        get => sprintf("<%s: %s %s %s %s %s>", $this->class, $this->changeID, human_readable_value($this->changedObjectID), $this->changeType->name, human_readable_value($this->tombstone), human_readable_value($this->updatedProperties));
     }
 
     public function __construct(Dictionary $dictionary, ManagedObjectID $changedObjectID)
