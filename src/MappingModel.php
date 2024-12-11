@@ -27,11 +27,17 @@ class MappingModel extends ObjectClass
     /** @internal */
     public static int $migrationDebugLevel = 0;
     /** @var Dictionary<string> */
-    private(set) Dictionary $sourceEntityVersionHashesByName;
+    private(set) Dictionary $sourceEntityVersionHashesByName {
+        get => $this->sourceEntityVersionHashesByName ??= new Dictionary();
+    }
     /** @var Dictionary<string> */
-    private(set) Dictionary $destinationEntityVersionHashesByName;
+    private(set) Dictionary $destinationEntityVersionHashesByName {
+        get => $this->destinationEntityVersionHashesByName ??= new Dictionary();
+    }
     /** @var Dictionary<EntityMapping> $entityMappingsByName The entity mappings for the mapping model, keyed by name. */
-    private(set) Dictionary $entityMappingsByName;
+    private(set) Dictionary $entityMappingsByName {
+        get => $this->entityMappingsByName ??= new Dictionary();
+    }
     /** @var ArrayClass<EntityMapping> $entityMappings The entity mappings for the mapping model. */
     public ArrayClass $entityMappings {
         get => $this->entityMappingsByName->values;
@@ -52,9 +58,6 @@ class MappingModel extends ObjectClass
      */
     public function __construct(?URL $url = null)
     {
-        $this->sourceEntityVersionHashesByName = new Dictionary();
-        $this->destinationEntityVersionHashesByName = new Dictionary();
-        $this->entityMappingsByName = new Dictionary();
         if ($url) {
             //FIXME: implement url loading, test it and improve it
             /** @var Dictionary $dictionary */
