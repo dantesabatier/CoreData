@@ -14,7 +14,7 @@
         <InaccessibleProperty errorLevel="suppress"/>
         <InvalidArgument>
             <errorLevel type="suppress">
-                <file name="src/FaultingMutableSetMutationMethods.php"/>
+                <file name="src/FaultingSetMutationMethods.php"/>
                 <file name="src/ManagedObject.php"/>
                 <file name="src/ManagedObjectModel.php"/>
                 <file name="src/PersistentStoreCoordinator.php"/>
