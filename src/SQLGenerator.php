@@ -31,6 +31,7 @@ use Sabatier\Foundation\Predicates\ExpressionOperatorType;
 use Sabatier\Foundation\Predicates\ExpressionType;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\Predicates\PredicateOperatorType;
+use Sabatier\Foundation\Sequence;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\Value;
@@ -825,7 +826,7 @@ class SQLGenerator extends ObjectClass
         $leftExpression = $predicate->leftExpression;
         $rightExpression = $predicate->rightExpression;
         $right = $rightExpression->constantValue ?? $rightExpression->collection;
-        assert($right instanceof ArrayClass && !$right->isEmpty, sprintf("invalid argument: the right expression of an IN operator must be an non-empty \"%s\", (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
+        assert($right instanceof Sequence && !$right->isEmpty, sprintf("invalid argument: the right expression of an IN operator must be an non-empty \"%s\", (%s)%s given", Sequence::class, typeof($right), human_readable_value($right)));
         $clause .= "{$this->buildExpression($leftExpression)} IN (" . ArrayClass::repeating("?", $right->count)->join(", ") . ")";
         $this->arguments->appendContentsOf($right->map(fn(mixed $element): mixed => $element instanceof Expression ? $element->constantValue : $element));
     }
