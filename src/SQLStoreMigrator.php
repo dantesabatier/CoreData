@@ -219,9 +219,6 @@ readonly class SQLStoreMigrator
                         if ($attributes = $sourceEntity->byMappingByCompositeNameAssociationTable->valueForKey($source->name)?->values) {
                             $this->removedColumns->appendContentsOf($attributes);
                         } else {
-                            if ($statement = $adapter->newDropIndexStatement($source)) {
-                                $connection->execute($statement);
-                            }
                             $this->removedColumns->append($source);
                         }
                     }
