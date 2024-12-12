@@ -1,5 +1,7 @@
 <?php
 
+/** @noinspection PhpInternalEntityUsedInspection */
+
 namespace Sabatier\CoreData;
 
 use Exception;
@@ -149,7 +151,7 @@ readonly class SQLStoreMigrator
             $properties = new Set($sourceEntity->properties);
             $properties->appendContentsOf($destinationEntity->properties);
             foreach ($properties as $property) {
-                if ($property instanceof SQLAttribute && $property->isDerivedAttribute) {
+                if ($property instanceof SQLAttribute && $property->attributeDescription instanceof DerivedAttributeDescription && !$property->attributeDescription->derivationExpression?->usesKVC) {
                     $statement = $adapter->newDropColumnStatement($property);
                     $connection->execute($statement);
                 }
@@ -177,18 +179,7 @@ readonly class SQLStoreMigrator
                         } elseif (($source->sqlType !== $destination->sqlType || $source->isOptional !== $destination->isOptional || $source->isUnique !== $destination->isUnique || $source->minValue !== $destination->minValue || $source->maxValue !== $destination->maxValue || $source->defaultValue !== $destination->defaultValue || ($source->isDerivedAttribute !== $destination->isDerivedAttribute) || ($source->isDerivedAttribute && $destination->isDerivedAttribute && (string)$source->derivationExpression !== (string)$destination->derivationExpression)) && ($statement = $adapter->newRenameColumnStatement($source, $destination))) {
                             $connection->execute($statement);
                         }
-                        if ($source->isConstrained !== $destination->isConstrained || $source->isTransient !== $destination->isTransient) {
-                            if ($statement = $adapter->newDropIndexStatement($source)) {
-                                $connection->execute($statement);
-                            }
-                            if ($statement = $adapter->newCreateIndexStatement($destination)) {
-                                $connection->execute($statement);
-                            }
-                        }
                         if (!$source->isTransient && $destination->isTransient) {
-                            if ($statement = $adapter->newDropIndexStatement($source)) {
-                                $connection->execute($statement);
-                            }
                             $this->removedColumns->append($source);
                         }
                     } elseif ($source instanceof SQLForeignKey && $destination instanceof SQLForeignKey) {
@@ -249,9 +240,6 @@ readonly class SQLStoreMigrator
                         }
                     } elseif ($statement = $adapter->newCreateColumnStatement($property)) {
                         $connection->execute($statement);
-                        if ($statement = $adapter->newCreateIndexStatement($property)) {
-                            $connection->execute($statement);
-                        }
                     }
                 } elseif ($property instanceof SQLManyToMany) {
                     $statement = $adapter->newCreateTableStatementForManyToMany($property);
@@ -260,14 +248,10 @@ readonly class SQLStoreMigrator
                 }
             }
             foreach ($sourceEntity->indexes as $index) {
-                if (!$destinationEntity->indexes->containsElement($index)) {
-                    $connection->execute(SQLStatement::merging($index->dropTableStatements));
-                }
+                $connection->execute(SQLStatement::merging($index->dropTableStatements));
             }
             foreach ($destinationEntity->indexes as $index) {
-                if (!$sourceEntity->indexes->containsElement($index)) {
-                    $createIndexStatements->appendContentsOf($index->createTableStatements);
-                }
+                $createIndexStatements->appendContentsOf($index->createTableStatements);
             }
             foreach ($properties as $index => $property) {
                 if ($property instanceof SQLAttribute && !$property->isCompositeAttribute && ($statement = $adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($properties->indexBefore($index))))) {
