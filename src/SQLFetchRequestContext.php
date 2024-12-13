@@ -82,12 +82,13 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             $parentKeys->append($currentEntity->primaryKey->columnName);
                             $parentKey = $parentKeys->join("_");
                             $parentID = $data[$parentKey] ?? null;
+                            $parentEntityName = $data[$currentEntity->entityKey->columnName] ?? null;
                             foreach ($keys as $key) {
                                 $property = $currentEntity->propertiesByName[$key] ?? $currentEntity->compositeAttributeNameToSQLProperty[$key];
                                 $propertyDescription = $property?->propertyDescription;
                                 if ($property instanceof SQLRelationship || ($property instanceof SQLAttribute && $property->isCompositeAttribute)) {
                                     if ($current instanceof ArrayClass && !$current->isEmpty) {
-                                        $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID) ?? $current[$current->indexBefore($current->endIndex)];
+                                        $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === $parentEntityName) ?? $current[$current->indexBefore($current->endIndex)];
                                         /** @psalm-suppress UnsupportedReferenceUsage */
                                         $current = &$parent;
                                     }
@@ -114,7 +115,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                             $current[] = new Dictionary([$currentEntity->primaryKey->columnName => $value, $currentEntity->entityKey->columnName => $currentEntity->entityDescription->name]);
                                         }
                                         if (!$current->isEmpty) {
-                                            $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID) ?? $current[$current->indexBefore($current->endIndex)];
+                                            $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === $parentEntityName) ?? $current[$current->indexBefore($current->endIndex)];
                                             /** @psalm-suppress UnsupportedReferenceUsage */
                                             $current = &$parent;
                                         }
