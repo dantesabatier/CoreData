@@ -49,7 +49,10 @@ abstract class AtomicStore extends PersistentStore
     {
         $cacheNode = $this->cacheNode($object->objectID) ?? fatal_error("Invalid argument: object \"$object\" does not exists ");
         foreach ($object->entity as $property) {
-            if ($property instanceof DerivedAttributeDescription || $property instanceof FetchedPropertyDescription) {
+            if ($property instanceof DerivedAttributeDescription) {
+                continue;
+            }
+            if ($property instanceof FetchedPropertyDescription) {
                 continue;
             }
             $key = $property->name;
