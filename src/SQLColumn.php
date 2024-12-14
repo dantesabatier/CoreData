@@ -57,7 +57,7 @@ class SQLColumn extends SQLProperty
         };
     }
     public string $description {
-        get => sprintf("<%s %s>", $this->columnName, $this->hash);
+        get => sprintf("<%s %s> %s", $this->class, $this->hash, $this->columnName);
     }
 
     #[Override]

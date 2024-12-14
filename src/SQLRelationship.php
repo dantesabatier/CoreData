@@ -15,8 +15,11 @@ use function Sabatier\Foundation\fatal_error;
 abstract class SQLRelationship extends SQLProperty
 {
     public RelationshipDescription $relationshipDescription {
-        /** @noinspection PhpIncompatibleReturnTypeInspection */
-        get => $this->propertyDescription;
+        get {
+            /** @var RelationshipDescription $relationshipDescription */
+            $relationshipDescription = $this->propertyDescription;
+            return $relationshipDescription;
+        }
     }
     private(set) SQLEntity $destinationEntity {
         get => $this->destinationEntity ??= $this->entity->model->entitiesByName[$this->lazyDestinationEntityName] ?? fatal_error("$this->name, destination entity \"$this->lazyDestinationEntityName\" does not exists");

@@ -44,7 +44,7 @@ abstract class SQLProperty extends ObjectClass
     }
     protected(set) SQLType $sqlType = SQLType::unknown;
     public string $description {
-        get => sprintf("<%s %s>", $this->name, $this->hash);
+        get => sprintf("<%s %s> %s", $this->class, $this->hash, $this->name);
     }
 
     public function __construct(public SQLEntity $entity, public PropertyDescription $propertyDescription)

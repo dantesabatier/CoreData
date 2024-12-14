@@ -17,11 +17,16 @@ use function Sabatier\Foundation\fatal_error;
 class SQLAttribute extends SQLColumn
 {
     public AttributeDescription $attributeDescription {
-        /** @noinspection PhpIncompatibleReturnTypeInspection */
-        get => $this->propertyDescription;
+        get {
+            /** @var AttributeDescription $attributeDescription */
+            $attributeDescription = $this->propertyDescription;
+            return $attributeDescription;
+        }
     }
     /** @var Set<string> */
-    private(set) Set $triggerKeys;
+    private(set) Set $triggerKeys {
+        get => $this->triggerKeys ??= new Set();
+    }
     public bool $isBackedByTrigger {
         get => !$this->triggerKeys->isEmpty;
     }
@@ -70,12 +75,6 @@ class SQLAttribute extends SQLColumn
             AttributeType::compositeAttributeType => SQLType::text,
             AttributeType::undefined => fatal_error("{$this->entity->entityDescription->name}.$this->name cannot use an attribute type of \"Undefined\""),
         };
-    }
-
-    public function __construct(SQLEntity $entity, AttributeDescription $attributeDescription)
-    {
-        parent::__construct($entity, $attributeDescription);
-        $this->triggerKeys = new Set();
     }
 
     public function addKeyForTriggerOnRelationship(SQLRelationship $relationship): void
