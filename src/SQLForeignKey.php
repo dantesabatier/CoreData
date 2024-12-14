@@ -17,8 +17,11 @@ class SQLForeignKey extends SQLColumn
         get => $this->columnName ??= "{$this->relationshipDescription->name}ID";
     }
     public RelationshipDescription $relationshipDescription {
-        /** @noinspection PhpIncompatibleReturnTypeInspection */
-        get => $this->propertyDescription;
+        get {
+            /** @var RelationshipDescription $relationshipDescription */
+            $relationshipDescription = $this->propertyDescription;
+            return $relationshipDescription;
+        }
     }
     protected(set) SQLType $sqlType = SQLType::int;
 

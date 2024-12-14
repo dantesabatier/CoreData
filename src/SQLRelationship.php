@@ -10,6 +10,7 @@
 namespace Sabatier\CoreData;
 
 use function Sabatier\Foundation\fatal_error;
+use function Sabatier\Foundation\human_readable_value;
 
 /** @internal */
 abstract class SQLRelationship extends SQLProperty
@@ -35,6 +36,18 @@ abstract class SQLRelationship extends SQLProperty
     }
     public string $lazyInverseRelationshipName {
         get => $this->relationshipDescription->inverseRelationship->name;
+    }
+    public int $minCount {
+        get => $this->relationshipDescription->minCount;
+    }
+    public int $maxCount {
+        get => $this->relationshipDescription->maxCount;
+    }
+    public DeleteRule $deleteRule {
+        get => $this->relationshipDescription->deleteRule;
+    }
+    public string $description {
+        get => sprintf("%s destinationEntityName %s InverseRelationshipName %s minCount %s maxCount %s deleteRule %s", parent::$description::get(), $this->lazyDestinationEntityName, $this->lazyInverseRelationshipName, $this->minCount, $this->maxCount, human_readable_value($this->deleteRule));
     }
 
     public function __construct(SQLEntity $entity, RelationshipDescription $relationshipDescription)

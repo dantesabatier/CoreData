@@ -22,8 +22,11 @@ class SQLForeignEntityKey extends SQLColumn
         get => $this->foreignKey->toOneRelationship;
     }
     public RelationshipDescription $relationshipDescription {
-        /** @noinspection PhpIncompatibleReturnTypeInspection */
-        get => $this->propertyDescription;
+        get {
+            /** @var RelationshipDescription $relationshipDescription */
+            $relationshipDescription = $this->propertyDescription;
+            return $relationshipDescription;
+        }
     }
     public readonly SQLForeignKey $foreignKey;
 

@@ -21,8 +21,11 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
 {
     public bool $hasHistoryTracking = true;
     public PersistentHistoryChangeRequest $request {
-        /** @noinspection PhpIncompatibleReturnTypeInspection */
-        get => $this->persistentStoreRequest;
+        get {
+            /** @var PersistentHistoryChangeRequest $request */
+            $request = $this->persistentStoreRequest;
+            return $request;
+        }
     }
 
     public function __construct(PersistentHistoryChangeRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
