@@ -85,33 +85,33 @@ class SQLGenerator extends ObjectClass
     {
         if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext) {
             return $this->requestContext->fetchContext->request;
-        } elseif ($this->requestContext instanceof SQLFetchRequestContext) {
-            return $this->requestContext->request;
-        } else {
-            return fatal_error("Invalid SQL request context");
         }
+        if ($this->requestContext instanceof SQLFetchRequestContext) {
+            return $this->requestContext->request;
+        }
+        return fatal_error("Invalid SQL request context");
     }
 
     private function entity(): SQLEntity
     {
         if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext) {
             return $this->requestContext->fetchContext->sqlEntityForFetchRequest;
-        } elseif ($this->requestContext instanceof SQLFetchRequestContext) {
-            return $this->requestContext->sqlEntityForFetchRequest;
-        } else {
-            return fatal_error("Invalid SQL request context");
         }
+        if ($this->requestContext instanceof SQLFetchRequestContext) {
+            return $this->requestContext->sqlEntityForFetchRequest;
+        }
+        return fatal_error("Invalid SQL request context");
     }
 
     private function statement(): ?SQLStatement
     {
         if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext || $this->requestContext instanceof SQLFetchRequestContext) {
             return $this->newSQLStatementForPersistentStoreRequest();
-        } elseif ($this->requestContext instanceof SQLSaveChangesRequestContext) {
-            return $this->newSQLStatementForSaveChangesRequestContext();
-        } else {
-            return null;
         }
+        if ($this->requestContext instanceof SQLSaveChangesRequestContext) {
+            return $this->newSQLStatementForSaveChangesRequestContext();
+        }
+        return null;
     }
 
     private function newSQLStatementForPersistentStoreRequest(): SQLStatement
