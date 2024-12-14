@@ -11,6 +11,7 @@ namespace Sabatier\CoreData;
 
 use Override;
 use Sabatier\Foundation\ObjectClass;
+use function Sabatier\Foundation\human_readable_value;
 
 /** @internal */
 abstract class SQLProperty extends ObjectClass
@@ -44,7 +45,7 @@ abstract class SQLProperty extends ObjectClass
     }
     protected(set) SQLType $sqlType = SQLType::unknown;
     public string $description {
-        get => sprintf("<%s %s> %s", $this->class, $this->hash, $this->name);
+        get => sprintf("<%s: %s>, name %s, isOptional %s, isTransient %s, isUnique %s, isConstrained %s, entity %s", $this->class, $this->hash, $this->name, human_readable_value($this->isOptional), human_readable_value($this->isTransient), human_readable_value($this->isUnique), human_readable_value($this->isConstrained), $this->entity->tableName);
     }
 
     public function __construct(public SQLEntity $entity, public PropertyDescription $propertyDescription)
