@@ -65,9 +65,6 @@ class SQLGenerator extends ObjectClass
     public ?SQLStatement $statement {
         get => $this->statement ??= $this->statement();
     }
-    private SQLAliasGenerator $aliasGenerator {
-        get => $this->aliasGenerator ??= new SQLAliasGenerator();
-    }
     /** @var Dictionary<string> */
     public Dictionary $byMappingByTableAliasAssociationTable {
         get => $this->byMappingByTableAlias ??= new Dictionary();
