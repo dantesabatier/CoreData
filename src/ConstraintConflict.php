@@ -20,7 +20,7 @@ class ConstraintConflict extends ObjectClass
         get => $this->constraintValues ??= new Dictionary();
     }
     public string $description {
-        get => sprintf("%s %s for constraint (%s): database(%s): conflictedObjects (%s):", get_class($this), $this->hash, $this->constraint->join(", "), human_readable_value($this->databaseObject), $this->conflictingObjects->join(", "));
+        get => sprintf("%s %s for constraint (%s): database(%s): conflictedObjects (%s):", $this->class, $this->hash, $this->constraint->join(", "), human_readable_value($this->databaseObject), $this->conflictingObjects->join(", "));
     }
 
     /**
