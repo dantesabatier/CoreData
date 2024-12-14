@@ -15,7 +15,7 @@ use Override;
 class SQLColumn extends SQLProperty
 {
     protected(set) string $columnName {
-        get => $this->columnName ??= $this->propertyDescription->name;
+        get => $this->columnName ??= $this->name;
     }
     public int $precision {
         get => match ($this->sqlType) {
@@ -57,7 +57,7 @@ class SQLColumn extends SQLProperty
         };
     }
     public string $description {
-        get => sprintf("<%s %s> %s", $this->class, $this->hash, $this->columnName);
+        get => sprintf("%s, precision %s, scale %s, length %s", parent::$description::get(), $this->precision, $this->scale, $this->length);
     }
 
     #[Override]
