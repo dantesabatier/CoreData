@@ -13,7 +13,10 @@ namespace Sabatier\CoreData;
 class SQLToMany extends SQLRelationship
 {
     public SQLToOne $inverseToOne {
-        /** @noinspection PhpIncompatibleReturnTypeInspection */
-        get => $this->inverseRelationship;
+        get {
+            /** @var SQLToOne $inverseToOne */
+            $inverseToOne = $this->inverseRelationship;
+            return $inverseToOne;
+        }
     }
 }
