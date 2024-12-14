@@ -18,8 +18,11 @@ use Sabatier\Foundation\SortDescriptor;
 class SQLManyToMany extends SQLRelationship
 {
     public SQLManyToMany $inverseManyToMany {
-        /** @noinspection PhpIncompatibleReturnTypeInspection */
-        get => $this->inverseRelationship;
+        get {
+            /** @var SQLManyToMany $inverseManyToMany */
+            $inverseManyToMany = $this->inverseRelationship;
+            return $inverseManyToMany;
+        }
     }
     public string $correlationTableName {
         get => $this->correlationTableName ??= new ArrayClass([$this->destinationEntity, $this->inverseRelationship->destinationEntity])->sorted([new SortDescriptor("tableName")])->valueForKey("tableName")->join("");
