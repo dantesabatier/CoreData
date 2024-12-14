@@ -83,7 +83,7 @@ abstract class PropertyDescription extends ObjectClass
     /** @internal */
     public ?string $regex = null;
     public string $description {
-        get => sprintf("(<%s: %s>), name %s, isOptional %s, isTransient %s, entity %s renamingIdentifier %s, validation predicates %s, warnings %s", get_class($this), $this->hash, $this->name, human_readable_value($this->isOptional), human_readable_value($this->isTransient), $this->entity->name, $this->renamingIdentifier, $this->validationPredicates->description, $this->validationWarnings->description);
+        get => sprintf("(<%s: %s>), name %s, isOptional %s, isTransient %s, entity %s renamingIdentifier %s, validation predicates %s, warnings %s", $this->class, $this->hash, $this->name, human_readable_value($this->isOptional), human_readable_value($this->isTransient), $this->entity->name, $this->renamingIdentifier, $this->validationPredicates->description, $this->validationWarnings->description);
     }
 
     private function throwIfNotEditable(): void
