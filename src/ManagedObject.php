@@ -677,7 +677,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             foreach ($entity->foreignKeyColumns as $foreignKeyColumn) {
                 $key = $foreignKeyColumn->columnName;
                 if ($value = $keyedValues[$key]) {
-                    /** @noinspection PhpCannotModifyPropertyOutsideSetVisibilityScopeInspection,PhpHookedPropertyCantBeAccessedByRefInspection */
+                    /** @noinspection PhpHookedPropertyCantBeAccessedByRefInspection */
                     $representation[$foreignKeyColumn->toOneRelationship->name] = $value instanceof Nil ? $value : (function () use ($value, $foreignKeyColumn): ?ManagedObject {
                         /** @var FetchRequest<ManagedObject> $fetchRequest */
                         $fetchRequest = new FetchRequest();
