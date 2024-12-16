@@ -664,6 +664,7 @@ class SQLGenerator extends ObjectClass
      */
     private function relationshipsFromKeyPathExpression(Expression $expression): ArrayClass
     {
+        /** @var ArrayClass<SQLRelationship> */
         return $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLRelationship);
     }
 
