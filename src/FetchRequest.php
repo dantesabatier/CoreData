@@ -97,7 +97,7 @@ class FetchRequest extends PersistentStoreRequest
      * Executes the fetch request against the managed object context that is associated with the current queue.
      *
      * Calling execute on an FetchRequest will cause the FetchRequest to run against the managed object context ({@see ManagedObjectContext}) that is associated with the queue on which the method is called.
-     * @return ArrayClass
+     * @return ArrayClass<ResultType>
      * @throws Exception
      */
     public function execute(): ArrayClass
