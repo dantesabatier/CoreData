@@ -130,6 +130,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         $current[$key] = $value;
                                         if (!$propertyDescription instanceof CompositeAttributeDescription && $this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
                                             $current["isInserted"] = true;
+                                            $current["isFault"] = $this->request->returnsObjectsAsFaults;
                                         }
                                     }
                                 }
@@ -140,6 +141,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
                             /** @psalm-suppress InvalidArgument */
                             $representation["isInserted"] = true;
+                            $representation["isFault"] = $this->request->returnsObjectsAsFaults;
                         }
                         $map[$referenceObject] = $representation;
                     }
@@ -155,7 +157,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                 $entity = $this->sqlModel->entitiesByName[$dictionary[$this->sqlEntityForFetchRequest->entityKey->columnName]];
                 $object = $this->context->object($this->sqlCore->objectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
                 $object->isSuppressingKVO = true;
-                $object->isFault = $this->request->returnsObjectsAsFaults;
                 $object->setValuesForKeys($dictionary);
                 if (!$object->isAwake) {
                     $object->isAwake = true;
