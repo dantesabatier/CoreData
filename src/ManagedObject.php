@@ -448,7 +448,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if ($property instanceof DerivedAttributeDescription && !$this->isFault && !isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
+            if ($property instanceof DerivedAttributeDescription && !$value && !isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
                 $this->reserved[$key] = true;
                 $value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional);
                 $this->setPrimitiveValueForKey($value, $key);
@@ -459,8 +459,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if (!$this->isFault && !isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
-                $this->reserved[$key] = true;
+            if ($this->isAwake && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
                 $value ??= new FaultingArray($this, $property);
                 if ($property->fetchRequest !== null) {
                     $fetchRequest = clone $property->fetchRequest;
@@ -499,8 +498,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if (!$this->isFault && !isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
-                $this->reserved[$key] = true;
+            if ($this->isAwake && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
                 $store = $context->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null");
                 $newValue = $store->newValueForRelationship($property, $this->objectID, $context);
                 if ($property->isToMany) {
@@ -556,7 +554,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $set->setSet($value);
                 $value = $set;
                 $change = $this->mutableSetValueForKey($key);
-                if (!$this->isFault && !isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
+                if (!$this->isAwake && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
                     /** @var FaultingSet $change */
                     $change = $this->valueForKey($key);
                     /** @var ManagedObject $managedObject */
@@ -596,7 +594,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 assert($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null, sprintf("invalid argument: %s(%s) expecting \"%s|%s|null\", \"%s\" given", $this->entity->name, $key, ManagedObject::class, ManagedObjectID::class, typeof($value)));
                 $change = $value;
                 $current = $this->primitiveValueForKey($key);
-                if (!$this->isFault && !isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
+                if (!$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
                     $current = $this->valueForKey($key);
                 }
                 if ($current === null && $value !== null) {
@@ -637,17 +635,16 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             if ($objectID instanceof ManagedObjectID) {
                 return $objectID;
             }
-            if ($objectID instanceof Nil) {
-                return null;
-            }
-            if (($entityName = $object[SQLEntity::entityKeyName]) && !$entityName instanceof Nil && ($entityDescription = $this->managedObjectContext->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[$entityName])) {
-                $entity = $entityDescription;
-            }
-            if ($objectID) {
-                return $store->objectID($entity, $objectID);
-            }
-            if (!$object->isEmpty) {
-                return $store->objectID($entity, uuid_generate());
+            if (!$objectID instanceof Nil) {
+                if (($entityName = $object[SQLEntity::entityKeyName]) && !$entityName instanceof Nil && ($entityDescription = $this->managedObjectContext->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[$entityName])) {
+                    $entity = $entityDescription;
+                }
+                if ($objectID) {
+                    return $store->objectID($entity, $objectID);
+                }
+                if (!$object->isEmpty) {
+                    return $store->objectID($entity, uuid_generate());
+                }
             }
             return null;
         };
@@ -657,12 +654,17 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             }
             if ($object instanceof ManagedObjectID) {
                 $managedObject = $this->managedObjectContext->object($object);
-                $managedObject->setValuesForKeys(new Dictionary());
+                $managedObject->awakeFromFetch();
+                $managedObject->isAwake = true;
                 return $managedObject;
             }
             if ($objectID = $managedObjectID($entity, $object)) {
                 $managedObject = $this->managedObjectContext->object($objectID);
+                $managedObject->isSuppressingKVO = true;
                 $managedObject->setValuesForKeys($object);
+                $managedObject->awakeFromFetch();
+                $managedObject->isAwake = true;
+                $managedObject->isSuppressingKVO = false;
                 return $managedObject;
             }
             return null;
@@ -711,10 +713,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             }
         }
         parent::setValuesForKeys($representation);
-        if (!$this->isAwake) {
-            $this->isAwake = true;
-            $this->awakeFromFetch();
-        }
     }
 
     #[Override]
