@@ -662,8 +662,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $managedObject = $this->managedObjectContext->object($objectID);
                 $managedObject->isSuppressingKVO = true;
                 $managedObject->setValuesForKeys($object);
-                $managedObject->awakeFromFetch();
-                $managedObject->isAwake = true;
+                if (!$managedObject->isAwake) {
+                    $managedObject->awakeFromFetch();
+                    $managedObject->isAwake = true;
+                }
                 $managedObject->isSuppressingKVO = false;
                 return $managedObject;
             }
