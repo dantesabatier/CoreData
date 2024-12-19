@@ -195,10 +195,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function hasFaultForRelationshipNamed(string $key): bool
     {
-        if ($this->entity->relationshipsByName[$key]) {
-            return $this->isRelationshipForKeyFault($key);
+        if (!$this->entity->relationshipsByName->offsetExists($key)) {
+            fatal_error("This class does not contains a relationship named \"$key\"");
         }
-        fatal_error("This class does not contains a relationship named \"$key\"");
+        return $this->isRelationshipForKeyFault($key);
     }
 
     /**
