@@ -532,6 +532,7 @@ class ManagedObjectContext extends ObjectClass
     private function doPreSaveConstraintChecksForObject(ManagedObject $object): void
     {
         $committedValues = $object->committedValuesForKeys(null);
+        assert(!$committedValues->isEmpty, "Attempting to save an object with no changes $object");
         /** @psalm-suppress InvalidArgument */
         $this->mergePolicy->resolveConstraintConflicts($committedValues->compactMap(function (mixed $value, string $key) use ($object): ?ConstraintConflict {
             if ($object->entity->indexes->contains(fn(FetchIndexDescription $index): bool => $index->name === $key && $index->isUnique)) {
