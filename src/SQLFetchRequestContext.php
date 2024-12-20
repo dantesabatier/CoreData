@@ -130,7 +130,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         $current[$key] = $value;
                                         if (!$propertyDescription instanceof CompositeAttributeDescription && $this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
                                             $current["isInserted"] = true;
-                                            $current["isFault"] = $this->request->returnsObjectsAsFaults;
                                         }
                                     }
                                 }
@@ -141,7 +140,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
                             /** @psalm-suppress InvalidArgument */
                             $representation["isInserted"] = true;
-                            $representation["isFault"] = $this->request->returnsObjectsAsFaults;
                         }
                         $map[$referenceObject] = $representation;
                     }
