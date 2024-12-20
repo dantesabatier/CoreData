@@ -13,16 +13,7 @@ Core Data provides two abstract types of persistent stores:
 
 Core Data also provides the implementation of two specific persistent store types, XML and SQL (each a subclass of atomic and incremental stores, respectively).
 
-The SQL persistent store is a (fully managed by the framework) SQL database, this includes:
-
-- Creating and updating the structure, creation, modification of tables, columns, indexes, unique constraints, integration levels, etc.
-- Query generation, the framework uses the (profoundly beautiful) expressions and predicates, which is somewhat similar to using the relational model to filter collections using a code-enriched pseudo language based on mathematical logic, predicate logic or first-order logic to filter lookups on sets.
-- Data mutation, create, update, delete.
-- Data migration, this includes exporting data of data type from one persistent store to another.
-
 Core Data use a managed object model (ManagedObjectModel), so, to update the structure of the persistent store, all you have to do is to update the model and the framework will do the rest, all unattended and automatic, no typing required a single line of code and without the need to execute any commands.
-
-The XML store is a file.
 
 ## License
 
