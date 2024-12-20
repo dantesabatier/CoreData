@@ -55,7 +55,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public bool $isInserted {
         get {
             if (!isset($this->isInserted)) {
-                if ($persistentStore = $this->objectID->persistentStore) {
+                if (!$this->objectID->isTemporaryID && ($persistentStore = $this->objectID->persistentStore)) {
                     /** @var FetchRequest<Number> $fetchRequest */
                     $fetchRequest = $this::fetchRequest();
                     $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($this->objectID));
@@ -139,7 +139,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /** @internal */
     public bool $isSuppressingChangeNotifications = false;
     /** @internal */
-    public bool $isAwake = false;
+    public bool $isAwakeFromFetch = false;
     /** @internal */
     private(set) string $entityName {
         get => $this->entityName ??= $this->entity->name;
@@ -459,7 +459,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if ($this->isAwake && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
+            if ($this->isAwakeFromFetch && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
                 $value ??= new FaultingArray($this, $property);
                 if ($property->fetchRequest !== null) {
                     $fetchRequest = clone $property->fetchRequest;
@@ -498,7 +498,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if ($this->isAwake && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
+            if ($this->isAwakeFromFetch && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
                 $store = $context->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null");
                 $newValue = $store->newValueForRelationship($property, $this->objectID, $context);
                 if ($property->isToMany) {
@@ -554,7 +554,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $set->setSet($value);
                 $value = $set;
                 $change = $this->mutableSetValueForKey($key);
-                if (!$this->isAwake && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
+                if (!$this->isAwakeFromFetch && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
                     /** @var FaultingSet $change */
                     $change = $this->valueForKey($key);
                     /** @var ManagedObject $managedObject */
@@ -655,16 +655,16 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             if ($object instanceof ManagedObjectID) {
                 $managedObject = $this->managedObjectContext->object($object);
                 $managedObject->awakeFromFetch();
-                $managedObject->isAwake = true;
+                $managedObject->isAwakeFromFetch = true;
                 return $managedObject;
             }
             if ($objectID = $managedObjectID($entity, $object)) {
                 $managedObject = $this->managedObjectContext->object($objectID);
                 $managedObject->isSuppressingKVO = true;
                 $managedObject->setValuesForKeys($object);
-                if (!$managedObject->isAwake) {
+                if (!$managedObject->isAwakeFromFetch) {
                     $managedObject->awakeFromFetch();
-                    $managedObject->isAwake = true;
+                    $managedObject->isAwakeFromFetch = true;
                 }
                 $managedObject->isSuppressingKVO = false;
                 return $managedObject;

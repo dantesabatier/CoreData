@@ -1286,6 +1286,7 @@ class SQLGenerator extends ObjectClass
                         $value = $value->objectID;
                     }
                     if ($value instanceof ManagedObjectID) {
+                        assert(!$value->isTemporaryID, "Invalid argument: \"$property->columnName\" cannot be a temporary ID");
                         $value = $value->referenceObject;
                     }
                     $arguments->append($value);

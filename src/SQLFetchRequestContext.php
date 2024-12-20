@@ -158,9 +158,9 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                 $object = $this->context->object($this->sqlCore->objectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
                 $object->isSuppressingKVO = true;
                 $object->setValuesForKeys($dictionary);
-                if (!$object->isAwake) {
+                if (!$object->isAwakeFromFetch) {
                     $object->awakeFromFetch();
-                    $object->isAwake = true;
+                    $object->isAwakeFromFetch = true;
                 }
                 $object->isSuppressingKVO = false;
                 return $object->serialized($this->request->serialization);

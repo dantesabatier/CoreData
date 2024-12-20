@@ -115,8 +115,8 @@ abstract class AtomicStore extends PersistentStore
         /** @var AtomicStoreCacheNode $cacheNode */
         foreach ($this->nodeCache as $cacheNode) {
             $object = $context->object($cacheNode->objectID);
-            if (!$object->isAwake) {
-                $object->isAwake = true;
+            if (!$object->isAwakeFromFetch) {
+                $object->isAwakeFromFetch = true;
                 $this->updateObject($object);
                 $object->awakeFromFetch();
             }
