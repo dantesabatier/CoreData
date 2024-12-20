@@ -459,8 +459,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if (!isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
-                $this->reserved[$key] = true;
+            if ($this->isAwakeFromFetch && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
                 $value ??= new FaultingArray($this, $property);
                 if ($property->fetchRequest !== null) {
                     $fetchRequest = clone $property->fetchRequest;
@@ -499,8 +498,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if (!isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
-                $this->reserved[$key] = true;
+            if ($this->isAwakeFromFetch && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
                 $store = $context->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null");
                 $newValue = $store->newValueForRelationship($property, $this->objectID, $context);
                 if ($property->isToMany) {
@@ -557,7 +555,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $value = $set;
                 $change = $this->mutableSetValueForKey($key);
                 if (!$this->isAwakeFromFetch && $this->isInserted && $this->isRelationshipForKeyFault($key)) {
-                    $this->reserved[$key] = true;
                     /** @var FaultingSet $change */
                     $change = $this->valueForKey($key);
                     /** @var ManagedObject $managedObject */
