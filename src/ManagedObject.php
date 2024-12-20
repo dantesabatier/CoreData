@@ -899,7 +899,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     private function validateChangedValues(): void
     {
-        assert(!$this->changedValues->isEmpty, "invalid state: changed values is empty");
+        !$this->changedValues->isEmpty ?: fatal_error("invalid state: changed values is empty");
         foreach ($this->changedValues as $key => $value) {
             if ($value instanceof Nil) {
                 continue;
