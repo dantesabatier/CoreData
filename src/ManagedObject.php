@@ -539,7 +539,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if (!$this->validateValueForKey($value, $key)) {
             return;
         }
-        error_log(sprintf("%s %s(%s, %s)", $this->debugDescription, __FUNCTION__, human_readable_value($value), human_readable_value($key)));
         /** @var PropertyDescription|null $property */
         $property = $this->entity->propertiesByName[$key];
         if ($property instanceof PropertyDescription && !$property->isTransient && !$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription && !$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications) {
