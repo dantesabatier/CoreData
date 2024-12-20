@@ -70,11 +70,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     }
     /** @var bool A Boolean value that indicates whether the managed object has unsaved changes. */
     public bool $isUpdated {
-        get => $this->isInserted && !$this->changedValuesForCurrentEvent->isEmpty;
+        get => $this->isUpdated ??= $this->isInserted && !$this->changedValuesForCurrentEvent->isEmpty;
     }
     /** @var bool A Boolean value that indicates whether the managed object will be deleted during the next save. */
     public bool $isDeleted {
-        get => $this->managedObjectContext->deletedObjects->containsElement($this);
+        get => $this->isDeleted ??= $this->managedObjectContext->deletedObjects->containsElement($this);
     }
     public readonly ManagedObjectContext $managedObjectContext;
     private Dictionary $changedValues {
@@ -459,7 +459,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if ($this->isAwakeFromFetch && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
+            if (!isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
+                $this->reserved[$key] = true;
                 $value ??= new FaultingArray($this, $property);
                 if ($property->fetchRequest !== null) {
                     $fetchRequest = clone $property->fetchRequest;
@@ -498,7 +499,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if ($this->isAwakeFromFetch && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
+            if (!isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
+                $this->reserved[$key] = true;
                 $store = $context->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null");
                 $newValue = $store->newValueForRelationship($property, $this->objectID, $context);
                 if ($property->isToMany) {
@@ -537,6 +539,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if (!$this->validateValueForKey($value, $key)) {
             return;
         }
+        error_log(sprintf("%s %s(%s, %s)", $this->debugDescription, __FUNCTION__, human_readable_value($value), human_readable_value($key)));
         /** @var PropertyDescription|null $property */
         $property = $this->entity->propertiesByName[$key];
         if ($property instanceof PropertyDescription && !$property->isTransient && !$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription && !$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications) {
@@ -554,7 +557,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $set->setSet($value);
                 $value = $set;
                 $change = $this->mutableSetValueForKey($key);
-                if (!$this->isAwakeFromFetch && !$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
+                if (!$this->isAwakeFromFetch && $this->isInserted && $this->isRelationshipForKeyFault($key)) {
+                    $this->reserved[$key] = true;
                     /** @var FaultingSet $change */
                     $change = $this->valueForKey($key);
                     /** @var ManagedObject $managedObject */
@@ -584,7 +588,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         $changeKind = KeyValueChange::replacement;
                     }
                 }
-                if (!$inverseRelationship->isToMany) {
+                if (!$inverseRelationship->isToMany && $this->isInserted) {
                     /** @var ManagedObject $managedObject */
                     foreach ($value as $managedObject) {
                         $managedObject->setPrimitiveValueForKey($this->objectID, $inverseRelationship->name);
@@ -594,7 +598,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 assert($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null, sprintf("invalid argument: %s(%s) expecting \"%s|%s|null\", \"%s\" given", $this->entity->name, $key, ManagedObject::class, ManagedObjectID::class, typeof($value)));
                 $change = $value;
                 $current = $this->primitiveValueForKey($key);
-                if (!$this->objectID->isTemporaryID && $this->isRelationshipForKeyFault($key)) {
+                if ($this->isInserted && $this->isRelationshipForKeyFault($key)) {
                     $current = $this->valueForKey($key);
                 }
                 if ($current === null && $value !== null) {
@@ -660,13 +664,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             }
             if ($objectID = $managedObjectID($entity, $object)) {
                 $managedObject = $this->managedObjectContext->object($objectID);
-                $managedObject->isSuppressingKVO = true;
                 $managedObject->setValuesForKeys($object);
                 if (!$managedObject->isAwakeFromFetch) {
                     $managedObject->awakeFromFetch();
                     $managedObject->isAwakeFromFetch = true;
                 }
-                $managedObject->isSuppressingKVO = false;
                 return $managedObject;
             }
             return null;
@@ -899,6 +901,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     private function validateChangedValues(): void
     {
+        assert(!$this->changedValues->isEmpty, "invalid state: changed values is empty");
         foreach ($this->changedValues as $key => $value) {
             if ($value instanceof Nil) {
                 continue;
