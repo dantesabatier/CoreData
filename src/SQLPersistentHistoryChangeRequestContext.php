@@ -19,7 +19,6 @@ use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 /** @internal */
 class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
 {
-    public bool $hasHistoryTracking = true;
     public PersistentHistoryChangeRequest $request {
         get {
             /** @var PersistentHistoryChangeRequest $request */
@@ -32,6 +31,7 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
     {
         parent::__construct($request, $context, $sqlCore);
         $this->isWritingRequest = $request->isDelete;
+        $this->hasHistoryTracking = true;
     }
 
     /**

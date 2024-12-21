@@ -11,16 +11,16 @@ use function Sabatier\Foundation\request_concrete_implementation;
 /** * @internal */
 abstract class SQLStoreRequestContext extends ObjectClass
 {
-    public SQLConnection $connection;
-    public Number $transactionID;
-    public ?QueryGenerationToken $queryGenerationToken = null;
-    private(set) bool $shouldRegisterQueryGeneration = false;
-    public bool $isWritingRequest = false;
-    public bool $hasHistoryTracking = false;
+    private(set) SQLConnection $connection;
+    protected(set) Number $transactionID;
+    protected(set) ?QueryGenerationToken $queryGenerationToken = null;
+    protected(set) bool $shouldRegisterQueryGeneration = false;
+    protected(set) bool $isWritingRequest = false;
+    protected(set) bool $hasHistoryTracking = false;
     private(set) SQLGenerator $generator {
         get => $this->generator ??= new SQLGenerator($this);
     }
-    public mixed $result {
+    protected(set) mixed $result {
         get => $this->result ??= new ArrayClass();
     }
     public int $debugLogLevel {
@@ -34,6 +34,9 @@ abstract class SQLStoreRequestContext extends ObjectClass
         set {
             SQLCore::$coloredLoggingDefault = $value;
         }
+    }
+    public SQLModel $sqlModel {
+        get => $this->sqlCore->model;
     }
 
     public function __construct(public readonly PersistentStoreRequest $persistentStoreRequest, public readonly ManagedObjectContext $context, public readonly SQLCore $sqlCore)

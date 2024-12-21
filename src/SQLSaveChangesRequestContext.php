@@ -8,14 +8,18 @@ use Sabatier\Foundation\Number;
 /** @internal */
 class SQLSaveChangesRequestContext extends SQLStoreRequestContext
 {
-    public bool $isWritingRequest = true;
-    public SQLModel $sqlModel {
-        get => $this->sqlCore->model;
+    public SaveChangesRequest $request {
+        get {
+            /** @var SaveChangesRequest $request */
+            $request = $this->persistentStoreRequest;
+            return $request;
+        }
     }
 
-    public function __construct(public readonly SaveChangesRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
+    public function __construct(SaveChangesRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
     {
-        parent::__construct($this->request, $context, $sqlCore);
+        parent::__construct($request, $context, $sqlCore);
+        $this->isWritingRequest = true;
     }
 
     #[Override]

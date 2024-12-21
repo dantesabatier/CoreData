@@ -15,9 +15,6 @@ use function Sabatier\Foundation\human_readable_time;
 /** @internal */
 class SQLFetchRequestContext extends SQLStoreRequestContext
 {
-    public SQLModel $sqlModel {
-        get => $this->sqlCore->model;
-    }
     private(set) SQLEntity $sqlEntityForFetchRequest {
         get => $this->sqlEntityForFetchRequest ??= $this->sqlModel->entity($this->request->entity->name) ?? fatal_error("Entity \"{$this->request->entity->name}\" does not exists");
     }
@@ -159,11 +156,11 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                 $object = $this->context->object($this->sqlCore->objectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
                 $object->isSuppressingKVO = true;
                 $object->setValuesForKeys($dictionary);
+                $object->isSuppressingKVO = false;
                 if (!$object->isAwakeFromFetch) {
                     $object->awakeFromFetch();
                     $object->isAwakeFromFetch = true;
                 }
-                $object->isSuppressingKVO = false;
                 return $object->serialized($this->request->serialization);
             });
             if ($this->request->includesPropertyValues) {

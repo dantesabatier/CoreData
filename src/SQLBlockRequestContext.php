@@ -8,9 +8,12 @@ use Override;
 /** @internal */
 class SQLBlockRequestContext extends SQLStoreRequestContext
 {
-    public function __construct(public readonly Closure $block, ManagedObjectContext $context, SQLCore $sqlCore)
+    public readonly Closure $block;
+
+    public function __construct(Closure $block, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         parent::__construct(new SaveChangesRequest(), $context, $sqlCore);
+        $this->block = $block;
     }
 
     #[Override]

@@ -9,36 +9,38 @@ use Sabatier\Foundation\Number;
 /** @internal */
 class SQLBatchUpdateRequestContext extends SQLStoreRequestContext
 {
-    public bool $isWritingRequest = true;
     private(set) SQLFetchRequestContext $fetchContext {
-        get => $this->fetchContext ??= $this->createFetchRequestContextForObjectsToUpdate();
+        get {
+            if (!isset($this->fetchContext)) {
+                /** @var FetchRequest<ManagedObjectID> $fetchRequest */
+                $fetchRequest = new FetchRequest();
+                $fetchRequest->entity = $this->request->entity;
+                $fetchRequest->predicate = $this->request->predicate;
+                $fetchRequest->includesSubentities = $this->request->includesSubentities;
+                $fetchRequest->resultType = FetchRequestResultType::managedObjectIDResultType;
+                $fetchRequest->includesPropertyValues = false;
+                $this->fetchContext = new SQLFetchRequestContext($fetchRequest, $this->context, $this->sqlCore);
+            }
+            return $this->fetchContext;
+        }
     }
     private(set) ?SQLStatement $updateStatement {
         get => $this->updateStatement ??= $this->generator->statement;
     }
     /** @var ArrayClass<ManagedObjectID> */
     private(set) ArrayClass $affectedObjectIDs;
-
-    public function __construct(public readonly BatchUpdateRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
-    {
-        parent::__construct($this->request, $context, $sqlCore);
+    public BatchUpdateRequest $request {
+        get {
+            /** @var BatchUpdateRequest $request */
+            $request = $this->persistentStoreRequest;
+            return $request;
+        }
     }
 
-    private function createFetchRequestContextForObjectsToUpdate(): SQLFetchRequestContext
+    public function __construct(BatchUpdateRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
     {
-        return new SQLFetchRequestContext($this->fetchRequestDescribingObjectsToUpdate(), $this->context, $this->sqlCore);
-    }
-
-    private function fetchRequestDescribingObjectsToUpdate(): FetchRequest
-    {
-        /** @var FetchRequest<ManagedObjectID> $fetchRequest */
-        $fetchRequest = new FetchRequest();
-        $fetchRequest->entity = $this->request->entity;
-        $fetchRequest->predicate = $this->request->predicate;
-        $fetchRequest->includesSubentities = $this->request->includesSubentities;
-        $fetchRequest->resultType = FetchRequestResultType::managedObjectIDResultType;
-        $fetchRequest->includesPropertyValues = false;
-        return $fetchRequest;
+        parent::__construct($request, $context, $sqlCore);
+        $this->isWritingRequest = true;
     }
 
     #[Override]

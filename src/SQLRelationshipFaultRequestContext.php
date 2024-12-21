@@ -11,10 +11,6 @@ use function Sabatier\Foundation\fatal_error;
 /** @internal */
 class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
 {
-    public SQLModel $sqlModel {
-        get => $this->sqlCore->model;
-    }
-
     public function __construct(public readonly ManagedObjectID $objectID, public readonly RelationshipDescription $relationship, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         parent::__construct(new FetchRequest(), $context, $sqlCore);

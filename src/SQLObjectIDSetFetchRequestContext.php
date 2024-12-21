@@ -8,9 +8,14 @@ use Sabatier\Foundation\ArrayClass;
 /** @internal */
 class SQLObjectIDSetFetchRequestContext extends SQLFetchRequestContext
 {
-    public function __construct(FetchRequest $request, ManagedObjectContext $context, SQLCore $sqlCore, public readonly ArrayClass $idSets, public readonly string $columnName)
+    public readonly ArrayClass $idSets;
+    public readonly string $columnName;
+
+    public function __construct(FetchRequest $request, ManagedObjectContext $context, SQLCore $sqlCore, ArrayClass $idSets, string $columnName)
     {
         parent::__construct($request, $context, $sqlCore);
+        $this->idSets = $idSets;
+        $this->columnName = $columnName;
     }
 
     #[Override]

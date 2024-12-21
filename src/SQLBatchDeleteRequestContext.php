@@ -9,10 +9,17 @@ use Sabatier\Foundation\Number;
 /** @internal */
 class SQLBatchDeleteRequestContext extends SQLStoreRequestContext
 {
-    public bool $isWritingRequest = true;
     /** @var FetchRequest<ManagedObjectID> */
     private(set) FetchRequest $fetchRequestForObjectsToDelete {
-        get => $this->fetchRequestForObjectsToDelete ??= $this->fetchRequestForObjectsToDelete();
+        get {
+            if (!isset($this->fetchRequestForObjectsToDelete)) {
+                $fetchRequestForObjectsToDelete = clone $this->request->fetchRequest;
+                $fetchRequestForObjectsToDelete->resultType = FetchRequestResultType::managedObjectIDResultType;
+                $fetchRequestForObjectsToDelete->includesPropertyValues = false;
+                $this->fetchRequestForObjectsToDelete = $fetchRequestForObjectsToDelete;
+            }
+            return $this->fetchRequestForObjectsToDelete;
+        }
     }
     /** @var ArrayClass<ManagedObjectID> */
     private(set) ArrayClass $affectedObjectIDs {
@@ -24,18 +31,18 @@ class SQLBatchDeleteRequestContext extends SQLStoreRequestContext
     private(set) ?SQLStatement $deleteStatement {
         get => $this->deleteStatement ??= $this->generator->statement;
     }
-
-    public function __construct(public readonly BatchDeleteRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
-    {
-        parent::__construct($this->request, $context, $sqlCore);
+    public BatchDeleteRequest $request {
+        get {
+            /** @var BatchDeleteRequest $request */
+            $request = $this->persistentStoreRequest;
+            return $request;
+        }
     }
 
-    private function fetchRequestForObjectsToDelete(): FetchRequest
+    public function __construct(BatchDeleteRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
     {
-        $fetchRequestForObjectsToDelete = clone $this->request->fetchRequest;
-        $fetchRequestForObjectsToDelete->resultType = FetchRequestResultType::managedObjectIDResultType;
-        $fetchRequestForObjectsToDelete->includesPropertyValues = false;
-        return $fetchRequestForObjectsToDelete;
+        parent::__construct($request, $context, $sqlCore);
+        $this->isWritingRequest = true;
     }
 
     #[Override]
