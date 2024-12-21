@@ -62,9 +62,9 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             if ($keys->count >= 3) {
                                 $keys->removeAt(0);
                             }
+                            $propertyKeys = $keys->dropLast(1);
                             if ($keys[$keys->indexBefore($keys->endIndex)] === $currentEntity->primaryKey->columnName) {
-                                $sliceOfKeys = $keys->dropLast(1);
-                                $keyPath = $sliceOfKeys->join(".");
+                                $keyPath = $propertyKeys->join(".");
                                 if ($value instanceof Nil) {
                                     $keyPaths->append($keyPath);
                                 } else {
@@ -78,7 +78,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             $relationship = null;
                             $current = &$representation;
                             $parentKeys = new ArrayClass([$entityName]);
-                            $parentKeys->appendContentsOf($keys->dropLast(1));
+                            $parentKeys->appendContentsOf($propertyKeys);
                             $parentKeys->append($currentEntity->primaryKey->columnName);
                             $parentKey = $parentKeys->join("_");
                             $parentID = $data[$parentKey] ?? null;
