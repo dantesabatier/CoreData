@@ -60,7 +60,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     $fetchRequest = $this::fetchRequest();
                     $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($this->objectID));
                     $fetchRequest->affectedStores = new ArrayClass([$persistentStore]);
-                    /** @noinspection PhpUnhandledExceptionInspection */
                     $this->isInserted = (bool)$this->managedObjectContext->count($fetchRequest);
                 }
                 $this->isInserted ??= false;
@@ -448,10 +447,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if ($property instanceof DerivedAttributeDescription && !$value && !isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
-                $this->reserved[$key] = true;
+            if ($property instanceof DerivedAttributeDescription && !$value && $this->isRelationshipForKeyFault($key)) {
                 $value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional);
                 $this->setPrimitiveValueForKey($value, $key);
+                $this->reserved[$key] = true;
             }
             return $value;
         }
@@ -459,8 +458,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if (!isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
-                $this->reserved[$key] = true;
+            if ($this->isInserted && $this->isRelationshipForKeyFault($key)) {
                 $value ??= new FaultingArray($this, $property);
                 if ($property->fetchRequest !== null) {
                     $fetchRequest = clone $property->fetchRequest;
@@ -499,8 +497,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if (!isset($this->reserved[$key]) && $this->isRelationshipForKeyFault($key)) {
-                $this->reserved[$key] = true;
+            if ($this->isInserted && $this->isRelationshipForKeyFault($key)) {
                 $store = $context->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null");
                 $newValue = $store->newValueForRelationship($property, $this->objectID, $context);
                 if ($property->isToMany) {
@@ -556,8 +553,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $set->setSet($value);
                 $value = $set;
                 $change = $this->mutableSetValueForKey($key);
-                if (!$this->isAwakeFromFetch && $this->isInserted && $this->isRelationshipForKeyFault($key)) {
-                    $this->reserved[$key] = true;
+                if (!$this->isSuppressingKVO && $this->isAwakeFromFetch && $this->isInserted && $this->isRelationshipForKeyFault($key)) {
                     /** @var FaultingSet $change */
                     $change = $this->valueForKey($key);
                     /** @var ManagedObject $managedObject */
@@ -690,7 +686,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         $fetchRequest = new FetchRequest();
                         $fetchRequest->entity = $foreignKeyColumn->toOneRelationship->destinationEntity->entityDescription;
                         $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue((int)$value));
-                        /** @noinspection PhpUnhandledExceptionInspection */
                         return $this->managedObjectContext->fetch($fetchRequest)->first;
                     })();
                     $representation->removeValueForKey($key);
