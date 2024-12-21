@@ -117,20 +117,36 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public FaultHandler $faultHandler {
         get => $this->faultHandler ??= ($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null"))->faultHandler;
     }
-    /** @internal */
-    public ArrayClass $allProperties {
+    /**
+     * @var ArrayClass<PropertyDescription>
+     * @internal
+     */
+    private(set) ArrayClass $allProperties {
         get => $this->allProperties ??= $this->entity->properties;
     }
-    /** @internal */
+    /**
+     * @var ArrayClass<PropertyDescription>
+     * @internal
+     */
     public ArrayClass $modeledProperties {
         get => $this->allProperties;
     }
-    /** @internal */
-    public ArrayClass $persistentProperties {
+    /**
+     * @var ArrayClass<PropertyDescription>
+     * @internal
+     */
+    private(set) ArrayClass $persistentProperties {
         get => $this->persistentProperties ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => !$property->isTransient && !$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription);
     }
-    /** @internal */
-    public ArrayClass $transientProperties {
+    /** @var ArrayClass<string> */
+    private ArrayClass $attributesKeys {
+        get => $this->attributesKeys ??= $this->persistentProperties->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription)->map(fn(AttributeDescription $attribute): string => $attribute->name);
+    }
+    /**
+     * @var ArrayClass<PropertyDescription>
+     * @internal
+     */
+    private(set) ArrayClass $transientProperties {
         get => $this->transientProperties ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property->isTransient);
     }
     /** @internal */
@@ -194,9 +210,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function hasFaultForRelationshipNamed(string $key): bool
     {
-        if (!$this->entity->relationshipsByName->offsetExists($key)) {
-            fatal_error("This class does not contains a relationship named \"$key\"");
-        }
+        $this->entity->relationshipsByName->offsetExists($key) ?: fatal_error("This class does not contains a relationship named \"$key\"");
         return $this->isRelationshipForKeyFault($key);
     }
 
@@ -559,7 +573,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     /** @var ManagedObject $managedObject */
                     foreach ($change as $managedObject) {
                         if ($member = $value->member($managedObject)) {
-                            $managedObject->setValuesForKeys($member->dictionaryWithValues($member->persistentProperties->valueForKey("name")));
+                            $managedObject->setValuesForKeys($member->dictionaryWithValues($member->attributesKeys));
                         }
                     }
                 }
