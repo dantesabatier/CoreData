@@ -124,11 +124,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     private(set) ArrayClass $allProperties {
         get => $this->allProperties ??= $this->entity->properties;
     }
-    /**
-     * @var ArrayClass<PropertyDescription>
-     * @internal
-     */
-    public ArrayClass $modeledProperties {
+    /** @var ArrayClass<PropertyDescription> */
+    private ArrayClass $modeledProperties {
         get => $this->allProperties;
     }
     /**
