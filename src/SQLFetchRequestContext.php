@@ -154,13 +154,15 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                 /** @var SQLEntity $entity */
                 $entity = $this->sqlModel->entitiesByName[$dictionary[$this->sqlEntityForFetchRequest->entityKey->columnName]];
                 $object = $this->context->object($this->sqlCore->objectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
+                $object->isSuppressingChangeNotifications = true;
                 $object->isSuppressingKVO = true;
                 $object->setValuesForKeys($dictionary);
+                $object->isSuppressingKVO = false;
                 if (!$object->isAwakeFromFetch) {
                     $object->awakeFromFetch();
                     $object->isAwakeFromFetch = true;
                 }
-                $object->isSuppressingKVO = false;
+                $object->isSuppressingChangeNotifications = false;
                 return $object->serialized($this->request->serialization);
             });
             if ($this->request->includesPropertyValues) {
