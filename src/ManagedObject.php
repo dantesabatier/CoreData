@@ -497,7 +497,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if ($this->isInserted && $this->isRelationshipForKeyFault($key)) {
+            if (!$this->isSuppressingKVO && $this->isInserted && $this->isRelationshipForKeyFault($key)) {
                 $store = $context->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null");
                 $newValue = $store->newValueForRelationship($property, $this->objectID, $context);
                 if ($property->isToMany) {
