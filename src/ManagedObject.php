@@ -458,7 +458,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if ($this->isInserted && $this->isRelationshipForKeyFault($key)) {
+            if (!$this->isSuppressingKVO && $this->isInserted && $this->isRelationshipForKeyFault($key)) {
                 $value ??= new FaultingArray($this, $property);
                 if ($property->fetchRequest !== null) {
                     $fetchRequest = clone $property->fetchRequest;
