@@ -29,7 +29,9 @@ class SQLCore extends IncrementalStore
 {
     public static int $debugDefault = 0;
     public static bool $coloredLoggingDefault = false;
-    public string $type = SQLStoreType;
+    public string $type {
+        get => SQLStoreType;
+    }
     private(set) SQLModel $model {
         get => $this->model ??= new SQLModel($this->persistentStoreCoordinator->managedObjectModel, $this->configurationName);
     }

@@ -20,7 +20,9 @@ use function Sabatier\Foundation\request_concrete_implementation;
 abstract class PersistentStore extends ObjectClass
 {
     /** @var string The type string of the persistent store. */
-    public string $type;
+    public abstract string $type {
+        get;
+    }
     /** @var string The unique identifier for the persistent store. */
     public string $identifier {
         get => $this->identifier ??= new UUID()->uuidString;
@@ -30,9 +32,7 @@ abstract class PersistentStore extends ObjectClass
         get => $this->metadata ??= new Dictionary([StoreTypeKey => $this->type, StoreUUIDKey => $this->identifier]);
     }
     /** @var bool A Boolean value that indicates whether the persistent store is read-only. */
-    public bool $isReadOnly {
-        get => (bool)$this->options?->valueForKey(ReadOnlyPersistentStoreOption);
-    }
+    public bool $isReadOnly = false;
     /** @internal */
     public FaultHandler $faultHandler {
         get => $this->faultHandler ??= new FaultHandler($this);

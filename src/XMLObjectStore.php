@@ -29,7 +29,9 @@ use function Sabatier\Foundation\fatal_error;
 /** @internal */
 class XMLObjectStore extends AtomicStore
 {
-    public string $type = XMLStoreType;
+    public string $type {
+        get => XMLStoreType;
+    }
     private ?DOMDocument $document = null;
     /** @var Dictionary<EntityDescription> */
     private Dictionary $entitiesForConfiguration {
