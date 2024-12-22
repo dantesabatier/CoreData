@@ -20,8 +20,9 @@ class SQLObjectFaultRequestContext extends SQLStoreRequestContext
             return $request;
         }
     }
+    public readonly ManagedObjectID $objectID;
 
-    public function __construct(public readonly ManagedObjectID $objectID, ManagedObjectContext $context, SQLCore $sqlCore)
+    public function __construct(ManagedObjectID $objectID, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         /** @var SQLEntity $entity */
         $entity = $sqlCore->model->entitiesByName[$this->objectID->entityName] ?? fatal_error();
@@ -32,6 +33,7 @@ class SQLObjectFaultRequestContext extends SQLStoreRequestContext
         $fetchRequest->predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($this->objectID)), new ComparisonPredicate(Expression::expressionForKeyPath($entity->entityKey->columnName), Expression::expressionForConstantValue($entity->tableName))]));
         $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
         parent::__construct($fetchRequest, $context, $sqlCore);
+        $this->objectID = $objectID;
     }
 
     #[Override]
