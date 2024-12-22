@@ -52,7 +52,12 @@ abstract class PersistentStore extends ObjectClass
      * @param Dictionary|null $options A dictionary containing configuration options.
      * @see PersistentStoreCoordinator for a list of key names for options in this dictionary.
      */
-    public function __construct(public readonly PersistentStoreCoordinator $persistentStoreCoordinator, public readonly string $configurationName, public URL $url, public readonly ?Dictionary $options = null)
+    public function __construct(public readonly PersistentStoreCoordinator $persistentStoreCoordinator, public readonly string $configurationName, public URL $url, private(set) ?Dictionary $options = null {
+        set {
+            $this->options = $value;
+            $this->isReadOnly = (bool)$value?->valueForKey(ReadOnlyPersistentStoreOption);
+        }
+    })
     {
     }
 
