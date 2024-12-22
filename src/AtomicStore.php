@@ -316,12 +316,6 @@ abstract class AtomicStore extends PersistentStore
     }
 
     #[Override]
-    public function obtainPermanentIDs(ArrayClass $objects): ArrayClass
-    {
-        return $objects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID->isTemporaryID ? $this->objectID($object->entity, $this->newReferenceObject($object)) : $object->objectID);
-    }
-
-    #[Override]
     public function newReferenceObject(ManagedObject $managedObject): int|string
     {
         if ($this->nextReference === NotFound) {
