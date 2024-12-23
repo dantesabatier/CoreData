@@ -23,10 +23,9 @@ abstract class IncrementalStore extends PersistentStore
     /**
      * Returns the identifier for the store at a given URL.
      * @param URL $storeURL The URL of a persistent store.
-     * @return mixed The identifier for the store at storeURL.
-     * @noinspection PhpMixedReturnTypeCanBeReducedInspection
+     * @return string The identifier for the store at storeURL.
      */
-    public static function identifierForNewStore(URL $storeURL): mixed
+    public static function identifierForNewStore(URL $storeURL): string
     {
         return md5($storeURL->absoluteString);
     }
