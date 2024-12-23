@@ -30,7 +30,6 @@ use Sabatier\Foundation\ValueTransformer;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\typeof;
-use function Sabatier\Foundation\uuid_generate;
 use const Sabatier\Foundation\CocoaErrorDomain;
 use const Sabatier\Foundation\KeyValueValidationError;
 use const Sabatier\Foundation\NotFound;
@@ -112,7 +111,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             return $this->serializationKeys;
         }
     }
-    private array $reserved = [];
     /** @internal */
     public FaultHandler $faultHandler {
         get => $this->faultHandler ??= ($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null"))->faultHandler;
@@ -221,7 +219,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if (($property instanceof FetchedPropertyDescription && $value instanceof FaultingArray) || ($property instanceof RelationshipDescription && $value instanceof FaultingSet)) {
             return $value->isFault;
         }
-        return !isset($this->reserved[$key]) && !isset($this->changedValues[$key]);
+        return !isset($this->changedValues[$key]);
     }
 
     /**
@@ -461,7 +459,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             if ($property instanceof DerivedAttributeDescription && !$value && $this->isRelationshipForKeyFault($key)) {
                 $value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional);
                 $this->setPrimitiveValueForKey($value, $key);
-                $this->reserved[$key] = true;
             }
             return $value;
         }
@@ -653,7 +650,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     return $store->objectID($entity, $objectID);
                 }
                 if (!$object->isEmpty) {
-                    return $store->objectID($entity, uuid_generate());
+                    return $store->objectID($entity, new UUID()->uuidString);
                 }
             }
             return null;
