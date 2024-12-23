@@ -216,11 +216,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     {
         $value = $this->primitiveValueForKey($key);
         $property = $this->entity->propertiesByName[$key];
-        if ($property instanceof FetchedPropertyDescription) {
-            return $value instanceof FaultingArray ? $value->isFault : true;
-        }
-        if ($property instanceof RelationshipDescription) {
-            return $value instanceof FaultingSet ? $value->isFault : true;
+        if (($property instanceof FetchedPropertyDescription && $value instanceof FaultingArray) || ($property instanceof RelationshipDescription && $value instanceof FaultingSet)) {
+            return $value->isFault;
         }
         return !isset($this->changedValues[$key]);
     }
@@ -260,8 +257,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     }
                     $value ??= new FaultingSet($this, $property);
                 }
-            } elseif ($property instanceof FetchedPropertyDescription) {
-                $value ??= new FaultingArray($this, $property);
             }
             $this->setPrimitiveValueForKey($value, $key);
         }
