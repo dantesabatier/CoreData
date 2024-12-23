@@ -665,8 +665,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             if ($object instanceof ManagedObjectID) {
                 $managedObject = $this->managedObjectContext->object($object);
                 if (!$managedObject->isAwakeFromFetch) {
-                    $managedObject->awakeFromFetch();
                     $managedObject->isAwakeFromFetch = true;
+                    $managedObject->awakeFromFetch();
                 }
                 return $managedObject;
             }
@@ -674,8 +674,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $managedObject = $this->managedObjectContext->object($objectID);
                 $managedObject->setValuesForKeys($object);
                 if (!$managedObject->isAwakeFromFetch) {
-                    $managedObject->awakeFromFetch();
                     $managedObject->isAwakeFromFetch = true;
+                    $managedObject->awakeFromFetch();
                 }
                 return $managedObject;
             }
