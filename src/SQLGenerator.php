@@ -1383,7 +1383,7 @@ class SQLGenerator extends ObjectClass
         } elseif ($first instanceof PersistentHistoryChange) {
             $map["PersistentHistoryChange"] = new ArrayClass($objects);
         } elseif ($first instanceof ManagedObject) {
-            $objects = $objects->sort(fn(ManagedObject $e0, ManagedObject $e1): int => $e0->entity->relationshipsByName->compactMap(fn(RelationshipDescription $relationship): ?EntityDescription => $e0->isRelationshipForKeyFault($relationship->name) ? $relationship->destinationEntity : null)->containsElement($e1->entity) ? ComparisonResult::orderedDescending->value : ComparisonResult::orderedAscending->value);
+            $objects = $objects->sort(fn(ManagedObject $e0, ManagedObject $e1): int => $e0->entity->relationshipsByName->compactMap(fn(RelationshipDescription $relationship): ?EntityDescription => $e0->hasFaultForRelationshipNamed($relationship->name) ? $relationship->destinationEntity : null)->containsElement($e1->entity) ? ComparisonResult::orderedDescending->value : ComparisonResult::orderedAscending->value);
             foreach ($objects as $object) {
                 /** @var ArrayClass $value */
                 $value = $map[$object->entity->name] ?? new ArrayClass();
