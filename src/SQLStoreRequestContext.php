@@ -25,15 +25,11 @@ abstract class SQLStoreRequestContext extends ObjectClass
     }
     public int $debugLogLevel {
         get => SQLCore::$debugDefault;
-        set {
-            SQLCore::$debugDefault = $value;
-        }
+        set => SQLCore::$debugDefault = $value;
     }
     public bool $useColoredLogging {
         get => SQLCore::$coloredLoggingDefault;
-        set {
-            SQLCore::$coloredLoggingDefault = $value;
-        }
+        set => SQLCore::$coloredLoggingDefault = $value;
     }
     public SQLModel $sqlModel {
         get => $this->sqlCore->model;
