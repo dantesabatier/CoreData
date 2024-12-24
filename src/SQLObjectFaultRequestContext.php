@@ -25,12 +25,12 @@ class SQLObjectFaultRequestContext extends SQLStoreRequestContext
     public function __construct(ManagedObjectID $objectID, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         /** @var SQLEntity $entity */
-        $entity = $sqlCore->model->entitiesByName[$this->objectID->entityName] ?? fatal_error();
+        $entity = $sqlCore->model->entitiesByName[$objectID->entityName] ?? fatal_error();
         /** @var FetchRequest<Dictionary> $fetchRequest */
         $fetchRequest = new FetchRequest();
-        $fetchRequest->entity = $this->objectID->entity;
+        $fetchRequest->entity = $objectID->entity;
         /** @psalm-suppress InvalidArgument */
-        $fetchRequest->predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($this->objectID)), new ComparisonPredicate(Expression::expressionForKeyPath($entity->entityKey->columnName), Expression::expressionForConstantValue($entity->tableName))]));
+        $fetchRequest->predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($objectID)), new ComparisonPredicate(Expression::expressionForKeyPath($entity->entityKey->columnName), Expression::expressionForConstantValue($entity->tableName))]));
         $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
         parent::__construct($fetchRequest, $context, $sqlCore);
         $this->objectID = $objectID;
