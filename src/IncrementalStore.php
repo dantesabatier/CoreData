@@ -11,6 +11,7 @@ namespace Sabatier\CoreData;
 
 use Override;
 use Sabatier\Foundation\URL;
+use function Sabatier\Foundation\request_concrete_implementation;
 
 /**
  * An abstract superclass defining the API through which Core Data communicates with a store.
@@ -18,7 +19,10 @@ use Sabatier\Foundation\URL;
 abstract class IncrementalStore extends PersistentStore
 {
     #[Override]
-    public abstract function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): ?IncrementalStoreNode;
+    public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): ?IncrementalStoreNode
+    {
+        request_concrete_implementation($this, __FUNCTION__);
+    }
 
     /**
      * Returns the identifier for the store at a given URL.
