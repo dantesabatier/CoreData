@@ -20,7 +20,7 @@ abstract class SQLStoreRequestContext extends ObjectClass
     private(set) SQLGenerator $generator {
         get => $this->generator ??= new SQLGenerator($this);
     }
-    protected(set) mixed $result {
+    public mixed $result {
         get => $this->result ??= new ArrayClass();
     }
     public int $debugLogLevel {
