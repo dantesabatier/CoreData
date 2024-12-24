@@ -11,6 +11,7 @@ use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
 use function Sabatier\Foundation\fatal_error;
+use function Sabatier\Foundation\request_concrete_implementation;
 
 /**
  * The abstract base class for all Core Data persistent stores.
@@ -103,7 +104,10 @@ abstract class PersistentStore extends ObjectClass
      * @throws Exception If an error occurs, upon return contains an error object that describes the problem.
      * @psalm-suppress InvalidReturnType
      */
-    public abstract function execute(PersistentStoreRequest $request, ManagedObjectContext $context): ArrayClass;
+    public function execute(PersistentStoreRequest $request, ManagedObjectContext $context): ArrayClass
+    {
+        request_concrete_implementation($this, __FUNCTION__);
+    }
 
     /**
      * Returns a managed object ID from the reference data for a specified entity.
@@ -137,7 +141,10 @@ abstract class PersistentStore extends ObjectClass
      * If an object with object ID objectID cannot be found, the method should return nil and if error is not NULL create and return an appropriate error object in error.
      * @throws Exception
      */
-    public abstract function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): mixed;
+    public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): mixed
+    {
+        request_concrete_implementation($this, __FUNCTION__);
+    }
 
     /**
      * Returns the relationship for the given relationship of the object with a given object ID.
@@ -152,7 +159,10 @@ abstract class PersistentStore extends ObjectClass
      * If an object with object ID objectID cannot be found, the method should return nil and if error is not null create and return an appropriate error object in error.
      * @throws Exception
      */
-    public abstract function newValueForRelationship(/** @noinspection PhpUnusedParameterInspection */ RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): mixed;
+    public function newValueForRelationship(/** @noinspection PhpUnusedParameterInspection */ RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): mixed
+    {
+        request_concrete_implementation($this, __FUNCTION__);
+    }
 
     /**
      * Returns an array containing the object IDs for a given array of newly inserted objects.
@@ -194,7 +204,10 @@ abstract class PersistentStore extends ObjectClass
      * @param ManagedObject $managedObject A managed object. At the time this method is called, it has a temporary ID.
      * @return int|string A new reference object for managedObject.
      */
-    public abstract function newReferenceObject(ManagedObject $managedObject): int|string;
+    public function newReferenceObject(ManagedObject $managedObject): int|string
+    {
+        request_concrete_implementation($this, __FUNCTION__);
+    }
 
     /**
      * Returns the metadata from the persistent store at the given URL.
@@ -203,7 +216,10 @@ abstract class PersistentStore extends ObjectClass
      * @return Dictionary The metadata from the persistent store at url.
      * @throws Exception If an error occurs, upon return contains an error that describes the problem.
      */
-    public abstract static function metadataForPersistentStore(URL $url): Dictionary;
+    public static function metadataForPersistentStore(/** @noinspection PhpUnusedParameterInspection */ URL $url): Dictionary
+    {
+        request_concrete_implementation(static::class, __FUNCTION__);
+    }
 
     /**
      * Sets the metadata for the store at a given URL.
@@ -213,7 +229,10 @@ abstract class PersistentStore extends ObjectClass
      * @return bool true if the metadata was written correctly, otherwise false.
      * @throws Exception
      */
-    public abstract static function setMetadata(?Dictionary $metadata, URL $url): bool;
+    public static function setMetadata(?Dictionary $metadata, URL $url): bool
+    {
+        request_concrete_implementation(static::class, __FUNCTION__);
+    }
 
     /**
      * Instructs the persistent store to load its metadata.
@@ -263,5 +282,8 @@ abstract class PersistentStore extends ObjectClass
     /**
      * @throws Exception
      */
-    public abstract function load(): bool;
+    public function load(): bool
+    {
+        request_concrete_implementation($this, __FUNCTION__);
+    }
 }
