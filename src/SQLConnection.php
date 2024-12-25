@@ -316,7 +316,7 @@ class SQLConnection extends ObjectClass
             }
             return $transactionID;
         }
-        assert($requestContext instanceof SQLBatchInsertRequestContext || $requestContext instanceof SQLBatchUpdateRequestContext || $requestContext instanceof SQLBatchDeleteRequestContext);
+        assert($requestContext instanceof SQLBatchOperationRequestContext);
         if (!$requestContext->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey)) {
             return 0;
         }
