@@ -262,7 +262,7 @@ class SQLGenerator extends ObjectClass
                 $this->appendOffsetClauseToSQL($request->fetchOffset);
             }
         } elseif ($request instanceof BatchInsertRequest) {
-            $this->prepareStatementForBatchInsertRequest($request);
+            $this->prepareStatementForBatchInsertRequest();
         } elseif ($request instanceof BatchUpdateRequest) {
             $this->prepareStatementForBatchUpdateRequest();
             $this->prepareJoinStatementsForPredicateAndRelationships();
@@ -1350,9 +1350,13 @@ class SQLGenerator extends ObjectClass
         $this->arguments = $objects;
     }
 
-    private function prepareStatementForBatchInsertRequest(BatchInsertRequest $request): void
+    private function prepareStatementForBatchInsertRequest(): void
     {
-        $entity = $this->entity;
+        /** @var SQLBatchInsertRequestContext $requestContext */
+        $requestContext = $this->requestContext;
+        $request = $requestContext->request;
+        /** @var SQLEntity $entity */
+        $entity = $requestContext->sqlModel->entitiesByName[$request->entity->name];
         /** @var ArrayClass<ManagedObject|Dictionary> $managedObjects */
         $managedObjects = new ArrayClass();
         if ($objectsToInsert = $request->objectsToInsert) {
@@ -1361,7 +1365,7 @@ class SQLGenerator extends ObjectClass
             while (true) {
                 $keyedValues = new Dictionary();
                 $ok = $dictionaryHandler($keyedValues);
-                $managedObject = EntityDescription::insertNewObject($entity->tableName, $this->requestContext->context);
+                $managedObject = EntityDescription::insertNewObject($entity->tableName, $requestContext->context);
                 $managedObject->setValuesForKeys($keyedValues);
                 if (!$ok) {
                     break;
@@ -1372,7 +1376,7 @@ class SQLGenerator extends ObjectClass
             /** @var ArrayClass<ManagedObject> $managedObjects */
             $managedObjects = new ArrayClass();
             while (true) {
-                $managedObject = EntityDescription::insertNewObject($entity->tableName, $this->requestContext->context);
+                $managedObject = EntityDescription::insertNewObject($entity->tableName, $requestContext->context);
                 if (!$managedObjectHandler($managedObject)) {
                     break;
                 }
