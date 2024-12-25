@@ -91,7 +91,13 @@ class SQLGenerator extends ObjectClass
 
     private function entity(): SQLEntity
     {
-        if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext) {
+        if ($this->requestContext instanceof SQLBatchInsertRequestContext) {
+            return $this->requestContext->sqlEntity;
+        }
+        if ($this->requestContext instanceof SQLBatchUpdateRequestContext) {
+            return $this->requestContext->fetchContext->sqlEntityForFetchRequest;
+        }
+        if ($this->requestContext instanceof SQLBatchDeleteRequestContext) {
             return $this->requestContext->fetchContext->sqlEntityForFetchRequest;
         }
         if ($this->requestContext instanceof SQLFetchRequestContext) {
@@ -102,7 +108,7 @@ class SQLGenerator extends ObjectClass
 
     private function statement(): ?SQLStatement
     {
-        if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext || $this->requestContext instanceof SQLFetchRequestContext) {
+        if ($this->requestContext instanceof SQLBatchInsertRequestContext || $this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext || $this->requestContext instanceof SQLFetchRequestContext) {
             return $this->newSQLStatementForPersistentStoreRequest();
         }
         if ($this->requestContext instanceof SQLSaveChangesRequestContext) {
@@ -255,6 +261,8 @@ class SQLGenerator extends ObjectClass
             if ($request->fetchOffset) {
                 $this->appendOffsetClauseToSQL($request->fetchOffset);
             }
+        } elseif ($request instanceof BatchInsertRequest) {
+            $this->prepareStatementForBatchInsertRequest($request);
         } elseif ($request instanceof BatchUpdateRequest) {
             $this->prepareStatementForBatchUpdateRequest();
             $this->prepareJoinStatementsForPredicateAndRelationships();
@@ -1340,6 +1348,61 @@ class SQLGenerator extends ObjectClass
     {
         $this->string = "DELETE FROM `$entity->tableName` WHERE `{$entity->primaryKey->columnName}` IN (" . ArrayClass::repeating("?", $objects->count)->join(",") . ")";
         $this->arguments = $objects;
+    }
+
+    private function prepareStatementForBatchInsertRequest(BatchInsertRequest $request): void
+    {
+        /** @var SQLBatchInsertRequestContext $requestContext */
+        $requestContext = $this->requestContext;
+        $context = $requestContext->context;
+        $entity = $requestContext->sqlEntity;
+        $entityName = $entity->tableName;
+        /** @var ArrayClass<ManagedObject|Dictionary> $managedObjects */
+        $managedObjects = new ArrayClass();
+        if ($objectsToInsert = $request->objectsToInsert) {
+            $managedObjects = $objectsToInsert;
+        } elseif ($dictionaryHandler = $request->dictionaryHandler) {
+            while (true) {
+                $keyedValues = new Dictionary();
+                $ok = $dictionaryHandler($keyedValues);
+                $managedObject = EntityDescription::insertNewObject($entityName, $context);
+                $managedObject->setValuesForKeys($keyedValues);
+                if (!$ok) {
+                    break;
+                }
+                $managedObjects[] = $managedObject;
+            }
+        } elseif ($managedObjectHandler = $request->managedObjectHandler) {
+            /** @var ArrayClass<ManagedObject> $managedObjects */
+            $managedObjects = new ArrayClass();
+            while (true) {
+                $managedObject = EntityDescription::insertNewObject($entityName, $context);
+                if (!$managedObjectHandler($managedObject)) {
+                    break;
+                }
+                $managedObjects[] = $managedObject;
+            }
+        }
+        /** @var ArrayClass<string> $columnNames */
+        $columnNames = new ArrayClass();
+        $columnNames->appendContentsOf([$entity->entityKey->columnName]);
+        $element = $managedObjects->first ?? fatal_error();
+        if ($element instanceof ManagedObject) {
+            $columnNames->appendContentsOf($element->changedValuesForCurrentEvent()->keys);
+        }
+        $columns = $entity->columnsToCreate->filter(fn(SQLColumn $column): bool => $columnNames->containsElement($column->columnName));
+        $this->string = "INSERT INTO `$entity->tableName` ({$columns->map(fn(SQLColumn $column): string => "`$column->columnName`")->join(", ")}) VALUES " . ArrayClass::repeating("(" . ArrayClass::repeating("?", $columns->count)->join(", ") . ")", $managedObjects->count)->join(", ") . " RETURNING `{$entity->primaryKey->columnName}`";
+        $this->arguments = $managedObjects->flatMap(fn(ManagedObject|Dictionary $object): ArrayClass => $columns->map(function (SQLColumn $column) use ($entity, $object): mixed {
+            if ($column instanceof SQLEntityKey) {
+                return $entity->tableName;
+            }
+            if ($column instanceof SQLAttribute) {
+                $value = $object->valueForKey($column->name);
+                ManagedObject::coerceValue($value, $column->attributeDescription, true);
+                return $value;
+            }
+            return $object->valueForKey($column->name);
+        }));
     }
 
     private function prepareStatementForBatchUpdateRequest(): void
