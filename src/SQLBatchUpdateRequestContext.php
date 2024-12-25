@@ -9,6 +9,13 @@ use Sabatier\Foundation\Number;
 /** @internal */
 class SQLBatchUpdateRequestContext extends SQLStoreRequestContext
 {
+    public BatchUpdateRequest $request {
+        get {
+            /** @var BatchUpdateRequest $request */
+            $request = $this->persistentStoreRequest;
+            return $request;
+        }
+    }
     private(set) SQLFetchRequestContext $fetchContext {
         get {
             if (!isset($this->fetchContext)) {
@@ -29,13 +36,6 @@ class SQLBatchUpdateRequestContext extends SQLStoreRequestContext
     }
     /** @var ArrayClass<ManagedObjectID> */
     private(set) ArrayClass $affectedObjectIDs;
-    public BatchUpdateRequest $request {
-        get {
-            /** @var BatchUpdateRequest $request */
-            $request = $this->persistentStoreRequest;
-            return $request;
-        }
-    }
 
     public function __construct(BatchUpdateRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
     {
