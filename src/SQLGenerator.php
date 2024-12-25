@@ -1352,11 +1352,7 @@ class SQLGenerator extends ObjectClass
 
     private function prepareStatementForBatchInsertRequest(BatchInsertRequest $request): void
     {
-        /** @var SQLBatchInsertRequestContext $requestContext */
-        $requestContext = $this->requestContext;
-        $context = $requestContext->context;
-        $entity = $requestContext->sqlEntity;
-        $entityName = $entity->tableName;
+        $entity = $this->entity;
         /** @var ArrayClass<ManagedObject|Dictionary> $managedObjects */
         $managedObjects = new ArrayClass();
         if ($objectsToInsert = $request->objectsToInsert) {
@@ -1365,7 +1361,7 @@ class SQLGenerator extends ObjectClass
             while (true) {
                 $keyedValues = new Dictionary();
                 $ok = $dictionaryHandler($keyedValues);
-                $managedObject = EntityDescription::insertNewObject($entityName, $context);
+                $managedObject = EntityDescription::insertNewObject($entity->tableName, $this->requestContext->context);
                 $managedObject->setValuesForKeys($keyedValues);
                 if (!$ok) {
                     break;
@@ -1376,7 +1372,7 @@ class SQLGenerator extends ObjectClass
             /** @var ArrayClass<ManagedObject> $managedObjects */
             $managedObjects = new ArrayClass();
             while (true) {
-                $managedObject = EntityDescription::insertNewObject($entityName, $context);
+                $managedObject = EntityDescription::insertNewObject($entity->tableName, $this->requestContext->context);
                 if (!$managedObjectHandler($managedObject)) {
                     break;
                 }
