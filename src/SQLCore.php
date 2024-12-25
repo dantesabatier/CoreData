@@ -135,7 +135,10 @@ class SQLCore extends IncrementalStore
                     return null;
                 }
                 $name = $property->name;
-                if ($name === "token" || $name === "transactionNumber") {
+                if (match ($name) {
+                    "token", "transactionNumber", "description", "associatedValues", "hash", "class", "superclass", "debugDescription" => true,
+                    default => false
+                }) {
                     return null;
                 }
                 /** @var ReflectionNamedType $reflectionType */
@@ -181,7 +184,10 @@ class SQLCore extends IncrementalStore
                     return null;
                 }
                 $name = $property->name;
-                if ($name === "changeID") {
+                if (match ($name) {
+                    "changeID", "description", "associatedValues", "hash", "class", "superclass", "debugDescription" => true,
+                    default => false
+                }) {
                     return null;
                 }
                 /** @var ReflectionNamedType $reflectionType */
