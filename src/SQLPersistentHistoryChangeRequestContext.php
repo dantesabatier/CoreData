@@ -123,7 +123,7 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
         /** @var string $data */
         $data = $dictionary["changedObjectID"];
         $dictionary->removeAll(fn(mixed $value, string $key): bool => match ($key) {
-            "changedObjectID", "transaction" => true,
+            "entityName", "changedObjectID", "transaction" => true,
             default => false
         });
         /** @var ManagedObjectID $changedObjectID */
