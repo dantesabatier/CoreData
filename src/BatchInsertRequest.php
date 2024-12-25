@@ -19,6 +19,11 @@ use Sabatier\Foundation\Dictionary;
  */
 class BatchInsertRequest extends PersistentStoreRequest
 {
+    /** @var string The name of the managed entity to insert data into. */
+    public string $entityName {
+        get => $this->entity->name;
+    }
+
     /**
      * @param EntityDescription $entity The managed entity to insert data into.
      * @param Closure(Dictionary): bool|null $dictionaryHandler A closure that provides a dictionary for your app to insert data into.
@@ -27,7 +32,7 @@ class BatchInsertRequest extends PersistentStoreRequest
      * @param BatchInsertRequestResultType $resultType The type of result that Core Data returns from this request.
      */
     #[Pure]
-    public function __construct(public readonly EntityDescription $entity, public ?Closure $dictionaryHandler = null, public ?Closure $managedObjectHandler = null, public ?ArrayClass $objectsToInsert = null, public BatchInsertRequestResultType $resultType = BatchInsertRequestResultType::statusOnly)
+    public function __construct(public EntityDescription $entity, public ?Closure $dictionaryHandler = null, public ?Closure $managedObjectHandler = null, public ?ArrayClass $objectsToInsert = null, public BatchInsertRequestResultType $resultType = BatchInsertRequestResultType::statusOnly)
     {
         parent::__construct(PersistentStoreRequestType::batchInsertRequestType);
     }
