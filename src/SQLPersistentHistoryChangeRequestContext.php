@@ -49,7 +49,6 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
             $request = PersistentHistoryChangeRequest::fetchHistoryAfterToken($this->request->token);
         }
         $context = new SQLPersistentHistoryChangeRequestContext($request, $this->context, $this->sqlCore);
-        $context->hasHistoryTracking = true;
         $context->executeRequestUsingConnection($this->connection);
         $context = new SQLSaveChangesRequestContext(new SaveChangesRequest(deletedObjects: new Set($context->result)), $this->context, $this->sqlCore);
         $context->hasHistoryTracking = true;
