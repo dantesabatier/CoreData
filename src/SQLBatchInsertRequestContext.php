@@ -8,7 +8,7 @@ use Sabatier\Foundation\Number;
 use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
-class SQLBatchInsertRequestContext extends SQLStoreRequestContext
+class SQLBatchInsertRequestContext extends SQLBatchOperationRequestContext
 {
     public BatchInsertRequest $request {
         get {
@@ -22,10 +22,6 @@ class SQLBatchInsertRequestContext extends SQLStoreRequestContext
     }
     public ?SQLStatement $insertStatement {
         get => $this->insertStatement ??= $this->generator->statement;
-    }
-    /** @var ArrayClass<ManagedObjectID> */
-    private(set) ArrayClass $affectedObjectIDs {
-        get => $this->affectedObjectIDs ??= new ArrayClass();
     }
 
     public function __construct(BatchInsertRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
