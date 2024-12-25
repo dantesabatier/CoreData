@@ -7,7 +7,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Number;
 
 /** @internal */
-class SQLBatchUpdateRequestContext extends SQLStoreRequestContext
+class SQLBatchUpdateRequestContext extends SQLBatchOperationRequestContext
 {
     public BatchUpdateRequest $request {
         get {
@@ -33,10 +33,6 @@ class SQLBatchUpdateRequestContext extends SQLStoreRequestContext
     }
     private(set) ?SQLStatement $updateStatement {
         get => $this->updateStatement ??= $this->generator->statement;
-    }
-    /** @var ArrayClass<ManagedObjectID> */
-    private(set) ArrayClass $affectedObjectIDs {
-        get => $this->affectedObjectIDs ??= new ArrayClass();
     }
 
     public function __construct(BatchUpdateRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
