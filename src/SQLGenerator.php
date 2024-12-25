@@ -1359,10 +1359,10 @@ class SQLGenerator extends ObjectClass
         $requestContext = $this->requestContext;
         $request = $requestContext->request;
         $entity = $requestContext->sqlEntityForInsertRequest;
-        /** @var ArrayClass<ManagedObject|Dictionary> $managedObjects */
-        $managedObjects = new ArrayClass();
-        if ($objectsToInsert = $request->objectsToInsert) {
-            $managedObjects = $objectsToInsert;
+        /** @var ArrayClass<ManagedObject|Dictionary> $objectsToInsert */
+        $objectsToInsert = new ArrayClass();
+        if ($insertObjects = $request->objectsToInsert) {
+            $objectsToInsert = $insertObjects;
         } elseif ($dictionaryHandler = $request->dictionaryHandler) {
             while (true) {
                 $keyedValues = new Dictionary();
@@ -1372,29 +1372,29 @@ class SQLGenerator extends ObjectClass
                 if (!$ok) {
                     break;
                 }
-                $managedObjects[] = $managedObject;
+                $objectsToInsert[] = $managedObject;
             }
         } elseif ($managedObjectHandler = $request->managedObjectHandler) {
-            /** @var ArrayClass<ManagedObject> $managedObjects */
-            $managedObjects = new ArrayClass();
+            /** @var ArrayClass<ManagedObject> $objectsToInsert */
+            $objectsToInsert = new ArrayClass();
             while (true) {
                 $managedObject = EntityDescription::insertNewObject($entity->tableName, $requestContext->context);
                 if (!$managedObjectHandler($managedObject)) {
                     break;
                 }
-                $managedObjects[] = $managedObject;
+                $objectsToInsert[] = $managedObject;
             }
         }
         /** @var ArrayClass<string> $columnNames */
         $columnNames = new ArrayClass();
         $columnNames->appendContentsOf([$entity->entityKey->columnName]);
-        $firstObjectToInsert = $managedObjects->first ?? fatal_error();
+        $firstObjectToInsert = $objectsToInsert->first ?? fatal_error();
         if ($firstObjectToInsert instanceof ManagedObject) {
             $columnNames->appendContentsOf($firstObjectToInsert->changedValuesForCurrentEvent()->keys);
         }
         $columns = $entity->columnsToCreate->filter(fn(SQLColumn $column): bool => $columnNames->containsElement($column->columnName));
-        $this->string = "INSERT INTO `$entity->tableName` ({$columns->map(fn(SQLColumn $column): string => "`$column->columnName`")->join(", ")}) VALUES " . ArrayClass::repeating("(" . ArrayClass::repeating("?", $columns->count)->join(", ") . ")", $managedObjects->count)->join(", ") . " RETURNING `{$entity->primaryKey->columnName}`";
-        $this->arguments = $managedObjects->flatMap(fn(ManagedObject|Dictionary $object): ArrayClass => $columns->map(function (SQLColumn $column) use ($entity, $object): mixed {
+        $this->string = "INSERT INTO `$entity->tableName` ({$columns->map(fn(SQLColumn $column): string => "`$column->columnName`")->join(", ")}) VALUES " . ArrayClass::repeating("(" . ArrayClass::repeating("?", $columns->count)->join(", ") . ")", $objectsToInsert->count)->join(", ") . " RETURNING `{$entity->primaryKey->columnName}`";
+        $this->arguments = $objectsToInsert->flatMap(fn(ManagedObject|Dictionary $object): ArrayClass => $columns->map(function (SQLColumn $column) use ($entity, $object): mixed {
             if ($column instanceof SQLEntityKey) {
                 return $entity->tableName;
             }
