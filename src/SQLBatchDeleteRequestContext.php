@@ -9,6 +9,13 @@ use Sabatier\Foundation\Number;
 /** @internal */
 class SQLBatchDeleteRequestContext extends SQLStoreRequestContext
 {
+    public BatchDeleteRequest $request {
+        get {
+            /** @var BatchDeleteRequest $request */
+            $request = $this->persistentStoreRequest;
+            return $request;
+        }
+    }
     /** @var FetchRequest<ManagedObjectID> */
     private(set) FetchRequest $fetchRequestForObjectsToDelete {
         get {
@@ -21,22 +28,15 @@ class SQLBatchDeleteRequestContext extends SQLStoreRequestContext
             return $this->fetchRequestForObjectsToDelete;
         }
     }
+    private(set) SQLFetchRequestContext $fetchContext {
+        get => $this->fetchContext ??= new SQLFetchRequestContext($this->fetchRequestForObjectsToDelete, $this->context, $this->sqlCore);
+    }
     /** @var ArrayClass<ManagedObjectID> */
     private(set) ArrayClass $affectedObjectIDs {
         get => $this->affectedObjectIDs ??= new ArrayClass();
     }
-    private(set) SQLFetchRequestContext $fetchContext {
-        get => $this->fetchContext ??= new SQLFetchRequestContext($this->fetchRequestForObjectsToDelete, $this->context, $this->sqlCore);
-    }
     private(set) ?SQLStatement $deleteStatement {
         get => $this->deleteStatement ??= $this->generator->statement;
-    }
-    public BatchDeleteRequest $request {
-        get {
-            /** @var BatchDeleteRequest $request */
-            $request = $this->persistentStoreRequest;
-            return $request;
-        }
     }
 
     public function __construct(BatchDeleteRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
