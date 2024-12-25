@@ -7,7 +7,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Number;
 
 /** @internal */
-class SQLBatchDeleteRequestContext extends SQLStoreRequestContext
+class SQLBatchDeleteRequestContext extends SQLBatchOperationRequestContext
 {
     public BatchDeleteRequest $request {
         get {
@@ -30,10 +30,6 @@ class SQLBatchDeleteRequestContext extends SQLStoreRequestContext
     }
     private(set) SQLFetchRequestContext $fetchContext {
         get => $this->fetchContext ??= new SQLFetchRequestContext($this->fetchRequestForObjectsToDelete, $this->context, $this->sqlCore);
-    }
-    /** @var ArrayClass<ManagedObjectID> */
-    private(set) ArrayClass $affectedObjectIDs {
-        get => $this->affectedObjectIDs ??= new ArrayClass();
     }
     private(set) ?SQLStatement $deleteStatement {
         get => $this->deleteStatement ??= $this->generator->statement;
