@@ -286,7 +286,10 @@ class SQLConnection extends ObjectClass
     {
         $this->requestContext = $requestContext;
         if ($requestContext instanceof SQLSaveChangesRequestContext) {
-            if (!$requestContext->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey) || $requestContext->hasHistoryTracking) {
+            if (!$requestContext->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey)) {
+                return 0;
+            }
+            if ($requestContext->hasHistoryTracking) {
                 return 0;
             }
             /** @var Set<ManagedObject> $insertedObjects */
@@ -313,31 +316,26 @@ class SQLConnection extends ObjectClass
             }
             return $transactionID;
         }
-        if ($requestContext instanceof SQLBatchInsertRequestContext) {
-            $insertedObjectIDs = $requestContext->affectedObjectIDs;
-            if ($requestContext->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey) && !$insertedObjectIDs->isEmpty) {
-                $this->createHistoryTrackingTables();
-                $transactionID = $this->fetchMaxPrimaryKey("PersistentHistoryTransaction") + 1;
-                $this->insertBatchInserts($insertedObjectIDs, $transactionID);
-                return $transactionID;
-            }
-        } elseif ($requestContext instanceof SQLBatchUpdateRequestContext) {
-            $affectedObjectIDs = $requestContext->affectedObjectIDs;
-            if ($requestContext->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey) && !$affectedObjectIDs->isEmpty) {
-                $this->createHistoryTrackingTables();
-                $transactionID = $this->fetchMaxPrimaryKey("PersistentHistoryTransaction") + 1;
-                $this->insertUpdates($affectedObjectIDs, $transactionID, new Set($requestContext->request->propertiesToUpdate?->keys ?? []));
-                return $transactionID;
-            }
-        } elseif ($requestContext instanceof SQLBatchDeleteRequestContext) {
-            if ($requestContext->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey) && !$requestContext->affectedObjectIDs->isEmpty) {
-                $this->createHistoryTrackingTables();
-                $transactionID = $this->fetchMaxPrimaryKey("PersistentHistoryTransaction") + 1;
-                $this->insertBatchDeleteChangesForTransactionID($transactionID);
-                return $transactionID;
-            }
+        assert($requestContext instanceof SQLBatchInsertRequestContext || $requestContext instanceof SQLBatchUpdateRequestContext || $requestContext instanceof SQLBatchDeleteRequestContext);
+        if (!$requestContext->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey)) {
+            return 0;
         }
-        return 0;
+        $affectedObjectIDs = $requestContext->affectedObjectIDs;
+        if ($affectedObjectIDs->isEmpty) {
+            return 0;
+        }
+        $this->createHistoryTrackingTables();
+        $transactionID = $this->fetchMaxPrimaryKey("PersistentHistoryTransaction") + 1;
+        if ($requestContext instanceof SQLBatchInsertRequestContext) {
+            $this->insertBatchInserts($affectedObjectIDs, $transactionID);
+        }
+        if ($requestContext instanceof SQLBatchUpdateRequestContext) {
+            $this->insertUpdates($affectedObjectIDs, $transactionID, new Set($requestContext->request->propertiesToUpdate?->keys ?? []));
+        }
+        if ($requestContext instanceof SQLBatchDeleteRequestContext) {
+            $this->insertBatchDeleteChangesForTransactionID($transactionID);
+        }
+        return $transactionID;
     }
 
     /**
