@@ -17,8 +17,8 @@ class SQLBatchInsertRequestContext extends SQLStoreRequestContext
             return $request;
         }
     }
-    private(set) SQLEntity $sqlEntity {
-        get => $this->sqlEntity ??= $this->sqlModel->entity($this->request->entity->name) ?? fatal_error("Entity \"{$this->request->entity->name}\" does not exists");
+    private(set) SQLEntity $sqlEntityForInsertRequest {
+        get => $this->sqlEntityForInsertRequest ??= $this->sqlModel->entity($this->request->entity->name) ?? fatal_error("Entity \"{$this->request->entity->name}\" does not exists");
     }
     public ?SQLStatement $insertStatement {
         get => $this->insertStatement ??= $this->generator->statement;
