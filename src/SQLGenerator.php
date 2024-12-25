@@ -80,7 +80,10 @@ class SQLGenerator extends ObjectClass
 
     private function request(): FetchRequest
     {
-        if ($this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext) {
+        if ($this->requestContext instanceof SQLBatchUpdateRequestContext) {
+            return $this->requestContext->fetchContext->request;
+        }
+        if ($this->requestContext instanceof SQLBatchDeleteRequestContext) {
             return $this->requestContext->fetchContext->request;
         }
         if ($this->requestContext instanceof SQLFetchRequestContext) {
@@ -92,7 +95,7 @@ class SQLGenerator extends ObjectClass
     private function entity(): SQLEntity
     {
         if ($this->requestContext instanceof SQLBatchInsertRequestContext) {
-            return $this->requestContext->sqlEntity;
+            return $this->requestContext->sqlEntityForInsertRequest;
         }
         if ($this->requestContext instanceof SQLBatchUpdateRequestContext) {
             return $this->requestContext->fetchContext->sqlEntityForFetchRequest;
@@ -1355,8 +1358,7 @@ class SQLGenerator extends ObjectClass
         /** @var SQLBatchInsertRequestContext $requestContext */
         $requestContext = $this->requestContext;
         $request = $requestContext->request;
-        /** @var SQLEntity $entity */
-        $entity = $requestContext->sqlModel->entitiesByName[$request->entity->name];
+        $entity = $requestContext->sqlEntityForInsertRequest;
         /** @var ArrayClass<ManagedObject|Dictionary> $managedObjects */
         $managedObjects = new ArrayClass();
         if ($objectsToInsert = $request->objectsToInsert) {
@@ -1386,9 +1388,9 @@ class SQLGenerator extends ObjectClass
         /** @var ArrayClass<string> $columnNames */
         $columnNames = new ArrayClass();
         $columnNames->appendContentsOf([$entity->entityKey->columnName]);
-        $element = $managedObjects->first ?? fatal_error();
-        if ($element instanceof ManagedObject) {
-            $columnNames->appendContentsOf($element->changedValuesForCurrentEvent()->keys);
+        $firstObjectToInsert = $managedObjects->first ?? fatal_error();
+        if ($firstObjectToInsert instanceof ManagedObject) {
+            $columnNames->appendContentsOf($firstObjectToInsert->changedValuesForCurrentEvent()->keys);
         }
         $columns = $entity->columnsToCreate->filter(fn(SQLColumn $column): bool => $columnNames->containsElement($column->columnName));
         $this->string = "INSERT INTO `$entity->tableName` ({$columns->map(fn(SQLColumn $column): string => "`$column->columnName`")->join(", ")}) VALUES " . ArrayClass::repeating("(" . ArrayClass::repeating("?", $columns->count)->join(", ") . ")", $managedObjects->count)->join(", ") . " RETURNING `{$entity->primaryKey->columnName}`";
