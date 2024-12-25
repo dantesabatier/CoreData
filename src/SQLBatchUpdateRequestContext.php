@@ -35,7 +35,9 @@ class SQLBatchUpdateRequestContext extends SQLStoreRequestContext
         get => $this->updateStatement ??= $this->generator->statement;
     }
     /** @var ArrayClass<ManagedObjectID> */
-    private(set) ArrayClass $affectedObjectIDs;
+    private(set) ArrayClass $affectedObjectIDs {
+        get => $this->affectedObjectIDs ??= new ArrayClass();
+    }
 
     public function __construct(BatchUpdateRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
     {
