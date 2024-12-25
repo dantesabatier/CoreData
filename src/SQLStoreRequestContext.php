@@ -11,16 +11,16 @@ use function Sabatier\Foundation\request_concrete_implementation;
 /** * @internal */
 abstract class SQLStoreRequestContext extends ObjectClass
 {
-    private(set) SQLConnection $connection;
+    protected(set) SQLConnection $connection;
     protected(set) Number $transactionID;
     protected(set) ?QueryGenerationToken $queryGenerationToken = null;
     protected(set) bool $shouldRegisterQueryGeneration = false;
     protected(set) bool $isWritingRequest = false;
     protected(set) bool $hasHistoryTracking = false;
-    private(set) SQLGenerator $generator {
+    protected(set) SQLGenerator $generator {
         get => $this->generator ??= new SQLGenerator($this);
     }
-    public mixed $result {
+    protected(set) mixed $result {
         get => $this->result ??= new ArrayClass();
     }
     public int $debugLogLevel {

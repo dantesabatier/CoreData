@@ -10,7 +10,6 @@
 namespace Sabatier\CoreData;
 
 use BackedEnum;
-use Closure;
 use Exception;
 use PDO;
 use PDOStatement;
@@ -281,112 +280,6 @@ class SQLConnection extends ObjectClass
     }
 
     /**
-     * @param Closure(ManagedObject): bool $block
-     * @param SQLEntity $entity
-     * @param bool $includeOnConflict
-     * @return int
-     * @throws Exception
-     */
-    private function insertManagedObjectBlock(/** @noinspection PhpSameParameterValueInspection */ Closure $block, SQLEntity $entity, bool $includeOnConflict = false): int
-    {
-        $requestContext = $this->requestContext;
-        /** @var ArrayClass<ManagedObject> $insertedObjects */
-        $insertedObjects = new ArrayClass();
-        while (true) {
-            $insertedObject = EntityDescription::insertNewObject($entity->tableName, $requestContext->context);
-            if (!$block($insertedObject)) {
-                break;
-            }
-            $insertedObjects->append($insertedObject);
-        }
-        return $this->insertArray($insertedObjects, $entity, $includeOnConflict);
-    }
-
-    /**
-     * @param Closure(Dictionary): bool $block
-     * @param SQLEntity $entity
-     * @param bool $includeOnConflict
-     * @return int
-     * @throws Exception
-     */
-    private function insertDictionaryBlock(/** @noinspection PhpSameParameterValueInspection */ Closure $block, SQLEntity $entity, bool $includeOnConflict = false): int
-    {
-        $requestContext = $this->requestContext;
-        /** @var ArrayClass<ManagedObject> $insertedObjects */
-        $insertedObjects = new ArrayClass();
-        while (true) {
-            $keyedValues = new Dictionary();
-            $continue = $block($keyedValues);
-            $insertedObject = EntityDescription::insertNewObject($entity->tableName, $requestContext->context);
-            $insertedObject->setValuesForKeys($keyedValues);
-            if (!$continue) {
-                break;
-            }
-            $insertedObjects->append($insertedObject);
-        }
-        return $this->insertArray($insertedObjects, $entity, $includeOnConflict);
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function insertArray(/** @noinspection PhpUnusedParameterInspection */ ArrayClass $array, SQLEntity $entity, bool $includeOnConflict = false): int
-    {
-        /** @var SQLBatchInsertRequestContext $requestContext */
-        $requestContext = $this->requestContext;
-        /** @var ArrayClass<string> $columnNames */
-        $columnNames = new ArrayClass();
-        $columnNames->appendContentsOf([$entity->entityKey->columnName]);
-        /** @var ManagedObject|Dictionary $element */
-        $element = $array->first ?? fatal_error();
-        if ($element instanceof ManagedObject) {
-            $columnNames->appendContentsOf($element->changedValuesForCurrentEvent()->keys);
-        }
-        $columns = $entity->columnsToCreate->filter(fn(SQLColumn $column): bool => $columnNames->containsElement($column->columnName));
-        $string = "INSERT INTO `$entity->tableName` ({$columns->map(fn(SQLColumn $column): string => "`$column->columnName`")->join(", ")}) VALUES " . ArrayClass::repeating("(" . ArrayClass::repeating("?", $columns->count)->join(", ") . ")", $array->count)->join(", ") . " RETURNING `{$entity->primaryKey->columnName}`";
-        $arguments = $array->flatMap(fn(ManagedObject|Dictionary $object): ArrayClass => $columns->map(function (SQLColumn $column) use ($entity, $object): mixed {
-            if ($column instanceof SQLEntityKey) {
-                return $entity->tableName;
-            }
-            if ($column instanceof SQLAttribute) {
-                $value = $object->valueForKey($column->name);
-                ManagedObject::coerceValue($value, $column->attributeDescription, true);
-                return $value;
-            }
-            return $object->valueForKey($column->name);
-        }));
-        $statement = new SQLStatement($string, $arguments);
-        $execute = $this->execute($statement);
-        /** @return ArrayClass<ManagedObjectID> */
-        $objectIDs = function () use ($requestContext, $entity, $execute): ArrayClass {
-            /** @var ArrayClass<ManagedObjectID> $managedObjectIDs */
-            $managedObjectIDs = new ArrayClass();
-            do {
-                while ($data = $execute->fetch()) {
-                    $managedObjectIDs->append($requestContext->sqlCore->objectID($entity->entityDescription, $data[$entity->primaryKey->columnName]));
-                }
-            } while ($execute->nextRowset() && $execute->columnCount());
-            return $managedObjectIDs;
-        };
-        $requestContext->result = match ($requestContext->request->resultType) {
-            BatchInsertRequestResultType::statusOnly => new ArrayClass([new Number(true)]),
-            BatchInsertRequestResultType::objectIDs => $objectIDs(),
-            BatchInsertRequestResultType::count => new ArrayClass([new Number($execute->rowCount())]),
-        };
-        if ($requestContext->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey)) {
-            $this->createHistoryTrackingTables();
-            $transactionID = $this->fetchMaxPrimaryKey("PersistentHistoryTransaction") + 1;
-            $insertedObjectIDs = $requestContext->result;
-            if ($requestContext->request->resultType !== BatchInsertRequestResultType::objectIDs) {
-                $insertedObjectIDs = $objectIDs();
-            }
-            $this->insertBatchInserts($insertedObjectIDs, $transactionID);
-            return $transactionID;
-        }
-        return 0;
-    }
-
-    /**
      * @throws Exception
      */
     public function insertTransactionForRequestContext(SQLStoreRequestContext $requestContext): int
@@ -421,16 +314,12 @@ class SQLConnection extends ObjectClass
             return $transactionID;
         }
         if ($requestContext instanceof SQLBatchInsertRequestContext) {
-            /** @var SQLEntity $entity */
-            $entity = $requestContext->sqlCore->model->entitiesByName[$requestContext->request->entity->name];
-            if ($objectsToInsert = $requestContext->request->objectsToInsert) {
-                return $this->insertArray($objectsToInsert, $entity);
-            }
-            if ($dictionaryHandler = $requestContext->request->dictionaryHandler) {
-                return $this->insertDictionaryBlock($dictionaryHandler, $entity);
-            }
-            if ($managedObjectHandler = $requestContext->request->managedObjectHandler) {
-                return $this->insertManagedObjectBlock($managedObjectHandler, $entity);
+            $insertedObjectIDs = $requestContext->affectedObjectIDs;
+            if ($requestContext->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey) && !$insertedObjectIDs->isEmpty) {
+                $this->createHistoryTrackingTables();
+                $transactionID = $this->fetchMaxPrimaryKey("PersistentHistoryTransaction") + 1;
+                $this->insertBatchInserts($insertedObjectIDs, $transactionID);
+                return $transactionID;
             }
         } elseif ($requestContext instanceof SQLBatchUpdateRequestContext) {
             $affectedObjectIDs = $requestContext->affectedObjectIDs;
