@@ -39,20 +39,26 @@ class SQLAttribute extends SQLColumn
     public bool $isCompositeAttribute {
         get => $this->attributeDescription instanceof CompositeAttributeDescription;
     }
+    private mixed $coercedDefaultValue {
+        get {
+            if (!isset($this->coercedDefaultValue)) {
+                $coercedValue = ManagedObject::coercedValue($this->attributeDescription->defaultValue, $this->attributeDescription->type, $this->attributeDescription->attributeValueClassName, $this->attributeDescription->valueTransformerName, $this->attributeDescription->isOptional, true);
+                if (is_string($coercedValue)) {
+                    $coercedValue = match ($coercedValue) {
+                        "" => $coercedValue,
+                        default => "'$coercedValue'"
+                    };
+                }
+                $this->coercedDefaultValue = $coercedValue;
+            }
+            return $this->coercedDefaultValue;
+        }
+    }
     public mixed $defaultValue {
         get => match ($this->sqlType) {
             SQLType::uuid => "UUID()",
             SQLType::timestamp => "CURRENT_TIMESTAMP",
-            default => (function (): mixed {
-                $defaultValue = ManagedObject::coercedValue($this->attributeDescription->defaultValue, $this->attributeDescription->type, $this->attributeDescription->attributeValueClassName, $this->attributeDescription->valueTransformerName, $this->attributeDescription->isOptional, true);
-                if (is_string($defaultValue)) {
-                    return match ($defaultValue) {
-                        "" => $defaultValue,
-                        default => "'$defaultValue'"
-                    };
-                }
-                return $defaultValue;
-            })()
+            default => $this->coercedDefaultValue
         };
     }
     public SQLType $sqlType {
