@@ -15,12 +15,7 @@ use function Sabatier\Foundation\fatal_error;
 /** @internal */
 class SQLSchema
 {
-    public string $engine = "InnoDB";
-    public string $charset = "utf8";
-    public string $collation = "utf8_general_ci";
-    public string $socket = "/tmp/mysql.sock";
-
-    public function __construct(public readonly string $name, public readonly string $host, public readonly SQLCredential $credential)
+    public function __construct(public string $name, public string $host, public SQLCredential $credential, public string $engine = "InnoDB", public string $charset = "utf8",  public string $collation = "utf8_general_ci", public string $socket = "/tmp/mysql.sock")
     {
     }
 
