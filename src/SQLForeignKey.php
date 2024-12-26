@@ -12,10 +12,6 @@ namespace Sabatier\CoreData;
 /** @internal */
 class SQLForeignKey extends SQLColumn
 {
-    public PropertyDescriptionType $propertyType = PropertyDescriptionType::relationship;
-    protected(set) string $columnName {
-        get => $this->columnName ??= "{$this->relationshipDescription->name}ID";
-    }
     public RelationshipDescription $relationshipDescription {
         get {
             /** @var RelationshipDescription $relationshipDescription */
@@ -23,7 +19,11 @@ class SQLForeignKey extends SQLColumn
             return $relationshipDescription;
         }
     }
-    protected(set) SQLType $sqlType = SQLType::int;
+    public PropertyDescriptionType $propertyType = PropertyDescriptionType::relationship;
+    protected(set) string $columnName {
+        get => $this->columnName ??= "{$this->relationshipDescription->name}ID";
+    }
+    public SQLType $sqlType = SQLType::int;
 
     public function __construct(SQLEntity $entity, RelationshipDescription $relationshipDescription, public readonly SQLToOne $toOneRelationship)
     {

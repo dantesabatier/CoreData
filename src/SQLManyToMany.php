@@ -24,30 +24,27 @@ class SQLManyToMany extends SQLRelationship
             return $inverseManyToMany;
         }
     }
-    public string $correlationTableName {
+    private(set) string $correlationTableName {
         get => $this->correlationTableName ??= new ArrayClass([$this->destinationEntity, $this->inverseRelationship->destinationEntity])->sorted([new SortDescriptor("tableName")])->valueForKey("tableName")->join("");
     }
-    public string $columnName {
+    private(set) string $columnName {
         get => $this->columnName ??= "{$this->name}ID";
     }
     public SQLType $columnSQLType {
         get => SQLType::int;
     }
-    public string $orderColumnName {
+    private(set) string $orderColumnName {
         get => $this->orderColumnName ??= $this->isReflexive ? $this->columnName : new ArrayClass([$this->columnName, $this->inverseColumnName])->sort(fn(string $e, string $e1): int => ComparisonResult::orderedAscending->value * ($e <=> $e1))[0];
     }
     private(set) SQLType $orderColumnSQLType = SQLType::int;
     public string $inverseColumnName {
         get => $this->inverseManyToMany->columnName;
     }
-    public string $inverseOrderColumnName {
+    private(set) string $inverseOrderColumnName {
         get => $this->inverseOrderColumnName ??= $this->isReflexive ? $this->columnName : new ArrayClass([$this->columnName, $this->inverseColumnName])->sort(fn(string $e, string $e1): int => ComparisonResult::orderedAscending->value * ($e <=> $e1))[1];
     }
-    public bool $isReflexive {
+    private(set) bool $isReflexive {
         get => $this->isReflexive ??= $this->columnName === $this->inverseColumnName;
-    }
-    public bool $isMaster {
-        get => false;
     }
 
     #[Override]
