@@ -15,18 +15,18 @@ use function Sabatier\Foundation\human_readable_time;
 /** @internal */
 class SQLFetchRequestContext extends SQLStoreRequestContext
 {
-    private(set) SQLEntity $sqlEntityForFetchRequest {
-        get => $this->sqlEntityForFetchRequest ??= $this->sqlModel->entity($this->request->entity->name) ?? fatal_error("Entity \"{$this->request->entity->name}\" does not exists");
-    }
-    private(set) SQLStatement $fetchStatement {
-        get => $this->fetchStatement ??= $this->generator->statement ?? fatal_error();
-    }
     public FetchRequest $request {
         get {
             /** @var FetchRequest $request */
             $request = $this->persistentStoreRequest;
             return $request;
         }
+    }
+    private(set) SQLEntity $sqlEntityForFetchRequest {
+        get => $this->sqlEntityForFetchRequest ??= $this->sqlModel->entity($this->request->entity->name) ?? fatal_error("Entity \"{$this->request->entity->name}\" does not exists");
+    }
+    private(set) SQLStatement $fetchStatement {
+        get => $this->fetchStatement ??= $this->generator->statement ?? fatal_error();
     }
 
     public function __construct(FetchRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
