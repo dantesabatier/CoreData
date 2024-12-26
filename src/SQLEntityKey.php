@@ -12,8 +12,6 @@ namespace Sabatier\CoreData;
 /** @internal */
 class SQLEntityKey extends SQLColumn
 {
-    protected(set) PropertyDescriptionType $propertyType {
-        get => $this->propertyType ??= PropertyDescriptionType::private;
-    }
-    protected(set) SQLType $sqlType = SQLType::varchar;
+    public PropertyDescriptionType $propertyType = PropertyDescriptionType::private;
+    public SQLType $sqlType = SQLType::varchar;
 }
