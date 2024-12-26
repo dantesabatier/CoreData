@@ -48,7 +48,7 @@ class SQLCore extends IncrementalStore
     private Dictionary $maxPrimaryKeys {
         get => $this->maxPrimaryKeys ??= new Dictionary();
     }
-    public ?PersistentHistoryToken $remoteNotificationToken = null;
+    private(set) ?PersistentHistoryToken $remoteNotificationToken = null;
 
     public function __construct(PersistentStoreCoordinator $coordinator, string $configurationName, URL $url, ?Dictionary $options = null)
     {
