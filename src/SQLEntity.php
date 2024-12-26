@@ -11,8 +11,8 @@ use Sabatier\Foundation\Dictionary;
 /** @internal */
 class SQLEntity extends StoreMapping
 {
-    public const string primaryKeyName = "objectID";
-    public const string entityKeyName = "entityName";
+    final public const string primaryKeyName = "objectID";
+    final public const string entityKeyName = "entityName";
     private(set) string $tableName {
         get {
             if (!isset($this->tableName)) {
@@ -228,7 +228,6 @@ class SQLEntity extends StoreMapping
         get => $this->byMappingByCompositeNameAssociationTable ??= $this->attributes->reduce(new Dictionary(), function (Dictionary $result, SQLAttribute $attribute): Dictionary {
             $compositeAttribute = $attribute->attributeDescription;
             if ($compositeAttribute instanceof CompositeAttributeDescription) {
-                /** @noinspection PhpCannotModifyPropertyOutsideSetVisibilityScopeInspection */
                 $result[$attribute->name] = $compositeAttribute->elements->reduce(new Dictionary(), function (Dictionary $result, AttributeDescription $attributeDescription): Dictionary {
                     $result[$attributeDescription->name] = new SQLAttribute($this, $attributeDescription);
                     return $result;
@@ -268,7 +267,6 @@ class SQLEntity extends StoreMapping
         $propertiesByName = $this->propertiesByName;
         $propertiesByName[$this->primaryKey->columnName] = $this->primaryKey;
         if (!$this->entityDescription->isPersistentHistoryEntity) {
-            /** @noinspection PhpCannotModifyPropertyOutsideSetVisibilityScopeInspection */
             $propertiesByName[$this->entityKey->columnName] = $this->entityKey;
         }
         foreach ($this->foreignKeyColumns as $foreignKeyColumn) {
