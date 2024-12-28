@@ -144,9 +144,26 @@ readonly class SQLStoreMigrator
                 continue;
             }
             [$sourceEntity, $destinationEntity] = $entities;
+            foreach ($sourceEntity->indexes as $index) {
+                $connection->execute(SQLStatement::merging($index->dropTableStatements));
+            }
             if ($sourceEntity->tableName !== $destinationEntity->tableName && !$sourceModel->entitiesByName->offsetExists($destinationEntity->tableName)) {
                 $statement = $adapter->newRenameTableStatement($sourceEntity, $destinationEntity);
                 $connection->execute($statement);
+                if ($statement = $adapter->newModifyColumnStatement($destinationEntity->entityKey, $destinationEntity->primaryKey)) {
+                    $connection->execute($statement);
+                }
+                foreach ($sourceEntity->toManyRelationships as $toManyRelationship) {
+                    if ($destinationToManyRelationship = $destinationEntity->toManyRelationships->first(fn(SQLToMany $toMany): bool => $toMany->name === $toManyRelationship->name)) {
+                        $statement = $adapter->newDropIndexStatementForForeignKey($toManyRelationship->inverseToOne->foreignKey);
+                        $connection->execute($statement);
+                        if ($statement = $adapter->newRenameColumnStatement($toManyRelationship->inverseToOne->foreignKey, $destinationToManyRelationship->inverseToOne->foreignKey)) {
+                            $connection->execute($statement);
+                            $statement = $adapter->newCreateIndexStatementForForeignKey($destinationToManyRelationship->inverseToOne->foreignKey);
+                            $connection->execute($statement);
+                        }
+                    }
+                }
             }
             $properties = new Set($sourceEntity->properties);
             $properties->appendContentsOf($destinationEntity->properties);
@@ -243,9 +260,6 @@ readonly class SQLStoreMigrator
                     $connection->execute($statement);
                     $createIndexStatements->append($adapter->newCreateIndexesStatementForManyToMany($property));
                 }
-            }
-            foreach ($sourceEntity->indexes as $index) {
-                $connection->execute(SQLStatement::merging($index->dropTableStatements));
             }
             foreach ($destinationEntity->indexes as $index) {
                 $createIndexStatements->appendContentsOf($index->createTableStatements);
