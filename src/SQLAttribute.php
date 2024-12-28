@@ -83,6 +83,11 @@ class SQLAttribute extends SQLColumn
         };
     }
 
+    public function __construct(SQLEntity $entity, AttributeDescription $attributeDescription)
+    {
+        parent::__construct($entity, $attributeDescription);
+    }
+
     public function addKeyForTriggerOnRelationship(SQLRelationship $relationship): void
     {
         $this->triggerKeys[] = $relationship->name;
