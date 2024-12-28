@@ -18,14 +18,4 @@ class SQLEntityKey extends SQLColumn
     public SQLType $sqlType {
         get => SQLType::varchar;
     }
-    public AttributeDescription $attributeDescription {
-        get {
-            /** @var AttributeDescription $attributeDescription */
-            $attributeDescription = $this->propertyDescription;
-            return $attributeDescription;
-        }
-    }
-    public mixed $defaultValue {
-        get => $this->attributeDescription->defaultValue;
-    }
 }
