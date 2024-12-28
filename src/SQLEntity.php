@@ -184,7 +184,7 @@ class SQLEntity extends StoreMapping
     }
     /** @var ArrayClass<SQLAttribute> */
     private(set) ArrayClass $entitySpecificAttributes {
-        get => $this->entitySpecificAttributes ??= $this->entityDescription->relationshipsByName->map(fn(RelationshipDescription $relationshipDescription): SQLRelationship => $this->propertiesByName[$relationshipDescription->name]);
+        get => $this->entitySpecificAttributes ??= $this->entityDescription->attributesByName->map(fn(AttributeDescription $attributeDescription): SQLAttribute => $this->propertiesByName[$attributeDescription->name]);
     }
     /** @var ArrayClass<SQLRelationship> */
     private(set) ArrayClass $entitySpecificRelationships {
