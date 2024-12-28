@@ -48,6 +48,7 @@ class SQLEntity extends StoreMapping
                 $attribute->name = self::entityKeyName;
                 $attribute->type = AttributeType::string;
                 $attribute->isOptional = false;
+                $attribute->defaultValue = $this->entityDescription->name;
                 $this->entityKey = new SQLEntityKey($this, $attribute);
             }
             return $this->entityKey;
