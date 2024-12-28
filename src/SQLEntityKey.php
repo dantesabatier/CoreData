@@ -12,6 +12,20 @@ namespace Sabatier\CoreData;
 /** @internal */
 class SQLEntityKey extends SQLColumn
 {
-    public PropertyDescriptionType $propertyType = PropertyDescriptionType::private;
-    public SQLType $sqlType = SQLType::varchar;
+    public PropertyDescriptionType $propertyType {
+        get => PropertyDescriptionType::private;
+    }
+    public SQLType $sqlType {
+        get => SQLType::varchar;
+    }
+    public AttributeDescription $attributeDescription {
+        get {
+            /** @var AttributeDescription $attributeDescription */
+            $attributeDescription = $this->propertyDescription;
+            return $attributeDescription;
+        }
+    }
+    public mixed $defaultValue {
+        get => $this->attributeDescription->defaultValue;
+    }
 }
