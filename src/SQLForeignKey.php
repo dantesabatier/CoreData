@@ -19,11 +19,18 @@ class SQLForeignKey extends SQLColumn
             return $relationshipDescription;
         }
     }
-    public PropertyDescriptionType $propertyType = PropertyDescriptionType::relationship;
-    protected(set) string $columnName {
-        get => $this->columnName ??= "{$this->relationshipDescription->name}ID";
+    public PropertyDescriptionType $propertyType {
+        get => PropertyDescriptionType::relationship;
     }
-    public SQLType $sqlType = SQLType::int;
+    public string $columnName {
+        get => "{$this->relationshipDescription->name}ID";
+    }
+    public SQLType $sqlType {
+        get => SQLType::int;
+    }
+    public string $description {
+        get => sprintf("<%s: %s>, name %s, entity %s", $this->class, $this->hash, $this->columnName, $this->entity->tableName);
+    }
 
     public function __construct(SQLEntity $entity, RelationshipDescription $relationshipDescription, public readonly SQLToOne $toOneRelationship)
     {
