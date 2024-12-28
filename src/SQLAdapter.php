@@ -207,8 +207,8 @@ class SQLAdapter extends ObjectClass
     {
         if ($column instanceof SQLEntityKey) {
             $request = new BatchUpdateRequest($column->entity->entityDescription);
-            $request->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($column->columnName), Expression::expressionForConstantValue($column->defaultValue), PredicateOperatorType::notEqualTo, ComparisonPredicateModifier::direct, ComparisonPredicateOptions::caseInsensitive | ComparisonPredicateOptions::diacriticInsensitive);
-            $request->propertiesToUpdate = new Dictionary([$column->columnName => $column->defaultValue]);
+            $request->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($column->columnName), Expression::expressionForConstantValue($column->entity->tableName), PredicateOperatorType::notEqualTo, ComparisonPredicateModifier::direct, ComparisonPredicateOptions::caseInsensitive | ComparisonPredicateOptions::diacriticInsensitive);
+            $request->propertiesToUpdate = new Dictionary([$column->columnName => $column->entity->tableName]);
             $requestContext = new SQLBatchUpdateRequestContext($request, new ManagedObjectContext(), $this->sqlCore);
             /** @noinspection PhpUnhandledExceptionInspection */
             $requestContext->executeRequestUsingConnection($this->sqlCore->schemaValidationConnection);
