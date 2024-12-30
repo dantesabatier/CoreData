@@ -320,6 +320,16 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Provides an opportunity to add code into the life cycle of the managed object before saving it.
+     *
+     * This method can have “side effects” on persistent values. You can use it to, for example, compute persistent values from other transient or scratchpad values.
+     *
+     * If you want to update a persistent property value, you should typically test for equality of any new value with the existing value before making a change. If you change property values using standard accessor methods, Core Data will observe the resultant change notification and so invoke willSave again before saving the object’s managed object context. If you continue to modify a value in willSave, willSave will continue to be called until your program crashes.
+     *
+     * For example, if you set a last-modified timestamp, you should check whether either you previously set it in the same save operation, or that the existing timestamp is not less than a small delta from the current time. Typically, it’s better to calculate the timestamp once for all the objects being saved (for example, in response to an {@see ManagedObjectContext::willSaveObjectsNotification}).
+     *
+     * If you change property values using primitive accessors, you avoid the possibility of infinite recursion, but Core Data will not notice the change you make.
+     *
+     * The sense of “save” in the method name is that of a database commit statement and so applies to deletions as well as to updates to objects. For subclasses, this method is therefore an appropriate locus for code to be executed when an object deleted as well as “saved to disk.” You can find out if an object is marked for deletion with {@see $isDeleted}.
      */
     public function willSave(): void
     {
@@ -327,6 +337,14 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Provides an opportunity to add code into the life cycle of the managed object after the managed object's context completes a save operation.
+     *
+     * You can use this method to notify other objects after a save, and to compute transient values from persistent values.
+     *
+     * This method can have “side effects” on the persistent values, however any changes you make using standard accessor methods will by default dirty the managed object context and leave your context with unsaved changes. Moreover, if the object’s context has an undo manager, such changes will add an undo operation. For document-based applications, changes made in didSave will therefore come into the next undo grouping, which can lead to “empty” undo operations from the user's perspective. You may want to disable undo registration to avoid this issue.
+     *
+     * The sense of “save” in the method name is that of a database commit statement and so applies to deletions as well as to updates to objects. For subclasses, this method is therefore an appropriate locus for code to be executed when an object deleted as well as “saved to disk.” You can find out if an object is marked for deletion with {@see $isDeleted}.
+     *
+     * You cannot attempt to resurrect a deleted object in didSave.
      */
     public function didSave(): void
     {
