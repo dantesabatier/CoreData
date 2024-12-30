@@ -23,12 +23,12 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
         $this->debugLogLevel = 0;
         /** @var SQLEntity $entity */
         $entity = $this->sqlModel->entitiesByName[$this->objectID->entity->name];
-        $relationship = $entity->properties->first(fn(SQLProperty $property): bool => $property->propertyDescription->name === $this->relationship->name) ?? fatal_error("$entity Unable to find relationship {$this->relationship->name} in {$entity->properties->map(fn(SQLProperty $property): string => $property->name)}");
-        if ($relationship instanceof SQLToOne) {
-            $sourceEntity = $relationship->entity;
-            $foreignKey = $relationship->foreignKey;
+        $property = $entity->properties->first(fn(SQLProperty $property): bool => $property->propertyDescription->name === $this->relationship->name) ?? fatal_error("$entity Unable to find relationship {$this->relationship->name} in {$entity->properties->map(fn(SQLProperty $property): string => $property->name)}");
+        if ($property instanceof SQLToOne) {
+            $sourceEntity = $property->entity;
+            $foreignKey = $property->foreignKey;
             $columnName = $sourceEntity->primaryKey->columnName;
-            $destinationEntity = $relationship->destinationEntity;
+            $destinationEntity = $property->destinationEntity;
             if ($destinationEntity->isRootEntity && $destinationEntity->entityDescription->isAbstract && $destinationEntity->subentities->count === 1) {
                 $destinationEntity = $destinationEntity->subentities[0];
             }
@@ -45,9 +45,9 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
                 return true;
             }
             $this->result = null;
-        } elseif ($relationship instanceof SQLToMany) {
-            $inverseToOne = $relationship->inverseToOne;
-            $destinationEntity = $relationship->destinationEntity;
+        } elseif ($property instanceof SQLToMany) {
+            $inverseToOne = $property->inverseToOne;
+            $destinationEntity = $property->destinationEntity;
             $columnName = $inverseToOne->foreignKey->columnName;
             /** @var FetchRequest<ManagedObjectID> $fetchRequest */
             $fetchRequest = new FetchRequest();
@@ -55,16 +55,16 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
             $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($columnName), Expression::expressionForConstantValue($this->objectID));
             $fetchRequest->resultType = FetchRequestResultType::managedObjectIDResultType;
             $this->result = $this->sqlCore->execute($fetchRequest, $this->context);
-        } elseif ($relationship instanceof SQLManyToMany) {
+        } elseif ($property instanceof SQLManyToMany) {
             /** @var FetchRequest<ManagedObject> $fetchRequest */
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $entity->entityDescription;
             $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($this->objectID));
             /** @psalm-suppress InvalidPropertyAssignmentValue */
-            $fetchRequest->propertiesToFetch = new ArrayClass([$relationship->relationshipDescription]);
+            $fetchRequest->propertiesToFetch = new ArrayClass([$property->relationshipDescription]);
             $first = $this->sqlCore->execute($fetchRequest, $this->context)->first;
             if ($first instanceof ManagedObject) {
-                $this->result = $first->primitiveValueForKey($relationship->name) ?? new ArrayClass();
+                $this->result = $first->primitiveValueForKey($property->name) ?? new ArrayClass();
             }
         }
         $this->debugLogLevel = $debugLogLevel;
