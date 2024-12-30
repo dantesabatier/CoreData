@@ -157,28 +157,6 @@ class SQLStoreMigrator
     }
 
     /**
-     * @param SQLEntity $entity
-     * @param ArrayClass<SQLToMany> $toManyRelationships
-     * @throws Exception
-     */
-    private function recreateForeignKeys(SQLEntity $entity, ArrayClass $toManyRelationships): void
-    {
-        foreach ($toManyRelationships as $toManyRelationship) {
-            if (!($toMany = $entity->toManyRelationships->first(fn(SQLToMany $toMany): bool => $toMany->name === $toManyRelationship->name))) {
-                continue;
-            }
-            $statement = $this->adapter->newDropIndexStatementForForeignKey($toMany->inverseToOne->foreignKey);
-            $this->connection->execute($statement);
-            if (!($statement = $this->adapter->newRenameColumnStatement($toMany->inverseToOne->foreignKey, $toManyRelationship->inverseToOne->foreignKey))) {
-                continue;
-            }
-            $this->connection->execute($statement);
-            $statement = $this->adapter->newCreateIndexStatementForForeignKey($toManyRelationship->inverseToOne->foreignKey);
-            $this->connection->execute($statement);
-        }
-    }
-
-    /**
      * @throws Exception
      */
     private function prepareTransformedEntityMappings(): void
@@ -193,7 +171,19 @@ class SQLStoreMigrator
             }
             /** @var ArrayClass<SQLToMany> $toManyRelationships */
             $toManyRelationships = $subentity->entitySpecificRelationships->filter(fn(SQLRelationship $relationship): bool => $relationship instanceof SQLToMany);
-            $this->recreateForeignKeys($sourceEntity, $toManyRelationships);
+            foreach ($toManyRelationships as $toManyRelationship) {
+                if (!($toMany = $sourceEntity->toManyRelationships->first(fn(SQLToMany $toMany): bool => $toMany->name === $toManyRelationship->name))) {
+                    continue;
+                }
+                $statement = $this->adapter->newDropIndexStatementForForeignKey($toMany->inverseToOne->foreignKey);
+                $this->connection->execute($statement);
+                if (!($statement = $this->adapter->newRenameColumnStatement($toMany->inverseToOne->foreignKey, $toManyRelationship->inverseToOne->foreignKey))) {
+                    continue;
+                }
+                $this->connection->execute($statement);
+                $statement = $this->adapter->newCreateIndexStatementForForeignKey($toManyRelationship->inverseToOne->foreignKey);
+                $this->connection->execute($statement);
+            }
         }
     }
 
@@ -216,7 +206,19 @@ class SQLStoreMigrator
                 if ($statement = $this->adapter->newModifyColumnStatement($destinationEntity->entityKey, $destinationEntity->primaryKey)) {
                     $this->connection->execute($statement);
                 }
-                $this->recreateForeignKeys($destinationEntity, $sourceEntity->toManyRelationships);
+                foreach ($sourceEntity->toManyRelationships as $toManyRelationship) {
+                    if (!($toMany = $destinationEntity->toManyRelationships->first(fn(SQLToMany $toMany): bool => $toMany->name === $toManyRelationship->name))) {
+                        continue;
+                    }
+                    $statement = $this->adapter->newDropIndexStatementForForeignKey($toManyRelationship->inverseToOne->foreignKey);
+                    $this->connection->execute($statement);
+                    if (!($statement = $this->adapter->newRenameColumnStatement($toManyRelationship->inverseToOne->foreignKey, $toMany->inverseToOne->foreignKey))) {
+                        continue;
+                    }
+                    $this->connection->execute($statement);
+                    $statement = $this->adapter->newCreateIndexStatementForForeignKey($toMany->inverseToOne->foreignKey);
+                    $this->connection->execute($statement);
+                }
             }
             $properties = new Set($sourceEntity->properties);
             $properties->appendContentsOf($destinationEntity->properties);
