@@ -76,30 +76,6 @@ class SQLStoreMigrator
         return [$sourceEntity, $destinationEntity];
     }
 
-    /**
-     * @param SQLEntity $entity
-     * @param ArrayClass<SQLToMany> $toManyRelationships
-     * @throws Exception
-     */
-    private function recreateForeignKeys(SQLEntity $entity, ArrayClass $toManyRelationships): void
-    {
-        $adapter = $this->adapter;
-        $connection = $this->connection;
-        foreach ($toManyRelationships as $toManyRelationship) {
-            if (!($toMany = $entity->toManyRelationships->first(fn(SQLToMany $toMany): bool => $toMany->name === $toManyRelationship->name))) {
-                continue;
-            }
-            $statement = $adapter->newDropIndexStatementForForeignKey($toManyRelationship->inverseToOne->foreignKey);
-            $connection->execute($statement);
-            if (!($statement = $adapter->newRenameColumnStatement($toManyRelationship->inverseToOne->foreignKey, $toMany->inverseToOne->foreignKey))) {
-                continue;
-            }
-            $connection->execute($statement);
-            $statement = $adapter->newCreateIndexStatementForForeignKey($toMany->inverseToOne->foreignKey);
-            $connection->execute($statement);
-        }
-    }
-
     private function prepareEntityMappings(): void
     {
         foreach ($this->mappingModel->entityMappingsByName as $mapping) {
@@ -177,6 +153,30 @@ class SQLStoreMigrator
                     $this->createIndexStatements->appendContentsOf($index->createTableStatements);
                 }
             }
+        }
+    }
+
+    /**
+     * @param SQLEntity $entity
+     * @param ArrayClass<SQLToMany> $toManyRelationships
+     * @throws Exception
+     */
+    private function recreateForeignKeys(SQLEntity $entity, ArrayClass $toManyRelationships): void
+    {
+        $adapter = $this->adapter;
+        $connection = $this->connection;
+        foreach ($toManyRelationships as $toManyRelationship) {
+            if (!($toMany = $entity->toManyRelationships->first(fn(SQLToMany $toMany): bool => $toMany->name === $toManyRelationship->name))) {
+                continue;
+            }
+            $statement = $adapter->newDropIndexStatementForForeignKey($toManyRelationship->inverseToOne->foreignKey);
+            $connection->execute($statement);
+            if (!($statement = $adapter->newRenameColumnStatement($toManyRelationship->inverseToOne->foreignKey, $toMany->inverseToOne->foreignKey))) {
+                continue;
+            }
+            $connection->execute($statement);
+            $statement = $adapter->newCreateIndexStatementForForeignKey($toMany->inverseToOne->foreignKey);
+            $connection->execute($statement);
         }
     }
 
