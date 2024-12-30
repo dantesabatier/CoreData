@@ -140,6 +140,10 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     private(set) ArrayClass $entitySpecificAttributes {
         get => $this->entitySpecificAttributes ??= new ArrayClass();
     }
+    /** @var ArrayClass<FetchIndexDescription> */
+    private(set) ArrayClass $entitySpecificIndexes {
+        get => $this->entitySpecificIndexes ??= new ArrayClass();
+    }
     /** @internal */
     public bool $isFlattened = false;
     /** @internal */
@@ -169,6 +173,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         }
         $this->entitySpecificAttributes = $this->properties->filter(fn(PropertyDescription $propertyDescription): bool => $propertyDescription instanceof AttributeDescription);
         $this->entitySpecificRelationships = $this->properties->filter(fn(PropertyDescription $propertyDescription): bool => $propertyDescription instanceof RelationshipDescription);
+        $this->entitySpecificIndexes = $this->indexes;
         /** @var Set<FetchIndexDescription> $indexes */
         $indexes = new Set();
         /** @var Set<PropertyDescription> $properties */
