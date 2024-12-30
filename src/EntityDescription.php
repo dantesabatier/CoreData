@@ -65,7 +65,6 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
             foreach ($value as $property) {
                 if ($property->entity !== $this) {
                     $property = clone $property;
-                    $property->isReadOnly = true;
                 }
                 $property->entity = $this;
                 $this->propertiesByName[$property->name] = $property;
@@ -133,6 +132,14 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     }
     /** @var string|null The version hash modifier for the receiver. This value is included in the version hash for the entity. You use it to mark or denote an entity as being a different “version” than another even if all the values which affect persistence are equal. (Such a difference is important in cases where, for example, the structure of an entity is unchanged but the format or content of data has changed.) */
     public ?string $versionHashModifier = null;
+    /** @var ArrayClass<RelationshipDescription> */
+    private(set) ArrayClass $entitySpecificRelationships {
+        get => $this->entitySpecificRelationships ??= new ArrayClass();
+    }
+    /** @var ArrayClass<AttributeDescription> */
+    private(set) ArrayClass $entitySpecificAttributes {
+        get => $this->entitySpecificAttributes ??= new ArrayClass();
+    }
     /** @internal */
     public bool $isFlattened = false;
     /** @internal */
@@ -160,6 +167,8 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         if ($this->isFlattened) {
             return;
         }
+        $this->entitySpecificAttributes = $this->properties->filter(fn(PropertyDescription $propertyDescription): bool => $propertyDescription instanceof AttributeDescription);
+        $this->entitySpecificRelationships = $this->properties->filter(fn(PropertyDescription $propertyDescription): bool => $propertyDescription instanceof RelationshipDescription);
         /** @var Set<FetchIndexDescription> $indexes */
         $indexes = new Set();
         /** @var Set<PropertyDescription> $properties */
