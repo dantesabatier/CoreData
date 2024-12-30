@@ -327,7 +327,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      *
      * If you want to update a persistent property value, you should typically test for equality of any new value with the existing value before making a change. If you change property values using standard accessor methods, Core Data will observe the resultant change notification and so invoke willSave again before saving the object’s managed object context. If you continue to modify a value in willSave, willSave will continue to be called until your program crashes.
      *
-     * For example, if you set a last-modified timestamp, you should check whether either you previously set it in the same save operation, or that the existing timestamp is not less than a small delta from the current time. Typically, it’s better to calculate the timestamp once for all the objects being saved (for example, in response to an {@see ManagedObjectContext::willSaveObjectsNotification}).
+     * For example, if you set a last-modified timestamp, you should check whether either you previously set it in the same save operation, or that the existing timestamp is not less than a small delta from the current time. Typically, it’s better to calculate the timestamp once for all the objects being saved (for example, in response to an {@see ManagedObjectContextWillSave}).
      *
      * If you change property values using primitive accessors, you avoid the possibility of infinite recursion, but Core Data will not notice the change you make.
      *
