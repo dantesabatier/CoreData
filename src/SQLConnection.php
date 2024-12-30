@@ -26,6 +26,7 @@ use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\ValueTransformer;
 use function Sabatier\Foundation\absolute_time_get_current;
+use function Sabatier\Foundation\debuglog;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
@@ -115,7 +116,7 @@ class SQLConnection extends ObjectClass
         $this->isOpen = true;
         $schemaName = $this->schema->name;
         if (SQLCore::$debugDefault) {
-            error_log(sprintf("CoreData: annotation: Connecting to %s database \"%s\"", SQLStoreType, $schemaName));
+            debuglog(sprintf("CoreData: annotation: Connecting to %s database \"%s\"", SQLStoreType, $schemaName));
         }
         if ($this->createSchemaIfNeeded()) {
             return true;
@@ -133,7 +134,7 @@ class SQLConnection extends ObjectClass
             return true;
         }
         if (SQLCore::$debugDefault) {
-            error_log("CoreData: annotation: Disconnecting from sql database \"{$this->schema->name}\"");
+            debuglog("CoreData: annotation: Disconnecting from sql database \"{$this->schema->name}\"");
         }
         $this->pdo = null;
         $this->isOpen = false;
@@ -157,13 +158,13 @@ class SQLConnection extends ObjectClass
             if (SQLCore::$coloredLoggingDefault) {
                 $style |= SQLStatementFormatterStyle::highlighted;
             }
-            error_log(sprintf("CoreData: sql: \n%s", $statement->formatted($style)));
+            debuglog(sprintf("CoreData: sql: \n%s", $statement->formatted($style)));
         }
         $pdo = $this->pdo();
         if ($statement->arguments->isEmpty) {
             $prepare = $pdo->query($statement->string);
             if (SQLCore::$debugDefault) {
-                error_log(sprintf("CoreData: annotation: total fetch execution time: %s for %s row(s)", human_readable_time(absolute_time_get_current() - $time), $prepare->rowCount()));
+                debuglog(sprintf("CoreData: annotation: total fetch execution time: %s for %s row(s)", human_readable_time(absolute_time_get_current() - $time), $prepare->rowCount()));
             }
             return $prepare;
         }
@@ -187,7 +188,7 @@ class SQLConnection extends ObjectClass
             return $e;
         })->array);
         if (SQLCore::$debugDefault) {
-            error_log(sprintf("CoreData: annotation: fetch execution time: %s for %s row(s)", human_readable_time(absolute_time_get_current() - $time), $prepare->rowCount()));
+            debuglog(sprintf("CoreData: annotation: fetch execution time: %s for %s row(s)", human_readable_time(absolute_time_get_current() - $time), $prepare->rowCount()));
         }
         return $prepare;
     }
@@ -575,7 +576,7 @@ class SQLConnection extends ObjectClass
         $model = $this->sqlCore?->model ?? fatal_error();
         $database = $this->schema->name;
         if (SQLCore::$debugDefault) {
-            error_log("CoreData: annotation: creating database \"$database\"");
+            debuglog("CoreData: annotation: creating database \"$database\"");
         }
         $this->execute(new SQLStatement("CREATE DATABASE `$database`"));
         $this->execute(new SQLStatement("USE `$database`"));
@@ -589,7 +590,7 @@ class SQLConnection extends ObjectClass
         $this->createManyToManyTablesForEntities($entities);
         $this->saveCachedModel($model);
         if (SQLCore::$debugDefault) {
-            error_log("CoreData: annotation: database \"$database\" created, total execution time: " . human_readable_time(absolute_time_get_current() - $time));
+            debuglog("CoreData: annotation: database \"$database\" created, total execution time: " . human_readable_time(absolute_time_get_current() - $time));
         }
         return true;
     }
