@@ -202,12 +202,12 @@ class ManagedObjectContext extends ObjectClass
         }
         $this->processingChanges = true;
         $result = $this->executePersistentStoreRequest($request);
+        $this->processingChanges = false;
         foreach ($this->deletedObjects as $deletedObject) {
             $deletedObject->prepareForDeletion();
             $this->refault($deletedObject);
             $this->unregister($deletedObject);
         }
-        $this->processingChanges = false;
         foreach ($savedObjects as $savedObject) {
             $savedObject->didSave();
         }
