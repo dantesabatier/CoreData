@@ -18,6 +18,7 @@ use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use function Sabatier\Foundation\absolute_time_get_current;
+use function Sabatier\Foundation\debuglog;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
 use function Sabatier\Foundation\typeof;
@@ -132,7 +133,7 @@ class MigrationManager extends ObjectClass
         $numberOfInstances = $instances->count;
         if ($numberOfInstances) {
             if (self::$migrationDebugLevel) {
-                error_log("CoreData: Preparing $numberOfInstances instances");
+                debuglog("CoreData: Preparing $numberOfInstances instances");
             }
             $numberOfCreatedInstances = 0;
             foreach ($instances as $instance) {
@@ -142,7 +143,7 @@ class MigrationManager extends ObjectClass
                 $numberOfCreatedInstances += 1;
             }
             if (self::$migrationDebugLevel) {
-                error_log("CoreData: $numberOfCreatedInstances of $numberOfInstances instances created");
+                debuglog("CoreData: $numberOfCreatedInstances of $numberOfInstances instances created");
             }
         }
         return true;
@@ -216,7 +217,7 @@ class MigrationManager extends ObjectClass
             return;
         }
         if (static::$migrationDebugLevel) {
-            error_log(sprintf("CoreData: Processing entity mapping \"%s\" (pass %s of %s), elapsed time %s, %s%% completed", $mapping->name, $pass, 3, human_readable_time(absolute_time_get_current() - $this->timestamp), round($this->migrationProgress * 100, 2)));
+            debuglog(sprintf("CoreData: Processing entity mapping \"%s\" (pass %s of %s), elapsed time %s, %s%% completed", $mapping->name, $pass, 3, human_readable_time(absolute_time_get_current() - $this->timestamp), round($this->migrationProgress * 100, 2)));
         }
         if ($migrationCancellationError = $this->migrationCancellationError) {
             throw new InternalInconsistencyException(error: $migrationCancellationError);
