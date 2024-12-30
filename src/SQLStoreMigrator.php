@@ -62,6 +62,30 @@ readonly class SQLStoreMigrator
     }
 
     /**
+     * @param SQLEntity $entity
+     * @param ArrayClass<SQLToMany> $toManyRelationships
+     * @throws Exception
+     */
+    private function recreateForeignKeys(SQLEntity $entity, ArrayClass $toManyRelationships): void
+    {
+        $adapter = $this->adapter;
+        $connection = $this->connection;
+        foreach ($toManyRelationships as $toManyRelationship) {
+            if (!($toMany = $entity->toManyRelationships->first(fn(SQLToMany $toMany): bool => $toMany->name === $toManyRelationship->name))) {
+                continue;
+            }
+            $statement = $adapter->newDropIndexStatementForForeignKey($toManyRelationship->inverseToOne->foreignKey);
+            $connection->execute($statement);
+            if (!($statement = $adapter->newRenameColumnStatement($toManyRelationship->inverseToOne->foreignKey, $toMany->inverseToOne->foreignKey))) {
+                continue;
+            }
+            $connection->execute($statement);
+            $statement = $adapter->newCreateIndexStatementForForeignKey($toMany->inverseToOne->foreignKey);
+            $connection->execute($statement);
+        }
+    }
+
+    /**
      * @throws Exception
      */
     public function perform(): void
@@ -144,6 +168,18 @@ readonly class SQLStoreMigrator
                 continue;
             }
             [$sourceEntity, $destinationEntity] = $entities;
+            if (!($subentity = $destinationEntity->subentities->first(fn(SQLEntity $subentity): bool => $subentity->entityDescription->renamingIdentifier !== $subentity->entityDescription->name))) {
+                continue;
+            }
+            /** @var ArrayClass<SQLToMany> $toManyRelationships */
+            $toManyRelationships = $subentity->entitySpecificRelationships->filter(fn(SQLRelationship $relationship): bool => $relationship instanceof SQLToMany);
+            $this->recreateForeignKeys($sourceEntity, $toManyRelationships);
+        }
+        foreach ($transformedEntityMappings as $mapping) {
+            if (!($entities = $this->entities($mapping))) {
+                continue;
+            }
+            [$sourceEntity, $destinationEntity] = $entities;
             foreach ($sourceEntity->indexes as $index) {
                 $connection->execute(SQLStatement::merging($index->dropTableStatements));
             }
@@ -153,17 +189,7 @@ readonly class SQLStoreMigrator
                 if ($statement = $adapter->newModifyColumnStatement($destinationEntity->entityKey, $destinationEntity->primaryKey)) {
                     $connection->execute($statement);
                 }
-                foreach ($sourceEntity->toManyRelationships as $toManyRelationship) {
-                    if ($destinationToManyRelationship = $destinationEntity->toManyRelationships->first(fn(SQLToMany $toMany): bool => $toMany->name === $toManyRelationship->name)) {
-                        $statement = $adapter->newDropIndexStatementForForeignKey($toManyRelationship->inverseToOne->foreignKey);
-                        $connection->execute($statement);
-                        if ($statement = $adapter->newRenameColumnStatement($toManyRelationship->inverseToOne->foreignKey, $destinationToManyRelationship->inverseToOne->foreignKey)) {
-                            $connection->execute($statement);
-                            $statement = $adapter->newCreateIndexStatementForForeignKey($destinationToManyRelationship->inverseToOne->foreignKey);
-                            $connection->execute($statement);
-                        }
-                    }
-                }
+                $this->recreateForeignKeys($destinationEntity, $sourceEntity->toManyRelationships);
             }
             $properties = new Set($sourceEntity->properties);
             $properties->appendContentsOf($destinationEntity->properties);
