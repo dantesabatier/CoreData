@@ -189,7 +189,6 @@ class ManagedObjectContext extends ObjectClass
      */
     private function executeSaveChangesRequest(SaveChangesRequest $request): UnknownRequestTypeResult
     {
-        $this->processingChanges = true;
         /** @var Set<ManagedObject> $savedObjects */
         $savedObjects = new Set();
         if ($insertedObjects = $request->insertedObjects) {
@@ -201,6 +200,7 @@ class ManagedObjectContext extends ObjectClass
         foreach ($savedObjects as $savedObject) {
             $savedObject->willSave();
         }
+        $this->processingChanges = true;
         $result = $this->executePersistentStoreRequest($request);
         foreach ($this->deletedObjects as $deletedObject) {
             $deletedObject->prepareForDeletion();
