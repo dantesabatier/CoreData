@@ -10,7 +10,7 @@ use Sabatier\Foundation\ObjectClass;
 class SQLIndex extends ObjectClass
 {
     /** @var ArrayClass<SQLStatement> */
-    private(set) ArrayClass $createTableStatements {
+    protected(set) ArrayClass $createTableStatements {
         get {
             if (!isset($this->createTableStatements)) {
                 $createTableStatements = new ArrayClass();
@@ -26,11 +26,11 @@ class SQLIndex extends ObjectClass
         }
     }
     /** @var ArrayClass<SQLStatement> */
-    private(set) ArrayClass $dropTableStatements {
+    protected(set) ArrayClass $dropTableStatements {
         get => $this->dropTableStatements ??= new ArrayClass([new SQLStatement("ALTER TABLE `{$this->entity->tableName}` DROP INDEX IF EXISTS `{$this->indexDescription->name}`")]);
     }
     /** @var ArrayClass<SQLStatement> */
-    private(set) ArrayClass $updateTableStatements {
+    protected(set) ArrayClass $updateTableStatements {
         get => $this->updateTableStatements ??= new ArrayClass([...$this->createTableStatements->array, ...$this->updateTableStatements->array]);
     }
     public bool $isUnique {
