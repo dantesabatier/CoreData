@@ -163,20 +163,18 @@ class SQLStoreMigrator
      */
     private function recreateForeignKeys(SQLEntity $entity, ArrayClass $toManyRelationships): void
     {
-        $adapter = $this->adapter;
-        $connection = $this->connection;
         foreach ($toManyRelationships as $toManyRelationship) {
             if (!($toMany = $entity->toManyRelationships->first(fn(SQLToMany $toMany): bool => $toMany->name === $toManyRelationship->name))) {
                 continue;
             }
-            $statement = $adapter->newDropIndexStatementForForeignKey($toManyRelationship->inverseToOne->foreignKey);
-            $connection->execute($statement);
-            if (!($statement = $adapter->newRenameColumnStatement($toManyRelationship->inverseToOne->foreignKey, $toMany->inverseToOne->foreignKey))) {
+            $statement = $this->adapter->newDropIndexStatementForForeignKey($toMany->inverseToOne->foreignKey);
+            $this->connection->execute($statement);
+            if (!($statement = $this->adapter->newRenameColumnStatement($toMany->inverseToOne->foreignKey, $toManyRelationship->inverseToOne->foreignKey))) {
                 continue;
             }
-            $connection->execute($statement);
-            $statement = $adapter->newCreateIndexStatementForForeignKey($toMany->inverseToOne->foreignKey);
-            $connection->execute($statement);
+            $this->connection->execute($statement);
+            $statement = $this->adapter->newCreateIndexStatementForForeignKey($toManyRelationship->inverseToOne->foreignKey);
+            $this->connection->execute($statement);
         }
     }
 
