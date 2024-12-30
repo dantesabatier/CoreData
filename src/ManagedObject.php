@@ -313,6 +313,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     /**
      * Provides an opportunity to add code into the life cycle of the managed object before deleting it.
+     *
+     * You can implement this method to perform any operations required before the object is deleted, such as custom propagation before relationships are torn down, or reconfiguration of objects using key-value observing.
      */
     public function prepareForDeletion(): void
     {
