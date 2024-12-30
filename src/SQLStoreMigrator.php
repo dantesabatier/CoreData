@@ -340,6 +340,20 @@ class SQLStoreMigrator
     /**
      * @throws Exception
      */
+    public function perform(): void
+    {
+        $this->prepareEntityMappings();
+        $this->processAddedEntityMappings();
+        $this->processRemovedEntityMappings();
+        $this->processCopiedEntityMappings();
+        $this->prepareTransformedEntityMappings();
+        $this->processTransformedEntityMappings();
+        $this->recreateIndexes();
+    }
+
+    /**
+     * @throws Exception
+     */
     private function removeUnusedRelationships(): void
     {
         foreach ($this->removedManyToMany as $manyToMany) {
@@ -385,20 +399,6 @@ class SQLStoreMigrator
             $statement = $this->adapter->newDropTableStatement($entity);
             $this->connection->execute($statement);
         }
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function perform(): void
-    {
-        $this->prepareEntityMappings();
-        $this->processAddedEntityMappings();
-        $this->processRemovedEntityMappings();
-        $this->processCopiedEntityMappings();
-        $this->prepareTransformedEntityMappings();
-        $this->processTransformedEntityMappings();
-        $this->recreateIndexes();
     }
 
     /**
