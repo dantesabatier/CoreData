@@ -9,6 +9,7 @@ use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\absolute_time_get_current;
+use function Sabatier\Foundation\debuglog;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
 
@@ -181,10 +182,10 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
             if ($this->debugLogLevel > 3) {
                 $message .= "\n$this->result";
             }
-            error_log($message);
+            debuglog($message);
             if ($this->debugLogLevel > 4) {
                 $execute = $this->connection->execute(new SQLStatement("ANALYZE FORMAT=JSON {$this->fetchStatement->string}", $this->fetchStatement->arguments));
-                error_log($execute->fetchColumn());
+                debuglog($execute->fetchColumn());
             }
         }
         return true;
