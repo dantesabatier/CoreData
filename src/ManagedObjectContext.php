@@ -207,10 +207,10 @@ class ManagedObjectContext extends ObjectClass
             $this->refault($deletedObject);
             $this->unregister($deletedObject);
         }
+        $this->processingChanges = false;
         foreach ($savedObjects as $savedObject) {
             $savedObject->didSave();
         }
-        $this->processingChanges = false;
         return $result;
     }
 
