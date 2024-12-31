@@ -186,7 +186,8 @@ class PersistentStoreCoordinator extends ObjectClass
     public function addPersistentStoreWithType(PersistentStoreType $storeType, ?string $configuration, URL $storeURL, ?Dictionary $options = null): PersistentStore
     {
         /** @var class-string<PersistentStore> $persistentStoreClass */
-        $persistentStoreClass = self::registeredStoreTypes()[$storeType->value] ?? self::registeredStoreTypes()->first(/**
+        $persistentStoreClass = self::registeredStoreTypes()[$storeType->value] ?? self::registeredStoreTypes()->first(
+        /**
          * @param class-string<PersistentStore> $class
          * @throws Exception
          */ fn(string $class, string $type): bool => $type === $class::metadataForPersistentStore($storeURL)[StoreTypeKey]) ?? fatal_error();
