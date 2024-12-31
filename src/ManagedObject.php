@@ -297,7 +297,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     }
 
     /**
-     * Returns a dictionary of the most recent fetched or saved values of the managed object for the properties of the specified keys. nil values are represented by {@see Nil}.
+     * Returns a dictionary of the most recent fetched or saved values of the managed object for the properties of the specified keys.
      *
      * This method only reports values of properties that are defined as persistent properties of the receiver, not values of transient properties or of custom instance variables.
      * You can invoke this method with the keys value of nil to retrieve committed values for all the receiver's properties, as illustrated by the following example.
