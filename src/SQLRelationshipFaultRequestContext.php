@@ -22,8 +22,8 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
         $debugLogLevel = $this->debugLogLevel;
         $this->debugLogLevel = 0;
         /** @var SQLEntity $entity */
-        $entity = $this->sqlModel->entitiesByName[$this->objectID->entity->name];
-        $property = $entity->properties->first(fn(SQLProperty $property): bool => $property->propertyDescription->name === $this->relationship->name) ?? fatal_error("$entity Unable to find relationship {$this->relationship->name} in {$entity->properties->map(fn(SQLProperty $property): string => $property->name)}");
+        $entity = $this->sqlModel->entitiesByName[$this->objectID->entity->name] ?? fatal_error();
+        $property = $entity->propertiesByName[$this->relationship->name] ?? fatal_error("$entity unable to find relationship {$this->relationship->name} in {$entity->propertiesByName->keys}");
         if ($property instanceof SQLToOne) {
             $sourceEntity = $property->entity;
             $foreignKey = $property->foreignKey;
