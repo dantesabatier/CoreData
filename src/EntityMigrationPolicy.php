@@ -50,7 +50,7 @@ class EntityMigrationPolicy extends ObjectClass
         if ($destinationEntity = $manager->destinationEntity($mapping)) {
             $destinationContext = $manager->destinationContext;
             $managedObjectID = function () use ($destinationEntity, $sourceInstance, $destinationContext, $manager): ?ManagedObjectID {
-                if ($manager->performedInPlaceMigration && ($destinationStore = $destinationContext->persistentStoreCoordinator?->persistentStores->first())) {
+                if ($manager->performedInPlaceMigration && ($destinationStore = $destinationContext->persistentStoreCoordinator?->persistentStores->first)) {
                     return $destinationStore->objectID($destinationEntity, $sourceInstance->objectID->referenceObject);
                 }
                 return null;
