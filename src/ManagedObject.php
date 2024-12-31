@@ -75,9 +75,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         get => $this->isDeleted ??= $this->managedObjectContext->deletedObjects->containsElement($this);
     }
     public readonly ManagedObjectContext $managedObjectContext;
+    /** @var Dictionary<mixed> */
     private Dictionary $changedValues {
         get => $this->changedValues ??= new Dictionary();
     }
+    /** @var Dictionary<mixed> */
     private Dictionary $changedValuesForCurrentEvent {
         get => $this->changedValuesForCurrentEvent ??= new Dictionary();
     }
