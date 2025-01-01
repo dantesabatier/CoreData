@@ -193,7 +193,7 @@ class SQLGenerator extends ObjectClass
         if (!$entity->isAbstract && !$subentities->isEmpty) {
             $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($entity->name));
             if ($predicate) {
-                if (!$this->isPrimaryKeyPredicate($predicate)) {
+                if (!$this->isPrimaryKeyPredicate($predicate) && !$this->isEntityKeyPredicate($predicate)) {
                     $predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory]));
                 }
             } else {
@@ -675,6 +675,16 @@ class SQLGenerator extends ObjectClass
         return $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLRelationship);
     }
 
+    private function isPrimaryKeyExpression(Expression $expression): bool
+    {
+        return $expression->expressionType === ExpressionType::keyPath && str_ends_with($expression->keyPath, SQLEntity::primaryKeyName);
+    }
+
+    private function isEntityKeyExpression(Expression $expression): bool
+    {
+        return $expression->expressionType === ExpressionType::keyPath && str_ends_with($expression->keyPath, SQLEntity::entityKeyName);
+    }
+
     private function isPrimaryKeyPredicate(Predicate $predicate): bool
     {
         if ($predicate instanceof ComparisonPredicate) {
@@ -686,9 +696,15 @@ class SQLGenerator extends ObjectClass
         return false;
     }
 
-    private function isPrimaryKeyExpression(Expression $expression): bool
+    private function isEntityKeyPredicate(Predicate $predicate): bool
     {
-        return $expression->expressionType === ExpressionType::keyPath && str_ends_with($expression->keyPath, SQLEntity::primaryKeyName);
+        if ($predicate instanceof ComparisonPredicate) {
+            return $this->isEntityKeyExpression($predicate->leftExpression) || $this->isEntityKeyExpression($predicate->rightExpression);
+        }
+        if ($predicate instanceof CompoundPredicate) {
+            return $predicate->subpredicates->contains(fn($subpredicate): bool => $this->isEntityKeyPredicate($subpredicate));
+        }
+        return false;
     }
 
     private function isNullExpression(Expression $expression): bool
