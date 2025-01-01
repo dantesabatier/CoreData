@@ -202,9 +202,7 @@ class SQLEntity extends StoreMapping
     private(set) ArrayClass $columnsToFetch {
         get {
             if (!isset($this->columnsToFetch)) {
-                $columns = $this->properties->filter(function (SQLProperty $property): bool {
-                    return !($property->isTransient || $property instanceof SQLRelationship || $property instanceof SQLForeignKey) && (!$property instanceof SQLAttribute || (($property->isDerivedAttribute ? !$property->derivationExpression?->usesKVC : !$property->isCompositeAttribute)));
-                });
+                $columns = $this->properties->filter(fn(SQLProperty $property): bool => !($property->isTransient || $property instanceof SQLRelationship || $property instanceof SQLForeignKey) && (!$property instanceof SQLAttribute || (($property->isDerivedAttribute ? !$property->derivationExpression?->usesKVC : !$property->isCompositeAttribute))));
                 $columns->appendContentsOf($this->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary
                 ): ArrayClass => $dictionary->values));
                 $this->columnsToFetch = $columns;
