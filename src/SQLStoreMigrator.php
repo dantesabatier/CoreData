@@ -7,6 +7,9 @@ namespace Sabatier\CoreData;
 use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\ComparisonResult;
+use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Predicates\ComparisonPredicate;
+use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\fatal_error;
 
@@ -166,11 +169,22 @@ class SQLStoreMigrator
                 continue;
             }
             [$sourceEntity, $destinationEntity] = $entities;
-            if (!($subentity = $destinationEntity->subentities->first(fn(SQLEntity $subentity): bool => $subentity->entityDescription->renamingIdentifier !== $subentity->entityDescription->name))) {
+            if (!($destinationSubentity = $destinationEntity->subentities->first(fn(SQLEntity $subentity): bool => $subentity->entityDescription->renamingIdentifier !== $subentity->entityDescription->name))) {
                 continue;
             }
+            if (!($sourceSubentity = $sourceEntity->subentities->first(fn(SQLEntity $subentity): bool => $subentity->entityDescription->name === $destinationSubentity->entityDescription->renamingIdentifier))) {
+                continue;
+            }
+            if ($statement = $this->adapter->newModifyColumnStatement($destinationSubentity->entityKey, $destinationSubentity->primaryKey)) {
+                $request = new BatchUpdateRequest($destinationSubentity->entityDescription);
+                $request->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($sourceSubentity->entityKey->columnName), Expression::expressionForConstantValue($sourceSubentity->entityKey->defaultValue));
+                $request->propertiesToUpdate = new Dictionary([$destinationSubentity->entityKey->columnName => $destinationSubentity->entityKey->defaultValue]);
+                $requestContext = new SQLBatchUpdateRequestContext($request, new ManagedObjectContext(), $this->adapter->sqlCore);
+                $requestContext->executeRequestUsingConnection($this->connection);
+                $this->connection->execute($statement);
+            }
             /** @var ArrayClass<SQLToMany> $toManyRelationships */
-            $toManyRelationships = $subentity->entitySpecificRelationships->filter(fn(SQLRelationship $relationship): bool => $relationship instanceof SQLToMany);
+            $toManyRelationships = $destinationSubentity->entitySpecificRelationships->filter(fn(SQLRelationship $relationship): bool => $relationship instanceof SQLToMany);
             foreach ($toManyRelationships as $toManyRelationship) {
                 if (!($toMany = $sourceEntity->toManyRelationships->first(fn(SQLToMany $toMany): bool => $toMany->name === $toManyRelationship->name))) {
                     continue;
@@ -204,6 +218,11 @@ class SQLStoreMigrator
                 $statement = $this->adapter->newRenameTableStatement($sourceEntity, $destinationEntity);
                 $this->connection->execute($statement);
                 if ($statement = $this->adapter->newModifyColumnStatement($destinationEntity->entityKey, $destinationEntity->primaryKey)) {
+                    $request = new BatchUpdateRequest($destinationEntity->entityDescription);
+                    $request->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($sourceEntity->entityKey->columnName), Expression::expressionForConstantValue($sourceEntity->entityKey->defaultValue));
+                    $request->propertiesToUpdate = new Dictionary([$destinationEntity->entityKey->columnName => $destinationEntity->entityKey->defaultValue]);
+                    $requestContext = new SQLBatchUpdateRequestContext($request, new ManagedObjectContext(), $this->adapter->sqlCore);
+                    $requestContext->executeRequestUsingConnection($this->connection);
                     $this->connection->execute($statement);
                 }
                 foreach ($sourceEntity->toManyRelationships as $toManyRelationship) {
