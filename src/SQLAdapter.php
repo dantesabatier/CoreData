@@ -8,10 +8,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
-use Sabatier\Foundation\Predicates\ComparisonPredicateModifier;
-use Sabatier\Foundation\Predicates\ComparisonPredicateOptions;
 use Sabatier\Foundation\Predicates\Expression;
-use Sabatier\Foundation\Predicates\PredicateOperatorType;
 
 /** @internal */
 class SQLAdapter extends ObjectClass
@@ -205,14 +202,6 @@ class SQLAdapter extends ObjectClass
 
     public function newModifyColumnStatement(SQLColumn $column, SQLColumn $after): ?SQLStatement
     {
-        if ($column instanceof SQLEntityKey) {
-            $request = new BatchUpdateRequest($column->entity->entityDescription);
-            $request->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($column->columnName), Expression::expressionForConstantValue($column->entity->tableName), PredicateOperatorType::notEqualTo, ComparisonPredicateModifier::direct, ComparisonPredicateOptions::caseInsensitive | ComparisonPredicateOptions::diacriticInsensitive);
-            $request->propertiesToUpdate = new Dictionary([$column->columnName => $column->entity->tableName]);
-            $requestContext = new SQLBatchUpdateRequestContext($request, new ManagedObjectContext(), $this->sqlCore);
-            /** @noinspection PhpUnhandledExceptionInspection */
-            $requestContext->executeRequestUsingConnection($this->sqlCore->schemaValidationConnection);
-        }
         if ($string = $this->typeStringForColumn($column)) {
             return new SQLStatement("ALTER IGNORE TABLE `{$column->entity->tableName}` MODIFY IF EXISTS $string AFTER `$after->columnName`");
         }
