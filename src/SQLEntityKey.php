@@ -18,4 +18,7 @@ class SQLEntityKey extends SQLColumn
     public SQLType $sqlType {
         get => SQLType::varchar;
     }
+    public mixed $defaultValue {
+        get => $this->entity->entityDescription->name;
+    }
 }
