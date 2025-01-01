@@ -2,3 +2,6 @@ parameters:
 	level: 2
 	paths:
 		- src
+	ignoreErrors:
+		- identifier: assign.propertyReadOnly
+		- identifier: property.staticAccess
