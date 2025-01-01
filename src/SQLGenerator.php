@@ -67,7 +67,7 @@ class SQLGenerator extends ObjectClass
     }
     /** @var Dictionary<string> */
     public Dictionary $byMappingByTableAliasAssociationTable {
-        get => $this->byMappingByTableAlias ??= new Dictionary();
+        get => $this->byMappingByTableAliasAssociationTable ??= new Dictionary();
     }
     private bool $useDistinct = false;
     private string $keyValueOperator = KeyValueOperator::countKeyValueOperator;
