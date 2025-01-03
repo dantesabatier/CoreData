@@ -169,6 +169,9 @@ class SQLStoreMigrator
         $request->propertiesToUpdate = new Dictionary([$destinationEntity->entityKey->columnName => $destinationEntity->entityKey->defaultValue]);
         $requestContext = new SQLBatchUpdateRequestContext($request, new ManagedObjectContext(), $this->adapter->sqlCore);
         $requestContext->executeRequestUsingConnection($this->connection);
+        if ($statement = $this->adapter->newModifyColumnStatement($destinationEntity->entityKey, $destinationEntity->primaryKey)) {
+            $this->connection->execute($statement);
+        }
     }
 
     /**
@@ -188,9 +191,6 @@ class SQLStoreMigrator
                 continue;
             }
             $this->updateEntityKey($sourceSubentity, $destinationSubentity);
-            if ($statement = $this->adapter->newModifyColumnStatement($destinationSubentity->entityKey, $destinationSubentity->primaryKey)) {
-                $this->connection->execute($statement);
-            }
             /** @var ArrayClass<SQLToMany> $toManyRelationships */
             $toManyRelationships = $destinationSubentity->entitySpecificRelationships->filter(fn(SQLRelationship $relationship): bool => $relationship instanceof SQLToMany);
             foreach ($toManyRelationships as $toManyRelationship) {
@@ -226,9 +226,6 @@ class SQLStoreMigrator
                 $statement = $this->adapter->newRenameTableStatement($sourceEntity, $destinationEntity);
                 $this->connection->execute($statement);
                 $this->updateEntityKey($sourceEntity, $destinationEntity);
-                if ($statement = $this->adapter->newModifyColumnStatement($destinationEntity->entityKey, $destinationEntity->primaryKey)) {
-                    $this->connection->execute($statement);
-                }
                 foreach ($sourceEntity->toManyRelationships as $toManyRelationship) {
                     if (!($toMany = $destinationEntity->toManyRelationships->first(fn(SQLToMany $toMany): bool => $toMany->name === $toManyRelationship->name))) {
                         continue;
