@@ -3,5 +3,4 @@ parameters:
 	paths:
 		- src
 	ignoreErrors:
-		- identifier: assign.propertyReadOnly
 		- identifier: property.staticAccess
