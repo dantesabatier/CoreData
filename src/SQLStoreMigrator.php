@@ -328,7 +328,7 @@ class SQLStoreMigrator
                             }
                         }
                     } elseif ($statement = $this->adapter->newCreateColumnStatement($property)) {
-                        $this->connection->execute($statement);
+                        $this->connection->execute($statement); 
                     }
                 } elseif ($property instanceof SQLManyToMany) {
                     $statement = $this->adapter->newCreateTableStatementForManyToMany($property);
