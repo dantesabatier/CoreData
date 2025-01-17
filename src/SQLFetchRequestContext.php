@@ -127,6 +127,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         $current[$key] = $value;
                                         if (!$propertyDescription instanceof CompositeAttributeDescription && $this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
                                             $current["isInserted"] = true;
+                                            $current["isFault"] = false;
                                             $current["faultingState"] = 0;
                                         }
                                     }
