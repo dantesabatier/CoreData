@@ -42,6 +42,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
                 $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($referenceObject));
                 $fetchRequest->resultType = FetchRequestResultType::managedObjectIDResultType;
                 $this->result = $this->sqlCore->execute($fetchRequest, $this->context)->first;
+                $this->debugLogLevel = $debugLogLevel;
                 return true;
             }
             $this->result = null;
