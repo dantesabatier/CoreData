@@ -219,18 +219,6 @@ class SQLStoreMigrator
                 continue;
             }
             [$sourceEntity, $destinationEntity] = $entities;
-            foreach ($sourceEntity->indexes as $index) {
-                $this->connection->execute(SQLStatement::merging($index->dropTableStatements));
-            }
-            foreach ($destinationEntity->properties as $property) {
-                if ($property instanceof SQLToMany) {
-                    $statement = $this->adapter->newCreateIndexStatementForForeignKey($property->inverseToOne->foreignKey);
-                    $this->connection->execute($statement);
-                } elseif ($property instanceof SQLToOne) {
-                    $statement = $this->adapter->newCreateIndexStatementForForeignKey($property->foreignKey);
-                    $this->connection->execute($statement);
-                }
-            }
             if ($sourceEntity->tableName !== $destinationEntity->tableName && !$this->sourceModel->entitiesByName->offsetExists($destinationEntity->tableName)) {
                 $statement = $this->adapter->newRenameTableStatement($sourceEntity, $destinationEntity);
                 $this->connection->execute($statement);
@@ -350,6 +338,18 @@ class SQLStoreMigrator
             }
             foreach ($properties as $index => $property) {
                 if ($property instanceof SQLAttribute && !$property->isCompositeAttribute && ($statement = $this->adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($properties->indexBefore($index))))) {
+                    $this->connection->execute($statement);
+                }
+            }
+            foreach ($sourceEntity->indexes as $index) {
+                $this->connection->execute(SQLStatement::merging($index->dropTableStatements));
+            }
+            foreach ($destinationEntity->properties as $property) {
+                if ($property instanceof SQLToMany) {
+                    $statement = $this->adapter->newCreateIndexStatementForForeignKey($property->inverseToOne->foreignKey);
+                    $this->connection->execute($statement);
+                } elseif ($property instanceof SQLToOne) {
+                    $statement = $this->adapter->newCreateIndexStatementForForeignKey($property->foreignKey);
                     $this->connection->execute($statement);
                 }
             }
