@@ -398,8 +398,10 @@ class SQLStoreMigrator
     {
         $removedColumns = $this->removedColumns->sort(fn(SQLColumn $c1, SQLColumn $c2): int => $c1 instanceof SQLAttribute && $c1->isDerivedAttribute ? ComparisonResult::orderedAscending->value : ComparisonResult::orderedDescending->value);
         foreach ($removedColumns as $removedColumn) {
-            $statement = $this->adapter->newDropColumnStatement($removedColumn);
-            $this->connection->execute($statement);
+            if ($removedColumn instanceof SQLForeignKey) {
+                $this->connection->execute($this->adapter->newDropIndexStatementForForeignKey($removedColumn));
+            }
+            $this->connection->execute($this->adapter->newDropColumnStatement($removedColumn));
         }
     }
 
