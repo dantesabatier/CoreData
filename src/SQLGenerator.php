@@ -637,6 +637,9 @@ class SQLGenerator extends ObjectClass
         if ($expression->expressionType !== ExpressionType::keyPath) {
             return $properties;
         }
+        if ($expression->usesKVC) {
+            return $properties;
+        }
         $entity = $this->entity;
         $keys = new Set(explode(".", $expression->description));
         foreach ($keys as $key) {
@@ -724,6 +727,9 @@ class SQLGenerator extends ObjectClass
 
     private function buildKeyPathExpression(Expression $expression, ?bool &$isDeterministic = true): string
     {
+        if ($expression->usesKVC) {
+            return $this->buildDerivedKeyPathExpression($expression, $isDeterministic);
+        }
         $tableName = $this->entity->tableName;
         $keyPath = $tableName;
         $destination = $tableName;
