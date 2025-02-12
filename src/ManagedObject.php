@@ -526,7 +526,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 if ($property->isToMany) {
                     $value ??= new FaultingSet($this, $property);
                     $value->setSet(new Set($newValue));
-                } else {
+                } elseif ($newValue instanceof ManagedObject || $newValue instanceof ManagedObjectID || $newValue instanceof Nil) {
                     $value = $newValue;
                 }
                 $this->setPrimitiveValueForKey($value, $key);
