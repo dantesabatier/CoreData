@@ -22,6 +22,7 @@ use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\ExpressionType;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\SensitivePropertyValue;
+use Sabatier\Foundation\Sequence;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
@@ -524,6 +525,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $store = $context->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null");
                 $newValue = $store->newValueForRelationship($property, $this->objectID, $context);
                 if ($property->isToMany) {
+                    assert($newValue instanceof Sequence, sprintf("invalid argument: expecting \"%s\", (%s)%s given", Sequence::class, typeof($newValue), human_readable_value($newValue)));
                     $value ??= new FaultingSet($this, $property);
                     $value->setSet(new Set($newValue));
                 } else {
