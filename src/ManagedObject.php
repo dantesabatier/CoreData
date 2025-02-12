@@ -613,12 +613,13 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     }
                 }
             } else {
-                assert($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null, sprintf("invalid argument: %s(%s) expecting \"%s|%s|null\", \"%s\" given", $this->entity->name, $key, ManagedObject::class, ManagedObjectID::class, typeof($value)));
+                assert($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null, sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $this->entity->name, $key, ManagedObject::class, ManagedObjectID::class, typeof($value)));
                 $change = $value;
                 $current = $this->primitiveValueForKey($key);
                 if ($this->isInserted && $this->isRelationshipForKeyFault($key)) {
                     $current = $this->valueForKey($key);
                 }
+                assert($current instanceof ManagedObject || $current instanceof ManagedObjectID || $current === null, sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $this->entity->name, $key, ManagedObject::class, ManagedObjectID::class, typeof($current)));
                 if ($current === null && $value !== null) {
                     $changeKind = KeyValueChange::insertion;
                 } elseif ($current !== null && $value === null) {
