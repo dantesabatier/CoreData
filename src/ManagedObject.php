@@ -526,7 +526,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 if ($property->isToMany) {
                     $value ??= new FaultingSet($this, $property);
                     $value->setSet(new Set($newValue));
-                } elseif ($newValue instanceof ManagedObject || $newValue instanceof ManagedObjectID || $newValue instanceof Nil) {
+                } else {
+                    assert($newValue instanceof ManagedObject || $newValue instanceof ManagedObjectID || $newValue instanceof Nil, sprintf("invalid argument: %s->%s expecting \"%s|%s|%s\", \"%s\" given", $this->entity->name, $key, ManagedObject::class, ManagedObjectID::class, Nil::class, typeof($value)));
+                    if ($newValue instanceof Nil) {
+                        $newValue = $newValue->value;
+                    }
                     $value = $newValue;
                 }
                 $this->setPrimitiveValueForKey($value, $key);
