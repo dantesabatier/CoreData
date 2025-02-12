@@ -4,6 +4,7 @@ namespace Sabatier\CoreData;
 
 use Override;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 use function Sabatier\Foundation\fatal_error;
@@ -45,7 +46,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
                 $this->debugLogLevel = $debugLogLevel;
                 return true;
             }
-            $this->result = null;
+            $this->result = Nil::nil();
         } elseif ($property instanceof SQLToMany) {
             $inverseToOne = $property->inverseToOne;
             $destinationEntity = $property->destinationEntity;
