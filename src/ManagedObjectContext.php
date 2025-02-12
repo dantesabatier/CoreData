@@ -738,7 +738,7 @@ class ManagedObjectContext extends ObjectClass
             return;
         }
         if ($property instanceof RelationshipDescription) {
-            assert($value instanceof Set || $value instanceof ManagedObject || $value instanceof ManagedObjectID, sprintf("invalid argument: %s(%s) expecting \"%s|%s|%s\", \"%s\" given", $object->entity->name, $keyPath, Set::class, ManagedObject::class, ManagedObjectID::class, typeof($value)));
+            assert($value instanceof Set || $value instanceof ManagedObject || $value instanceof ManagedObjectID, sprintf("invalid argument: %s->%s expecting \"%s|%s|%s\", \"%s\" given", $object->entity->name, $keyPath, Set::class, ManagedObject::class, ManagedObjectID::class, typeof($value)));
             if (!$value instanceof Set) {
                 if ($value instanceof ManagedObjectID) {
                     $value = $this->object($value);
