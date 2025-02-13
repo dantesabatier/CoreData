@@ -13,7 +13,6 @@ namespace Sabatier\CoreData;
 
 use Closure;
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\CompareOptions;
 use Sabatier\Foundation\ComparisonResult;
 use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Dictionary;
@@ -39,7 +38,6 @@ use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\is_equal;
 use function Sabatier\Foundation\kvc_components;
-use function Sabatier\Foundation\string_contains;
 use function Sabatier\Foundation\typeof;
 
 /** @internal */
@@ -1437,8 +1435,11 @@ class SQLGenerator extends ObjectClass
         /** @var Dictionary $propertiesToUpdate */
         $propertiesToUpdate = $request->propertiesToUpdate;
         $this->string .= " SET {$propertiesToUpdate->map(function (mixed $value, string $key) use (&$arguments): string {
-                if (is_string($value) && $this->entity->attributes->contains(fn(SQLAttribute $attribute): bool => string_contains($value, $attribute->name, CompareOptions::words))) {
-                    return "`$key` = $value";
+                if (is_string($value)) {
+                    if ($this->entity->attributes->contains(fn(SQLAttribute $attribute): bool => $value === $attribute->name)) {
+                        return "`$key` = $value";
+                    }
+                    return "`$key` = {$this->buildExpression(Expression::expressionWithFormat($value))}";
                 }
                 $arguments[] = $value;
                 return "`$key` = ?";
