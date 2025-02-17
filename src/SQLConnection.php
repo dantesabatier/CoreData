@@ -572,7 +572,7 @@ class SQLConnection extends ObjectClass
     public function createSchema(): bool
     {
         $time = absolute_time_get_current();
-        $model = $this->sqlCore?->model ?? fatal_error();
+        $model = $this->sqlCore?->model ?? fatal_error("invalid argument: model cannot be null");
         $database = $this->schema->name;
         if (SQLCore::$debugDefault) {
             error_log("CoreData: annotation: creating database \"$database\"");
