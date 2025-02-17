@@ -726,7 +726,7 @@ class SQLGenerator extends ObjectClass
     private function buildKeyPathExpression(Expression $expression, ?bool &$isDeterministic = true): string
     {
         if ($expression->usesKVC) {
-            return $this->buildDerivedKeyPathExpression($expression, $isDeterministic);
+            return $this->buildDerivedKeyPathExpression($expression, null, $isDeterministic);
         }
         $tableName = $this->entity->tableName;
         $keyPath = $tableName;
