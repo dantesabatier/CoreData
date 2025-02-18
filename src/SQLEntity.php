@@ -281,25 +281,12 @@ class SQLEntity extends StoreMapping
         $this->properties->sort($by);
     }
 
-    public function columnAfter(int $index): SQLColumn
+    public function columnAfter(SQLColumn $column): SQLColumn
     {
-        $properties = $this->properties->filter(fn(SQLProperty $property): bool => !$property->propertyDescription->isTransient);
-        $max = $properties->endIndex;
-        $i = max(min($index, $properties->indexBefore($max)), $properties->startIndex);
-        while ($i < $max) {
-            $property = $properties[$i];
-            if ($property instanceof SQLAttribute) {
-                if ($property->isDerivedAttribute) {
-                    if (!$property->derivationExpression?->usesKVC) {
-                        return $property;
-                    }
-                } else {
-                    return $property;
-                }
-            } elseif ($property instanceof SQLEntityKey || $property instanceof SQLForeignKey) {
-                return $property;
-            }
-            $properties->formIndexAfter($i);
+        $properties = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute && !$property->derivationExpression?->usesKVC && !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);
+        $idx = $properties->indexBefore($properties->indexOf($column) ?? $properties->endIndex);
+        if ($idx >= $properties->startIndex) {
+            return $properties[$idx];
         }
         return $this->entityKey;
     }
