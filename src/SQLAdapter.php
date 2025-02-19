@@ -125,9 +125,11 @@ class SQLAdapter extends ObjectClass
         $statements = new ArrayClass();
         $toOneRelationship = $foreignKey->toOneRelationship;
         $destinationEntity = $toOneRelationship->destinationEntity;
+        $tableName = $destinationEntity->tableName;
+        $key = sprintf("FK_%s_%s", $tableName, ucfirst($foreignKey->relationshipDescription->name));
         $statements->append($this->newDropIndexStatementForForeignKey($foreignKey, $entity));
         if ($toOneRelationship->inverseRelationship instanceof SQLToOne) {
-            $statements->append(new SQLStatement("ALTER TABLE IF EXISTS `$destinationEntity->tableName` DROP FOREIGN KEY IF EXISTS FK_{$destinationEntity->tableName}_$entity->tableName"));
+            $statements->append(new SQLStatement("ALTER TABLE IF EXISTS `$tableName` DROP FOREIGN KEY IF EXISTS `$key`"));
         }
         return $statements;
     }
@@ -135,7 +137,9 @@ class SQLAdapter extends ObjectClass
     public function newDropIndexStatementForForeignKey(SQLForeignKey $foreignKey, ?SQLEntity $entity = null): SQLStatement
     {
         $entity ??= $foreignKey->entity;
-        return SQLStatement::merging(new ArrayClass([new SQLStatement("ALTER TABLE IF EXISTS `$entity->tableName` DROP FOREIGN KEY IF EXISTS FK_{$entity->tableName}_{$foreignKey->toOneRelationship->foreignEntityKey->name}"), new SQLStatement("ALTER TABLE IF EXISTS `$entity->tableName` DROP KEY IF EXISTS FK_{$entity->tableName}_{$foreignKey->toOneRelationship->foreignEntityKey->name}")]));
+        $tableName = $entity->tableName;
+        $key = sprintf("FK_%s_%s", $tableName, ucfirst($foreignKey->relationshipDescription->name));
+        return SQLStatement::merging(new ArrayClass([new SQLStatement("ALTER TABLE IF EXISTS `$entity->tableName` DROP FOREIGN KEY IF EXISTS FK_{$entity->tableName}_{$foreignKey->toOneRelationship->foreignEntityKey->name}"), new SQLStatement("ALTER TABLE IF EXISTS `$tableName` DROP KEY IF EXISTS `$key`")]));
     }
 
     public function newCreateIndexStatementForForeignKey(SQLForeignKey $foreignKey, ?SQLEntity $entity = null): SQLStatement
@@ -144,7 +148,9 @@ class SQLAdapter extends ObjectClass
         $toOneRelationship = $foreignKey->toOneRelationship;
         $destinationEntity = $toOneRelationship->destinationEntity;
         $primaryKey = $destinationEntity->primaryKey;
-        return new SQLStatement("ALTER TABLE `$entity->tableName` ADD CONSTRAINT FK_{$entity->tableName}_{$toOneRelationship->foreignEntityKey->name} FOREIGN KEY IF NOT EXISTS (`$foreignKey->columnName`) REFERENCES `$destinationEntity->tableName` (`$primaryKey->columnName`) ON UPDATE CASCADE ON DELETE " . match ($foreignKey->relationshipDescription->inverseRelationship->deleteRule) {
+        $tableName = $entity->tableName;
+        $key = sprintf("FK_%s_%s", $tableName, ucfirst($foreignKey->relationshipDescription->name));
+        return new SQLStatement("ALTER TABLE `$tableName` ADD CONSTRAINT `$key` FOREIGN KEY IF NOT EXISTS (`$foreignKey->columnName`) REFERENCES `$destinationEntity->tableName` (`$primaryKey->columnName`) ON UPDATE CASCADE ON DELETE " . match ($foreignKey->relationshipDescription->inverseRelationship->deleteRule) {
                 DeleteRule::noActionDeleteRule => "NO ACTION",
                 DeleteRule::nullifyDeleteRule => "SET NULL",
                 DeleteRule::cascadeDeleteRule => "CASCADE",
