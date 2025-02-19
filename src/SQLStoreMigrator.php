@@ -314,7 +314,7 @@ class SQLStoreMigrator
                     $this->removedManyToMany->append($source);
                 }
             }
-            $properties = $destinationEntity->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute && !$property->derivationExpression?->usesKVC && !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);
+            $properties = $destinationEntity->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);
             foreach ($properties as $property) {
                 if ($property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
                     if ($attributes = $destinationEntity->byMappingByCompositeNameAssociationTable->valueForKey($property->name)?->values) {
@@ -335,19 +335,27 @@ class SQLStoreMigrator
             foreach ($destinationEntity->indexes as $index) {
                 $this->createIndexStatements->appendContentsOf($index->createTableStatements);
             }
+            $properties = $destinationEntity->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute && !$property->isCompositeAttribute && !$property->derivationExpression?->usesKVC && !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);
             foreach ($properties as $property) {
-                if ($property instanceof SQLAttribute && !$property->isCompositeAttribute && ($statement = $this->adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($property)))) {
+                if ($property instanceof SQLAttribute && ($statement = $this->adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($property)))) {
                     $this->connection->execute($statement);
                 }
             }
             foreach ($sourceEntity->indexes as $index) {
                 $this->connection->execute(SQLStatement::merging($index->dropTableStatements));
             }
-            foreach ($destinationEntity->properties as $property) {
+            $properties = $destinationEntity->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);
+            foreach ($properties as $property) {
                 if ($property instanceof SQLToMany) {
+                    if ($statement = $this->adapter->newCreateColumnStatement($property->inverseToOne->foreignKey)) {
+                        $this->connection->execute($statement);
+                    }
                     $statement = $this->adapter->newCreateIndexStatementForForeignKey($property->inverseToOne->foreignKey);
                     $this->connection->execute($statement);
                 } elseif ($property instanceof SQLToOne) {
+                    if ($statement = $this->adapter->newCreateColumnStatement($property->foreignKey)) {
+                        $this->connection->execute($statement);
+                    }
                     $statement = $this->adapter->newCreateIndexStatementForForeignKey($property->foreignKey);
                     $this->connection->execute($statement);
                 }
