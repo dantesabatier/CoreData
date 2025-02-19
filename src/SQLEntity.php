@@ -283,7 +283,7 @@ class SQLEntity extends StoreMapping
 
     public function columnAfter(SQLColumn $column): SQLColumn
     {
-        $properties = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute && !$property->derivationExpression?->usesKVC && !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);
+        $properties = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute && !$property->isCompositeAttribute && !$property->derivationExpression?->usesKVC && !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);
         $idx = $properties->indexBefore($properties->indexOf($column) ?? $properties->endIndex);
         if ($idx >= $properties->startIndex) {
             return $properties[$idx];
