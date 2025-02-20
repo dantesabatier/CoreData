@@ -137,7 +137,7 @@ class SQLAdapter extends ObjectClass
     {
         $entity ??= $foreignKey->entity;
         $key = sprintf("FK_%s_%s", $entity->tableName, ucfirst($foreignKey->relationshipDescription->name));
-        return SQLStatement::merging(new ArrayClass([new SQLStatement("ALTER TABLE IF EXISTS `$entity->tableName` DROP FOREIGN KEY IF EXISTS FK_{$entity->tableName}_{$foreignKey->toOneRelationship->foreignEntityKey->name}"), new SQLStatement("ALTER TABLE IF EXISTS `$entity->tableName` DROP KEY IF EXISTS `$key`")]));
+        return SQLStatement::merging(new ArrayClass([new SQLStatement("ALTER TABLE IF EXISTS `$entity->tableName` DROP FOREIGN KEY IF EXISTS `$key`"), new SQLStatement("ALTER TABLE IF EXISTS `$entity->tableName` DROP KEY IF EXISTS `$key`")]));
     }
 
     public function newCreateIndexStatementForForeignKey(SQLForeignKey $foreignKey, ?SQLEntity $entity = null): SQLStatement
