@@ -249,12 +249,9 @@ class SQLGenerator extends ObjectClass
                 $this->appendSQL($this->havingClause);
             }
             if ($request->resultType !== FetchRequestResultType::countResultType) {
-                $this->buildOrderByClause($request->sortDescriptors?->filter(function (SortDescriptor $descriptor) use ($entity): bool {
-                    $property = $entity->propertiesByName[$descriptor->key];
-                    if ($property instanceof PropertyDescription) {
-                        return !$property->isTransient;
-                    }
-                    return true;
+                $this->buildOrderByClause($request->sortDescriptors?->filter(fn(SortDescriptor $descriptor): bool => match ($descriptor->key) {
+                    SQLEntity::entityKeyName, SQLEntity::primaryKeyName => true,
+                    default => !$entity->propertiesByName->valueForKey($descriptor->key)?->isTransient
                 }) ?? new ArrayClass());
                 $this->appendSQL($this->orderByClause);
             }
