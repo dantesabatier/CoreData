@@ -254,7 +254,7 @@ class SQLGenerator extends ObjectClass
                     if ($property instanceof PropertyDescription) {
                         return !$property->isTransient;
                     }
-                    return false;
+                    return true;
                 }) ?? new ArrayClass());
                 $this->appendSQL($this->orderByClause);
             }
