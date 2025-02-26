@@ -1442,7 +1442,11 @@ class SQLGenerator extends ObjectClass
                     if ($this->entity->attributes->contains(fn(SQLAttribute $attribute): bool => $value === $attribute->name)) {
                         return "`$key` = $value";
                     }
-                    return "`$key` = {$this->buildExpression(Expression::expressionWithFormat($value))}";
+                    $value = match($value) {
+                        "UUID()", "CURRENT_TIMESTAMP" => $value,
+                        default => $this->buildExpression(Expression::expressionWithFormat($value)),
+                    };
+                    return "`$key` = $value";
                 }
                 $arguments[] = $value;
                 return "`$key` = ?";
