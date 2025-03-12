@@ -536,7 +536,10 @@ class ManagedObjectContext extends ObjectClass
                 /** @var FetchRequest<ManagedObject> $fetchRequest */
                 $fetchRequest = new FetchRequest();
                 $fetchRequest->entity = $object->entity;
-                $fetchRequest->predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([new ComparisonPredicate(Expression::expressionForKeyPath($key), Expression::expressionForConstantValue($value)), new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($object->objectID), PredicateOperatorType::notEqualTo)]));
+                $fetchRequest->predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([new ComparisonPredicate(Expression::expressionForKeyPath($key), Expression::expressionForConstantValue($value), match ($object->entity->attributesByName->valueForKey($key)?->type) {
+                    AttributeType::string => PredicateOperatorType::like,
+                    default => PredicateOperatorType::equalTo,
+                }), new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($object->objectID), PredicateOperatorType::notEqualTo)]));
                 $fetchRequest->propertiesToFetch = $attributeKeys;
                 if ($store = $object->objectID->persistentStore) {
                     $fetchRequest->affectedStores = new ArrayClass([$store]);
