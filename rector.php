@@ -31,7 +31,6 @@ try {
         ])->withPhpSets()->withSkip([
             SensitiveConstantNameRector::class,
             ClassPropertyAssignToConstructorPromotionRector::class,
-            NewInInitializerRector::class,
             ExplicitBoolCompareRector::class,
             FlipTypeControlToUseExclusiveTypeRector::class,
             DisallowedEmptyRuleFixerRector::class,
