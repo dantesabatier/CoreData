@@ -184,13 +184,13 @@ class SQLGenerator extends ObjectClass
 
     private function compound(EntityDescription $entity, ?Predicate $predicate): ?Predicate
     {
-
         /** @var  EntityDescription $rootEntity */
         $rootEntity = $entity->isRootEntity ? $entity : $entity->rootEntity;
         $subentities = $entity->managedObjectModel->flatten($rootEntity->subentities);
         if (!$entity->isAbstract && !$subentities->isEmpty) {
             $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($entity->name));
             if ($predicate) {
+                //FIXME: This could cause some problems
                 if (!$this->isPrimaryKeyPredicate($predicate) && !$this->isEntityKeyPredicate($predicate)) {
                     $predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory]));
                 }
