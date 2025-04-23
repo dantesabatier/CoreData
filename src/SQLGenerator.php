@@ -83,7 +83,7 @@ class SQLGenerator extends ObjectClass
         if ($this->requestContext instanceof SQLFetchRequestContext) {
             return $this->requestContext->request;
         }
-        return fatal_error("Invalid SQL request context");
+        fatal_error("Invalid SQL request context");
     }
 
     private function entity(): SQLEntity
@@ -100,7 +100,7 @@ class SQLGenerator extends ObjectClass
         if ($this->requestContext instanceof SQLFetchRequestContext) {
             return $this->requestContext->sqlEntityForFetchRequest;
         }
-        return fatal_error("Invalid SQL request context");
+        fatal_error("Invalid SQL request context");
     }
 
     private function statement(): ?SQLStatement
@@ -190,7 +190,6 @@ class SQLGenerator extends ObjectClass
         if (!$entity->isAbstract && !$subentities->isEmpty) {
             $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($entity->name));
             if ($predicate) {
-                //FIXME: This could cause some problems
                 if (!$this->isPrimaryKeyPredicate($predicate) && !$this->isEntityKeyPredicate($predicate)) {
                     $predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory]));
                 }
@@ -681,12 +680,12 @@ class SQLGenerator extends ObjectClass
 
     private function isPrimaryKeyExpression(Expression $expression): bool
     {
-        return $expression->expressionType === ExpressionType::keyPath && str_ends_with($expression->keyPath, SQLEntity::primaryKeyName);
+        return $expression->expressionType === ExpressionType::keyPath && $expression->keyPath === SQLEntity::primaryKeyName;
     }
 
     private function isEntityKeyExpression(Expression $expression): bool
     {
-        return $expression->expressionType === ExpressionType::keyPath && str_ends_with($expression->keyPath, SQLEntity::entityKeyName);
+        return $expression->expressionType === ExpressionType::keyPath && $expression->keyPath === SQLEntity::entityKeyName;
     }
 
     private function isPrimaryKeyPredicate(Predicate $predicate): bool
@@ -1446,10 +1445,10 @@ class SQLGenerator extends ObjectClass
                         "UUID()", "CURRENT_TIMESTAMP" => $value,
                         default => $this->buildExpression(Expression::expressionWithFormat($value)),
                     };
-                    return "`$key` = $value";
+                    return "{$this->entity->tableName}.$key = $value";
                 }
                 $arguments[] = $value;
-                return "`$key` = ?";
+                return "{$this->entity->tableName}.$key = ?";
             })->join(", ")}";
         $this->arguments = $arguments;
     }
