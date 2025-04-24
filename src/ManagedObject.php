@@ -254,6 +254,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     $value ??= new FaultingSet($this, $property);
                 }
             }
+            $this->validateValueForKey($value, $key);
             $this->setPrimitiveValueForKey($value, $key);
         }
     }
