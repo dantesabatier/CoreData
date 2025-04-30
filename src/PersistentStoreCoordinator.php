@@ -135,7 +135,7 @@ class PersistentStoreCoordinator extends ObjectClass
      * @param Dictionary|null $metadata A dictionary that contains the metadata to associate with the store.
      * @param PersistentStoreType $storeType The store type.
      * @param URL $storeURL The store's location.
-     * @param Dictionary|null $options A dictionary containing key-value pairs that specify store behavior and characteristics. see StoreOptions.php
+     * @param Dictionary|null $options A dictionary containing key-value pairs that specify store behavior and characteristics. {@see StoreOptions.php}
      * @throws Exception
      */
     public static function setMetadataForPersistentStore(?Dictionary $metadata, PersistentStoreType $storeType, URL $storeURL, ?Dictionary $options = null): void
@@ -209,7 +209,7 @@ class PersistentStoreCoordinator extends ObjectClass
     /**
      * Creates a persistent store using the provided description and adds it to the coordinator.
      * @param PersistentStoreDescription $description A description object used to create and load a persistent store.
-     * @param Closure(PersistentStoreDescription, Error|null): void $completion The completion handler block that's invoked after the store is added.
+     * @param Closure(PersistentStoreDescription, Error|null): void $completion The completion handler block that invoked after the store is added.
      * @noinspection PhpUnhandledExceptionInspection, PhpDocMissingThrowsInspection
      */
     public function addPersistentStoreWithDescription(PersistentStoreDescription $description, Closure $completion): void
