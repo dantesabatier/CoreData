@@ -368,7 +368,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
      * Returns, for the version information in given metadata, a model merged from a given array of models.
      *
      * This is the companion method to {@see mergedModel()}.
-     * @param ArrayClass<ManagedObjectModel> $models An array of instances of ManagedObjectModel.
+     * @param ArrayClass<ManagedObjectModel> $models An array of ManagedObjectModel.
      * @param Dictionary $metadata A dictionary containing version information from the metadata for a persistent store.
      * @return ManagedObjectModel|null A merged model from models for the version information in metadata. If a model cannot be created to match the version information in metadata, returns nil.
      */
@@ -444,7 +444,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
      * Associates the specified entities with the model using the given configuration name.
      *
      * This method raises an exception if the receiver has been used by an object graph manager.
-     * @param ArrayClass<EntityDescription> $entities An array of instances of EntityDescription.
+     * @param ArrayClass<EntityDescription> $entities An array of EntityDescription.
      * @param string $configuration A name for the configuration.
      */
     public function setEntities(ArrayClass $entities, string $configuration): void
