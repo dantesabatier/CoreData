@@ -80,6 +80,9 @@ class SQLEntity extends StoreMapping
     private(set) bool $isRootEntity {
         get => $this->isRootEntity ??= $this->superentity === null;
     }
+    public bool $isPersistentHistoryEntity {
+        get => $this->entityDescription->isPersistentHistoryEntity;
+    }
     /** @var Dictionary<SQLProperty> */
     private(set) Dictionary $propertiesByName {
         get {
@@ -260,7 +263,6 @@ class SQLEntity extends StoreMapping
     {
     }
 
-    /** @noinspection PhpHookedPropertyCantBeAccessedByRefInspection */
     public function generateInverseRelationshipsAndMore(): void
     {
         $propertiesByName = $this->propertiesByName;
