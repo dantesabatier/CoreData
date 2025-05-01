@@ -43,7 +43,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 {
     use FaultingSetMutationMethods;
 
-    /** @var bool A Boolean value that indicates whether to mark instances of the class as having changes when an unmodeled property changes. false if instances of the class should be marked as having changes if an unmodeled property is changed, otherwise true. The default value is true. */
+    /** @var bool A Boolean value that indicates whether to mark instances of the class as having changes when an unmodeled property changes, false if instances of the class should be marked as having changes if an unmodeled property is changed, otherwise true. The default value is true. */
     public static bool $contextShouldIgnoreUnmodeledPropertyChanges = true;
     /** @var EntityDescription The entity description of the managed object. */
     public readonly EntityDescription $entity;
@@ -185,7 +185,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     }
 
     /**
-     * Returns the entity description that is associated with this subclass.
+     * Returns the entity description associated with this subclass.
      *
      * This method is only legal to call on subclasses of ManagedObject that represent a single entity in the model.
      * @return EntityDescription
