@@ -245,8 +245,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float, AttributeType::string, AttributeType::boolean => self::coercedValue($value, $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional),
                         default => null
                     };
+                    $this->validateValueForKey($value, $key);
                 }
-                $this->validateValueForKey($value, $key);
             } elseif ($property instanceof RelationshipDescription) {
                 if ($property->isToMany) {
                     if ($this->isSubclass(ManagedObject::class)) {
@@ -254,7 +254,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     }
                     $value ??= new FaultingSet($this, $property);
                 }
-                $this->validateValueForKey($value, $key);
             }
             $this->setPrimitiveValueForKey($value, $key);
         }
