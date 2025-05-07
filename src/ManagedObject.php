@@ -247,7 +247,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     };
                 }
                 //FIXME: Temporarily used to detect the case where it is necessary to convert an attribute into an enum
-                if ($property->type == AttributeType::integer16) {
+                if ($property->type === AttributeType::integer16) {
                     $this->validateValueForKey($value, $key);
                 }
             } elseif ($property instanceof RelationshipDescription) {
