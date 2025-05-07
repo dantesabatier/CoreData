@@ -161,7 +161,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * Initializes a managed object from an entity description and inserts it into the specified managed object context.
      * @param ManagedObjectContext $managedObjectContext The context into which the new instance is inserted.
      * @param EntityDescription|null $entity The entity of which to create an instance.
-     * The model associated with context's persistent store coordinator must contain entity.
+     * The model associated with context's persistent store coordinator must contain $entity.
      * If the receiver is a fault, accessing this property does not cause it to fire.
      */
     public function __construct(ManagedObjectContext $managedObjectContext, ?EntityDescription $entity = null)
@@ -245,6 +245,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float, AttributeType::string, AttributeType::boolean => self::coercedValue($value, $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional),
                         default => null
                     };
+                }
+                //FIXME: Temporarily used to detect the case where it is necessary to convert an attribute into an enum
+                if ($property->type == AttributeType::integer16) {
                     $this->validateValueForKey($value, $key);
                 }
             } elseif ($property instanceof RelationshipDescription) {
@@ -298,7 +301,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * Returns a dictionary of the most recent fetched or saved values of the managed object for the properties of the specified keys.
      *
      * This method only reports values of properties that are defined as persistent properties of the receiver, not values of transient properties or of custom instance variables.
-     * You can invoke this method with the keys value of nil to retrieve committed values for all the receiver's properties, as illustrated by the following example.
+     * You can invoke this method with the $keys value of nil to retrieve committed values for all the receiver's properties, as illustrated by the following example.
      * <code>
      * $allCommittedValues = $managedObject->committedValuesForKeys(null);
      * </code>
@@ -331,7 +334,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      *
      * If you change property values using primitive accessors, you avoid the possibility of infinite recursion, but Core Data will not notice the change you make.
      *
-     * The sense of “save” in the method name is that of a database commit statement and so applies to deletions as well as to updates to objects. For subclasses, this method is therefore an appropriate locus for code to be executed when an object deleted as well as “saved to disk.” You can find out if an object is marked for deletion with {@see $isDeleted}.
+     * The sense of “save” in the method name is that of a database commit statement and so applies to deletions as well as to updates to objects. For subclasses, this method is therefore an appropriate locus for code to be executed when an object is deleted as well as “saved to disk.” You can find out if an object is marked for deletion with {@see $isDeleted}.
      */
     public function willSave(): void
     {
@@ -340,11 +343,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /**
      * Provides an opportunity to add code into the life cycle of the managed object after the managed object's context completes a save operation.
      *
-     * You can use this method to notify other objects after a save, and to compute transient values from persistent values.
+     * You can use this method to notify other objects after a save and to compute transient values from persistent values.
      *
-     * This method can have “side effects” on the persistent values, however any changes you make using standard accessor methods will by default dirty the managed object context and leave your context with unsaved changes. Moreover, if the object’s context has an undo manager, such changes will add an undo operation. For document-based applications, changes made in didSave will therefore come into the next undo grouping, which can lead to “empty” undo operations from the user's perspective. You may want to disable undo registration to avoid this issue.
+     * This method can have “side effects” on the persistent values, however, any changes you make using standard accessor methods will by default dirty the managed object context and leave your context with unsaved changes. Moreover, if the object’s context has an undo manager, such changes will add an undo operation. For document-based applications, changes made in didSave will therefore come into the next undo grouping, which can lead to “empty” undo operations from the user's perspective. You may want to disable undo registration to avoid this issue.
      *
-     * The sense of “save” in the method name is that of a database commit statement and so applies to deletions as well as to updates to objects. For subclasses, this method is therefore an appropriate locus for code to be executed when an object deleted as well as “saved to disk.” You can find out if an object is marked for deletion with {@see $isDeleted}.
+     * The sense of “save” in the method name is that of a database commit statement and so applies to deletions as well as to updates to objects. For subclasses, this method is therefore an appropriate locus for code to be executed when an object is deleted as well as “saved to disk.” You can find out if an object is marked for deletion with {@see $isDeleted}.
      *
      * You cannot attempt to resurrect a deleted object in didSave.
      */
@@ -355,7 +358,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /**
      * Provides an opportunity to add code into the life cycle of the managed object before converting it to a fault.
      *
-     * This method is the companion of the {@see didTurnIntoFault()} method. You can use it to (re)set state which requires access to property values (for example, observers across key paths).
+     * This method is the companion of the {@see didTurnIntoFault()} method. You can use it to (re)set the state which requires access to property values (for example, observers across key paths).
      * The default implementation does nothing.
      */
     public function willTurnIntoFault(): void
@@ -430,7 +433,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * This method does not invoke the access notification methods ({@see willAccessValueForKey()} and {@see didAccessValueForKey()}).
      * This method is used primarily by subclasses that implement custom accessor methods that need direct access to the receiver's private storage.
      * @param string $key The name of one of the receiver's properties.
-     * @return mixed The value of the property specified by key. Returns nil if no value has been set.
+     * @return mixed The value of the property specified by $key. Returns nil if no value has been set.
      */
     final public function primitiveValueForKey(string $key): mixed
     {
@@ -440,11 +443,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /**
      * Sets the value of a given property in the managed object's private internal storage.
      *
-     * Sets in the receiver's private internal storage the value of the property specified by key to value.
-     * If key identifies a to-one relationship, relates the object specified by value to the receiver, unrelating the previously related object if there was one. Given a collection object and a key that identifies a to-many relationship, relates the objects contained in the collection to the receiver, unrelating previously related objects if there were any.
+     * Sets in the receiver's private internal storage the value of the property specified by $key to value.
+     * If $key identifies a to-one relationship, relates the object specified by value to the receiver, unrelating the previously related object if there was one. Given a collection object and a key that identifies a to-many relationship, relates the objects contained in the collection to the receiver, unrelating previously related objects if there were any.
      * This method does not invoke the change notification methods ({@see willChangeValueForKey()} and {@see didChangeValueForKey()}).
      * It is typically used by subclasses that implement custom accessor methods that need direct access to the receiver's private internal storage. It is also used by the Core Data framework to initialize the receiver with values from a persistent store or to restore a value from a snapshot.
-     * @param mixed|null $value The new value for the property specified by key.
+     * @param mixed|null $value The new value for the property specified by $key.
      * @param string $key The name of one of the receiver's properties.
      */
     final public function setPrimitiveValueForKey(mixed $value, string $key): void
@@ -453,12 +456,12 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     }
 
     /**
-     * Returns the value for the property specified by key.
+     * Returns the value for the property specified by $key.
      *
-     * If key is not a property defined by the model, the method raises an exception.
-     * This method is overridden by ManagedObject to access the managed object's generic dictionary storage unless the receiver's class explicitly provides key-value coding compliant accessor methods for key.
+     * If $key is not a property defined by the model, the method raises an exception.
+     * This method is overridden by ManagedObject to access the managed object's generic dictionary storage unless the receiver's class explicitly provides key-value coding compliant accessor methods for $key.
      * @param string $key The name of one of the receiver's properties.
-     * @return mixed The value of the property specified by key.
+     * @return mixed The value of the property specified by $key.
      * @noinspection PhpUnhandledExceptionInspection, PhpDocMissingThrowsInspection
      */
     #[Override]
@@ -555,9 +558,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /**
      * Sets the specified property of the managed object to the specified value.
      *
-     * If key is not a property defined by the model or if is not part of the receiver's properties, the method raises an exception. If key identifies a to-one relationship, relates the object specified by value to the receiver, unrelating the previously related object if there was one. Given a collection object and a key that identifies a to-many relationship, relates the objects contained in the collection to the receiver, unrelating previously related objects if there were any.
-     * This method is overridden by ManagedObject to access the managed object's generic dictionary storage unless the receiver's class explicitly provides key-value coding compliant accessor methods for key.
-     * @param mixed|null $value The new value for the property specified by key.
+     * If $key is not a property defined by the model or if it is not part of the receiver's properties, the method raises an exception. If $key identifies a to-one relationship, relates the object specified by value to the receiver, unrelating the previously related object if there was one. Given a collection object and a key that identifies a to-many relationship, relates the objects contained in the collection to the receiver, unrelating previously related objects if there were any.
+     * This method is overridden by ManagedObject to access the managed object's generic dictionary storage unless the receiver's class explicitly provides key-value coding compliant accessor methods for $key.
+     * @param mixed|null $value The new value for the property specified by $key.
      * @param string $key The name of one of the receiver's properties.
      */
     #[Override]
@@ -763,7 +766,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * Returns the object IDs for all the managed objects that are in the named relationship.
      * @param string $key The name of the relationship.
      * @return ArrayClass<ManagedObjectID> An array of managed object ids.
-     * @throws InternalInconsistencyException If key is not a relationship defined by the model, the method raises an exception.
+     * @throws InternalInconsistencyException If $key is not a relationship defined by the model, the method raises an exception.
      */
     public function objectIDsForRelationshipNamed(string $key): ArrayClass
     {
@@ -884,13 +887,13 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /**
      * Validates a property value for a given key.
      *
-     * This method is responsible for two things: coercing the value into an appropriate type for the object, and validating it according to the object's rules.
+     * This method is responsible for two things: coercing the value into an appropriate type for the object and validating it according to the object's rules.
      * The default implementation provided by ManagedObject consults the object's entity description to coerce the value and to check for basic errors, such as a null value when that isn't allowed and the length of strings when a field width is specified for the attribute.
      * It then searches for a method of the form validate<Key>() and invokes it if it exists.
      * You can implement methods of the form validate<Key>() to perform validation that is not possible using the constraints available in the property description. If it finds an unacceptable value, your validation method should return false and error that describes the problem. For inter-property validation (to check for combinations of values that are invalid), see {@see validateForUpdate()} and related methods.
      * @param mixed|null $value A pointer to an object.
      * @param string $key The name of one of the receiver's properties.
-     * @return bool true if value is a valid value for key (or if value can be coerced into a valid value for key), otherwise false. If value is not a valid value for key (and cannot be coerced), the method raises an exception.
+     * @return bool true if value is a valid value for $key (or if value can be coerced into a valid value for $key), otherwise false. If $value is not a valid value for $key (and cannot be coerced), the method raises an exception.
      */
     #[Override]
     public function validateValueForKey(mixed &$value, string $key): bool
@@ -958,7 +961,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /**
      * Determines whether the managed object can be inserted in its current state.
      *
-     * Subclasses should invoke super's implementation before performing their own validation, and should combine any error returned by super's implementation with their own (see Managed Object Validation).
+     * Subclasses should invoke super's implementation before performing their own validation and should combine any error returned by super's implementation with their own (see Managed Object Validation).
      * @throws Exception If the receiver cannot be inserted in its current state, the method raises an exception.
      */
     public function validateForInsert(): void
@@ -969,7 +972,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /**
      * Determines whether the managed object's current state is valid.
      *
-     * ManagedObject's implementation iterates through all the receiver's properties validating each in turn. If this results in more than one error, the userInfo dictionary in the Error returned in error contains a key DetailedErrorsKey; the corresponding value is an array containing the individual validation errors. If you pass NULL as the error, validation will abort after the first failure.
+     * ManagedObject's implementation iterates through all the receiver's properties, validating each in turn. If this results in more than one error, the userInfo dictionary in the Error returned in error contains a key DetailedErrorsKey; the corresponding value is an array containing the individual validation errors. If you pass NULL as the error, validation will abort after the first failure.
      * @throws Exception If the receiver's current state is invalid, the method raises an exception.
      */
     public function validateForUpdate(): void
