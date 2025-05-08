@@ -6,6 +6,7 @@ use BackedEnum;
 use Exception;
 use JetBrains\PhpStorm\ExpectedValues;
 use Override;
+use ReflectionMethod;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\ComparisonResult;
 use Sabatier\Foundation\Date;
@@ -246,9 +247,17 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         default => null
                     };
                 }
-                //FIXME: Temporarily used to detect the case where it is necessary to convert an attribute into an enum
-                if ($property->type === AttributeType::integer16) {
-                    $this->validateValueForKey($value, $key);
+                $selector = "validate" . ucfirst($key);
+                if ($this->responds($selector)) {
+                    $this->perform($selector, [&$value]);
+                } else {
+                    try {
+                        $method = new ReflectionMethod($this, "validateValueForKey");
+                        if ($method->getDeclaringClass()->getName() !== ManagedObject::class) {
+                            $this->validateValueForKey($value, $key);
+                        }
+                    } catch (Exception) {
+                    }
                 }
             } elseif ($property instanceof RelationshipDescription) {
                 if ($property->isToMany) {
