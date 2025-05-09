@@ -234,7 +234,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function awakeFromInsert(): void
     {
-        /** @var PropertyDescription $property */
         foreach ($this->modeledProperties as $property) {
             $key = $property->name;
             $value = $this->primitiveValueForKey($key);
