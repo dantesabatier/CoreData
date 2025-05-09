@@ -6,7 +6,6 @@ use BackedEnum;
 use Exception;
 use JetBrains\PhpStorm\ExpectedValues;
 use Override;
-use ReflectionMethod;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\ComparisonResult;
 use Sabatier\Foundation\Date;
@@ -247,16 +246,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         default => null
                     };
                 }
-                $selector = "validate" . ucfirst($key);
-                if ($this->responds($selector)) {
-                    $this->perform($selector, [&$value]);
-                } else {
-                    try {
-                        $method = new ReflectionMethod($this, "validateValueForKey");
-                        if ($method->getDeclaringClass()->getName() !== ManagedObject::class) {
-                            $this->validateValueForKey($value, $key);
-                        }
-                    } catch (Exception) {
+                if ($this->isSubclass(ManagedObject::class)) {
+                    $selector = "validate" . ucfirst($key);
+                    if ($this->responds($selector)) {
+                        $this->perform($selector, [&$value]);
                     }
                 }
             } elseif ($property instanceof RelationshipDescription) {
