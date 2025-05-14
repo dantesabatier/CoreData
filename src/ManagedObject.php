@@ -248,12 +248,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         default => null
                     };
                 }
-                if ($this->isSubclass(ManagedObject::class)) {
-                    $selector = "validate" . ucfirst($key);
-                    if ($this->responds($selector)) {
-                        $this->perform($selector, [&$value]);
-                    }
-                }
             } elseif ($property instanceof RelationshipDescription) {
                 if ($property->isToMany) {
                     if ($this->isSubclass(ManagedObject::class)) {
