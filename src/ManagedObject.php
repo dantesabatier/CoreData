@@ -249,8 +249,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     };
                 }
                 if ($this->isSubclass(ManagedObject::class)) {
-                    $selector = sprintf("validate%s:", ucfirst($key));
-                    if ($this->responds($selector)) {
+                    if (method_exists($this, sprintf("validate%s:", ucfirst($key)))) {
                         $this->validateValueForKey($value, $key);
                     }
                 }
