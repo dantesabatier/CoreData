@@ -43,7 +43,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 {
     use FaultingSetMutationMethods;
 
-    /** @var bool A Boolean value that indicates whether to mark instances of the class as having changes when an unmodeled property changes, false if instances of the class should be marked as having changes if an unmodeled property is changed, otherwise true. The default value is true. */
+    /** @var bool A Boolean value that indicates whether to mark instances of the class as having changes when an unmodeled property changes. False if instances of the class should be marked as having changes if an unmodeled property is changed, otherwise true. The default value is true. */
     public static bool $contextShouldIgnoreUnmodeledPropertyChanges = true;
     /** @var EntityDescription The entity description of the managed object. */
     public readonly EntityDescription $entity;
@@ -301,7 +301,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     }
 
     /**
-     * Returns a dictionary of the most recent fetched or saved values of the managed object for the properties of the specified keys.
+     * Returns a dictionary of the most recent fetched or saved values for the properties of the specified keys.
      *
      * This method only reports values of properties that are defined as persistent properties of the receiver, not values of transient properties or of custom instance variables.
      * You can invoke this method with the $keys value of nil to retrieve committed values for all the receiver's properties, as illustrated by the following example.
@@ -309,7 +309,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * $allCommittedValues = $managedObject->committedValuesForKeys(null);
      * </code>
      * It is more efficient to use nil than to pass an array of all the property keys.
-     * @param ArrayClass<string>|null $keys An array containing names of properties of the receiver, or nil.
+     * @param ArrayClass<string>|null $keys An array containing names of properties, or nil.
      * @return Dictionary A dictionary containing the last fetched or saved values of the receiver for the properties specified by keys.
      */
     public function committedValuesForKeys(?ArrayClass $keys): Dictionary
