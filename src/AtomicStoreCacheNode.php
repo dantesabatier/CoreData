@@ -50,7 +50,7 @@ class AtomicStoreCacheNode extends ObjectClass
      * Sets the value for the given key.
      *
      * The default implementation forwards the request to the {@see propertyCache()} dictionary if key matches a property name of the entity for this cache node. If key does not represent a property, the standard {@see ObjectClass::setValueForKey()} implementation is used.
-     * @param mixed $value The value for the property identified by key.
+     * @param mixed $value The value for the property identified by $key.
      * @param string $key The name of a property.
      */
     #[Override]
