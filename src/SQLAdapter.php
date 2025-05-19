@@ -147,12 +147,18 @@ class SQLAdapter extends ObjectClass
         $destinationEntity = $toOneRelationship->destinationEntity;
         $primaryKey = $destinationEntity->primaryKey;
         $key = sprintf("FK_%s_%s", $entity->tableName, ucfirst($foreignKey->relationshipDescription->name));
-        return SQLStatement::merging(new ArrayClass([new SQLStatement("/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */"), new SQLStatement("ALTER TABLE `$entity->tableName` ADD CONSTRAINT `$key` FOREIGN KEY IF NOT EXISTS (`$foreignKey->columnName`) REFERENCES `$destinationEntity->tableName` (`$primaryKey->columnName`) ON UPDATE CASCADE ON DELETE " . match ($foreignKey->relationshipDescription->inverseRelationship->deleteRule) {
+        /** @var ArrayClass<SQLStatement> $statements */
+        $statements = new ArrayClass([new SQLStatement("ALTER TABLE `$entity->tableName` ADD CONSTRAINT `$key` FOREIGN KEY IF NOT EXISTS (`$foreignKey->columnName`) REFERENCES `$destinationEntity->tableName` (`$primaryKey->columnName`) ON UPDATE CASCADE ON DELETE " . match ($foreignKey->relationshipDescription->inverseRelationship->deleteRule) {
                 DeleteRule::noActionDeleteRule => "NO ACTION",
                 DeleteRule::nullifyDeleteRule => "SET NULL",
                 DeleteRule::cascadeDeleteRule => "CASCADE",
                 DeleteRule::denyDeleteRule => "RESTRICT"
-            }), new SQLStatement("/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */")]));
+            })]);
+        if (SS_COREDATA_DISABLE_FOREIGN_KEY_CHECKS) :
+            $statements->insertAt(new SQLStatement("/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */"), 0);
+            $statements->append(new SQLStatement("/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */"));
+        endif;
+        return SQLStatement::merging($statements);
     }
 
     public function newDropIndexStatement(SQLColumn $column): ?SQLStatement
