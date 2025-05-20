@@ -45,6 +45,7 @@ try {
             ],
             RemoveAlwaysTrueIfConditionRector::class => [
                 __DIR__ . "/src/SQLGenerator.php",
+                __DIR__ . "/src/SQLAdapter.php"
             ],
             RestoreDefaultNullToNullableTypePropertyRector::class,
             ReadOnlyPropertyRector::class,
