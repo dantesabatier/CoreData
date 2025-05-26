@@ -88,7 +88,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
             return $this->attributesByName;
         }
     }
-    /** @var Dictionary<RelationshipDescription> The relationships of the receiver in a dictionary. The keys in the dictionary are the relationship names and the values are instances of {@see RelationshipDescription}. */
+    /** @var Dictionary<RelationshipDescription> The relationships of the receiver in a dictionary. The keys in the dictionary are the relationship names, and the values are instances of {@see RelationshipDescription}. */
     private(set) Dictionary $relationshipsByName {
         get {
             if (!isset($this->relationshipsByName)) {
