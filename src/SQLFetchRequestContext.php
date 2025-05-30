@@ -51,7 +51,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                     while ($data = $execute->fetch()) {
                         $entityName = $data[SQLEntity::entityKeyName] ?? $this->request->entity->name;
                         /** @var SQLEntity $entity */
-                        $entity = $this->sqlModel->entitiesByName[$entityName];
+                        $entity = $this->sqlModel->entitiesByName[$entityName] ?? fatal_error("Entity \"$entityName\" does not exists");
                         $currentEntity = $entity;
                         $referenceObject = (string)$data[$entity->primaryKey->columnName];
                         /** @var Dictionary<mixed> $representation */
