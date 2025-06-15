@@ -17,6 +17,7 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\KeyValueChange;
 use Sabatier\Foundation\KeyValueObservedChange;
 use Sabatier\Foundation\KeyValueObservingOptions;
+use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Notification;
 use Sabatier\Foundation\NotificationCenter;
 use Sabatier\Foundation\Number;
@@ -648,12 +649,12 @@ class ManagedObjectContext extends ObjectClass
                         }
                     }
                 } else {
-                    $object->setPrimitiveValueForKey(null, $relationship->name);
+                    $object->setPrimitiveValueForKey(new Set(), $relationship->name);
                     $this->deletedObjects->remove($object);
                     $this->insertedObjects->remove($object);
                     $this->updatedObjects->append($object);
                     foreach ($deletions as $deletion) {
-                        $deletion->setPrimitiveValueForKey(null, $inverseRelationship->name);
+                        $deletion->setPrimitiveValueForKey(Nil::nil(), $inverseRelationship->name);
                         $this->deletedObjects->remove($deletion);
                         $this->insertedObjects->remove($deletion);
                         $this->updatedObjects->append($deletion);
