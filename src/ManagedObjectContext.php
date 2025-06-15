@@ -638,7 +638,8 @@ class ManagedObjectContext extends ObjectClass
                 if ($inverseRelationship->isToMany) {
                     foreach ($deletions as $deletion) {
                         $set = $deletion->mutableSetValueForKey($inverseRelationship->name);
-                        $set->remove($object->objectID);
+                        $set->remove($object);
+                        $deletion->setPrimitiveValueForKey($set, $inverseRelationship->name);
                     }
                     $store = $object->objectID->persistentStore;
                     if ($store instanceof SQLCore) {
