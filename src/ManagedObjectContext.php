@@ -99,7 +99,7 @@ class ManagedObjectContext extends ObjectClass
     }
     /** @var bool A Boolean value that indicates whether the context keeps strong references to all registered managed objects. If set to true, the receiver keeps strong references to all registered managed objects. If set to false, then the receiver keeps strong references to registered objects only when they are inserted, updated, deleted, or locked. The default is false. */
     public bool $retainsRegisteredObjects = false;
-    /** @var bool A Boolean value that determines whether the context turns inaccessible faults into deleted objects. Use this property to control how the context behaves when it encounters an inaccessible fault  an object with no underlying data in the persistent store. For example, you might fetch an object that has a to-many relationship, but then a background context deletes the related objects from the store before you traverse that relationship. */
+    /** @var bool A Boolean value that determines whether the context turns inaccessible faults into deleted objects. Use this property to control how the context behaves when it encounters an inaccessible fault, an object with no underlying data in the persistent store. For example, you might fetch an object that has a to-many relationship, but then a background context deletes the related objects from the store before you traverse that relationship. */
     public bool $shouldDeleteInaccessibleFaults = true;
     /** @var Set<ManagedObject> The set of objects that have been inserted into the context but not yet saved in a persistent store. */
     private(set) Set $insertedObjects {
@@ -138,9 +138,9 @@ class ManagedObjectContext extends ObjectClass
     /** @var bool A Boolean value that indicates whether the context propagates deletes at the end of the event in which a change was made.
      * true if the receiver propagates deletes at the end of the event in which a change was made, false if it propagates deletes only during a save operation. The default is true. */
     public bool $propagatesDeletesAtEndOfEvent = true;
-    /** @var UndoManager|null The object that provides undo support for the context. Enable undo support for a context by setting this property to an instance of UndoManager. This can be an undo manager that’s exclusive to the context, or an existing undo manager if you want to integrate the context’s undo operations with those of the rest of your app. If your context uses an undo manager, you can realize a performance benefit by temporarily setting this property to nil when performing expensive operations on that context, such as importing a large number of objects. */
+    /** @var UndoManager|null The object that provides undo support for the context. Enable undo support for a context by setting this property to an instance of UndoManager. This can be an undo manager that’s exclusive to the context or an existing undo manager if you want to integrate the context’s undo operations with those of the rest of your app. If your context uses an undo manager, you can realize a performance benefit by temporarily setting this property to nil when performing expensive operations on that context, such as importing a large number of objects. */
     public ?UndoManager $undoManager = null;
-    /** @var float The maximum length of time that may have elapsed since the store previously fetched data before fulfilling a fault issues a new fetch. The staleness interval controls whether fulfilling a fault uses data previously fetched by the application, or issues a new fetch (see also {@see refresh()}). The staleness interval does not affect objects currently in use (that is, it is not used to automatically update property values from a persistent store after a certain period of time). The expiration value is applied on a per-object basis. It is the relative time until cached data (snapshots) should be considered stale. For example, a value of 300.0 informs the context to utilize cached information for no more than 5 minutes after an object was originally fetched. Note that the staleness interval is a hint and may not be supported by all persistent store types. It is not used by XML and binary stores, because these stores maintain all current values in memory. The default is a negative value, which represents infinite staleness allowed. 0.0 represents "no staleness acceptable".
+    /** @var float The maximum length of time that may have elapsed since the store previously fetched data before fulfilling a fault issues a new fetch. The staleness interval controls whether fulfilling a fault uses data previously fetched by the application, or issues a new fetch (see also {@see refresh()}). The staleness interval does not affect objects currently in use (that is, it is not used to automatically update property values from a persistent store after a certain period of time). The expiration value is applied on a per-object basis. It is the relative time until cached data (snapshots) should be considered stale. For example, a value of 300.0 informs the context to utilize cached information for no more than 5 minutes after an object was originally fetched. Note that the staleness interval is a hint and may not be supported by all persistent store types. It is not used by XML and binary stores because these stores maintain all current values in memory. The default is a negative value, which represents infinite staleness allowed. 0.0 represents "no staleness acceptable".
      */
     public float $stalenessInterval = -1.0;
     private OperationQueue $queue {
@@ -277,8 +277,8 @@ class ManagedObjectContext extends ObjectClass
      *
      * Returned objects are registered with the receiver.
      * The following points are important to consider:
-     * If the fetch request has no predicate, then all instances of the specified entity are retrieved, modulo other criteria below.
-     * An object that meets the criteria specified by request (it is an instance of the entity specified by the request, and it matches the request's predicate if there is one) and that has been inserted into a context but which is not yet saved to a persistent store, is retrieved if the fetch request is executed on that context.
+     * If the fetch request has no predicate, then all instances of the specified entity are retrieved, modulo the other criteria below.
+     * An object that meets the criteria specified by request (it is an instance of the entity specified by the request, and it matches the request's predicate if there is one) and that has been inserted into a context but which is not yet saved to a persistent store is retrieved if the fetch request is executed on that context.
      * If an object in a context has been modified, a predicate is evaluated against its modified state, not against the current state in the persistent store. Therefore, if an object in a context has been modified such that it meets the fetch request's criteria, the request retrieves it even if changes have not been saved to the store and the values in the store are such that it does not meet the criteria.
      * Conversely, if an object in a context has been modified such that it does not match the fetch request, the fetch request will not retrieve it even if the version in the store does match.
      * If an object has been deleted from the context, the fetch request does not retrieve it even if that deletion has not been saved to a store.
@@ -318,7 +318,7 @@ class ManagedObjectContext extends ObjectClass
     }
 
     /**
-     * Returns the object for a specified ID, if the object is registered with the context.
+     * Returns the object for a specified ID if the object is registered with the context.
      * @param ManagedObjectID $objectID An object ID.
      * @return ManagedObject|null The object for the specified ID if it is registered with the receiver, otherwise nil.
      */
@@ -455,8 +455,8 @@ class ManagedObjectContext extends ObjectClass
     /**
      * Specifies the store in which a newly inserted object will be saved.
      *
-     * You can obtain a store from the persistent store coordinator, using for example {@see PersistentStoreCoordinator::persistentStore()}.
-     * It is only necessary to use this method if the receiver's persistent store coordinator manages multiple writable stores that have object's entity in their configuration. Maintaining configurations in the managed object model can eliminate the need for invoking this method directly in many situations. If the receiver's persistent store coordinator manages only a single writable store, or if only one store has object's entity in its model, object will automatically be assigned to that store.
+     * You can obtain a store from the persistent store coordinator, using, for example {@see PersistentStoreCoordinator::persistentStore()}.
+     * It is only necessary to use this method if the receiver's persistent store coordinator manages multiple writable stores that have $object's entity in their configuration. Maintaining configurations in the managed object model can eliminate the need to invoke this method directly in many situations. If the receiver's persistent store coordinator manages only a single writable store, or if only one store has $object's entity in its model, $object will automatically be assigned to that store.
      * @param ManagedObject $object A managed object.
      * @param PersistentStore $store A persistent store.
      */
@@ -559,10 +559,10 @@ class ManagedObjectContext extends ObjectClass
      * Updates the persistent properties of a managed object to use the latest values from the persistent store.
      * @param ManagedObject $object A managed object.
      * @param bool $mergeChanges A Boolean value.
-     * If flag is false, then object is turned into a fault and any pending changes are lost.
+     * If $mergeChanges is false, then $object is turned into a fault and any pending changes are lost.
      * The object remains a fault until it is accessed again, at which time its property values will be reloaded from the store or last cached state.
-     * If flag is true, then object is turned into a fault and object's property values are reloaded from the values from the store or the last cached state then any changes that were made (in the local context) are re-applied over those (now newly updated) values.
-     * (If flag is true the merge of the values into object will always succeed in this case there is therefore no such thing as a “merge conflict” or a merge that is not possible.)
+     * If $mergeChanges is true, then $object is turned into a fault and object's property values are reloaded from the values from the store or the last cached state, then any changes that were made (in the local context) are re-applied over those (now newly updated) values.
+     * (If $mergeChanges is true, the merge of the values into $object will always succeed in this case there is therefore no such thing as a “merge conflict” or a merge that is not possible.)
      */
     public function refresh(ManagedObject $object, bool $mergeChanges = false): void
     {
@@ -807,8 +807,8 @@ class ManagedObjectContext extends ObjectClass
     /**
      * Merges the changes specified in a given notification.
      *
-     * This method refreshes any objects which have been updated in the other context, faults in any newly-inserted objects, and invokes {@see delete()} on those which have been deleted.
-     * You can pass a {@see ManagedObjectContextDidSave} posted by a managed object context on another thread, however you must not use the managed objects in the user info dictionary directly.
+     * This method refreshes any objects that have been updated in the other context, faults in any newly inserted objects, and invokes {@see delete()} on those which have been deleted.
+     * You can pass a {@see ManagedObjectContextDidSave} posted by a managed object context on another thread, however, you must not use the managed objects in the user info dictionary directly.
      * @param Notification $notification A notification posted by another context.
      */
     public function mergeChangesFromContextDidSaveNotification(Notification $notification): void
@@ -865,7 +865,7 @@ class ManagedObjectContext extends ObjectClass
     /**
      * Attempts to commit unsaved changes to registered objects to the context's parent store.
      *
-     * If there were multiple errors (for example several edited objects had validation failures) the description of Error returned indicates that there were multiple errors, and its userInfo dictionary contains the key DetailedErrors. The value associated with the DetailedErrors key is an array that contains the individual Error objects.
+     * If there were multiple errors (for example, several edited objects had validation failures), the description of Error returned indicates that there were multiple errors, and its userInfo dictionary contains the key DetailedErrors. The value associated with the DetailedErrors key is an array that contains the individual Error objects.
      * If a context's parent store is a persistent store coordinator, then changes are committed to the external store. If a context's parent store is another managed object context, then {@see save()} only updates managed objects in that parent store. To commit changes to the external store, you must save changes in the chain of contexts up to and including the context whose parent is the persistent store coordinator.
      * Always verify that the context has uncommitted changes (using the {@see hasChanges} property) before invoking the save: method. Otherwise, Core Data may perform unnecessary work.
      * @return bool true if the save succeeds, otherwise false.
