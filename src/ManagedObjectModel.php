@@ -17,6 +17,7 @@ use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\PropertyListSerialization;
 use Sabatier\Foundation\Set;
+use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\URL;
 use Traversable;
 use function Sabatier\Foundation\fatal_error;
@@ -193,6 +194,10 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                     $fetchRequestPredicateFormat = $description["fetchRequestPredicateFormat"];
                     if ($fetchRequestPredicateFormat) {
                         $fetchRequest->predicate = Predicate::format($fetchRequestPredicateFormat);
+                        $fetchRequestSortDescriptorKey = $description["fetchRequestSortDescriptorKey"];
+                        if ($fetchRequestSortDescriptorKey) {
+                            $fetchRequest->sortDescriptors = new ArrayClass([new SortDescriptor($fetchRequestSortDescriptorKey, $description["fetchRequestSortDescriptorIsAscending"] ?? true)]);
+                        }
                     }
                     $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
                         "name", "fetchRequestEntityName", "fetchRequestPredicateFormat" => true,
