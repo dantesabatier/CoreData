@@ -27,8 +27,8 @@ class FaultingSet extends Set
     #[Override]
     public function indexOf(mixed $element): ?int
     {
-        if ($element instanceof ManagedObjectID) {
-            $element = $this->source->managedObjectContext->object($element);
+        if ($element instanceof ManagedObject) {
+            $element = $element->objectID;
         }
         return parent::indexOf($element);
     }
