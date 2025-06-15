@@ -80,6 +80,9 @@ class SQLEntity extends StoreMapping
     private(set) bool $isRootEntity {
         get => $this->isRootEntity ??= $this->superentity === null;
     }
+    private(set) bool $isAbstract {
+        get => $this->isAbstract ??= $this->entityDescription->isAbstract;
+    }
     public bool $isPersistentHistoryEntity {
         get => $this->entityDescription->isPersistentHistoryEntity;
     }
