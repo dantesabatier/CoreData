@@ -131,7 +131,7 @@ class ManagedObjectContext extends ObjectClass
     }
     /** @var QueryGenerationToken|null Returns the token associated with the query generation currently in use by this context. */
     private(set) ?QueryGenerationToken $queryGenerationToken = null;
-    /** @var string|null The author for the context that is used as an identifier in persistent history transactions. Set a managed object context's transactionAuthor before saving it to differentiate among multiple call sites that modify the same context. Doing this records an author in subsequent transactions. */
+    /** @var string|null The author for the context that is used as an identifier in persistent history transactions. Set a managed object context's transactionAuthor before saving it to differentiate among multiple call sites that modify the same context. Doing this records an author in further transactions. */
     public ?string $transactionAuthor = null;
     /** @var bool A Boolean value that indicates whether the context has uncommitted changes. */
     private(set) bool $hasChanges = false;
@@ -140,7 +140,7 @@ class ManagedObjectContext extends ObjectClass
     public bool $propagatesDeletesAtEndOfEvent = true;
     /** @var UndoManager|null The object that provides undo support for the context. Enable undo support for a context by setting this property to an instance of UndoManager. This can be an undo manager that’s exclusive to the context or an existing undo manager if you want to integrate the context’s undo operations with those of the rest of your app. If your context uses an undo manager, you can realize a performance benefit by temporarily setting this property to nil when performing expensive operations on that context, such as importing a large number of objects. */
     public ?UndoManager $undoManager = null;
-    /** @var float The maximum length of time that may have elapsed since the store previously fetched data before fulfilling a fault issues a new fetch. The staleness interval controls whether fulfilling a fault uses data previously fetched by the application, or issues a new fetch (see also {@see refresh()}). The staleness interval does not affect objects currently in use (that is, it is not used to automatically update property values from a persistent store after a certain period of time). The expiration value is applied on a per-object basis. It is the relative time until cached data (snapshots) should be considered stale. For example, a value of 300.0 informs the context to utilize cached information for no more than 5 minutes after an object was originally fetched. Note that the staleness interval is a hint and may not be supported by all persistent store types. It is not used by XML and binary stores because these stores maintain all current values in memory. The default is a negative value, which represents infinite staleness allowed. 0.0 represents "no staleness acceptable".
+    /** @var float The maximum length of time that may have elapsed since the store previously fetched data before fulfilling a fault issues a new fetch. The staleness interval controls whether fulfilling a fault uses data previously fetched by the application, or issues a new fetch (see also {@see refresh()}). The staleness interval does not affect objects currently in use (that is, it is not used to automatically update property values from a persistent store after a certain period of time). The expiration value is applied on a per-object basis. It is the relative time until cached data (snapshots) should be considered stale. For example, a value of 300.0 informs the context to use cached information for no more than 5 minutes after an object was originally fetched. Note that the staleness interval is a hint and may not be supported by all persistent store types. It is not used by XML and binary stores because these stores maintain all current values in memory. The default is a negative value, which represents infinite staleness allowed. 0.0 represents "no staleness acceptable".
      */
     public float $stalenessInterval = -1.0;
     private OperationQueue $queue {
@@ -282,7 +282,7 @@ class ManagedObjectContext extends ObjectClass
      * If an object in a context has been modified, a predicate is evaluated against its modified state, not against the current state in the persistent store. Therefore, if an object in a context has been modified such that it meets the fetch request's criteria, the request retrieves it even if changes have not been saved to the store and the values in the store are such that it does not meet the criteria.
      * Conversely, if an object in a context has been modified such that it does not match the fetch request, the fetch request will not retrieve it even if the version in the store does match.
      * If an object has been deleted from the context, the fetch request does not retrieve it even if that deletion has not been saved to a store.
-     * Objects that have been realized (populated, faults fired, “read from”, and so on) as well as pending updated, inserted, or deleted, are never changed by a fetch operation without developer intervention.
+     * Objects that have been realized (populated, faults fired, “read from” and so on) as well as pending updated, inserted, or deleted, are never changed by a fetch operation without developer intervention.
      * If you fetch some objects, work with them, and then execute a new fetch that includes a superset of those objects, you do not get new instances or update data for the existing objects—you get the existing objects with their current in-memory state.
      * @template T
      * @param FetchRequest<T> $request A fetch request that specifies the search criteria for the fetch.
@@ -455,7 +455,7 @@ class ManagedObjectContext extends ObjectClass
     /**
      * Specifies the store in which a newly inserted object will be saved.
      *
-     * You can obtain a store from the persistent store coordinator, using, for example {@see PersistentStoreCoordinator::persistentStore()}.
+     * You can get a store from the persistent store coordinator, using, for example {@see PersistentStoreCoordinator::persistentStore()}.
      * It is only necessary to use this method if the receiver's persistent store coordinator manages multiple writable stores that have $object's entity in their configuration. Maintaining configurations in the managed object model can eliminate the need to invoke this method directly in many situations. If the receiver's persistent store coordinator manages only a single writable store, or if only one store has $object's entity in its model, $object will automatically be assigned to that store.
      * @param ManagedObject $object A managed object.
      * @param PersistentStore $store A persistent store.
