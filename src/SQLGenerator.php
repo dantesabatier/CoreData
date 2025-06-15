@@ -1340,8 +1340,7 @@ class SQLGenerator extends ObjectClass
             foreach ($entity->properties as $property) {
                 if ($property instanceof SQLAttribute || $property instanceof SQLToOne) {
                     $key = $property->name;
-                    $value = $updatedObject->changedValuesForCurrentEvent()[$key];
-                    if ($value !== null) {
+                    if ($updatedObject->changedValues()->offsetExists($key)) {
                         if ($property instanceof SQLToOne) {
                             $key = $property->foreignKey->columnName;
                         }
