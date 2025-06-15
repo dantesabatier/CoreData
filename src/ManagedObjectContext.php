@@ -663,7 +663,7 @@ class ManagedObjectContext extends ObjectClass
                     }
                 }
             } else {
-                $object->setPrimitiveValueForKey(null, $relationship->name);
+                $object->setPrimitiveValueForKey(Nil::nil(), $relationship->name);
                 $this->deletedObjects->remove($object);
                 $this->insertedObjects->remove($object);
                 $this->updatedObjects->append($object);
