@@ -649,7 +649,8 @@ class ManagedObjectContext extends ObjectClass
                         }
                     }
                 } else {
-                    $object->setPrimitiveValueForKey(new Set(), $relationship->name);
+                    $set = $object->mutableSetValueForKey($relationship->name);
+                    $set->formIntersection($deletions);
                     $this->deletedObjects->remove($object);
                     $this->insertedObjects->remove($object);
                     $this->updatedObjects->append($object);
@@ -659,6 +660,7 @@ class ManagedObjectContext extends ObjectClass
                         $this->insertedObjects->remove($deletion);
                         $this->updatedObjects->append($deletion);
                     }
+                    $object->setPrimitiveValueForKey($set, $relationship->name);
                 }
             } else {
                 $object->setPrimitiveValueForKey(null, $relationship->name);
