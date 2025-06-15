@@ -603,7 +603,7 @@ class ManagedObjectContext extends ObjectClass
             if ($inverseRelationship->isToMany) {
                 foreach ($insertions as $insertion) {
                     $set = $insertion->mutableSetValueForKey($inverseRelationship->name);
-                    $set->append($object->objectID);
+                    $set->append($object);
                 }
                 $store = $object->objectID->persistentStore;
                 if ($store instanceof SQLCore) {
