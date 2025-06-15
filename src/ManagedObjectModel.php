@@ -200,7 +200,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                         }
                     }
                     $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
-                        "name", "fetchRequestEntityName", "fetchRequestPredicateFormat" => true,
+                        "name", "fetchRequestEntityName", "fetchRequestPredicateFormat", "fetchRequestSortDescriptorKey", "fetchRequestSortDescriptorIsAscending" => true,
                         default => false
                     });
                     $fetchRequest->setValuesForKeys($description);
