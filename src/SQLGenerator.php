@@ -417,7 +417,7 @@ class SQLGenerator extends ObjectClass
 
     private function appendJoinDestinationEntity(SQLEntity $destinationEntity, string $destinationPath): void
     {
-        if ($destinationPath === "") {
+        if ($destinationPath === "" || $destinationEntity->isAbstract) {
             return;
         }
         /** @var EntityDescription $rootEntity */
