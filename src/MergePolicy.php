@@ -34,7 +34,7 @@ class MergePolicy extends ObjectClass
      *
      * If you override this method in a subclass, you should invoke the superclass implementation with the merge policy that is closest to the behavior you want.
      * This will make it easier to use the superclass implementation of {@see resolveConflicts()} and then customize the results.
-     * Due to the complexity of merging to-many relationships, this class is designed with the expectation that you call super as the base implementation.
+     * Due to the complexity of merging to-many relationships, this class is designed with the expectation that you call parent as the base implementation.
      * @param MergePolicyType $mergeType A merge policy type.
      */
     public function __construct(public readonly MergePolicyType $mergeType)
