@@ -92,7 +92,7 @@ class PersistentStoreCoordinator extends ObjectClass
      *
      * For atomic stores, this method alters the location to which the next save operation will write the file; for non-atomic stores, invoking this method will relinquish the existing connection and create a new one at the specified URL.
      * (For non-atomic stores, a store must already exist at the destination URL; a new store will not be created.)
-     * @param URL $url The new location for store.
+     * @param URL $url The new location for $store.
      * @param PersistentStore $store A persistent store associated with the receiver.
      * @return bool true if the store was relocated, otherwise false.
      * @throws Exception
@@ -178,7 +178,7 @@ class PersistentStoreCoordinator extends ObjectClass
      * @param string|null $configuration The name of a configuration in the receiver's managed object model that will be used by the new store.
      * The configuration can be nil, in which case no other configurations are allowed.
      * @param URL $storeURL The file location of the persistent store.
-     * @param Dictionary|null $options A dictionary containing key-value pairs that specify whether the store should be read-only, and whether (for an XML store) the XML file should be validated against the DTD before it is read.
+     * @param Dictionary|null $options A dictionary containing key-value pairs that specify whether the store should be read-only and whether (for an XML store) the XML file should be validated against the DTD before it is read.
      * For key definitions, see {@see IgnorePersistentStoreVersioningOption}, {@see MigratePersistentStoresAutomaticallyOption}, {@see InferMappingModelAutomaticallyOption}, {@see ReadOnlyPersistentStoreOption}, {@see ValidateXMLStoreOption}, {@see PersistentStoreTimeoutOption}. This value may be nil.
      * @return PersistentStore
      * @throws Exception If a new store cannot be created, upon return contains an error that describes the problem
@@ -249,10 +249,10 @@ class PersistentStoreCoordinator extends ObjectClass
      *
      * This method is typically used for "Save As" operations.
      * Performance may vary depending on the type of old and new store.
-     * After invocation of this method, the specified store is removed from the coordinator thus store is no longer a useful reference.
+     * After invocation of this method, the specified store is removed from the coordinator, thus store is no longer a useful reference.
      * @param PersistentStore $store A persistent store.
      * @param URL $destinationURL A URL object that specifies the location for the new store.
-     * @param Dictionary|null $destinationOptions A dictionary containing key value pairs that specify whether the store should be read only, and whether (for an XML store) the XML file should be validated against the DTD before it is read.
+     * @param Dictionary|null $destinationOptions A dictionary containing key value pairs that specify whether the store should be read-only and whether (for an XML store) the XML file should be validated against the DTD before it is read.
      * @param PersistentStoreType $destinationType The new store type.
      * @return PersistentStore|null If the migration is successful, the new store, otherwise nil.
      * @throws Exception
@@ -304,7 +304,7 @@ class PersistentStoreCoordinator extends ObjectClass
     /**
      * Replace the destination persistent store with the source store.
      * @param URL $destinationURL A URL object that specifies the location for the new store.
-     * @param Dictionary|null $destinationOptions A dictionary containing key value pairs that specify whether the store should be read only, and whether (for an XML store) the XML file should be validated against the DTD before it is read.
+     * @param Dictionary|null $destinationOptions A dictionary containing key value pairs that specify whether the store should be read-only and whether (for an XML store) the XML file should be validated against the DTD before it is read.
      * @param URL $sourceURL A URL object that specifies the location of a persistent store.
      * @param Dictionary|null $sourceOptions A dictionary.
      * @param PersistentStoreType $storeType The store type of the replacement store.
@@ -319,9 +319,9 @@ class PersistentStoreCoordinator extends ObjectClass
     /**
      * Sends a request to all the persistent stores associated with the coordinator.
      * @param PersistentStoreRequest $request A fetch or save request.
-     * @param ManagedObjectContext $context The context against which request should be executed.
-     * @return ArrayClass<ManagedObject|ManagedObjectID|Dictionary|Number>|ArrayClass<ArrayClass<ManagedObject|ManagedObjectID|Dictionary|Number>> An array containing managed objects, managed object IDs, or dictionaries as appropriate for a fetch request; an empty array if request is a save request, or nil if an error occurred.
-     * User defined requests return arrays of arrays, where a nested array is the result returned from a single store.
+     * @param ManagedObjectContext $context The context against which $request should be executed.
+     * @return ArrayClass<ManagedObject|ManagedObjectID|Dictionary|Number>|ArrayClass<ArrayClass<ManagedObject|ManagedObjectID|Dictionary|Number>> An array containing managed objects, managed object IDs, or dictionaries as appropriate for a fetch request; an empty array if $request is a save request, or nil if an error occurred.
+     * User-defined requests return arrays of arrays, where a nested array is the result returned from a single store.
      * @throws Exception If an error occurs, upon return contains an error object that describes the problem.
      */
     public function execute(PersistentStoreRequest $request, ManagedObjectContext $context): ArrayClass
@@ -355,7 +355,7 @@ class PersistentStoreCoordinator extends ObjectClass
     /**
      * Returns a single persistent history token for the specified persistent stores.
      *
-     * If stores is nil or an empty array, constructs a persistent history token with all the persistent stores in the coordinator.
+     * If $stores are null or an empty array, constructs a persistent history token with all the persistent stores in the coordinator.
      * @param ArrayClass<PersistentStore>|null $stores
      * @return PersistentHistoryToken|null
      */
