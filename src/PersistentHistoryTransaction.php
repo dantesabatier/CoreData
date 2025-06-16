@@ -27,7 +27,7 @@ class PersistentHistoryTransaction extends ObjectClass
 {
     /** @var EntityDescription|null The entity description of the persistent history transaction entity. The entity description of {@see PersistentHistoryTransaction} lists the properties of the persistent history change. This can be useful for filtering your request.The entity description of the persistent history transaction entity. The entity description of {@see PersistentHistoryTransaction} lists the properties of the persistent history change. This can be useful for filtering your request. */
     public static ?EntityDescription $entityDescription = null;
-    /** @var string|null A granular description of the context that made the persistent history change, if available. This property has a value if the managed object context set a transactionAuthor before the save. */
+    /** @var string|null A granular description of the context that made the persistent history change, if available. This property has a value if the managed object context sets a $transactionAuthor before the save. */
     private(set) ?string $author = null;
     /** @var string The originating bundle's identifier. */
     private(set) string $bundleID = UnknownName;
@@ -92,9 +92,9 @@ class PersistentHistoryTransaction extends ObjectClass
     }
 
     /**
-     * Obtains a notification for use in merging the transaction's changes into a managed object context.
+     * Gets a notification for use in merging the transaction's changes into a managed object context.
      *
-     * To merge the relevant changes into your view context, first obtain a notification by calling objectIDNotification() on the transaction. Then, pass the notification to {@see ManagedObjectContext::mergeChanges()}.
+     * To merge the relevant changes into your view context, first get a notification by calling objectIDNotification() on the transaction. Then, pass the notification to {@see ManagedObjectContext::mergeChanges()}.
      * @return Notification A ManagedObjectContextDidSaveObjectIDs notification.
      */
     public function objectIDNotification(): Notification
