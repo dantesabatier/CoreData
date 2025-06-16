@@ -361,7 +361,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
      * @param ArrayClass<Bundle> $bundles An array of bundles.
      * @param Dictionary $metadata A dictionary containing version information from the metadata for a persistent store.
      * @return ManagedObjectModel|null The managed object model used to create the store for the metadata.
-     * If a model cannot be created to match the version information specified by metadata, returns nil.
+     * If a model cannot be created to match the version information specified by $metadata, it returns nil.
      */
     public static function mergedModel(ArrayClass $bundles, Dictionary $metadata): ?ManagedObjectModel
     {
@@ -375,7 +375,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
      * This is the companion method to {@see mergedModel()}.
      * @param ArrayClass<ManagedObjectModel> $models An array of ManagedObjectModel.
      * @param Dictionary $metadata A dictionary containing version information from the metadata for a persistent store.
-     * @return ManagedObjectModel|null A merged model from models for the version information in metadata. If a model cannot be created to match the version information in metadata, returns nil.
+     * @return ManagedObjectModel|null A merged model from $models for the version information in $metadata. If a model cannot be created to match the version information in $metadata, it returns nil.
      */
     public static function merging(/** @noinspection PhpUnusedParameterInspection */ ArrayClass $models, Dictionary $metadata): ?ManagedObjectModel
     {
@@ -471,7 +471,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     /**
      * Returns a copy of the fetch request template with the variables substituted by values from the substitutions' dictionary.
      *
-     * The variables dictionary must provide values for all the variables.
+     * The $$substitutionVariables dictionary must provide values for all the variables.
      * This method provides the usual way to bind an “abstractly” defined fetch request template to a concrete fetch.
      * @param string $name A string containing the name of a fetch request template.
      * @param Dictionary $substitutionVariables A dictionary containing key-value pairs where the keys are the names of variables specified in the template;
