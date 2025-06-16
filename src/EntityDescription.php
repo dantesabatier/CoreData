@@ -130,7 +130,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     private(set) string $versionHash {
         get => $this->versionHash ??= $this->versionHashInStyle(VersionHashStyle::default);
     }
-    /** @var string|null The version hash modifier for the receiver. This value is included in the version hash for the entity. You use it to mark or denote an entity as being a different “version” than another even if all the values which affect persistence are equal. (Such a difference is important in cases where, for example, the structure of an entity is unchanged but the format or content of data has changed.) */
+    /** @var string|null The version-hash modifier for the receiver. This value is included in the version hash for the entity. You use it to mark or denote an entity as being a different “version” than another even if all the values which affect persistence are equal. (Such a difference is important in cases where, for example, the structure of an entity is unchanged but the format or content of data has changed.) */
     public ?string $versionHashModifier = null;
     /** @var ArrayClass<RelationshipDescription> */
     private(set) ArrayClass $entitySpecificRelationships {
