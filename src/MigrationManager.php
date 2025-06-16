@@ -38,7 +38,7 @@ class MigrationManager extends ObjectClass
     private(set) ManagedObjectContext $sourceContext;
     /** @var Dictionary|null The user info for the migration manager. */
     public ?Dictionary $userInfo = null;
-    /** @var bool A Boolean value that indicates whether the migration manager tries to use a store specific migration manager to perform the migration. */
+    /** @var bool A Boolean value that indicates whether the migration manager tries to use a store-specific migration manager to perform the migration. */
     public bool $usesStoreSpecificMigrationManager = true;
     /** @var EntityMapping|null The entity mapping currently being processed. */
     public ?EntityMapping $currentEntityMapping {
@@ -63,7 +63,7 @@ class MigrationManager extends ObjectClass
 
     /**
      * Initializes a migration manager instance with given source and destination models.
-     * @param ManagedObjectModel $sourceModel The source managed object model for the migration manager.
+     * @param ManagedObjectModel $sourceModel The source managed-object model for the migration manager.
      * @param ManagedObjectModel $destinationModel The destination managed object model for the migration manager.
      */
     public function __construct(public readonly ManagedObjectModel $sourceModel, public readonly ManagedObjectModel $destinationModel)
@@ -329,9 +329,9 @@ class MigrationManager extends ObjectClass
      * Associates a given source managed object instance with an array of destination instances for a given property mapping.
      *
      * Data migration is performed as a three-stage process (first create the data, then relate the data, then validate the data).
-     * You use this method to associate data between the source and destination stores, in order to allow for relationship creation or fixup after the creation stage.
+     * You use this method to associate data between the source and destination stores, to allow for relationship creation or fixup after the creation stage.
      * This method is called in the default implementation of {@see EntityMigrationPolicy::createDestinationInstances()} method.
-     * @param ManagedObject $sourceInstance A source managed object.
+     * @param ManagedObject $sourceInstance A source-managed object.
      * @param ManagedObject $destinationInstance The destination managed object for sourceInstance.
      * @param EntityMapping $entityMapping The entity mapping to use to associate sourceInstance with the object in destinationInstances.
      */
@@ -345,7 +345,7 @@ class MigrationManager extends ObjectClass
      * @param string $mappingName The name of an entity mapping in use.
      * @param ArrayClass<ManagedObject>|null $sourceInstances An array of managed objects in the source store.
      * @return ArrayClass<ManagedObject> An array containing the managed object instances created in the destination store for the entity mapping named mappingName for sourceInstances.
-     * If sourceInstances is nil, all the destination instances created by the specified property mapping are returned.
+     * If $sourceInstances are nil, all the destination instances created by the specified property mapping are returned.
      */
     public function destinationInstances(string $mappingName, ?ArrayClass $sourceInstances = null): ArrayClass
     {
@@ -376,7 +376,7 @@ class MigrationManager extends ObjectClass
      * @param string $mappingName The name of an entity mapping in use.
      * @param ArrayClass<ManagedObject>|null $destinationInstances An array of managed objects in the destination store.
      * @return ArrayClass<ManagedObject> An array containing the managed object instances in the source store used to create destinationInstances using the entity mapping named mappingName.
-     * If destinationInstances is nil, all the source instances used to create the destination instance for this property mapping are returned.
+     * If $destinationInstances are nil, all the source instances used to create the destination instance for this property mapping are returned.
      */
     public function sourceInstances(string $mappingName, ?ArrayClass $destinationInstances = null): ArrayClass
     {
