@@ -17,7 +17,7 @@ use JetBrains\PhpStorm\Pure;
  */
 class AsynchronousFetchRequest extends PersistentStoreRequest
 {
-    /** @var int A configuration parameter that assists Core Data with scheduling the asynchronous fetch request. */
+    /** @var int A configuration parameter that helps Core Data with scheduling the asynchronous fetch request. */
     public int $estimatedResultCount = 0;
 
     /**
