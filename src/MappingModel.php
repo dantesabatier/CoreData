@@ -117,7 +117,7 @@ class MappingModel extends ObjectClass
      * @param ArrayClass<Bundle>|null $bundles An array of bundles in which to search for mapping models.
      * @param ManagedObjectModel|null $sourceModel The managed object model for the source store.
      * @param ManagedObjectModel|null $destinationModel The managed object model for the destination store.
-     * @return MappingModel|null Returns the mapping model to translate data from sourceModel to destinationModel. If a suitable mapping model cannot be found, returns nil.
+     * @return MappingModel|null Returns the mapping model to translate data from sourceModel to $destinationModel. If a suitable mapping model cannot be found, it returns nil.
      * @throws Exception
      */
     public static function mappingModel(?ArrayClass $bundles, ?ManagedObjectModel $sourceModel, ?ManagedObjectModel $destinationModel): ?MappingModel
@@ -148,9 +148,9 @@ class MappingModel extends ObjectClass
      * Element IDs are used to track renamed properties and entities.
      * @param ManagedObjectModel $sourceModel The source managed object model.
      * @param ManagedObjectModel $destinationModel The destination managed object model.
-     * @return MappingModel A newly-created mapping model to migrate data from the source to the destination model.
-     * A newly-created mapping model to migrate data from the source to the destination model.
-     * If the mapping model can not be created, returns nil.
+     * @return MappingModel A newly created mapping model to migrate data from the source to the destination model.
+     * A newly created mapping model to migrate data from the source to the destination model.
+     * If the mapping model cannot be created, it returns nil.
      */
     public static function inferredMappingModel(ManagedObjectModel $sourceModel, ManagedObjectModel $destinationModel): MappingModel
     {
@@ -165,7 +165,6 @@ class MappingModel extends ObjectClass
         if ($destinationEntityName = $entityMapping->destinationEntityName) {
             $this->destinationEntityVersionHashesByName[$destinationEntityName] = $entityMapping->destinationEntityVersionHash;
         }
-        /** @noinspection PhpHookedPropertyCantBeAccessedByRefInspection */
         $this->entityMappingsByName[$entityMapping->name] = $entityMapping;
     }
 }
