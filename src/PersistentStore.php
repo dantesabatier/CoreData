@@ -99,8 +99,8 @@ abstract class PersistentStore extends ObjectClass
     /**
      * Returns a value as appropriate for the given request, or nil if the request cannot be completed.
      * @param PersistentStoreRequest $request A fetch request.
-     * @param ManagedObjectContext $context The managed object context used to execute request.
-     * @return ArrayClass<ManagedObject|ManagedObjectID|Dictionary|Number> A value as appropriate for request.
+     * @param ManagedObjectContext $context The managed object context used to execute $request.
+     * @return ArrayClass<ManagedObject|ManagedObjectID|Dictionary|Number> A value as appropriate for $request.
      * @throws Exception If an error occurs, upon return contains an error object that describes the problem.
      * @psalm-suppress InvalidReturnType
      */
@@ -138,7 +138,7 @@ abstract class PersistentStore extends ObjectClass
      * @param ManagedObjectContext $context The managed object context into which values will be returned.
      * @return mixed A store node encapsulating the persistent external values of the object with object ID objectID, or nil if the corresponding object cannot be found.
      * The returned node should include all attributes values and may include to-one relationship values as instances of ManagedObjectID.
-     * If an object with object ID objectID cannot be found, the method should return nil and if error is not NULL create and return an appropriate error object in error.
+     * If an object with object ID objectID cannot be found, the method should return null.
      * @throws Exception
      */
     public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): mixed
@@ -153,10 +153,10 @@ abstract class PersistentStore extends ObjectClass
      * @param ManagedObjectContext $context The managed object context into which values will be returned.
      * @return mixed The value of the relationship specified relationship of the object with object ID objectID, or nil if an error occurs.
      * If the relationship is a to-one, the method should return a {@see ManagedObjectID} instance that identifies the destination, or null if the relationship value is nil.
-     * If the relationship is a to-many, the method should return a collection object containing {@see ManagedObjectID} instances to identify the related objects.
+     * If the relationship is to many, the method should return a collection object containing {@see ManagedObjectID} instances to identify the related objects.
      * Using an array instance is preferred because it will be the most efficient.
      * A store may also return an instance of {@see Set}; an instance of Dictionary is not acceptable.
-     * If an object with object ID objectID cannot be found, the method should return nil and if error is not null create and return an appropriate error object in error.
+     * If an object with object ID objectID cannot be found, the method should return null.
      * @throws Exception
      */
     public function newValueForRelationship(/** @noinspection PhpUnusedParameterInspection */ RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): mixed
@@ -167,10 +167,10 @@ abstract class PersistentStore extends ObjectClass
     /**
      * Returns an array containing the object IDs for a given array of newly inserted objects.
      *
-     * The returned array must return the object IDs in the same order as the objects appear in array.
+     * The returned array must return the object IDs in the same order as the objects appear in $$objects.
      * This method is called before {@see execute()} with a save request, to assign permanent IDs to newly inserted objects.
      * @param ArrayClass<ManagedObject> $objects An array of newly inserted objects.
-     * @return ArrayClass<ManagedObjectID> An array containing the object IDs for the objects in array.
+     * @return ArrayClass<ManagedObjectID> An array containing the object IDs for the objects in $$objects.
      * @psalm-suppress InvalidReturnType
      */
     public function obtainPermanentIDs(ArrayClass $objects): ArrayClass
@@ -195,12 +195,12 @@ abstract class PersistentStore extends ObjectClass
     /**
      * Returns a new reference object for a given managed object.
      *
-     * This method is invoked by the framework after a save operation on a managed object context, once for each newly-inserted managed object.
+     * This method is invoked by the framework after a save operation on a managed object context, once for each newly inserted managed object.
      * The value returned is used to create a permanent ID for the object and must be unique for an instance within its entity's inheritance hierarchy (in this store).
      * You must override this method.
      * This method must return a stable (unchanging) value for a given object, otherwise Save As and migration will not work correctly.
      * This means that you can use arbitrary numbers, UUIDs, or other random values only if they are persisted with the raw data.
-     * If you cannot save the originally-assigned reference object with the data, then the method must derive the reference object from the managed object's values.
+     * If you cannot save the originally assigned reference object with the data, then the method must derive the reference object from the managed object's values.
      * @param ManagedObject $managedObject A managed object. At the time this method is called, it has a temporary ID.
      * @return int|string A new reference object for managedObject.
      */
@@ -249,7 +249,7 @@ abstract class PersistentStore extends ObjectClass
      * Invoked after the persistent store has been added to the persistent store coordinator.
      *
      * The default implementation does nothing.
-     * You can override this method in a subclass in order to perform any kind of setup necessary before the load method is invoked.
+     * You can override this method in a subclass to perform any kind of setup necessary before the load method is invoked.
      * @param PersistentStoreCoordinator $coordinator The persistent store coordinator to which the receiver was added.
      */
     public function didAdd(PersistentStoreCoordinator $coordinator): void
@@ -260,7 +260,7 @@ abstract class PersistentStore extends ObjectClass
      * Invoked before the persistent store is removed from the persistent store coordinator.
      *
      * The default implementation does nothing.
-     * You can override this method in a subclass in order to perform any clean-up before the store is removed from the coordinator (and deallocated).
+     * You can override this method in a subclass to perform any cleanup before the store is removed from the coordinator (and deallocated).
      * @param PersistentStoreCoordinator $coordinator The persistent store coordinator from which the receiver was removed.
      */
     public function willRemove(PersistentStoreCoordinator $coordinator): void
