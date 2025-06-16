@@ -359,7 +359,7 @@ abstract class AtomicStore extends PersistentStore
     /**
      * Returns a new cache node for a given managed object.
      *
-     * This method is invoked by the framework during a save operation, once for each newly-inserted managed object.
+     * This method is invoked by the framework during a save operation, once for each newly inserted managed object.
      * It should pull information from the managed object and return a cache node containing the information (the node will be registered by the framework).
      * You must override this method.
      * @param ManagedObject $object A managed object.
@@ -374,10 +374,10 @@ abstract class AtomicStore extends PersistentStore
      * Updates the given cache node using the values in a given managed object.
      *
      * This method is invoked by the framework after a save operation on a managed object context, once for each updated ManagedObject instance.
-     * You override this method in a subclass to take the information from managedObject and update node.
+     * You override this method in a subclass to take the information from managedObject and update $node.
      * You must override this method.
      * @param AtomicStoreCacheNode $node The cache node to update.
-     * @param ManagedObject $object The managed object with which to update node.
+     * @param ManagedObject $object The managed object with which to update $node.
      */
     public function updateCacheNode(AtomicStoreCacheNode $node, ManagedObject $object): void
     {
@@ -386,7 +386,7 @@ abstract class AtomicStore extends PersistentStore
     /**
      * Method invoked before the store removes the given collection of cache nodes.
      *
-     * This method is invoked by the store before the call to {@see save()} with the collection of cache nodes marked as deleted by a managed object context.
+     * The store invokes this method before the call to {@see save()} with the collection of cache nodes marked as deleted by a managed object context.
      * You can override this method to track the nodes which will not be made persistent in the {@see save()} method.
      * You should not invoke this method directly in a subclass.
      * @param Set<AtomicStoreCacheNode> $cacheNodes The set of cache nodes to remove.
