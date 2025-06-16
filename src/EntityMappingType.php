@@ -24,6 +24,6 @@ enum EntityMappingType: int
     case removeEntityMappingType = 3;
     /** Specifies that source instances are migrated as-is. */
     case copyEntityMappingType = 4;
-    /** Specifies that entity exists in source and destination and is mapped. */
+    /** Specifies that the entity exists in source and destination and is mapped. */
     case transformEntityMappingType = 5;
 }
