@@ -74,7 +74,7 @@ class EntityMigrationPolicy extends ObjectClass
     /**
      * Indicates the end of the instance creation stage for the specified entity mapping, and the precursor to the next migration stage.
      *
-     * You can override this method to clean up state from the creation of destination or to prepare state for the creation of relationships.
+     * You can override this method to clean up state from the creation of destination or to prepare the state for the creation of relationships.
      * @param EntityMapping $mapping The mapping object in use.
      * @param MigrationManager $manager The migration manager performing the migration.
      * @return bool true if the method completes successfully, otherwise false.
@@ -86,7 +86,7 @@ class EntityMigrationPolicy extends ObjectClass
     }
 
     /**
-     * Constructs the relationships between the newly-created destination instances.
+     * Constructs the relationships between the newly created destination instances.
      *
      * You can use this stage to (re)create relationships between migrated objects, you use the association lookup methods on the MigrationManager instance to determine the appropriate relationship targets.
      * @param ManagedObject $instance The destination instance for which to create relationships.
@@ -130,7 +130,7 @@ class EntityMigrationPolicy extends ObjectClass
      * Provides the option to perform custom validation on migrated objects during the validation stage of the entity migration policy.
      *
      * This method is called before the default save validation is performed by the framework.
-     * If you implement this method, you must manually obtain the collection of objects you are interested in validating.
+     * If you implement this method, you must manually get the collection of objects you are interested in validating.
      * @param EntityMapping $mapping The mapping object in use.
      * @param MigrationManager $manager The migration manager performing the migration.
      * @return bool true if the method completes successfully, otherwise false.
@@ -145,7 +145,7 @@ class EntityMigrationPolicy extends ObjectClass
      * Performs cleanup at the end of the migration, from any phase of the mapping.
      *
      * This is the end to the given entity mapping.
-     * You can implement this method to perform any clean-up at the end of the migration (from any of the three phases of the mapping).
+     * You can implement this method to perform any cleanup at the end of the migration (from any of the three phases of the mapping).
      * @param EntityMapping $mapping The mapping object in use.
      * @param MigrationManager $manager The migration manager performing the migration.
      * @return bool true if the method completes successfully, otherwise false.
