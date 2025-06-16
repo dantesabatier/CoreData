@@ -24,7 +24,7 @@ class EntityMapping extends ObjectClass
     public ?string $sourceEntityName = null;
     /** @var string|null The version hash of the source entity for the entity mapping. The version hash is calculated by Core Data based on the property values of the entity (see {@see NSEntityDescription::versionHash} method). The sourceEntityVersionHash must equal the version hash of the source entity represented by the mapping. */
     public ?string $sourceEntityVersionHash = null;
-    /** @var Expression|null The source expression for the entity mapping. The source expression is used to obtain the collection of managed objects to process through the mapping. The expression can be a fetch request expression, or any other expression that evaluates to a collection. */
+    /** @var Expression|null The source expression for the entity mapping. The source expression is used to get the collection of managed objects to process through the mapping. The expression can be a fetch request expression, or any other expression that evaluates to a collection. */
     public ?Expression $sourceExpression = null;
     /** @var string|null The destination entity name for the entity mapping. Mappings are not directly bound to entity descriptions. You can use the {@see MigrationManager::destinationEntity()} method to retrieve the entity description for this entity name. */
     public ?string $destinationEntityName = null;
