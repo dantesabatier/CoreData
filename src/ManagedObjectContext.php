@@ -610,7 +610,8 @@ class ManagedObjectContext extends ObjectClass
                     /** @var SQLEntity $entity */
                     $entity = $store->model->entitiesByName[$object->entity->name];
                     if ($manyToMany = $entity->manyToManyRelationships->first(fn(SQLManyToMany $manyToMany): bool => $manyToMany->relationshipDescription->isEqual($relationship))) {
-                        new SQLCorrelationTableUpdateTracker($manyToMany)->track($object->objectID, $insertions);
+                        $updateTracker = new SQLCorrelationTableUpdateTracker($manyToMany);
+                        $updateTracker->track($object->objectID, $insertions);
                     }
                 }
             } else {
@@ -646,7 +647,8 @@ class ManagedObjectContext extends ObjectClass
                         /** @var SQLEntity $entity */
                         $entity = $store->model->entitiesByName[$object->entity->name];
                         if ($manyToMany = $entity->manyToManyRelationships->first(fn(SQLManyToMany $manyToMany): bool => $manyToMany->relationshipDescription->isEqual($relationship))) {
-                            new SQLCorrelationTableUpdateTracker($manyToMany)->track($object->objectID, deletes: $deletions);
+                           $updateTracker = new SQLCorrelationTableUpdateTracker($manyToMany);
+                           $updateTracker->track($object->objectID, deletes: $deletions);
                         }
                     }
                 } else {
