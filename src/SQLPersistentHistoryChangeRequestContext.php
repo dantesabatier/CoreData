@@ -125,8 +125,10 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
             "entityName", "changedObjectID", "transaction" => true,
             default => false
         });
-        /** @var ManagedObjectID $changedObjectID */
         $changedObjectID = $valueTransformer->reverseTransformedValue($data);
+        if (!$changedObjectID instanceof ManagedObjectID) {
+            return null;
+        }
         if (!($entity = $persistentStoreCoordinator->managedObjectModel->entitiesByName[$changedObjectID->entityName])) {
             return null;
         }
