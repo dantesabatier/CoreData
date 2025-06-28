@@ -647,13 +647,13 @@ class ManagedObjectContext extends ObjectClass
                         /** @var SQLEntity $entity */
                         $entity = $store->model->entitiesByName[$object->entity->name];
                         if ($manyToMany = $entity->manyToManyRelationships->first(fn(SQLManyToMany $manyToMany): bool => $manyToMany->relationshipDescription->isEqual($relationship))) {
-                           $updateTracker = new SQLCorrelationTableUpdateTracker($manyToMany);
-                           $updateTracker->track($object->objectID, deletes: $deletions);
+                            $updateTracker = new SQLCorrelationTableUpdateTracker($manyToMany);
+                            $updateTracker->track($object->objectID, deletes: $deletions);
                         }
                     }
                 } else {
                     $set = $object->mutableSetValueForKey($relationship->name);
-                    $set->formIntersection($deletions);
+                    $set->subtract($deletions);
                     $object->setPrimitiveValueForKey($set, $relationship->name);
                     $this->deletedObjects->remove($object);
                     $this->insertedObjects->remove($object);

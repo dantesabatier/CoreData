@@ -391,6 +391,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         return $fetchRequest;
     }
 
+    /**
+     * @param string $key
+     * @return Set<covariant ManagedObject>
+     */
     #[Override]
     public function mutableSetValueForKey(string $key): Set
     {

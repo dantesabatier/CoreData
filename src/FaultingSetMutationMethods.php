@@ -7,7 +7,7 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectProtocol;
 
 /**
- * @psalm-require-implements ObjectProtocol
+ * @phpstan-require-implements ObjectProtocol
  * @internal
  */
 trait FaultingSetMutationMethods
