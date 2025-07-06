@@ -10,6 +10,7 @@ use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\fatal_error;
+use function Sabatier\Foundation\human_readable_plural;
 use function Sabatier\Foundation\human_readable_time;
 
 /** @internal */
@@ -178,7 +179,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         }
         $this->result = $values;
         if ($this->debugLogLevel) {
-            $message = sprintf("CoreData: annotation: total execution time: %s for %s element(s)", human_readable_time(absolute_time_get_current() - $time), $this->result->count);
+            $message = sprintf("CoreData: annotation: total execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $this->result->count, human_readable_plural("element", $this->result->count));
             if ($this->debugLogLevel > 3) {
                 $message .= "\n$this->result";
             }
