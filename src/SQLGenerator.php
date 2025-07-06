@@ -1246,9 +1246,9 @@ class SQLGenerator extends ObjectClass
                     $toMany = $property;
                 }
                 if ($toMany?->isOrdered) {
-                    /** @var SQLAttribute $attribute */
-                    $attribute = $toMany->inverseToOne->foreignOrderKey->entity->propertiesByName[$toMany->inverseToOne->foreignOrderKey->columnName];
-                    if (!$attribute->isTransient) {
+                    /** @var SQLProperty $property */
+                    $property = $toMany->inverseToOne->foreignOrderKey->entity->propertiesByName[$toMany->inverseToOne->foreignOrderKey->columnName];
+                    if (!$property->isTransient) {
                         return $toMany;
                     }
                 }
