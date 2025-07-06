@@ -27,6 +27,7 @@ use Sabatier\Foundation\URL;
 use Sabatier\Foundation\ValueTransformer;
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\fatal_error;
+use function Sabatier\Foundation\human_readable_plural;
 use function Sabatier\Foundation\human_readable_time;
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
@@ -187,7 +188,7 @@ class SQLConnection extends ObjectClass
             return $e;
         })->array);
         if (SQLCore::$debugDefault) {
-            error_log(sprintf("CoreData: annotation: fetch execution time: %s for %s row(s)", human_readable_time(absolute_time_get_current() - $time), $prepare->rowCount()));
+            error_log(sprintf("CoreData: annotation: fetch execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $prepare->rowCount(), human_readable_plural("row", $prepare->rowCount())));
         }
         return $prepare;
     }
