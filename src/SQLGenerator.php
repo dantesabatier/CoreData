@@ -1238,14 +1238,19 @@ class SQLGenerator extends ObjectClass
         if (SS_COREDATA_USES_RELATIONSHIPS_SORT_DESCRIPTORS):
             /** @var Set<SQLToMany> $toManyRelationships */
             $toManyRelationships = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->flatMap(fn(Expression $expression): ArrayClass => $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLForeignKey || $property instanceof SQLToMany)->compactMap(function (SQLProperty $property): ?SQLProperty {
-                $relationship = null;
+                /** @var SQLToMany|null $toMany */
+                $toMany = null;
                 if ($property instanceof SQLForeignKey) {
-                    $relationship = $property->toOneRelationship->inverseRelationship;
+                    $toMany = $property->toOneRelationship->inverseRelationship;
                 } elseif ($property instanceof SQLToMany) {
-                    $relationship = $property;
+                    $toMany = $property;
                 }
-                if ($relationship?->isOrdered) {
-                    return $relationship;
+                if ($toMany?->isOrdered) {
+                    /** @var SQLAttribute $attribute */
+                    $attribute = $toMany->inverseToOne->foreignOrderKey->entity->propertiesByName[$toMany->inverseToOne->foreignOrderKey->columnName];
+                    if (!$attribute->isTransient) {
+                        return $toMany;
+                    }
                 }
                 return null;
             }));
