@@ -1241,6 +1241,7 @@ class SQLGenerator extends ObjectClass
                 /** @var SQLToMany|null $toMany */
                 $toMany = null;
                 if ($property instanceof SQLForeignKey) {
+                    /** @var SQLToMany $toMany */
                     $toMany = $property->toOneRelationship->inverseRelationship;
                 } elseif ($property instanceof SQLToMany) {
                     $toMany = $property;
