@@ -20,7 +20,7 @@ use function Sabatier\Foundation\request_concrete_implementation;
 abstract class PersistentStore extends ObjectClass
 {
     /** @var string The type string of the persistent store. */
-    public abstract string $type {
+    abstract public string $type {
         get;
     }
     /** @var string The unique identifier for the persistent store. */
