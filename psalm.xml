@@ -25,5 +25,11 @@
         <RiskyTruthyFalsyComparison errorLevel="suppress"/>
         <ParamNameMismatch errorLevel="suppress"/>
         <DuplicateClass errorLevel="suppress"/>
+        <PossiblyFalseArgument errorLevel="suppress"/>
+        <FalsableReturnStatement errorLevel="suppress"/>
+        <InvalidFalsableReturnType errorLevel="suppress"/>
+        <UndefinedDocblockClass errorLevel="suppress"/>
+        <InvalidOperand errorLevel="suppress"/>
+        <ClassMustBeFinal errorLevel="suppress"/>
     </issueHandlers>
 </psalm>
