@@ -18,8 +18,20 @@
                 <file name="src/ManagedObject.php"/>
                 <file name="src/ManagedObjectModel.php"/>
                 <file name="src/PersistentStoreCoordinator.php"/>
+                <file name="src/SQLFetchRequestContext.php"/>
+                <file name="src/SQLGenerator.php"/>
             </errorLevel>
         </InvalidArgument>
+        <PossiblyNullArrayOffset>
+            <errorLevel type="suppress">
+                <file name="src/SQLFetchRequestContext.php"/>
+            </errorLevel>
+        </PossiblyNullArrayOffset>
+        <PossiblyNullReference>
+            <errorLevel type="suppress">
+                <file name="src/XMLObjectStore.php"/>
+            </errorLevel>
+        </PossiblyNullReference>
         <InternalClass errorLevel="suppress"/>
         <InternalProperty errorLevel="suppress"/>
         <RiskyTruthyFalsyComparison errorLevel="suppress"/>
