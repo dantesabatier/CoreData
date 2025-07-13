@@ -249,7 +249,7 @@ class SQLGenerator extends ObjectClass
             if ($request->resultType !== FetchRequestResultType::countResultType) {
                 $this->buildOrderByClause($request->sortDescriptors?->filter(fn(SortDescriptor $descriptor): bool => match ($descriptor->key) {
                     SQLEntity::entityKeyName, SQLEntity::primaryKeyName => true,
-                    default => !$entity->propertiesByName->valueForKey($descriptor->key)?->isTransient
+                    default => !$entity->propertiesByName[$descriptor->key]?->isTransient
                 }) ?? new ArrayClass());
                 $this->appendSQL($this->orderByClause);
             }
@@ -1452,7 +1452,7 @@ class SQLGenerator extends ObjectClass
                     }
                     $value = match($value) {
                         "UUID()", "CURRENT_TIMESTAMP" => $value,
-                        default => $this->buildExpression(Expression::expressionWithFormat($value)),
+                        default => $this->buildExpression(Expression::expressionWithFormat($value) ?? fatal_error("Unable to create expression \"$value\"")),
                     };
                     return "{$this->entity->tableName}.$key = $value";
                 }

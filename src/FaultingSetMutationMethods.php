@@ -19,7 +19,7 @@ trait FaultingSetMutationMethods
 
     public function __call(string $name, array $arguments)
     {
-        if ($method = $this->faultingSetMutationMethods->valueForKey($name)) {
+        if ($method = $this->faultingSetMutationMethods[$name]) {
             ($method->closure)(...$arguments);
             return;
         }

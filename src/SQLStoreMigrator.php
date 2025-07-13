@@ -219,7 +219,7 @@ class SQLStoreMigrator
                 continue;
             }
             [$sourceEntity, $destinationEntity] = $entities;
-            if ($sourceEntity->tableName !== $destinationEntity->tableName && !$this->sourceModel->entitiesByName->offsetExists($destinationEntity->tableName)) {
+            if ($sourceEntity->tableName !== $destinationEntity->tableName && !$this->sourceModel->entitiesByName[$destinationEntity->tableName]) {
                 $statement = $this->adapter->newRenameTableStatement($sourceEntity, $destinationEntity);
                 $this->connection->execute($statement);
                 $this->updateEntityKey($sourceEntity, $destinationEntity);
@@ -240,10 +240,10 @@ class SQLStoreMigrator
             /** @var Set<SQLProperty> $properties */
             $properties = new Set($sourceEntity->properties);
             $properties->appendContentsOf($destinationEntity->properties);
-            /** @var Set<SQLAttribute> $properties */
-            $properties = $properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute && $property->isDerivedAttribute && !$property->derivationExpression?->usesKVC && !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value)->reversed();
-            foreach ($properties as $property) {
-                $statement = $this->adapter->newDropColumnStatement($property);
+            /** @var Set<SQLAttribute> $attributes */
+            $attributes = $properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute && $property->isDerivedAttribute && !$property->derivationExpression?->usesKVC && !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value)->reversed();
+            foreach ($attributes as $attribute) {
+                $statement = $this->adapter->newDropColumnStatement($attribute);
                 $this->connection->execute($statement);
             }
             foreach ($sourceEntity->properties as $source) {
@@ -261,7 +261,7 @@ class SQLStoreMigrator
                             $this->connection->execute($statement);
                         }
                         if ($source->isCompositeAttribute !== $destination->isCompositeAttribute) {
-                            if ($attributes = $sourceEntity->byMappingByCompositeNameAssociationTable->valueForKey($source->name)?->values) {
+                            if ($attributes = $sourceEntity->byMappingByCompositeNameAssociationTable[$source->name]?->values) {
                                 $this->removedColumns->appendContentsOf($attributes);
                             } else {
                                 $this->removedColumns->append($source);
@@ -306,7 +306,7 @@ class SQLStoreMigrator
                     }
                 } elseif ($source instanceof SQLAttribute || $source instanceof SQLForeignKey) {
                     if ($sourceEntity->isEqual($destinationEntity) && !$destinationEntity->properties->containsElement($source)) {
-                        if ($attributes = $sourceEntity->byMappingByCompositeNameAssociationTable->valueForKey($source->name)?->values) {
+                        if ($attributes = $sourceEntity->byMappingByCompositeNameAssociationTable[$source->name]?->values) {
                             $this->removedColumns->appendContentsOf($attributes);
                         } else {
                             $this->removedColumns->append($source);
@@ -319,7 +319,7 @@ class SQLStoreMigrator
             $properties = $destinationEntity->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);
             foreach ($properties as $property) {
                 if ($property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
-                    if ($attributes = $destinationEntity->byMappingByCompositeNameAssociationTable->valueForKey($property->name)?->values) {
+                    if ($attributes = $destinationEntity->byMappingByCompositeNameAssociationTable[$property->name]?->values) {
                         foreach ($attributes as $attribute) {
                             if ($statement = $this->adapter->newCreateColumnStatement($attribute)) {
                                 $this->connection->execute($statement);

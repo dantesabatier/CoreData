@@ -285,8 +285,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function changedValues(): Dictionary
     {
-        /** @var ArrayClass<string> $keys */
-        $keys = $this->persistentProperties->valueForKey("name");
+        $keys = $this->persistentProperties->map(fn(PropertyDescription $property): string => $property->name);
         return $this->changedValues->filter(fn(mixed $value, string $key): bool => $keys->containsElement($key));
     }
 
