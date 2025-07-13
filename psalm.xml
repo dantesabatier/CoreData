@@ -29,7 +29,7 @@
         <FalsableReturnStatement errorLevel="suppress"/>
         <InvalidFalsableReturnType errorLevel="suppress"/>
         <UndefinedDocblockClass errorLevel="suppress"/>
-        <InvalidOperand errorLevel="suppress"/>
+        <NoInterfaceProperties errorLevel="suppress"/>
         <ClassMustBeFinal errorLevel="suppress"/>
     </issueHandlers>
 </psalm>
