@@ -558,7 +558,7 @@ class SQLGenerator extends ObjectClass
                             }
                         }
                     }
-                    /** @psalm-suppress RedundantConditionGivenDocblockType */
+                    /** @psalm-suppress RedundantCondition */
                     if (!$columnNames->isEmpty) {
                         $this->selectList .= ", ";
                         $this->selectList .= $columnNames->join(", ");
