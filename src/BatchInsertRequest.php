@@ -28,7 +28,7 @@ class BatchInsertRequest extends PersistentStoreRequest
      * @param EntityDescription $entity The managed entity to insert data into.
      * @param Closure(Dictionary): bool|null $dictionaryHandler A closure that provides a dictionary for your app to insert data into.
      * @param Closure(ManagedObject): bool|null $managedObjectHandler A closure that provides a managed object for your app to insert data into.
-     * @param ArrayClass<Dictionary>|ArrayClass<covariant ManagedObject>|null $objectsToInsert An array of dictionaries that represents the objects to insert with the keys as attribute names and their assigned values.
+     * @param ArrayClass<Dictionary>|ArrayClass<ManagedObject>|null $objectsToInsert An array of dictionaries that represents the objects to insert with the keys as attribute names and their assigned values.
      * @param BatchInsertRequestResultType $resultType The type of result that Core Data returns from this request.
      */
     #[Pure]

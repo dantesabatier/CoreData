@@ -55,7 +55,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     }
     /** @var EntityDescription|null The super-entity of the receiver. */
     public ?EntityDescription $superentity = null;
-    /** @var ArrayClass<covariant PropertyDescription> $properties An array containing the properties of the receiver. The elements in the array are instances of {@see AttributeDescription}, {@see RelationshipDescription}, and/or {@see FetchedPropertyDescription}. */
+    /** @var ArrayClass<PropertyDescription> $properties An array containing the properties of the receiver. The elements in the array are instances of {@see AttributeDescription}, {@see RelationshipDescription}, and/or {@see FetchedPropertyDescription}. */
     public ArrayClass $properties {
         get => $this->propertiesByName->values;
         set {

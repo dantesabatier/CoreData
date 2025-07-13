@@ -18,7 +18,7 @@ class FetchedResultsController extends ObjectClass
 {
     /** @var FetchedResultsControllerDelegate|null The object that is notified when the fetched results changed. If you do not specify a delegate, the controller does not track changes to managed objects associated with its managed object context. */
     public ?FetchedResultsControllerDelegate $delegate = null;
-    /** @var ArrayClass<covariant ResultType> The results of the fetch. The results array only includes instances of the entity specified by the fetch request (fetchRequest) and that match its predicate. (If the fetch request has no predicate, then the results array includes all instances of the entity specified by the fetch request.) The results array reflects the in-memory state of managed objects in the controller's managed object context, not their state in the persistent store. The returned array does not, however, update as managed objects are inserted, modified, or deleted. */
+    /** @var ArrayClass<ResultType> The results of the fetch. The results array only includes instances of the entity specified by the fetch request (fetchRequest) and that match its predicate. (If the fetch request has no predicate, then the results array includes all instances of the entity specified by the fetch request.) The results array reflects the in-memory state of managed objects in the controller's managed object context, not their state in the persistent store. The returned array does not, however, update as managed objects are inserted, modified, or deleted. */
     private(set) ArrayClass $fetchedObjects;
     /** @var ArrayClass<FetchedResultsSectionInfo> The sections for the fetch results. */
     private(set) ArrayClass $sections;

@@ -286,7 +286,7 @@ class ManagedObjectContext extends ObjectClass
      * If you fetch some objects, work with them, and then execute a new fetch that includes a superset of those objects, you do not get new instances or update data for the existing objects—you get the existing objects with their current in-memory state.
      * @template T
      * @param FetchRequest<T> $request A fetch request that specifies the search criteria for the fetch.
-     * @return ArrayClass<covariant T> An array of objects that meet the criteria specified by request fetched from the receiver and from the persistent stores associated with the receiver's persistent store coordinator.
+     * @return ArrayClass<T> An array of objects that meet the criteria specified by request fetched from the receiver and from the persistent stores associated with the receiver's persistent store coordinator.
      * If no objects match the criteria specified by request, returns an empty array.
      * @throws Exception If there is a problem executing the fetch, upon return contains an error that describes the problem.
      * @psalm-suppress InvalidReturnType, InvalidReturnStatement
