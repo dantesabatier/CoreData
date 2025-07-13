@@ -237,8 +237,10 @@ class SQLStoreMigrator
                     $this->connection->execute($statement);
                 }
             }
+            /** @var Set<SQLProperty> $properties */
             $properties = new Set($sourceEntity->properties);
             $properties->appendContentsOf($destinationEntity->properties);
+            /** @var Set<SQLAttribute> $properties */
             $properties = $properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute && $property->isDerivedAttribute && !$property->derivationExpression?->usesKVC && !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value)->reversed();
             foreach ($properties as $property) {
                 $statement = $this->adapter->newDropColumnStatement($property);
