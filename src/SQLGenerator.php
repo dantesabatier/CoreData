@@ -1023,7 +1023,7 @@ class SQLGenerator extends ObjectClass
         if (!$keyPathToCollection || !$collectionOperator) {
             fatal_error("Invalid argument: unsupported expression \"$expression\"");
         }
-        /** @var SQLRelationship|null $relationship */
+        /** @var SQLRelationship $relationship */
         $relationship = $entity->propertiesByName[$keyPathToCollection];
         if ($relationship instanceof SQLToOne) {
             fatal_error("Invalid argument: unsupported expression \"$expression\"");
@@ -1246,7 +1246,7 @@ class SQLGenerator extends ObjectClass
                 } elseif ($property instanceof SQLToMany) {
                     $toMany = $property;
                 }
-                if ($toMany?->isOrdered) {
+                if ($toMany && $toMany->isOrdered) {
                     /** @var SQLProperty $property */
                     $property = $toMany->inverseToOne->foreignOrderKey->entity->propertiesByName[$toMany->inverseToOne->foreignOrderKey->columnName];
                     if (!$property->isTransient) {
