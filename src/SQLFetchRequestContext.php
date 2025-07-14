@@ -117,10 +117,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                             $current[] = new Dictionary([$currentEntity->primaryKey->columnName => $value, $currentEntity->entityKey->columnName => $currentEntity->entityDescription->name]);
                                         }
                                         if (!$current->isEmpty) {
-                                            $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === $parentEntityName);
-                                            if (!$parent && !$parentID) {
-                                                $parent = $current->last;
-                                            }
+                                            $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === $parentEntityName) ?? $current->first;
                                             $current = &$parent;
                                         }
                                     }
