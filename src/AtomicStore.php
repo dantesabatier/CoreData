@@ -11,6 +11,7 @@ use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\CompoundPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\ExpressionType;
+use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\fatal_error;
@@ -131,7 +132,7 @@ abstract class AtomicStore extends PersistentStore
         /** @var CompoundPredicate|ComparisonPredicate|null $predicate */
         $predicate = $request->predicate;
         if ($predicate) {
-            $fn = function (CompoundPredicate|ComparisonPredicate $predicate) use ($request, &$fn): CompoundPredicate|ComparisonPredicate {
+            $fn = function (Predicate $predicate) use ($request, &$fn): Predicate {
                 if ($predicate instanceof ComparisonPredicate) {
                     $expressions = new ArrayClass([$predicate->rightExpression, $predicate->leftExpression]);
                     if (($keyPathExpression = $expressions->first(fn(Expression $expression): bool => $expression->expressionType === ExpressionType::keyPath && str_ends_with($expression->keyPath, SQLEntity::primaryKeyName))) && ($constantValueExpression = $expressions->first(fn(Expression $expression): bool => !$expression->isEqual($keyPathExpression))) && !$constantValueExpression->constantValue instanceof ManagedObjectID) {
@@ -141,8 +142,11 @@ abstract class AtomicStore extends PersistentStore
                         return new ComparisonPredicate($rightExpression, $leftExpression, $predicate->predicateOperatorType, $predicate->comparisonPredicateModifier, $predicate->options);
                     }
                     return $predicate;
+                } elseif ($predicate instanceof CompoundPredicate) {
+                    return new CompoundPredicate($predicate->compoundPredicateType, $predicate->subpredicates->map(fn(Predicate $subpredicate): Predicate => $fn($subpredicate)));
+                } else {
+                    return $predicate;
                 }
-                return new CompoundPredicate($predicate->compoundPredicateType, $predicate->subpredicates->map(fn(CompoundPredicate|ComparisonPredicate $subpredicate): CompoundPredicate|ComparisonPredicate => $fn($subpredicate)));
             };
             $predicate = $fn($predicate);
         }

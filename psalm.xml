@@ -22,11 +22,6 @@
                 <file name="src/SQLGenerator.php"/>
             </errorLevel>
         </InvalidArgument>
-        <PossiblyNullArrayOffset>
-            <errorLevel type="suppress">
-                <file name="src/SQLFetchRequestContext.php"/>
-            </errorLevel>
-        </PossiblyNullArrayOffset>
         <PossiblyNullReference>
             <errorLevel type="suppress">
                 <file name="src/XMLObjectStore.php"/>

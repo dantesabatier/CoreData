@@ -55,7 +55,9 @@ class SQLBatchInsertRequestContext extends SQLBatchOperationRequestContext
             BatchInsertRequestResultType::objectIDs => $objectIDs(),
             BatchInsertRequestResultType::count => new ArrayClass([new Number($execute->rowCount())]),
         };
-        $this->affectedObjectIDs = $this->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey) ? ($this->request->resultType === BatchInsertRequestResultType::objectIDs ? $this->result : $objectIDs()) : new ArrayClass();
+        /** @var ArrayClass<ManagedObjectID> $affectedObjectIDs */
+        $affectedObjectIDs = $this->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey) ? ($this->request->resultType === BatchInsertRequestResultType::objectIDs ? $this->result : $objectIDs()) : new ArrayClass();
+        $this->affectedObjectIDs = $affectedObjectIDs;
         $this->transactionID = new Number($this->connection->insertTransactionForRequestContext($this));
         return true;
     }

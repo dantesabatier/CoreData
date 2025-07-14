@@ -350,7 +350,7 @@ class SQLFormatter extends Formatter
             if ($token->value === "." || $token->value === "," || $token->value === ";") {
                 $return = rtrim($return, " ");
             }
-            $return .= $highlighted . " ";
+            $return .= "$highlighted ";
             if ($token->value === "(" || $token->value === ".") {
                 $return = rtrim($return, " ");
             }

@@ -78,6 +78,7 @@ class FetchIndexElementDescription extends ObjectClass
         $this->collationType = $data["collationType"] ?? FetchIndexElementType::bTree;
         $this->isAscending = $data["isAscending"];
         $this->isUnique = $data["isUnique"];
+        /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
         $this->property = $this->indexDescription->entity->propertiesByName[$this->propertyName] ?? fatal_error("Entity \"{$this->indexDescription->entity->name}\" does not contains a property named \"$this->propertyName\"");
     }
 

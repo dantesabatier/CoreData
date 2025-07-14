@@ -501,7 +501,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         $fetchRequest->entity = EntityDescription::entity($entityName, $context);
                     }
                     if ($predicate = $fetchRequest->predicate) {
-                        $fn = function (CompoundPredicate|ComparisonPredicate $predicate) use (&$fn, $property): CompoundPredicate|ComparisonPredicate {
+                        $fn = function (Predicate $predicate) use (&$fn, $property): Predicate {
                             if ($predicate instanceof ComparisonPredicate) {
                                 $expression = function (Expression $expression) use ($property): Expression {
                                     if (($expression->expressionType === ExpressionType::variable) || (($expression->expressionType === ExpressionType::keyPath) && $expression->operand?->expressionType === ExpressionType::variable)) {
@@ -515,9 +515,12 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                                     return new ComparisonPredicate($leftExpression, $rightExpression, $predicate->predicateOperatorType, $predicate->comparisonPredicateModifier, $predicate->options);
                                 }
                                 return $predicate;
+                            } elseif ($predicate instanceof CompoundPredicate) {
+                                return new CompoundPredicate($predicate->compoundPredicateType, $predicate->subpredicates->map(
+                                    fn(Predicate $subpredicate): Predicate => $fn($subpredicate)));
+                            } else {
+                                return $predicate;
                             }
-                            /** @psalm-suppress all */
-                            return new CompoundPredicate($predicate->compoundPredicateType, $predicate->subpredicates->map(fn(CompoundPredicate|ComparisonPredicate $subpredicate): CompoundPredicate|ComparisonPredicate => $fn($subpredicate)));
                         };
                         /** @psalm-suppress ArgumentTypeCoercion */
                         $fetchRequest->predicate = $fn($predicate);
@@ -781,7 +784,13 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             fatal_error(sprintf("%s %s() does not contains a relationship named \"%s\"", $this->debugDescription, __FUNCTION__, $key));
         }
         $value = $relationship->isToMany ? $this->mutableSetValueForKey($key) : new Set([$this->primitiveValueForKey($key)]);
-        return new ArrayClass($value->map(fn(ManagedObject|ManagedObjectID $e): ManagedObjectID => $e instanceof ManagedObject ? $e->objectID : $e));
+        return new ArrayClass($value->map(
+        /**
+         * @param ManagedObject|ManagedObjectID $e
+         * @return ManagedObjectID
+         */
+            fn(ManagedObject|ManagedObjectID $e): ManagedObjectID => /** @var ManagedObjectID */
+            $e instanceof ManagedObject ? $e->objectID : $e));
     }
 
     /**

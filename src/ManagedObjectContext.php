@@ -180,6 +180,7 @@ class ManagedObjectContext extends ObjectClass
      */
     private function executeFetchRequest(FetchRequest $request): UnknownRequestTypeResult
     {
+        /** @psalm-suppress InvalidArgument */
         return $request->fetchBatchSize ? match ($request->resultType) {
             FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType => new UnknownRequestTypeResult(new BatchFaultingArray($request, $this)),
             default => fatal_error(sprintf("Invalid fetch request: %s->fetchBatchSize cannot be used with %s", FetchRequest::class, human_readable_value($request->resultType))),
@@ -296,6 +297,7 @@ class ManagedObjectContext extends ObjectClass
         /** @var UnknownRequestTypeResult $result */
         $result = $this->execute($request);
         $subresults = $result->subresults;
+        /** @psalm-suppress DocblockTypeContradiction */
         if ($subresults instanceof BatchFaultingArray) {
             return $subresults;
         }

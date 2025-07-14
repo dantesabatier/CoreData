@@ -90,7 +90,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 if ($property instanceof SQLRelationship || ($property instanceof SQLAttribute && $property->isCompositeAttribute)) {
                                     if ($current instanceof ArrayClass && !$current->isEmpty) {
                                         $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === $parentEntityName) ?? $current->last;
-                                        /** @psalm-suppress UnsupportedReferenceUsage */
                                         $current = &$parent;
                                     }
                                     if ($current instanceof Dictionary) {
@@ -98,7 +97,9 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                             $current[$key] ??= new Dictionary();
                                             $current = &$current[$key];
                                         } elseif ($property instanceof SQLAttribute) {
+                                            assert($propertyDescription instanceof PropertyDescription);
                                             $current[$propertyDescription->name] ??= new Dictionary();
+                                            /** @psalm-suppress UnsupportedPropertyReferenceUsage */
                                             $current = &$current[$propertyDescription->name];
                                         } else {
                                             $current[$key] ??= new ArrayClass();
@@ -117,7 +118,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         }
                                         if (!$current->isEmpty) {
                                             $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === $parentEntityName) ?? $current->last;
-                                            /** @psalm-suppress UnsupportedReferenceUsage */
                                             $current = &$parent;
                                         }
                                     }
@@ -138,7 +138,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             $currentEntity = $entity;
                         }
                         if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
-                            /** @psalm-suppress InvalidArgument */
                             $representation["isInserted"] = true;
                             $representation["faultingState"] = 0;
                             $representation["isFault"] = $this->request->returnsObjectsAsFaults;
@@ -151,7 +150,9 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
             FetchRequestResultType::countResultType => new ArrayClass([new Number((int)$execute->fetchColumn())]),
         };
         if ($this->request->resultType === FetchRequestResultType::managedObjectResultType || $this->request->resultType === FetchRequestResultType::managedObjectIDResultType) {
-            /** @psalm-suppress InvalidArgument */
+            /**
+             * @return ArrayClass<ManagedObject>
+             */
             $objects = fn(): ArrayClass => $values->map(function (Dictionary $dictionary): ManagedObject {
                 /** @var SQLEntity $entity */
                 $entity = $this->sqlModel->entitiesByName[$dictionary[$this->sqlEntityForFetchRequest->entityKey->columnName]];

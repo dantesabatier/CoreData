@@ -210,13 +210,13 @@ class MigrationManager extends ObjectClass
         $migrationContext->currentEntityMapping = $mapping;
         $migrationContext->currentMigrationStep = $step;
         $this->willChangeValueForKey("migrationProgress");
-        $this->migrationProgress = $this->migrationContext->currentMigrationStep / ($this->mappingModel->entityMappingsByName->count * 3);
+        $this->migrationProgress = (float)$this->migrationContext->currentMigrationStep / ((float)$this->mappingModel->entityMappingsByName->count * 3.0);
         $this->didChangeValueForKey("migrationProgress");
         if (!($destinationEntity = $this->destinationEntity($mapping)) || $destinationEntity->isAbstract) {
             return;
         }
         if (static::$migrationDebugLevel) {
-            error_log(sprintf("CoreData: Processing entity mapping \"%s\" (pass %s of %s), elapsed time %s, %s%% completed", $mapping->name, $pass, 3, human_readable_time(absolute_time_get_current() - $this->timestamp), round($this->migrationProgress * 100, 2)));
+            error_log(sprintf("CoreData: Processing entity mapping \"%s\" (pass %s of %s), elapsed time %s, %s%% completed", $mapping->name, $pass, 3, human_readable_time(absolute_time_get_current() - $this->timestamp), round($this->migrationProgress * 100.0, 2)));
         }
         if ($migrationCancellationError = $this->migrationCancellationError) {
             throw new InternalInconsistencyException(error: $migrationCancellationError);
@@ -365,8 +365,8 @@ class MigrationManager extends ObjectClass
     {
         $relationshipsByName = $this->byMappingBySourceRelationshipsAssociationTable[$relationshipName];
         if ($relationshipsByName) {
-            /** @psalm-suppress all */
-            return $sourceInstances->flatMap(fn(ManagedObject $sourceInstance): iterable => $relationshipsByName[(string)$sourceInstance->objectID] ?? []);
+            return $sourceInstances->flatMap(fn(ManagedObject $sourceInstance): ArrayClass => /** @var ArrayClass<ManagedObject> */
+                    $relationshipsByName[(string)$sourceInstance->objectID] ?? new ArrayClass());
         }
         return new ArrayClass();
     }
@@ -416,9 +416,9 @@ class MigrationManager extends ObjectClass
         return null;
     }
 
-    /** @psalm-suppress all */
     private function mapping(string $named): EntityMapping
     {
+        /** @var EntityMapping */
         return $this->mappingModel->entityMappingsByName[$named] ?? fatal_error("Entity mapping name \"$named\" does not exist");
     }
 }

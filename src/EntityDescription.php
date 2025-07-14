@@ -171,7 +171,9 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
         if ($this->isFlattened) {
             return;
         }
+        /** @psalm-suppress PropertyTypeCoercion */
         $this->entitySpecificAttributes = $this->properties->filter(fn(PropertyDescription $propertyDescription): bool => $propertyDescription instanceof AttributeDescription);
+        /** @psalm-suppress PropertyTypeCoercion */
         $this->entitySpecificRelationships = $this->properties->filter(fn(PropertyDescription $propertyDescription): bool => $propertyDescription instanceof RelationshipDescription);
         $this->entitySpecificIndexes = $this->indexes;
         /** @var Set<FetchIndexDescription> $indexes */
@@ -333,6 +335,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     private function uniquenessConstraintsAsFetchIndexes(): Dictionary
     {
         return $this->uniquenessConstraints->reduce(new Dictionary(), function (Dictionary $initial, ArrayClass $constraint): Dictionary {
+            /** @psalm-suppress InvalidArgument */
             if ($index = $this->constraintAsIndex($constraint)) {
                 /** @psalm-suppress InvalidArgument */
                 $initial[$index->name] = $index;

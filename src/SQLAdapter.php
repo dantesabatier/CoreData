@@ -157,6 +157,7 @@ class SQLAdapter extends ObjectClass
                 DeleteRule::cascadeDeleteRule => "CASCADE",
                 DeleteRule::denyDeleteRule => "RESTRICT"
             })]);
+        /** @psalm-suppress RedundantCondition */
         if (SS_COREDATA_DISABLE_FOREIGN_KEY_CHECKS) :
             $statements->insertAt(new SQLStatement("/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */"), 0);
             $statements->append(new SQLStatement("/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */"));

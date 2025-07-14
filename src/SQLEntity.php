@@ -7,6 +7,7 @@ namespace Sabatier\CoreData;
 use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Set;
 
 /** @internal */
 class SQLEntity extends StoreMapping
@@ -288,10 +289,11 @@ class SQLEntity extends StoreMapping
 
     public function columnAfter(SQLColumn $column): SQLColumn
     {
-        $properties = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute && !$property->isCompositeAttribute && !$property->derivationExpression?->usesKVC && !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);
-        $idx = $properties->indexBefore($properties->indexOf($column) ?? $properties->endIndex);
-        if ($idx >= $properties->startIndex) {
-            return $properties[$idx];
+        /** @var Set<SQLColumn> $columns */
+        $columns = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute && !$property->isCompositeAttribute && !$property->derivationExpression?->usesKVC && !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);
+        $idx = $columns->indexBefore($columns->indexOf($column) ?? $columns->endIndex);
+        if ($idx >= $columns->startIndex) {
+            return $columns[$idx];
         }
         return $this->entityKey;
     }
