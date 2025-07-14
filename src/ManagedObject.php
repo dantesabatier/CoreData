@@ -807,6 +807,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 if ($value === null) {
                     $value = false;
                 }
+                if (!is_numeric($value)) {
+                    $value = (bool)$value;
+                }
                 return $write ? new Number($value)->intValue : new Number($value)->boolValue;
             })(),
             "float", => (float)$value,
