@@ -242,7 +242,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $value = $this->primitiveValueForKey($key);
             if ($property instanceof AttributeDescription && !$property instanceof DerivedAttributeDescription) {
                 $value ??= $property->defaultValue;
-                if ($value === null && !$property->isOptional && $this->objectID->isTemporaryID) {
+                if ($value === null && !$property->isOptional) {
                     $value = match ($property->type) {
                         AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float, AttributeType::string, AttributeType::boolean => self::coercedValue($value, $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional),
                         default => null
