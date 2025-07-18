@@ -88,8 +88,9 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 $property = $currentEntity->propertiesByName[$key] ?? $currentEntity->compositeAttributeNameToSQLProperty[$key];
                                 $propertyDescription = $property?->propertyDescription ?? $this->request->propertiesToFetch?->first(fn(string|PropertyDescription $property): bool => $property instanceof PropertyDescription ? $property->name === $key : $property === $key);
                                 if ($property instanceof SQLRelationship || ($property instanceof SQLAttribute && $property->isCompositeAttribute)) {
-                                    if ($current instanceof ArrayClass && !$current->isEmpty) {
-                                        $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === $parentEntityName) ?? $current->last;
+                                    if ($current instanceof ArrayClass) {
+                                        $parent = $current->last;
+                                        $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === $parentEntityName);
                                         $current = &$parent;
                                     }
                                     if ($current instanceof Dictionary) {
@@ -112,13 +113,12 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 }
                                 if ($property instanceof SQLColumn || $propertyDescription instanceof ExpressionDescription) {
                                     if ($current instanceof ArrayClass) {
+                                        $parent = $current->last;
                                         if ($property instanceof SQLPrimaryKey && !$current->contains(fn(Dictionary $dictionary): bool => $dictionary[$key] === $value)) {
                                             $current[] = new Dictionary([$currentEntity->primaryKey->columnName => $value, $currentEntity->entityKey->columnName => $currentEntity->entityDescription->name]);
+                                            $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === $parentEntityName);
                                         }
-                                        if (!$current->isEmpty) {
-                                            $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === $parentEntityName) ?? $current->last;
-                                            $current = &$parent;
-                                        }
+                                        $current = &$parent;
                                     }
                                     if ($current instanceof Dictionary) {
                                         if ($propertyDescription instanceof ExpressionDescription) {
