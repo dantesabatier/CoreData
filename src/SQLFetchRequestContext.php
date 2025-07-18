@@ -77,7 +77,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 continue;
                             }
                             $relationship = null;
-                            $parent = null;
                             $current = &$representation;
                             $parentKeys = new ArrayClass([$entityName]);
                             $parentKeys->appendContentsOf($propertyKeys);
@@ -90,8 +89,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 $propertyDescription = $property?->propertyDescription ?? $this->request->propertiesToFetch?->first(fn(string|PropertyDescription $property): bool => $property instanceof PropertyDescription ? $property->name === $key : $property === $key);
                                 if ($property instanceof SQLRelationship || ($property instanceof SQLAttribute && $property->isCompositeAttribute)) {
                                     if ($current instanceof ArrayClass && !$current->isEmpty) {
-                                        $first = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === $parentEntityName) ?? $current->last;
-                                        $parent = &$first;
+                                        $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === $parentEntityName) ?? $current->last;
                                         $current = &$parent;
                                     }
                                     if ($current instanceof Dictionary) {
@@ -99,10 +97,9 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                             $current[$key] ??= new Dictionary();
                                             $current = &$current[$key];
                                         } elseif ($property instanceof SQLAttribute) {
-                                            assert($propertyDescription instanceof PropertyDescription);
-                                            $current[$propertyDescription->name] ??= new Dictionary();
-                                            /** @psalm-suppress UnsupportedPropertyReferenceUsage */
-                                            $current = &$current[$propertyDescription->name];
+                                            $name = $property->propertyDescription->name;
+                                            $current[$name] ??= new Dictionary();
+                                            $current = &$current[$name];
                                         } else {
                                             $current[$key] ??= new ArrayClass();
                                             $current = &$current[$key];
@@ -119,8 +116,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                             $current[] = new Dictionary([$currentEntity->primaryKey->columnName => $value, $currentEntity->entityKey->columnName => $currentEntity->entityDescription->name]);
                                         }
                                         if (!$current->isEmpty) {
-                                            $first = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === $parentEntityName) ?? $current->last;
-                                            $parent = &$first;
+                                            $parent = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === $parentEntityName) ?? $current->last;
                                             $current = &$parent;
                                         }
                                     }
@@ -137,7 +133,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     }
                                 }
                             }
-                            unset($parent);
                             unset($current);
                             $currentEntity = $entity;
                         }
