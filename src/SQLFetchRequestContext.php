@@ -43,8 +43,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         /** @var ArrayClass<Dictionary<mixed>|Number> $values */
         $values = match ($this->request->resultType) {
             FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType, FetchRequestResultType::dictionaryResultType => (function () use ($execute): ArrayClass {
-                /** @var Dictionary<Dictionary<mixed>> $leaves */
-                $leaves = new Dictionary();
                 /** @var Dictionary<Dictionary<mixed>> $map */
                 $map = new Dictionary();
                 /** @var Set<string> $keyPaths */
@@ -115,11 +113,9 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 }
                                 if ($property instanceof SQLColumn || $propertyDescription instanceof ExpressionDescription) {
                                     if ($current instanceof ArrayClass) {
-                                        $lKey = "$currentKey:$currentID";
-                                        if (!$leaves[$lKey] && !$current->contains(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $currentID && $dictionary[$currentEntity->entityKey->columnName] === $currentEntity->entityDescription->name)) {
+                                        if ($property instanceof SQLPrimaryKey && !$current->contains(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $currentID && $dictionary[$currentEntity->entityKey->columnName] === $currentEntity->entityDescription->name)) {
                                             $dictionary = new Dictionary([$currentEntity->primaryKey->columnName => $currentID, $currentEntity->entityKey->columnName => $currentEntity->entityDescription->name]);
                                             $current->append($dictionary);
-                                            $leaves[$lKey] = $dictionary;
                                         }
                                         if (!$current->isEmpty) {
                                             $element = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $currentID && $dictionary[$currentEntity->entityKey->columnName] === $currentEntity->entityDescription->name) ?? $current->last;
@@ -131,7 +127,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                             $value = ManagedObject::coercedValue($value, $propertyDescription->resultType, isOptional: $propertyDescription->isOptional);
                                         }
                                         $current[$key] = $value;
-                                        if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
+                                        if (!$propertyDescription instanceof CompositeAttributeDescription && $this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
                                             $current["isInserted"] = true;
                                             $current["isFault"] = false;
                                             $current["faultingState"] = 0;
@@ -150,7 +146,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         $map[$referenceObject] = $representation;
                     }
                 } while ($execute->nextRowset() && $execute->columnCount());
-                $leaves->removeAll();
                 return $map->values;
             })(),
             FetchRequestResultType::countResultType => new ArrayClass([new Number((int)$execute->fetchColumn())]),
