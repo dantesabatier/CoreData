@@ -142,11 +142,11 @@ abstract class AtomicStore extends PersistentStore
                         return new ComparisonPredicate($rightExpression, $leftExpression, $predicate->predicateOperatorType, $predicate->comparisonPredicateModifier, $predicate->options);
                     }
                     return $predicate;
-                } elseif ($predicate instanceof CompoundPredicate) {
-                    return new CompoundPredicate($predicate->compoundPredicateType, $predicate->subpredicates->map(fn(Predicate $subpredicate): Predicate => $fn($subpredicate)));
-                } else {
-                    return $predicate;
                 }
+                if ($predicate instanceof CompoundPredicate) {
+                    return new CompoundPredicate($predicate->compoundPredicateType, $predicate->subpredicates->map(fn(Predicate $subpredicate): Predicate => $fn($subpredicate)));
+                }
+                return $predicate;
             };
             $predicate = $fn($predicate);
         }
