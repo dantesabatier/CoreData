@@ -14,6 +14,7 @@ use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPrivateMethodRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessParamTagRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessReturnTagRector;
 use Rector\DeadCode\Rector\If_\RemoveAlwaysTrueIfConditionRector;
+use Rector\DeadCode\Rector\Node\RemoveNonExistingVarAnnotationRector;
 use Rector\DeadCode\Rector\Property\RemoveUnusedPrivatePropertyRector;
 use Rector\EarlyReturn\Rector\Return_\ReturnBinaryOrToEarlyReturnRector;
 use Rector\Exception\Configuration\InvalidConfigurationException;
@@ -46,6 +47,9 @@ try {
             RemoveAlwaysTrueIfConditionRector::class => [
                 __DIR__ . "/src/SQLGenerator.php",
                 __DIR__ . "/src/SQLAdapter.php"
+            ],
+            RemoveNonExistingVarAnnotationRector::class => [
+                __DIR__ . "/src/MigrationManager.php",
             ],
             RestoreDefaultNullToNullableTypePropertyRector::class,
             ReadOnlyPropertyRector::class,
