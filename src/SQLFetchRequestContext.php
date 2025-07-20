@@ -214,14 +214,11 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     {
         $time = absolute_time_get_current();
         $execute = $this->connection->execute($this->fetchStatement);
-        $values = match ($this->request->resultType) {
-            FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType, FetchRequestResultType::dictionaryResultType => $this->dictionaries($execute),
+        $this->result = match ($this->request->resultType) {
+            FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType => $this->values($this->dictionaries($execute)),
+            FetchRequestResultType::dictionaryResultType => $this->dictionaries($execute),
             FetchRequestResultType::countResultType => $this->numbers($execute),
         };
-        if ($this->request->resultType === FetchRequestResultType::managedObjectResultType || $this->request->resultType === FetchRequestResultType::managedObjectIDResultType) {
-            $values = $this->values($values);
-        }
-        $this->result = $values;
         if ($this->debugLogLevel) {
             $message = sprintf("CoreData: annotation: total execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $this->result->count, human_readable_plural("element", $this->result->count));
             if ($this->debugLogLevel > 3) {
