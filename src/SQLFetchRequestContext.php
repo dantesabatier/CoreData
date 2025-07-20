@@ -37,10 +37,10 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     }
 
     /**
-     * @param PDOStatement $execute
+     * @param PDOStatement $statement
      * @return ArrayClass<Dictionary<mixed>>
      */
-    public function dictionaries(PDOStatement $execute): ArrayClass
+    public function dictionaries(PDOStatement $statement): ArrayClass
     {
         /** @var Dictionary<Dictionary<mixed>> $map */
         $map = new Dictionary();
@@ -48,7 +48,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         $keyPaths = new Set();
         do {
             /** @var array<string, mixed> $data */
-            while ($data = $execute->fetch()) {
+            while ($data = $statement->fetch()) {
                 $entityName = $data[SQLEntity::entityKeyName] ?? $this->request->entity->name;
                 /** @var SQLEntity $entity */
                 $entity = $this->sqlModel->entitiesByName[$entityName] ?? fatal_error("Entity \"$entityName\" does not exists");
@@ -144,17 +144,17 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                 }
                 $map[$referenceObject] = $representation;
             }
-        } while ($execute->nextRowset() && $execute->columnCount());
+        } while ($statement->nextRowset() && $statement->columnCount());
         return $map->values;
     }
 
     /**
-     * @param PDOStatement $execute
+     * @param PDOStatement $statement
      * @return ArrayClass<Number>
      */
-    public function numbers(PDOStatement $execute): ArrayClass
+    public function numbers(PDOStatement $statement): ArrayClass
     {
-        return new ArrayClass([new Number((int)$execute->fetchColumn())]);
+        return new ArrayClass([new Number((int)$statement->fetchColumn())]);
     }
 
     /**
@@ -213,11 +213,11 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     public function executeRequestCore(): bool
     {
         $time = absolute_time_get_current();
-        $execute = $this->connection->execute($this->fetchStatement);
+        $statement = $this->connection->execute($this->fetchStatement);
         $this->result = match ($this->request->resultType) {
-            FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType => $this->values($this->dictionaries($execute)),
-            FetchRequestResultType::dictionaryResultType => $this->dictionaries($execute),
-            FetchRequestResultType::countResultType => $this->numbers($execute),
+            FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType => $this->values($this->dictionaries($statement)),
+            FetchRequestResultType::dictionaryResultType => $this->dictionaries($statement),
+            FetchRequestResultType::countResultType => $this->numbers($statement),
         };
         if ($this->debugLogLevel) {
             $message = sprintf("CoreData: annotation: total execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $this->result->count, human_readable_plural("element", $this->result->count));
@@ -226,8 +226,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
             }
             error_log($message);
             if ($this->debugLogLevel > 4) {
-                $execute = $this->connection->execute(new SQLStatement("ANALYZE FORMAT=JSON {$this->fetchStatement->string}", $this->fetchStatement->arguments));
-                error_log($execute->fetchColumn());
+                $statement = $this->connection->execute(new SQLStatement("ANALYZE FORMAT=JSON {$this->fetchStatement->string}", $this->fetchStatement->arguments));
+                error_log($statement->fetchColumn());
             }
         }
         return true;
