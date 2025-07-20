@@ -515,12 +515,12 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                                     return new ComparisonPredicate($leftExpression, $rightExpression, $predicate->predicateOperatorType, $predicate->comparisonPredicateModifier, $predicate->options);
                                 }
                                 return $predicate;
-                            } elseif ($predicate instanceof CompoundPredicate) {
+                            }
+                            if ($predicate instanceof CompoundPredicate) {
                                 return new CompoundPredicate($predicate->compoundPredicateType, $predicate->subpredicates->map(
                                     fn(Predicate $subpredicate): Predicate => $fn($subpredicate)));
-                            } else {
-                                return $predicate;
                             }
+                            return $predicate;
                         };
                         /** @psalm-suppress ArgumentTypeCoercion */
                         $fetchRequest->predicate = $fn($predicate);
