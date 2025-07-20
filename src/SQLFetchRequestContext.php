@@ -40,7 +40,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
      * @param PDOStatement $statement
      * @return ArrayClass<Dictionary<mixed>>
      */
-    public function dictionaries(PDOStatement $statement): ArrayClass
+    public function dictionaryResults(PDOStatement $statement): ArrayClass
     {
         /** @var Dictionary<Dictionary<mixed>> $map */
         $map = new Dictionary();
@@ -152,7 +152,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
      * @param PDOStatement $statement
      * @return ArrayClass<Number>
      */
-    public function numbers(PDOStatement $statement): ArrayClass
+    public function numbericResults(PDOStatement $statement): ArrayClass
     {
         return new ArrayClass([new Number((int)$statement->fetchColumn())]);
     }
@@ -194,7 +194,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
      * @param ArrayClass<Dictionary<mixed>> $dictionaries
      * @return ArrayClass<ManagedObject>|ArrayClass<ManagedObjectID>
      */
-    public function values(ArrayClass $dictionaries): ArrayClass
+    public function managedResults(ArrayClass $dictionaries): ArrayClass
     {
         if ($this->request->includesPropertyValues) {
             $managedObjects = $this->managedObjects($dictionaries);
@@ -215,9 +215,9 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         $time = absolute_time_get_current();
         $statement = $this->connection->execute($this->fetchStatement);
         $this->result = match ($this->request->resultType) {
-            FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType => $this->values($this->dictionaries($statement)),
-            FetchRequestResultType::dictionaryResultType => $this->dictionaries($statement),
-            FetchRequestResultType::countResultType => $this->numbers($statement),
+            FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType => $this->managedResults($this->dictionaryResults($statement)),
+            FetchRequestResultType::dictionaryResultType => $this->dictionaryResults($statement),
+            FetchRequestResultType::countResultType => $this->numbericResults($statement),
         };
         if ($this->debugLogLevel) {
             $message = sprintf("CoreData: annotation: total execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $this->result->count, human_readable_plural("element", $this->result->count));
