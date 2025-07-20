@@ -269,7 +269,7 @@ class MigrationManager extends ObjectClass
      * @param URL $sourceURL The location of an existing persistent store. A store must exist at this URL.
      * @param PersistentStoreType $sourceType The type of store at sourceURL (see {@see PersistentStoreCoordinator} for possible values).
      * @param Dictionary|null $sourceOptions A dictionary of options for the source (see {@see PersistentStoreCoordinator} for possible values).
-     * @param MappingModel $mappingModel The mapping model to use to effect the migration.
+     * @param MappingModel $mappingModel The mapping model to use to affect the migration.
      * @param URL $destinationURL The location of the destination store.
      * @param PersistentStoreType $destinationType The type of store at dURL (see {@see PersistentStoreCoordinator} for possible values).
      * @param Dictionary|null $destinationOptions A dictionary of options for the destination (see {@see PersistentStoreCoordinator} for possible values).
