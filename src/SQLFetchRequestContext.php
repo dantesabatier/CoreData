@@ -158,12 +158,12 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     }
 
     /**
-     * @param ArrayClass<Dictionary<mixed>> $dictionaryRepresentations
+     * @param ArrayClass<Dictionary<mixed>> $dictionaries
      * @return ArrayClass<ManagedObject>
      */
-    private function managedObjects(ArrayClass $dictionaryRepresentations): ArrayClass
+    private function managedObjects(ArrayClass $dictionaries): ArrayClass
     {
-        return $dictionaryRepresentations->map(function (Dictionary $dictionary): ManagedObject {
+        return $dictionaries->map(function (Dictionary $dictionary): ManagedObject {
             /** @var SQLEntity $entity */
             $entity = $this->sqlModel->entitiesByName[$dictionary[$this->sqlEntityForFetchRequest->entityKey->columnName]];
             $object = $this->context->object($this->sqlCore->objectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
@@ -182,31 +182,31 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     }
 
     /**
-     * @param ArrayClass<Dictionary<mixed>> $dictionaryRepresentations
+     * @param ArrayClass<Dictionary<mixed>> $dictionaries
      * @return ArrayClass<ManagedObjectID>
      */
-    public function managedObjectIDs(ArrayClass $dictionaryRepresentations): ArrayClass
+    public function managedObjectIDs(ArrayClass $dictionaries): ArrayClass
     {
-        return $dictionaryRepresentations->map(fn(Dictionary $dictionary): ManagedObjectID => $this->sqlCore->objectID($this->sqlEntityForFetchRequest->entityDescription, $dictionary[$this->sqlEntityForFetchRequest->primaryKey->columnName]));
+        return $dictionaries->map(fn(Dictionary $dictionary): ManagedObjectID => $this->sqlCore->objectID($this->sqlEntityForFetchRequest->entityDescription, $dictionary[$this->sqlEntityForFetchRequest->primaryKey->columnName]));
     }
 
     /**
-     * @param ArrayClass<Dictionary<mixed>> $representations
+     * @param ArrayClass<Dictionary<mixed>> $dictionaries
      * @return ArrayClass<ManagedObject>|ArrayClass<ManagedObjectID>
      */
-    public function values(ArrayClass $representations): ArrayClass
+    public function values(ArrayClass $dictionaries): ArrayClass
     {
         if ($this->request->includesPropertyValues) {
-            $managedObjects = $this->managedObjects($representations);
+            $managedObjects = $this->managedObjects($dictionaries);
             if ($this->request->resultType === FetchRequestResultType::managedObjectIDResultType) {
                 return $managedObjects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID);
             }
             return $managedObjects;
         }
         if ($this->request->resultType === FetchRequestResultType::managedObjectResultType) {
-            return $this->managedObjects($representations);
+            return $this->managedObjects($dictionaries);
         }
-        return $this->managedObjectIDs($representations);
+        return $this->managedObjectIDs($dictionaries);
     }
 
     #[Override]
