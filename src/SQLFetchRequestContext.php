@@ -113,8 +113,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         if ($property instanceof SQLColumn || $propertyDescription instanceof ExpressionDescription) {
                             if ($current instanceof ArrayClass) {
                                 if ($property instanceof SQLPrimaryKey && !$current->contains(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $currentID && $dictionary[$currentEntity->entityKey->columnName] === $currentEntity->entityDescription->name)) {
-                                    $element = new Dictionary([$currentEntity->primaryKey->columnName => $currentID, $currentEntity->entityKey->columnName => $currentEntity->entityDescription->name]);
-                                    $current->append($element);
+                                    $current->append(new Dictionary([$currentEntity->primaryKey->columnName => $currentID, $currentEntity->entityKey->columnName => $currentEntity->entityDescription->name]));
                                 }
                                 if (!$current->isEmpty) {
                                     $element = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $currentID && $dictionary[$currentEntity->entityKey->columnName] === $currentEntity->entityDescription->name) ?? $current->last;
