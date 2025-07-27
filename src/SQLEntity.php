@@ -7,7 +7,6 @@ namespace Sabatier\CoreData;
 use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\Set;
 
 /** @internal */
 class SQLEntity extends StoreMapping
