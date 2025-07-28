@@ -79,8 +79,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                     $current = &$representation;
                     $currentKeys = new ArrayClass([$currentEntity->tableName]);
                     $currentKeys->appendContentsOf($propertyKeys);
-                    $parentKeys = new ArrayClass();
-                    $parentKeys->appendContentsOf($currentKeys->dropLast(1));
+                    $parentKeys = new ArrayClass($currentKeys->dropLast(1));
                     $parentKeys->append($currentEntity->primaryKey->columnName);
                     $parentKey = $parentKeys->join("_");
                     $currentKeys->append($currentEntity->primaryKey->columnName);
