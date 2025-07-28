@@ -92,7 +92,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         $propertyDescription = $property?->propertyDescription ?? $this->request->propertiesToFetch?->first(fn(string|PropertyDescription $property): bool => $property instanceof PropertyDescription ? $property->name === $key : $property === $key);
                         if ($property instanceof SQLRelationship || ($property instanceof SQLAttribute && $property->isCompositeAttribute)) {
                             if ($current instanceof ArrayClass && !$current->isEmpty) {
-                                $element = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === $currentEntity->entityDescription->name);
+                                //FIXME: We need an alternative to the parent element but the last element causes problems
+                                $element = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === $currentEntity->entityDescription->name) ?? $current->last;
                                 $current = &$element;
                             }
                             if ($current instanceof Dictionary) {
