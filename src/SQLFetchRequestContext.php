@@ -90,9 +90,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         $property = $currentEntity->propertiesByName[$key] ?? $currentEntity->compositeAttributeNameToSQLProperty[$key];
                         $propertyDescription = $property?->propertyDescription ?? $this->request->propertiesToFetch?->first(fn(string|PropertyDescription $property): bool => $property instanceof PropertyDescription ? $property->name === $key : $property === $key);
                         if ($property instanceof SQLRelationship || ($property instanceof SQLAttribute && $property->isCompositeAttribute)) {
-                            if ($current instanceof ArrayClass && !$current->isEmpty) {
-                                //FIXME: We need a fallback for the parent element but the last element causes problems
-                                $element = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === $currentEntity->entityDescription->name) ?? $current->last;
+                            if ($current instanceof ArrayClass) {
+                                $element = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === $relationship?->entity?->entityDescription?->name) ?? $current->last;
                                 $current = &$element;
                             }
                             if ($current instanceof Dictionary) {
@@ -115,10 +114,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 if ($property instanceof SQLPrimaryKey && !$current->contains(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $currentID && $dictionary[$currentEntity->entityKey->columnName] === $currentEntity->entityDescription->name)) {
                                     $current->append(new Dictionary([$currentEntity->primaryKey->columnName => $currentID, $currentEntity->entityKey->columnName => $currentEntity->entityDescription->name]));
                                 }
-                                if (!$current->isEmpty) {
-                                    $element = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $currentID && $dictionary[$currentEntity->entityKey->columnName] === $currentEntity->entityDescription->name) ?? $current->last;
-                                    $current = &$element;
-                                }
+                                $element = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $currentID && $dictionary[$currentEntity->entityKey->columnName] === $currentEntity->entityDescription->name) ?? $current->last;
+                                $current = &$element;
                             }
                             if ($current instanceof Dictionary) {
                                 if ($propertyDescription instanceof ExpressionDescription) {
@@ -136,14 +133,12 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                     unset($current);
                     $currentEntity = $entity;
                 }
-                if ($representation instanceof Dictionary) {
-                    if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
-                        $representation["isInserted"] = true;
-                        $representation["faultingState"] = 0;
-                        $representation["isFault"] = $this->request->returnsObjectsAsFaults;
-                    }
-                    $map[$referenceObject] = $representation;
+                if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
+                    $representation["isInserted"] = true;
+                    $representation["faultingState"] = 0;
+                    $representation["isFault"] = $this->request->returnsObjectsAsFaults;
                 }
+                $map[$referenceObject] = $representation;
             }
         } while ($statement->nextRowset() && $statement->columnCount());
         return $map->values;
