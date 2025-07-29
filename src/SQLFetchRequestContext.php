@@ -40,7 +40,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
      * @param PDOStatement $statement
      * @return ArrayClass<Dictionary<mixed>>
      */
-    public function dictionaryResults(PDOStatement $statement): ArrayClass
+    private function dictionaryResults(PDOStatement $statement): ArrayClass
     {
         /** @var Dictionary<Dictionary<mixed>> $map */
         $map = new Dictionary();
@@ -148,7 +148,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
      * @param PDOStatement $statement
      * @return ArrayClass<Number>
      */
-    public function numericalResults(PDOStatement $statement): ArrayClass
+    private function numericalResults(PDOStatement $statement): ArrayClass
     {
         return new ArrayClass([new Number((int)$statement->fetchColumn())]);
     }
@@ -181,7 +181,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
      * @param ArrayClass<Dictionary<mixed>> $dictionaries
      * @return ArrayClass<ManagedObjectID>
      */
-    public function managedObjectIDs(ArrayClass $dictionaries): ArrayClass
+    private function managedObjectIDs(ArrayClass $dictionaries): ArrayClass
     {
         return $dictionaries->map(fn(Dictionary $dictionary): ManagedObjectID => $this->sqlCore->objectID($this->sqlEntityForFetchRequest->entityDescription, $dictionary[$this->sqlEntityForFetchRequest->primaryKey->columnName]));
     }
@@ -190,7 +190,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
      * @param ArrayClass<Dictionary<mixed>> $dictionaries
      * @return ArrayClass<ManagedObject>|ArrayClass<ManagedObjectID>
      */
-    public function managedResults(ArrayClass $dictionaries): ArrayClass
+    private function managedResults(ArrayClass $dictionaries): ArrayClass
     {
         if ($this->request->includesPropertyValues) {
             $managedObjects = $this->managedObjects($dictionaries);
