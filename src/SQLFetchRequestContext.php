@@ -92,7 +92,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         if ($property instanceof SQLRelationship || ($property instanceof SQLAttribute && $property->isCompositeAttribute)) {
                             if ($current instanceof ArrayClass) {
                                 //TODO: There was an issue when fragments of this algorithm were used to add an instance of another entity to the wrong relationship; please check if this issue has been resolved.
-                                $element = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === $relationship?->destinationEntity->entityDescription ?? $currentEntity->entityDescription) ?? $current->last;
+                                $element = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === ($relationship?->destinationEntity->entityDescription ?? $currentEntity->entityDescription)) ?? $current->last;
                                 $current = &$element;
                             }
                             if ($current instanceof Dictionary) {
