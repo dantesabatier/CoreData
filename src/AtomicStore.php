@@ -6,6 +6,7 @@ use Exception;
 use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\CompoundPredicate;
@@ -316,7 +317,7 @@ abstract class AtomicStore extends PersistentStore
         if ($relationship->isToMany) {
             return new ArrayClass();
         }
-        return null;
+        return Nil::nil();
     }
 
     #[Override]
