@@ -22,7 +22,7 @@ class FetchIndexElementDescription extends ObjectClass
     public FetchIndexDescription $indexDescription;
     /** @var string The specified name in the property description. */
     private(set) string $propertyName = UnknownName;
-    /** @var bool A Boolean value that controls whether an index that supports direction is an ascending or descending index. */
+    /** @var bool A Boolean value that controls whether an index that supports a direction is an ascending or descending index. */
     public bool $isAscending = true;
     /** @internal */
     public bool $isUnique = false;
