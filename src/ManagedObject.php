@@ -543,11 +543,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     $value ??= new FaultingSet($this, $property);
                     $value->setSet(new Set($newValue));
                 } else {
-                    assert($newValue instanceof ManagedObject || $newValue instanceof ManagedObjectID || $newValue instanceof Nil, sprintf("invalid argument: %s->%s expecting \"%s|%s|%s\", \"%s\" given", $this->entity->name, $key, ManagedObject::class, ManagedObjectID::class, Nil::class, typeof($value)));
                     if ($newValue instanceof Nil) {
                         $newValue = $newValue->value;
                     }
                     $value = $newValue;
+                    assert($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null, sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $this->entity->name, $key, ManagedObject::class, ManagedObjectID::class, typeof($value)));
                 }
                 $this->setPrimitiveValueForKey($value, $key);
             }
