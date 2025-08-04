@@ -167,11 +167,10 @@ abstract class PersistentStore extends ObjectClass
     /**
      * Returns an array containing the object IDs for a given array of newly inserted objects.
      *
-     * The returned array must return the object IDs in the same order as the objects appear in $$objects.
+     * The returned array must return the object IDs in the same order as the objects appear in $objects.
      * This method is called before {@see execute()} with a save request, to assign permanent IDs to newly inserted objects.
      * @param ArrayClass<ManagedObject> $objects An array of newly inserted objects.
-     * @return ArrayClass<ManagedObjectID> An array containing the object IDs for the objects in $$objects.
-     * @psalm-suppress InvalidReturnType
+     * @return ArrayClass<ManagedObjectID> An array containing the object IDs for the objects in $objects.
      */
     public function obtainPermanentIDs(ArrayClass $objects): ArrayClass
     {

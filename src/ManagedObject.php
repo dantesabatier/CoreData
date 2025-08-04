@@ -425,7 +425,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if (!$mutableArray instanceof FaultingArray) {
             $array = new FaultingArray($this, $property);
             if ($mutableArray instanceof ArrayClass) {
-                /** @psalm-suppress InvalidArgument */
                 $array->appendContentsOf($mutableArray);
             }
             $this->setPrimitiveValueForKey($array, $key);
@@ -522,7 +521,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                             }
                             return $predicate;
                         };
-                        /** @psalm-suppress ArgumentTypeCoercion */
                         $fetchRequest->predicate = $fn($predicate);
                     }
                     $value->setArray($context->fetch($fetchRequest));
@@ -766,7 +764,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             if ($this->entity->propertiesByName[$key]?->isSensitive) {
                 $value = new SensitivePropertyValue($value);
             }
-            /** @psalm-suppress InvalidArgument */
             $initial[$key] = $value;
             return $initial;
         });
@@ -1098,20 +1095,17 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     if ($property->isSensitive) {
                         $value = new SensitivePropertyValue($value);
                     }
-                    /** @psalm-suppress InvalidArgument */
                     $dictionary[$key] = $value;
                 } elseif ($property instanceof RelationshipDescription) {
                     if (!($value = $this->serializedRelationshipValueForRelationship($property))) {
                         /** @noinspection PhpVoidFunctionResultUsedInspection */
                         $value = $property->isOptional ? Nil::nil() : ($property->isToMany ? new Set() : fatal_error(sprintf("%s property \"%s\" is not optional", $this->debugDescription, $property->name)));
                     }
-                    /** @psalm-suppress InvalidArgument */
                     $dictionary[$key] = $value;
                 } else {
                     $dictionary[$key] = $this->valueForKey($key);
                 }
             } else {
-                /** @psalm-suppress InvalidArgument */
                 $dictionary[$key] = $this->valueForKey($key) ?? Nil::nil();
             }
             return $dictionary;

@@ -224,7 +224,6 @@ class SQLGenerator extends ObjectClass
             }
             $this->useDistinct = $request->returnsDistinctResults;
             if (!$this->useDistinct && $this->autoDistinct) {
-                /** @psalm-suppress all */
                 $this->useDistinct = ($request->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $entity->propertiesByName[$property])?->contains(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription)) || ($request->serialization->contains(fn(mixed $e): bool => $e instanceof Dictionary));
             }
             $this->prepareSelectStatementWithFetchRequest($request);
@@ -668,7 +667,6 @@ class SQLGenerator extends ObjectClass
     }
 
     /**
-     * @psalm-suppress LessSpecificReturnStatement, MoreSpecificReturnType
      * @param Expression $expression
      * @return ArrayClass<SQLRelationship>
      */

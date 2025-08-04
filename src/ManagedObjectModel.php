@@ -335,7 +335,6 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                 /** @var ArrayClass<string>|null $entityNames */
                 $entityNames = $configuration["entities"];
                 if ($configurationName && $entityNames) {
-                    /** @psalm-suppress InvalidArgument */
                     $this->setEntities($entityNames->compactMap(fn(string $entityName): ?EntityDescription => $this->entitiesByName[$entityName]), $configurationName);
                 }
             }
@@ -365,7 +364,6 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
      */
     public static function mergedModel(ArrayClass $bundles, Dictionary $metadata): ?ManagedObjectModel
     {
-        /** @psalm-suppress InvalidArgument */
         return static::merging($bundles->compactMap(fn(Bundle $bundle): ?ManagedObjectModel => (($name = $bundle->object(kCFBundleNameKey)) && ($url = $bundle->url($name, "plist"))) ? new ManagedObjectModel($url) : null), $metadata);
     }
 
@@ -515,7 +513,6 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     {
         if ($metadata[StoreModelVersionHashesKey]) {
             return KeyedArchiver::archivedData($this->entities($configuration)?->reduce(new Dictionary(), function (Dictionary &$result, EntityDescription $entity): Dictionary {
-                    /** @psalm-suppress InvalidArgument */
                     $result[$entity->name] = $entity->versionHash;
                     return $result;
                 }) ?? $this->entityVersionHashesByName) === $metadata[StoreModelVersionHashesKey];

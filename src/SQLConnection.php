@@ -540,7 +540,7 @@ class SQLConnection extends ObjectClass
     }
 
     /**
-     * @psalm-suppress InvalidArgument
+     * @param ArrayClass<SQLEntity> $entities
      * @throws Exception
      */
     private function createManyToManyTablesForEntities(ArrayClass $entities): void
