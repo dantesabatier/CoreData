@@ -106,6 +106,7 @@ class BatchFaultingArray extends ArrayClass
         }
     }
 
+    #[Override]
     public function valid(): bool
     {
         return $this->objectIDs->valid();
