@@ -200,19 +200,12 @@ class ManagedObjectContext extends ObjectClass
         if ($updatedObjects = $request->updatedObjects) {
             $savedObjects->formUnion($updatedObjects);
         }
-        foreach ($savedObjects as $savedObject) {
-            $savedObject->willSave();
-        }
         $this->processingChanges = true;
         $result = $this->executePersistentStoreRequest($request);
         $this->processingChanges = false;
         foreach ($this->deletedObjects as $deletedObject) {
-            $deletedObject->prepareForDeletion();
             $this->refault($deletedObject);
             $this->unregister($deletedObject);
-        }
-        foreach ($savedObjects as $savedObject) {
-            $savedObject->didSave();
         }
         return $result;
     }
@@ -690,50 +683,67 @@ class ManagedObjectContext extends ObjectClass
         $this->updatedObjects->formUnion($updates->filter(fn(ManagedObject $managedObject): bool => !$managedObject->isDeleted));
     }
 
+    private function processPendingUnmergedChanges(): void
+    {
+        foreach ($this->unprocessedInserts as $unprocessedInsert) {
+            $object = $this->object($unprocessedInsert->objectID);
+            $object->willSave();
+        }
+        foreach ($this->unprocessedChanges as $unprocessedChange) {
+            $object = $this->object($unprocessedChange->objectID);
+            $object->willSave();
+        }
+        foreach ($this->unprocessedDeletes as $unprocessedDelete) {
+            $object = $this->object($unprocessedDelete->objectID);
+            $object->prepareForDeletion();
+        }
+    }
+
     /**
      * Forces the context to process changes to the object graph.
      * @throws Exception
      */
     public function processPendingChanges(): void
     {
-        if (!$this->processingChanges) {
-            $this->processingChanges = true;
-            foreach ($this->unprocessedInserts as $unprocessedInsert) {
-                $object = $this->object($unprocessedInsert->objectID);
-                foreach ($object->persistentProperties as $persistentProperty) {
-                    if (($value = $unprocessedInsert->valueForProperty($persistentProperty)) && $persistentProperty instanceof RelationshipDescription) {
-                        $this->processPendingInsertions($value, $persistentProperty, $object);
-                    }
-                }
-            }
-            foreach ($this->unprocessedDeletes as $unprocessedDelete) {
-                $object = $this->object($unprocessedDelete->objectID);
-                foreach ($object->persistentProperties as $persistentProperty) {
-                    if (($value = $unprocessedDelete->valueForProperty($persistentProperty)) && $persistentProperty instanceof RelationshipDescription) {
-                        $this->processPendingDeletions($value, $persistentProperty, $object);
-                    }
-                }
-            }
-            foreach ($this->unprocessedChanges as $unprocessedChange) {
-                $attributesChanged = false;
-                $object = $this->object($unprocessedChange->objectID);
-                foreach ($object->persistentProperties as $persistentProperty) {
-                    if ($value = $unprocessedChange->valueForProperty($persistentProperty)) {
-                        if ($persistentProperty instanceof RelationshipDescription) {
-                            $this->processPendingUpdates($value, $persistentProperty, $object);
-                        } else {
-                            $attributesChanged = true;
-                        }
-                    }
-                }
-                if ($attributesChanged) {
-                    $this->updatedObjects->append($object);
-                }
-            }
-            $this->resetAllChanges();
-            NotificationCenter::default()->postNotificationName(self::didChangeObjectsNotification, $this, new Dictionary([InsertedObjectsKey => $this->insertedObjects, UpdatedObjectsKey => $this->updatedObjects, DeletedObjectsKey => $this->deletedObjects]));
-            $this->processingChanges = false;
+        if ($this->processingChanges) {
+            return;
         }
+        $this->processingChanges = true;
+        foreach ($this->unprocessedInserts as $unprocessedInsert) {
+            $object = $this->object($unprocessedInsert->objectID);
+            foreach ($object->persistentProperties as $persistentProperty) {
+                if (($value = $unprocessedInsert->valueForProperty($persistentProperty)) && $persistentProperty instanceof RelationshipDescription) {
+                    $this->processPendingInsertions($value, $persistentProperty, $object);
+                }
+            }
+        }
+        foreach ($this->unprocessedDeletes as $unprocessedDelete) {
+            $object = $this->object($unprocessedDelete->objectID);
+            foreach ($object->persistentProperties as $persistentProperty) {
+                if (($value = $unprocessedDelete->valueForProperty($persistentProperty)) && $persistentProperty instanceof RelationshipDescription) {
+                    $this->processPendingDeletions($value, $persistentProperty, $object);
+                }
+            }
+        }
+        foreach ($this->unprocessedChanges as $unprocessedChange) {
+            $attributesChanged = false;
+            $object = $this->object($unprocessedChange->objectID);
+            foreach ($object->persistentProperties as $persistentProperty) {
+                if ($value = $unprocessedChange->valueForProperty($persistentProperty)) {
+                    if ($persistentProperty instanceof RelationshipDescription) {
+                        $this->processPendingUpdates($value, $persistentProperty, $object);
+                    } else {
+                        $attributesChanged = true;
+                    }
+                }
+            }
+            if ($attributesChanged) {
+                $this->updatedObjects->append($object);
+            }
+        }
+        $this->resetAllChanges();
+        NotificationCenter::default()->postNotificationName(self::didChangeObjectsNotification, $this, new Dictionary([InsertedObjectsKey => $this->insertedObjects, UpdatedObjectsKey => $this->updatedObjects, DeletedObjectsKey => $this->deletedObjects]));
+        $this->processingChanges = false;
     }
 
     #[Override]
@@ -883,6 +893,7 @@ class ManagedObjectContext extends ObjectClass
         if ($this->savingInProgress) {
             return true;
         }
+        $this->processPendingUnmergedChanges();
         $this->savingInProgress = true;
         $this->processPendingChanges();
         if ($changesRequest = $this->newSaveRequestForCurrentState()) {
