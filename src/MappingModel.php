@@ -117,7 +117,7 @@ class MappingModel extends ObjectClass
      * @param ArrayClass<Bundle>|null $bundles An array of bundles in which to search for mapping models.
      * @param ManagedObjectModel|null $sourceModel The managed object model for the source store.
      * @param ManagedObjectModel|null $destinationModel The managed object model for the destination store.
-     * @return MappingModel|null Returns the mapping model to translate data from sourceModel to $destinationModel. If a suitable mapping model cannot be found, it returns nil.
+     * @return MappingModel|null Returns the mapping model to translate data from sourceModel to $destinationModel. If a suitable mapping model cannot be found, it returns null.
      * @throws Exception
      */
     public static function mappingModel(?ArrayClass $bundles, ?ManagedObjectModel $sourceModel, ?ManagedObjectModel $destinationModel): ?MappingModel
@@ -150,7 +150,7 @@ class MappingModel extends ObjectClass
      * @param ManagedObjectModel $destinationModel The destination managed object model.
      * @return MappingModel A newly created mapping model to migrate data from the source to the destination model.
      * A newly created mapping model to migrate data from the source to the destination model.
-     * If the mapping model cannot be created, it returns nil.
+     * If the mapping model cannot be created, it returns null.
      */
     public static function inferredMappingModel(ManagedObjectModel $sourceModel, ManagedObjectModel $destinationModel): MappingModel
     {

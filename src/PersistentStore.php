@@ -97,7 +97,7 @@ abstract class PersistentStore extends ObjectClass
     }
 
     /**
-     * Returns a value as appropriate for the given request, or nil if the request cannot be completed.
+     * Returns a value as appropriate for the given request, or null if the request cannot be completed.
      * @param PersistentStoreRequest $request A fetch request.
      * @param ManagedObjectContext $context The managed object context used to execute $request.
      * @return ArrayClass<ManagedObject|ManagedObjectID|Dictionary|Number> A value as appropriate for $request.
@@ -136,7 +136,7 @@ abstract class PersistentStore extends ObjectClass
      * Returns a store node encapsulating the persistent external values of the object with a given object ID.
      * @param ManagedObjectID $objectID The ID of the object for which values are requested.
      * @param ManagedObjectContext $context The managed object context into which values will be returned.
-     * @return mixed A store node encapsulating the persistent external values of the object with object ID objectID, or nil if the corresponding object cannot be found.
+     * @return mixed A store node encapsulating the persistent external values of the object with object ID objectID, or null if the corresponding object cannot be found.
      * The returned node should include all attributes values and may include to-one relationship values as instances of ManagedObjectID.
      * If an object with object ID objectID cannot be found, the method should return null.
      * @throws Exception
@@ -151,8 +151,8 @@ abstract class PersistentStore extends ObjectClass
      * @param RelationshipDescription $relationship The relationship for which values are requested.
      * @param ManagedObjectID $objectID The ID of the object for which values are requested.
      * @param ManagedObjectContext $context The managed object context into which values will be returned.
-     * @return mixed The value of the relationship specified relationship of the object with object ID objectID, or nil if an error occurs.
-     * If the relationship is a to-one, the method should return a {@see ManagedObjectID} instance that identifies the destination, or null if the relationship value is nil.
+     * @return mixed The value of the relationship specified relationship of the object with object ID objectID, or null if an error occurs.
+     * If the relationship is a to-one, the method should return a {@see ManagedObjectID} instance that identifies the destination, or null if the relationship value is null.
      * If the relationship is to many, the method should return a collection object containing {@see ManagedObjectID} instances to identify the related objects.
      * Using an array instance is preferred because it will be the most efficient.
      * A store may also return an instance of {@see Set}; an instance of Dictionary is not acceptable.

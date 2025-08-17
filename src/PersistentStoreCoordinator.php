@@ -55,7 +55,7 @@ class PersistentStoreCoordinator extends ObjectClass
      * Registers a given PersistentStore subclass for a given store type string.
      *
      * You must invoke this method before a custom subclass of PersistentStore can be loaded into a persistent store coordinator.
-     * You can pass nil for storeClass to unregister the store type.
+     * You can pass null for storeClass to unregister the store type.
      * @param class-string<PersistentStore>|null $persistentStoreClass The PersistentStore subclass to use for the store of type storeType.
      * @param PersistentStoreType $storeType A unique string that identifies a store type.
      */
@@ -176,10 +176,10 @@ class PersistentStoreCoordinator extends ObjectClass
      * Adds a new persistent store of a specified type at a given location.
      * @param PersistentStoreType $storeType The store type. For possible values, see {@see PersistentStoreType}.
      * @param string|null $configuration The name of a configuration in the receiver's managed object model that will be used by the new store.
-     * The configuration can be nil, in which case no other configurations are allowed.
+     * The configuration can be null, in which case no other configurations are allowed.
      * @param URL $storeURL The file location of the persistent store.
      * @param Dictionary|null $options A dictionary containing key-value pairs that specify whether the store should be read-only and whether (for an XML store) the XML file should be validated against the DTD before it is read.
-     * For key definitions, see {@see IgnorePersistentStoreVersioningOption}, {@see MigratePersistentStoresAutomaticallyOption}, {@see InferMappingModelAutomaticallyOption}, {@see ReadOnlyPersistentStoreOption}, {@see ValidateXMLStoreOption}, {@see PersistentStoreTimeoutOption}. This value may be nil.
+     * For key definitions, see {@see IgnorePersistentStoreVersioningOption}, {@see MigratePersistentStoresAutomaticallyOption}, {@see InferMappingModelAutomaticallyOption}, {@see ReadOnlyPersistentStoreOption}, {@see ValidateXMLStoreOption}, {@see PersistentStoreTimeoutOption}. This value may be null.
      * @return PersistentStore
      * @throws Exception If a new store cannot be created, upon return contains an error that describes the problem
      */
@@ -254,7 +254,7 @@ class PersistentStoreCoordinator extends ObjectClass
      * @param URL $destinationURL A URL object that specifies the location for the new store.
      * @param Dictionary|null $destinationOptions A dictionary containing key value pairs that specify whether the store should be read-only and whether (for an XML store) the XML file should be validated against the DTD before it is read.
      * @param PersistentStoreType $destinationType The new store type.
-     * @return PersistentStore|null If the migration is successful, the new store, otherwise nil.
+     * @return PersistentStore|null If the migration is successful, the new store, otherwise null.
      * @throws Exception
      */
     public function migratePersistentStore(PersistentStore $store, URL $destinationURL, ?Dictionary $destinationOptions, PersistentStoreType $destinationType): ?PersistentStore
@@ -320,7 +320,7 @@ class PersistentStoreCoordinator extends ObjectClass
      * Sends a request to all the persistent stores associated with the coordinator.
      * @param PersistentStoreRequest $request A fetch or save request.
      * @param ManagedObjectContext $context The context against which $request should be executed.
-     * @return ArrayClass<ManagedObject|ManagedObjectID|Dictionary|Number>|ArrayClass<ArrayClass<ManagedObject|ManagedObjectID|Dictionary|Number>> An array containing managed objects, managed object IDs, or dictionaries as appropriate for a fetch request; an empty array if $request is a save request, or nil if an error occurred.
+     * @return ArrayClass<ManagedObject|ManagedObjectID|Dictionary|Number>|ArrayClass<ArrayClass<ManagedObject|ManagedObjectID|Dictionary|Number>> An array containing managed objects, managed object IDs, or dictionaries as appropriate for a fetch request; an empty array if $request is a save request, or null if an error occurred.
      * User-defined requests return arrays of arrays, where a nested array is the result returned from a single store.
      * @throws Exception If an error occurs, upon return contains an error object that describes the problem.
      */
@@ -372,7 +372,7 @@ class PersistentStoreCoordinator extends ObjectClass
     }
 
     /**
-     * Returns an object ID for the specified URI representation of an object ID if a matching store is available, or nil if a matching store cannot be found.
+     * Returns an object ID for the specified URI representation of an object ID if a matching store is available, or null if a matching store cannot be found.
      * @param URL $uriRepresentation A URL object containing a URI that specify a managed object.
      * @return ManagedObjectID|null An object ID for the object specified by URL.
      * The URI representation contains a UUID of the store the ID is coming from, and the coordinator can match it against the stores added to it.

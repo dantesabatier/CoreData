@@ -34,7 +34,7 @@ class MergeConflict extends ObjectClass
     /**
      * Initializes a merge conflict.
      * @param ManagedObject $sourceObject The source object for the conflict.
-     * @param int $newVersionNumber The new version number for the change. A value of 0 means the object was deleted and the corresponding snapshot is nil.
+     * @param int $newVersionNumber The new version number for the change. A value of 0 means the object was deleted and the corresponding snapshot is null.
      * @param int $oldVersionNumber The old version number for the change.
      * @param Dictionary|null $cachedSnapshot A dictionary containing the values of sourceObject held in the persistent store coordinator layer.
      * @param Dictionary|null $persistedSnapshot A dictionary containing the values of sourceObject held in the persistent store.

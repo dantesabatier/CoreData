@@ -21,7 +21,7 @@ class PersistentStoreDescription extends ObjectClass
     /** @var string The type of store this description represents.
      * A string constant (such as {@see SQLStoreType}) that specifies the type of the new store see {@see PersistentStoreCoordinator}. */
     public string $type = SQLStoreType;
-    /** @var string|null The name of the configuration used by this store. This displays the name of a configuration in the receiver's managed object model that will be used by the new store. The configuration can be nil, in which case no other configurations are allowed. */
+    /** @var string|null The name of the configuration used by this store. This displays the name of a configuration in the receiver's managed object model that will be used by the new store. The configuration can be null, in which case no other configurations are allowed. */
     public ?string $configuration = null;
     /** @var Dictionary A dictionary containing key-value pairs that specify many settings for the persistent store. For key definitions, see {@see PersistentStoreCoordinator}. */
     private(set) Dictionary $options {

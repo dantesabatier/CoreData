@@ -57,9 +57,9 @@ class RelationshipDescription extends PropertyDescription
             $this->deleteRule = $value;
         }
     }
-    /** @var int The minimum number of managed objects the relationship can reference. If you declare a relationship attribute as optional when defining your entities, the framework only enforces minCount and {@see maxCount} when that attribute is not nil. The default value is 0. */
+    /** @var int The minimum number of managed objects the relationship can reference. If you declare a relationship attribute as optional when defining your entities, the framework only enforces minCount and {@see maxCount} when that attribute is not null. The default value is 0. */
     public int $minCount = 0;
-    /** @var int The maximum number of managed objects the relationship can reference. If you declare a relationship attribute as optional when defining your entities, the framework only enforces {@see minCount} and maxCount when that attribute is not nil. The default value is 0. */
+    /** @var int The maximum number of managed objects the relationship can reference. If you declare a relationship attribute as optional when defining your entities, the framework only enforces {@see minCount} and maxCount when that attribute is not null. The default value is 0. */
     public int $maxCount = 0;
     /** @internal */
     public string $lazyDestinationEntityName = UnknownName;

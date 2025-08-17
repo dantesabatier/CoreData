@@ -304,12 +304,12 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * Returns a dictionary of the most recent fetched or saved values for the properties of the specified keys.
      *
      * This method only reports values of properties that are defined as persistent properties of the receiver, not values of transient properties or of custom instance variables.
-     * You can invoke this method with the $keys value of nil to retrieve committed values for all the receiver's properties, as illustrated by the following example.
+     * You can invoke this method with the $keys value of null to retrieve committed values for all the receiver's properties, as illustrated by the following example.
      * <code>
      * $allCommittedValues = $managedObject->committedValuesForKeys(null);
      * </code>
-     * It is more efficient to use nil than to pass an array of all the property keys.
-     * @param ArrayClass<string>|null $keys An array containing names of properties, or nil.
+     * It is more efficient to use null than to pass an array of all the property keys.
+     * @param ArrayClass<string>|null $keys An array containing names of properties, or null.
      * @return Dictionary A dictionary containing the last fetched or saved values of the receiver for the properties specified by keys.
      */
     public function committedValuesForKeys(?ArrayClass $keys): Dictionary
@@ -439,7 +439,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * This method does not invoke the access notification methods ({@see willAccessValueForKey()} and {@see didAccessValueForKey()}).
      * This method is used primarily by subclasses that implement custom accessor methods that need direct access to the receiver's private storage.
      * @param string $key The name of one of the receiver's properties.
-     * @return mixed The value of the property specified by $key. Returns nil if no value has been set.
+     * @return mixed The value of the property specified by $key. Returns null if no value has been set.
      */
     final public function primitiveValueForKey(string $key): mixed
     {
@@ -1022,7 +1022,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * Provides support for key-value observing access notification.
      *
      * See {@see didAccessValueForKey()} for more details.
-     * You can invoke this method with the key value of nil to ensure that a fault has been fired, as illustrated by the following example.
+     * You can invoke this method with the key value of null to ensure that a fault has been fired, as illustrated by the following example.
      * <code>
      * $managedObject->willAccessValueForKey(null);
      * </code>

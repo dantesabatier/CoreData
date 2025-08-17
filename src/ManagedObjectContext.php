@@ -46,7 +46,7 @@ class ManagedObjectContext extends ObjectClass
     final public const string willSaveObjectsNotification = ManagedObjectContextWillSave;
     final public const string didSaveObjectsNotification = ManagedObjectContextDidSave;
     final public const string didSaveObjectIDsNotification = ManagedObjectContextDidSaveObjectIDs;
-    /** @var PersistentStoreCoordinator|null The persistent store coordinator of the context. The coordinator provides the managed object model and handles persistence. Note that multiple contexts can share a coordinator. May not be nil. */
+    /** @var PersistentStoreCoordinator|null The persistent store coordinator of the context. The coordinator provides the managed object model and handles persistence. Note that multiple contexts can share a coordinator. May not be null. */
     public ?PersistentStoreCoordinator $persistentStoreCoordinator = null {
         set {
             $this->persistentStoreCoordinator = $value;
@@ -138,7 +138,7 @@ class ManagedObjectContext extends ObjectClass
     /** @var bool A Boolean value that indicates whether the context propagates deletes at the end of the event in which a change was made.
      * true if the receiver propagates deletes at the end of the event in which a change was made, false if it propagates deletes only during a save operation. The default is true. */
     public bool $propagatesDeletesAtEndOfEvent = true;
-    /** @var UndoManager|null The object that provides undo support for the context. Enable undo support for a context by setting this property to an instance of UndoManager. This can be an undo manager that’s exclusive to the context or an existing undo manager if you want to integrate the context’s undo operations with those of the rest of your app. If your context uses an undo manager, you can realize a performance benefit by temporarily setting this property to nil when performing expensive operations on that context, such as importing a large number of objects. */
+    /** @var UndoManager|null The object that provides undo support for the context. Enable undo support for a context by setting this property to an instance of UndoManager. This can be an undo manager that’s exclusive to the context or an existing undo manager if you want to integrate the context’s undo operations with those of the rest of your app. If your context uses an undo manager, you can realize a performance benefit by temporarily setting this property to null when performing expensive operations on that context, such as importing a large number of objects. */
     public ?UndoManager $undoManager = null;
     /** @var float The maximum length of time that may have elapsed since the store previously fetched data before fulfilling a fault issues a new fetch. The staleness interval controls whether fulfilling a fault uses data previously fetched by the application, or issues a new fetch (see also {@see refresh()}). The staleness interval does not affect objects currently in use (that is, it is not used to automatically update property values from a persistent store after a certain period of time). The expiration value is applied on a per-object basis. It is the relative time until cached data (snapshots) should be considered stale. For example, a value of 300.0 informs the context to use cached information for no more than 5 minutes after an object was originally fetched. Note that the staleness interval is a hint and may not be supported by all persistent store types. It is not used by XML and binary stores because these stores maintain all current values in memory. The default is a negative value, which represents infinite staleness allowed. 0.0 represents "no staleness acceptable".
      */
@@ -315,7 +315,7 @@ class ManagedObjectContext extends ObjectClass
     /**
      * Returns the object for a specified ID if the object is registered with the context.
      * @param ManagedObjectID $objectID An object ID.
-     * @return ManagedObject|null The object for the specified ID if it is registered with the receiver, otherwise nil.
+     * @return ManagedObject|null The object for the specified ID if it is registered with the receiver, otherwise null.
      */
     public function registeredObject(ManagedObjectID $objectID): ?ManagedObject
     {
@@ -343,13 +343,13 @@ class ManagedObjectContext extends ObjectClass
     }
 
     /**
-     * Returns the object for the specified ID or nil if the object does not exist.
+     * Returns the object for the specified ID or null if the object does not exist.
      *
      * If there is a managed object with the given ID already registered in the context, that object is returned directly; otherwise the corresponding object is faulted into the context.
      * This method might perform I/O if the data is uncached.
      * Unlike {@see object()}, this method never returns a fault.
      * @param ManagedObjectID $objectID The object ID for the requested object.
-     * @return ManagedObject|null The object specified by objectID. If the object cannot be fetched, or does not exist, or cannot be faulted, it returns nil.
+     * @return ManagedObject|null The object specified by objectID. If the object cannot be fetched, or does not exist, or cannot be faulted, it returns null.
      * @throws Exception If there is a problem in retrieving the object specified by objectID, upon return contains an error that describes the problem.
      */
     public function existingObject(ManagedObjectID $objectID): ?ManagedObject

@@ -25,7 +25,7 @@ abstract class PropertyDescription extends ObjectClass
     public EntityDescription $entity;
     /** @var Dictionary|null The user info dictionary of the receiver. */
     public ?Dictionary $userInfo = null;
-    /** @var bool A Boolean value that indicates whether the receiver is optional. The optionality flag specifies whether a property's value can be nil before an object can be saved to a persistent store. */
+    /** @var bool A Boolean value that indicates whether the receiver is optional. The optionality flag specifies whether a property's value can be null before an object can be saved to a persistent store. */
     public bool $isOptional = true;
     /** @var bool A Boolean value that indicates whether the receiver is transient. The transient flag specifies whether a property's value is ignored when an object is saved to a persistent store. Transient properties are not saved to the persistent store, but are still managed for undo, redo, validation, and so on. */
     public bool $isTransient = false;

@@ -31,8 +31,8 @@ class FetchedResultsController extends ObjectClass
      * Returns a fetch request controller initialized using the given arguments.
      * @param FetchRequest<ResultType> $fetchRequest The fetch request used to get the objects. The fetch request must have at least one sort descriptor. If the controller generates sections, the first sort descriptor in the array is used to group the objects into sections; its key must either be the same as sectionNameKeyPath or the relative ordering using its key must match that using sectionNameKeyPath. You must not modify fetchRequest after invoking this method. For example, you must not change its predicate or the sort orderings.
      * @param ManagedObjectContext $managedObjectContext The managed object against which fetchRequest is executed.
-     * @param string|null $sectionNameKeyPath A key path on result objects that returns the section name. Pass nil to indicate that the controller should generate a single section. The section name is used to pre-compute the section information. If this key path is not the same as that specified by the first sort descriptor in fetchRequest, they must generate the same relative orderings. For example, the first sort descriptor in fetchRequest might specify the key for a persistent property; sectionNameKeyPath might specify a key for a transient property derived from the persistent property.
-     * @param string|null $cacheName The name of the cache file the receiver should use. Pass nil to prevent caching. Pre-computed section info is cached to a private directory under this name. If Core Data finds a cache stored with this name, it is checked to see if it matches the fetchRequest. If it does, the cache is loaded directly—this avoids the overhead of computing the section and index information. If the cached information doesn't match the request, the cache is deleted and recomputed when the fetch happens.
+     * @param string|null $sectionNameKeyPath A key path on result objects that returns the section name. Pass null to indicate that the controller should generate a single section. The section name is used to pre-compute the section information. If this key path is not the same as that specified by the first sort descriptor in fetchRequest, they must generate the same relative orderings. For example, the first sort descriptor in fetchRequest might specify the key for a persistent property; sectionNameKeyPath might specify a key for a transient property derived from the persistent property.
+     * @param string|null $cacheName The name of the cache file the receiver should use. Pass null to prevent caching. Pre-computed section info is cached to a private directory under this name. If Core Data finds a cache stored with this name, it is checked to see if it matches the fetchRequest. If it does, the cache is loaded directly—this avoids the overhead of computing the section and index information. If the cached information doesn't match the request, the cache is deleted and recomputed when the fetch happens.
      */
     public function __construct(public readonly FetchRequest $fetchRequest, public readonly ManagedObjectContext $managedObjectContext, public readonly ?string $sectionNameKeyPath = null, public readonly ?string $cacheName = null)
     {
@@ -59,7 +59,7 @@ class FetchedResultsController extends ObjectClass
 
     /**
      * Deletes the cached section information with the given name.
-     * @param string|null $name The name of the cache file to delete. If name is nil, deletes all cache files.
+     * @param string|null $name The name of the cache file to delete. If name is null, deletes all cache files.
      */
     public static function deleteCache(?string $name): void
     {
@@ -78,7 +78,7 @@ class FetchedResultsController extends ObjectClass
     /**
      * Returns the index path of a given object.
      * @param ResultType $object An object in the receiver's fetch results.
-     * @return IndexPath|null The index path of object in the receiver's fetch results, or nil if object could not be found.
+     * @return IndexPath|null The index path of object in the receiver's fetch results, or null if object could not be found.
      */
     public function indexPath(mixed $object): ?IndexPath
     {

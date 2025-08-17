@@ -345,7 +345,7 @@ class MigrationManager extends ObjectClass
      * @param string $mappingName The name of an entity mapping in use.
      * @param ArrayClass<ManagedObject>|null $sourceInstances An array of managed objects in the source store.
      * @return ArrayClass<ManagedObject> An array containing the managed object instances created in the destination store for the entity mapping named mappingName for sourceInstances.
-     * If $sourceInstances are nil, all the destination instances created by the specified property mapping are returned.
+     * If $sourceInstances are null, all the destination instances created by the specified property mapping are returned.
      */
     public function destinationInstances(string $mappingName, ?ArrayClass $sourceInstances = null): ArrayClass
     {
@@ -376,7 +376,7 @@ class MigrationManager extends ObjectClass
      * @param string $mappingName The name of an entity mapping in use.
      * @param ArrayClass<ManagedObject>|null $destinationInstances An array of managed objects in the destination store.
      * @return ArrayClass<ManagedObject> An array containing the managed object instances in the source store used to create destinationInstances using the entity mapping named mappingName.
-     * If $destinationInstances are nil, all the source instances used to create the destination instance for this property mapping are returned.
+     * If $destinationInstances are null, all the source instances used to create the destination instance for this property mapping are returned.
      */
     public function sourceInstances(string $mappingName, ?ArrayClass $destinationInstances = null): ArrayClass
     {

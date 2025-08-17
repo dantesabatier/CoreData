@@ -23,7 +23,7 @@ interface FetchedResultsControllerDelegate
     /**
      * Notifies the receiver about changes to the content in the fetched results controller, by using a collection difference.
      *
-     * This method is only invoked if the controller’s {@see FetchedResultsController::$sectionNameKeyPath} property is nil and {@see controllerDidChangeContentWithSnapshot()} is not implemented.
+     * This method is only invoked if the controller’s {@see FetchedResultsController::$sectionNameKeyPath} property is null and {@see controllerDidChangeContentWithSnapshot()} is not implemented.
      * If this method is implemented, no other delegate methods are invoked.
      * @param FetchedResultsController $controller
      * @param CollectionDifference $diff
@@ -51,9 +51,9 @@ interface FetchedResultsControllerDelegate
      * This method may be invoked many times during an update event (for example, if you are importing data on a background thread and adding them to the context in a batch). You should consider carefully whether you want to update the table view on receipt of each message.
      * @param FetchedResultsController $controller The fetched results controller that sent the message.
      * @param mixed $object The object in controller’s fetched results that changed.
-     * @param IndexPath $indexPath The index path of the changed object (this value is nil for insertions).
+     * @param IndexPath $indexPath The index path of the changed object (this value is null for insertions).
      * @param FetchedResultsChangeType $type The type of change.
-     * @param IndexPath $newIndexPath The destination path for the object for insertions or moves (this value is nil for a deletion).
+     * @param IndexPath $newIndexPath The destination path for the object for insertions or moves (this value is null for a deletion).
      */
     public function controllerDidChangeObject(FetchedResultsController $controller, mixed $object, IndexPath $indexPath, FetchedResultsChangeType $type, IndexPath $newIndexPath): void;
 
