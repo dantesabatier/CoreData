@@ -98,8 +98,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         $trackableKeys = $currentKeys->filter(fn(string $key, int $index): bool => $index > 1 && $index < $currentKeys->indexBefore($currentKeys->endIndex));
                                         $lastKey = $trackableKeys->last;
                                         if ($lastKey) {
-                                            $toMany = $relationship->destinationEntity->propertiesByName[$lastKey];
-                                            if ($toMany instanceof SQLRelationship) {
+                                            $lastRelationship = $relationship->destinationEntity->propertiesByName[$lastKey];
+                                            if ($lastRelationship instanceof SQLRelationship) {
                                                 /** @var Dictionary<mixed>|null $last */
                                                 $last = $current->last;
                                                 if ($last?->valueForKeyPath($trackableKeys->join("."))?->first !== null) {
