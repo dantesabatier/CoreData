@@ -102,7 +102,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                             if ($lastRelationship instanceof SQLRelationship) {
                                                 /** @var Dictionary<mixed>|null $last */
                                                 $last = $current->last;
-                                                if ($last?->valueForKeyPath($trackableKeys->join("."))?->first !== null) {
+                                                if (!$last?->valueForKeyPath($trackableKeys->join("."))?->first instanceof Dictionary) {
                                                     $element = $last;
                                                 }
                                             }
