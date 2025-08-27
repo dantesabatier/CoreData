@@ -44,8 +44,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     {
         /** @var Dictionary<Dictionary<mixed>> $map */
         $map = new Dictionary();
-        /** @var Set<string> $keyPaths */
-        $keyPaths = new Set();
+        /** @var Set<string> $trackableKeys */
+        $trackableKeys = new Set();
         do {
             /** @var array<string, mixed> $data */
             while ($data = $statement->fetch()) {
@@ -66,13 +66,13 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                     if ($keys[$keys->indexBefore($keys->endIndex)] === $currentEntity->primaryKey->columnName) {
                         $keyPath = $propertyKeys->join(".");
                         if ($value instanceof Nil) {
-                            $keyPaths->append($keyPath);
+                            $trackableKeys->append($keyPath);
                         } else {
-                            $keyPaths->remove($keyPath);
+                            $trackableKeys->remove($keyPath);
                         }
                     }
                     $keyPath = $keys->join(".");
-                    if ($keyPaths->contains(fn(string $prefix): bool => str_starts_with($keyPath, $prefix))) {
+                    if ($trackableKeys->contains(fn(string $prefix): bool => str_starts_with($keyPath, $prefix))) {
                         continue;
                     }
                     $relationship = null;
@@ -91,7 +91,24 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         $propertyDescription = $property?->propertyDescription ?? $this->request->propertiesToFetch?->first(fn(string|PropertyDescription $property): bool => $property instanceof PropertyDescription ? $property->name === $key : $property === $key);
                         if ($property instanceof SQLRelationship || ($property instanceof SQLAttribute && $property->isCompositeAttribute)) {
                             if ($current instanceof ArrayClass) {
-                                $element = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID && $dictionary[$currentEntity->entityKey->columnName] === ($relationship?->destinationEntity?->entityDescription?->name ?? $currentEntity->entityDescription->name)) ?? $current->last;
+                                $element = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID || $dictionary[$currentEntity->primaryKey->columnName] === $currentID);
+                                if (!$element) {
+                                    $relationship = $currentEntity->propertiesByName[$key];
+                                    if ($relationship instanceof SQLRelationship) {
+                                        $trackableKeys = $currentKeys->filter(fn(string $key, int $index): bool => $index > 1 && $index < $currentKeys->indexBefore($currentKeys->endIndex));
+                                        $lastKey = $trackableKeys->last;
+                                        if ($lastKey) {
+                                            $toMany = $relationship->destinationEntity->propertiesByName[$lastKey];
+                                            if ($toMany instanceof SQLRelationship) {
+                                                /** @var Dictionary<mixed>|null $last */
+                                                $last = $current->last;
+                                                if ($last?->valueForKeyPath($trackableKeys->join("."))?->first !== null) {
+                                                    $element = $last;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                                 $current = &$element;
                             }
                             if ($current instanceof Dictionary) {
@@ -133,6 +150,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                     unset($current);
                     $currentEntity = $entity;
                 }
+                assert($representation instanceof Dictionary);
                 if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
                     $representation["isInserted"] = true;
                     $representation["faultingState"] = 0;
