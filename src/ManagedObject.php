@@ -670,6 +670,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     #[Override]
     final public function setValuesForKeys(Dictionary $keyedValues): void
     {
+        $keyedValues->removeValueForKey("parentID");
         $store = $this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null");
         $managedObjectID = function (EntityDescription $entity, Dictionary $object) use ($store): ?ManagedObjectID {
             $objectID = $object[SQLEntity::primaryKeyName];
