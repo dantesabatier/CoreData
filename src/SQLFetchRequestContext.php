@@ -77,8 +77,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                     }
                     $relationship = null;
                     $current = &$representation;
-                    //$currentKey = $currentEntity->primaryKey->columnName;
-                    //$currentID = $data[$currentKey] ?? null;
+                    $currentKey = $currentEntity->primaryKey->columnName;
+                    $currentID = $data[$currentKey] ?? null;
                     $subentityKeys = new ArrayClass();
                     if (!$propertyKeys->isEmpty) {
                         $subentityKeys->append($currentEntity->tableName);
@@ -95,14 +95,14 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                     }
                     $subentityKey = $subentityKeys->join("_");
                     $subentityID = $data[$subentityKey] ?? null;
-                    //$superentityKey = $superentityKeys->join("_");
-                    //$superentityID = $data[$superentityKey] ?? $currentID;
+                    $superentityKey = $superentityKeys->join("_");
+                    $superentityID = $data[$superentityKey] ?? $currentID;
                     foreach ($keys as $key) {
                         $property = $currentEntity->propertiesByName[$key] ?? $currentEntity->compositeAttributeNameToSQLProperty[$key];
                         $propertyDescription = $property?->propertyDescription ?? $this->request->propertiesToFetch?->first(fn(string|PropertyDescription $property): bool => $property instanceof PropertyDescription ? $property->name === $key : $property === $key);
                         if ($property instanceof SQLRelationship || ($property instanceof SQLAttribute && $property->isCompositeAttribute)) {
                             if ($current instanceof ArrayClass) {
-                                $element = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $subentityID) ?? $current->last;
+                                $element = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $superentityID) ?? $current->last;
                                 $current = &$element;
                             }
                             if ($current instanceof Dictionary) {
@@ -122,8 +122,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         }
                         if ($property instanceof SQLColumn || $propertyDescription instanceof ExpressionDescription) {
                             if ($current instanceof ArrayClass) {
-                                if ($property instanceof SQLPrimaryKey && !$current->contains(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $value && $dictionary[$currentEntity->entityKey->columnName] === $currentEntity->entityDescription->name)) {
-                                    $current->append(new Dictionary([$currentEntity->primaryKey->columnName => $value, $currentEntity->entityKey->columnName => $currentEntity->entityDescription->name]));
+                                if ($property instanceof SQLPrimaryKey && !$current->contains(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $value)) {
+                                    $current->append(new Dictionary([$currentEntity->primaryKey->columnName => $value]));
                                 }
                                 $element = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $subentityID) ?? $current->last;
                                 $current = &$element;
