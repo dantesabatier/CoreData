@@ -106,9 +106,14 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 if (!$element) {
                                     $last = $current->last;
                                     if ($last instanceof Dictionary) {
+                                        $lastID = $last[$currentEntity->primaryKey->columnName];
                                         $lastValue = $last->valueForKey($key);
                                         if ($lastValue instanceof ArrayClass) {
-                                            $last[$key] = $lastValue->filter(fn(Dictionary $dictionary): bool => $dictionary["parentID"] === $last[$currentEntity->primaryKey->columnName]);
+                                            $last[$key] = $lastValue->filter(fn(Dictionary $dictionary): bool => $dictionary["parentID"] === $lastID);
+                                        } elseif ($lastValue instanceof Dictionary) {
+                                            if ($lastValue["parentID"] !== $lastID) {
+                                                $last->removeValueForKey($key);
+                                            }
                                         }
                                         $element = $last;
                                     }
@@ -157,6 +162,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                     unset($current);
                     $currentEntity = $entity;
                 }
+                assert($representation instanceof Dictionary);
                 if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
                     $representation["isInserted"] = true;
                     $representation["faultingState"] = 0;
