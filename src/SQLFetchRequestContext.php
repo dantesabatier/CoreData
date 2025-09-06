@@ -148,13 +148,13 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     $value = ManagedObject::coercedValue($value, $propertyDescription->resultType, isOptional: $propertyDescription->isOptional);
                                 }
                                 $current[$key] = $value;
+                                if ($current !== $representation) {
+                                    $current["parentID"] = $parentID;
+                                }
                                 if (!$propertyDescription instanceof CompositeAttributeDescription && $this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
                                     $current["isInserted"] = true;
                                     $current["isFault"] = false;
                                     $current["faultingState"] = 0;
-                                    if ($current !== $representation) {
-                                        $current["parentID"] = $parentID;
-                                    }
                                 }
                             }
                         }
