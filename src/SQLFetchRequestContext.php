@@ -132,7 +132,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                     [$childrenID, $parentID] = $this->buildRelationalIDSets($propertyPathSegments, $cursorEntity, $row);
                     foreach ($keySegments as $key) {
                         $property = $cursorEntity->propertiesByName[$key] ?? $cursorEntity->compositeAttributeNameToSQLProperty[$key];
-                        $propertyDesc = $property?->propertyDescription ?? $this->request->propertiesToFetch?->first(fn(string|PropertyDescription $p): bool => $p instanceof PropertyDescription ? $p->name === $key : $p === $key);
+                        $propertyDescription = $property?->propertyDescription ?? $this->request->propertiesToFetch?->first(fn(string|PropertyDescription $p): bool => $p instanceof PropertyDescription ? $p->name === $key : $p === $key);
                         $isNavigational = ($property instanceof SQLRelationship) || ($property instanceof SQLAttribute && $property->isCompositeAttribute);
                         if ($isNavigational) {
                             if ($cursor instanceof ArrayClass) {
@@ -168,7 +168,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 $primaryKeyName = $cursorEntity->primaryKey->columnName;
                             }
                         }
-                        $isTerminalValue = ($property instanceof SQLColumn) || ($propertyDesc instanceof ExpressionDescription);
+                        $isTerminalValue = ($property instanceof SQLColumn) || ($propertyDescription instanceof ExpressionDescription);
                         if ($isTerminalValue) {
                             if ($cursor instanceof ArrayClass) {
                                 if ($property instanceof SQLPrimaryKey && !$cursor->contains(fn(Dictionary $d): bool => $d[$primaryKeyName] === $value)) {
@@ -178,12 +178,12 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 $cursor = &$element;
                             }
                             if ($cursor instanceof Dictionary) {
-                                $coercedValue = $this->coerceExpressionValueIfNeeded($value, $propertyDesc instanceof ExpressionDescription ? $propertyDesc : null);
+                                $coercedValue = $this->coerceExpressionValueIfNeeded($value, $propertyDescription instanceof ExpressionDescription ? $propertyDescription : null);
                                 $cursor[$key] = $coercedValue;
                                 if ($cursor !== $root) {
                                     $cursor["parentID"] = $parentID;
                                 }
-                                if (!$propertyDesc instanceof CompositeAttributeDescription && $isNonDictionaryResultType) {
+                                if (!$propertyDescription instanceof CompositeAttributeDescription && $isNonDictionaryResultType) {
                                     $cursor["isInserted"] = true;
                                     $cursor["isFault"] = false;
                                     $cursor["faultingState"] = 0;
