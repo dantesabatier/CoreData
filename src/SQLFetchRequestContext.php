@@ -49,7 +49,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
      * @param string $pattern
      * @return ArrayClass<string>
      */
-    private function splitPatternKeys(string $pattern): ArrayClass
+    private function split(string $pattern): ArrayClass
     {
         $keys = new ArrayClass(explode("_", $pattern));
         if ($keys->count >= 3) {
@@ -110,27 +110,27 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                 $isNonDictionaryResultType = ($this->request->resultType !== FetchRequestResultType::dictionaryResultType);
                 foreach ($row as $pattern => $value) {
                     $value ??= Nil::nil();
-                    $keySegments = $this->splitPatternKeys($pattern);
-                    $propertyPathSegments = $keySegments->dropLast(1);
+                    $keyComponents = $this->split($pattern);
+                    $keyPathComponents = $keyComponents->dropLast(1);
                     $primaryKeyName = $cursorEntity->primaryKey->columnName;
-                    $lastSegmentIndex = $keySegments->indexBefore($keySegments->endIndex);
-                    if ($keySegments[$lastSegmentIndex] === $primaryKeyName) {
-                        $propertyKeyPath = $propertyPathSegments->join(".");
+                    $lastComponentIndex = $keyComponents->indexBefore($keyComponents->endIndex);
+                    if ($keyComponents[$lastComponentIndex] === $primaryKeyName) {
+                        $propertyKeyPath = $keyPathComponents->join(".");
                         if ($value instanceof Nil) {
                             $nullPropertyPrefixes->append($propertyKeyPath);
                         } else {
                             $nullPropertyPrefixes->remove($propertyKeyPath);
                         }
                     }
-                    $keyPath = $keySegments->join(".");
+                    $keyPath = $keyComponents->join(".");
                     $hasNullifiedPrefix = $nullPropertyPrefixes->contains(fn(string $prefix): bool => str_starts_with($keyPath, $prefix));
                     if ($hasNullifiedPrefix) {
                         continue;
                     }
                     $relationship = null;
                     $cursor = &$root;
-                    [$childrenID, $parentID] = $this->buildRelationalIDSets($propertyPathSegments, $cursorEntity, $row);
-                    foreach ($keySegments as $key) {
+                    [$childrenID, $parentID] = $this->buildRelationalIDSets($keyPathComponents, $cursorEntity, $row);
+                    foreach ($keyComponents as $key) {
                         $property = $cursorEntity->propertiesByName[$key] ?? $cursorEntity->compositeAttributeNameToSQLProperty[$key];
                         $propertyDescription = $property?->propertyDescription ?? $this->request->propertiesToFetch?->first(fn(string|PropertyDescription $p): bool => $p instanceof PropertyDescription ? $p->name === $key : $p === $key);
                         $isNavigational = ($property instanceof SQLRelationship) || ($property instanceof SQLAttribute && $property->isCompositeAttribute);
