@@ -9,6 +9,7 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Set;
+use Sabatier\Foundation\Slice;
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_plural;
@@ -36,82 +37,113 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         parent::__construct($request, $context, $sqlCore);
     }
 
+    private function coerceExpressionValueIfNeeded(mixed $value, ?ExpressionDescription $description): mixed
+    {
+        if ($description instanceof ExpressionDescription) {
+            return ManagedObject::coercedValue($value, $description->resultType, isOptional: $description->isOptional);
+        }
+        return $value;
+    }
+
     /**
-     * @param PDOStatement $statement
-     * @return ArrayClass<Dictionary<mixed>>
+     * @param string $pattern
+     * @return ArrayClass<string>
      */
+    private function splitPatternKeys(string $pattern): ArrayClass
+    {
+        $keys = new ArrayClass(explode("_", $pattern));
+        if ($keys->count >= 3) {
+            $keys->removeAt(0);
+        }
+        return $keys;
+    }
+
+    /**
+     * @param Slice<string> $propertyKeys
+     * @param SQLEntity $currentEntity
+     * @param array<string, mixed> $rowData
+     * @return array{int|null, int|null}
+     */
+    private function buildRelationalIDSets(Slice $propertyKeys, SQLEntity $currentEntity, array $rowData): array
+    {
+        /** @var ArrayClass<string> $childrenKeys */
+        $childrenKeys = new ArrayClass();
+        if (!$propertyKeys->isEmpty) {
+            $childrenKeys->append($currentEntity->tableName);
+            $childrenKeys->appendContentsOf($propertyKeys);
+            $childrenKeys->append($currentEntity->primaryKey->columnName);
+        }
+        /** @var ArrayClass<string> $parentKeys */
+        $parentKeys = new ArrayClass();
+        if (!$propertyKeys->isEmpty) {
+            $parentKeys->appendContentsOf(new ArrayClass($propertyKeys)->dropLast(1));
+            if (!$parentKeys->isEmpty) {
+                $parentKeys->insertAt($currentEntity->tableName, 0);
+                $parentKeys->append($currentEntity->primaryKey->columnName);
+            }
+        }
+        $currentKey = $currentEntity->primaryKey->columnName;
+        $currentID = $rowData[$currentKey] ?? null;
+        $childrenKey = $childrenKeys->join("_");
+        $childrenID = $rowData[$childrenKey] ?? null;
+        $parentKey = $parentKeys->join("_");
+        $parentID = $rowData[$parentKey] ?? $currentID;
+        return [$childrenID, $parentID];
+    }
+
     private function dictionaryResults(PDOStatement $statement): ArrayClass
     {
-        /** @var Dictionary<Dictionary<mixed>> $map */
-        $map = new Dictionary();
-        /** @var Set<string> $trackableKeys */
-        $trackableKeys = new Set();
+        /** @var Dictionary<Dictionary<mixed>> $byRootIDResult */
+        $byRootIDResult = new Dictionary();
+        /** @var Set<string> $nullPropertyPrefixes */
+        $nullPropertyPrefixes = new Set();
         do {
-            /** @var array<string, mixed> $data */
-            while ($data = $statement->fetch()) {
-                $entityName = $data[SQLEntity::entityKeyName] ?? $this->request->entity->name;
+            /** @var array<string, mixed> $row */
+            while ($row = $statement->fetch()) {
+                $entityNameFromRow = $row[SQLEntity::entityKeyName] ?? $this->request->entity->name;
                 /** @var SQLEntity $entity */
-                $entity = $this->sqlModel->entitiesByName[$entityName] ?? fatal_error("Entity \"$entityName\" does not exists");
-                $currentEntity = $entity;
-                $referenceObject = (string)$data[$entity->primaryKey->columnName];
-                /** @var Dictionary<mixed> $representation */
-                $representation = $map[$referenceObject] ?? new Dictionary();
-                foreach ($data as $pattern => $value) {
+                $entity = $this->sqlModel->entitiesByName[$entityNameFromRow] ?? fatal_error("Entity \"$entityNameFromRow\" does exists");
+                $cursorEntity = $entity;
+                $rootID = (string)$row[$entity->primaryKey->columnName];
+                /** @var Dictionary<mixed> $root */
+                $root = $byRootIDResult[$rootID] ?? new Dictionary();
+                $isNonDictionaryResultType = ($this->request->resultType !== FetchRequestResultType::dictionaryResultType);
+                foreach ($row as $pattern => $value) {
                     $value ??= Nil::nil();
-                    $keys = new ArrayClass(explode("_", $pattern));
-                    if ($keys->count >= 3) {
-                        $keys->removeAt(0);
-                    }
-                    $propertyKeys = $keys->dropLast(1);
-                    if ($keys[$keys->indexBefore($keys->endIndex)] === $currentEntity->primaryKey->columnName) {
-                        $keyPath = $propertyKeys->join(".");
+                    $keySegments = $this->splitPatternKeys($pattern);
+                    $propertyPathSegments = $keySegments->dropLast(1);
+                    $primaryKeyName = $cursorEntity->primaryKey->columnName;
+                    $lastSegmentIndex = $keySegments->indexBefore($keySegments->endIndex);
+                    if ($keySegments[$lastSegmentIndex] === $primaryKeyName) {
+                        $propertyKeyPath = $propertyPathSegments->join(".");
                         if ($value instanceof Nil) {
-                            $trackableKeys->append($keyPath);
+                            $nullPropertyPrefixes->append($propertyKeyPath);
                         } else {
-                            $trackableKeys->remove($keyPath);
+                            $nullPropertyPrefixes->remove($propertyKeyPath);
                         }
                     }
-                    $keyPath = $keys->join(".");
-                    if ($trackableKeys->contains(fn(string $prefix): bool => str_starts_with($keyPath, $prefix))) {
+                    $keyPath = $keySegments->join(".");
+                    $hasNullifiedPrefix = $nullPropertyPrefixes->contains(fn(string $prefix): bool => str_starts_with($keyPath, $prefix));
+                    if ($hasNullifiedPrefix) {
                         continue;
                     }
                     $relationship = null;
-                    $current = &$representation;
-                    $currentKey = $currentEntity->primaryKey->columnName;
-                    $currentID = $data[$currentKey] ?? null;
-                    /** @var ArrayClass<string> $childrenKeys */
-                    $childrenKeys = new ArrayClass();
-                    if (!$propertyKeys->isEmpty) {
-                        $childrenKeys->append($currentEntity->tableName);
-                        $childrenKeys->appendContentsOf($propertyKeys);
-                        $childrenKeys->append($currentEntity->primaryKey->columnName);
-                    }
-                    /** @var ArrayClass<string> $parentKeys */
-                    $parentKeys = new ArrayClass();
-                    if (!$propertyKeys->isEmpty) {
-                        $parentKeys->appendContentsOf(new ArrayClass($propertyKeys)->dropLast(1));
-                        if (!$parentKeys->isEmpty) {
-                            $parentKeys->insertAt($currentEntity->tableName, 0);
-                            $parentKeys->append($currentEntity->primaryKey->columnName);
-                        }
-                    }
-                    $childrenKey = $childrenKeys->join("_");
-                    $childrenID = $data[$childrenKey] ?? null;
-                    $parentKey = $parentKeys->join("_");
-                    $parentID = $data[$parentKey] ?? $currentID;
-                    foreach ($keys as $key) {
-                        $property = $currentEntity->propertiesByName[$key] ?? $currentEntity->compositeAttributeNameToSQLProperty[$key];
-                        $propertyDescription = $property?->propertyDescription ?? $this->request->propertiesToFetch?->first(fn(string|PropertyDescription $property): bool => $property instanceof PropertyDescription ? $property->name === $key : $property === $key);
-                        if ($property instanceof SQLRelationship || ($property instanceof SQLAttribute && $property->isCompositeAttribute)) {
-                            if ($current instanceof ArrayClass) {
-                                $element = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $parentID);
+                    $cursor = &$root;
+                    [$childrenID, $parentID] = $this->buildRelationalIDSets($propertyPathSegments, $cursorEntity, $row);
+                    foreach ($keySegments as $key) {
+                        $property = $cursorEntity->propertiesByName[$key] ?? $cursorEntity->compositeAttributeNameToSQLProperty[$key];
+                        $propertyDesc = $property?->propertyDescription ?? $this->request->propertiesToFetch?->first(fn(string|PropertyDescription $p): bool => $p instanceof PropertyDescription ? $p->name === $key : $p === $key);
+                        $isNavigational = ($property instanceof SQLRelationship) || ($property instanceof SQLAttribute && $property->isCompositeAttribute);
+                        if ($isNavigational) {
+                            if ($cursor instanceof ArrayClass) {
+                                $element = $cursor->first(fn(Dictionary $d): bool => $d[$primaryKeyName] === $parentID);
                                 if (!$element) {
-                                    $last = $current->last;
+                                    $last = $cursor->last;
                                     if ($last instanceof Dictionary) {
-                                        $lastID = $last[$currentEntity->primaryKey->columnName];
+                                        $lastID = $last[$primaryKeyName];
                                         $lastValue = $last->valueForKey($key);
                                         if ($lastValue instanceof ArrayClass) {
-                                            $last[$key] = $lastValue->filter(fn(Dictionary $dictionary): bool => $dictionary["parentID"] === $lastID);
+                                            $last[$key] = $lastValue->filter(fn(Dictionary $d): bool => $d["parentID"] === $lastID);
                                         } elseif ($lastValue instanceof Dictionary) {
                                             if ($lastValue["parentID"] !== $lastID) {
                                                 $last->removeValueForKey($key);
@@ -120,60 +152,58 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         $element = $last;
                                     }
                                 }
-                                $current = &$element;
+                                $cursor = &$element;
                             }
-                            if ($current instanceof Dictionary) {
-                                if ($property instanceof SQLToOne) {
-                                    $current[$key] ??= new Dictionary();
-                                } elseif ($property instanceof SQLAttribute) {
-                                    $current[$key] ??= new Dictionary();
+                            if ($cursor instanceof Dictionary) {
+                                if ($property instanceof SQLToOne || $property instanceof SQLAttribute) {
+                                    $cursor[$key] ??= new Dictionary();
                                 } else {
-                                    $current[$key] ??= new ArrayClass();
+                                    $cursor[$key] ??= new ArrayClass();
                                 }
-                                $current = &$current[$key];
+                                $cursor = &$cursor[$key];
                             }
                             if ($property instanceof SQLRelationship) {
                                 $relationship = $property;
-                                $currentEntity = $relationship->destinationEntity;
+                                $cursorEntity = $relationship->destinationEntity;
+                                $primaryKeyName = $cursorEntity->primaryKey->columnName;
                             }
                         }
-                        if ($property instanceof SQLColumn || $propertyDescription instanceof ExpressionDescription) {
-                            if ($current instanceof ArrayClass) {
-                                if ($property instanceof SQLPrimaryKey && !$current->contains(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $value)) {
-                                    $current->append(new Dictionary([$currentEntity->primaryKey->columnName => $value]));
+                        $isTerminalValue = ($property instanceof SQLColumn) || ($propertyDesc instanceof ExpressionDescription);
+                        if ($isTerminalValue) {
+                            if ($cursor instanceof ArrayClass) {
+                                if ($property instanceof SQLPrimaryKey && !$cursor->contains(fn(Dictionary $d): bool => $d[$primaryKeyName] === $value)) {
+                                    $cursor->append(new Dictionary([$primaryKeyName => $value]));
                                 }
-                                $element = $current->first(fn(Dictionary $dictionary): bool => $dictionary[$currentEntity->primaryKey->columnName] === $childrenID) ?? $current->last;
-                                $current = &$element;
+                                $element = $cursor->first(fn(Dictionary $d): bool => $d[$primaryKeyName] === $childrenID) ?? $cursor->last;
+                                $cursor = &$element;
                             }
-                            if ($current instanceof Dictionary) {
-                                if ($propertyDescription instanceof ExpressionDescription) {
-                                    $value = ManagedObject::coercedValue($value, $propertyDescription->resultType, isOptional: $propertyDescription->isOptional);
+                            if ($cursor instanceof Dictionary) {
+                                $coercedValue = $this->coerceExpressionValueIfNeeded($value, $propertyDesc instanceof ExpressionDescription ? $propertyDesc : null);
+                                $cursor[$key] = $coercedValue;
+                                if ($cursor !== $root) {
+                                    $cursor["parentID"] = $parentID;
                                 }
-                                $current[$key] = $value;
-                                if ($current !== $representation) {
-                                    $current["parentID"] = $parentID;
-                                }
-                                if (!$propertyDescription instanceof CompositeAttributeDescription && $this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
-                                    $current["isInserted"] = true;
-                                    $current["isFault"] = false;
-                                    $current["faultingState"] = 0;
+                                if (!$propertyDesc instanceof CompositeAttributeDescription && $isNonDictionaryResultType) {
+                                    $cursor["isInserted"] = true;
+                                    $cursor["isFault"] = false;
+                                    $cursor["faultingState"] = 0;
                                 }
                             }
                         }
                     }
-                    unset($current);
-                    $currentEntity = $entity;
+                    unset($cursor);
+                    $cursorEntity = $entity;
                 }
-                assert($representation instanceof Dictionary);
-                if ($this->request->resultType !== FetchRequestResultType::dictionaryResultType) {
-                    $representation["isInserted"] = true;
-                    $representation["faultingState"] = 0;
-                    $representation["isFault"] = $this->request->returnsObjectsAsFaults;
+                assert($root instanceof Dictionary);
+                if ($isNonDictionaryResultType) {
+                    $root["isInserted"] = true;
+                    $root["faultingState"] = 0;
+                    $root["isFault"] = $this->request->returnsObjectsAsFaults;
                 }
-                $map[$referenceObject] = $representation;
+                $byRootIDResult[$rootID] = $root;
             }
         } while ($statement->nextRowset() && $statement->columnCount());
-        return $map->values;
+        return $byRootIDResult->values;
     }
 
     /**
