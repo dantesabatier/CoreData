@@ -91,6 +91,10 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         return [$childrenID, $parentID];
     }
 
+    /**
+     * @param PDOStatement $statement
+     * @return ArrayClass<Dictionary<mixed>>
+     */
     private function dictionaryResults(PDOStatement $statement): ArrayClass
     {
         /** @var Dictionary<Dictionary<mixed>> $byRootIDResult */
