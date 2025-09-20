@@ -136,14 +136,14 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         $isNavigational = ($property instanceof SQLRelationship) || ($property instanceof SQLAttribute && $property->isCompositeAttribute);
                         if ($isNavigational) {
                             if ($cursor instanceof ArrayClass) {
-                                $element = $cursor->first(fn(Dictionary $d): bool => $d[$primaryKeyName] === $parentID);
+                                $element = $cursor->first(fn(Dictionary $dictionary): bool => $dictionary[$primaryKeyName] === $parentID);
                                 if (!$element) {
                                     $last = $cursor->last;
                                     if ($last instanceof Dictionary) {
                                         $lastID = $last[$primaryKeyName];
                                         $lastValue = $last->valueForKey($key);
                                         if ($lastValue instanceof ArrayClass) {
-                                            $last[$key] = $lastValue->filter(fn(Dictionary $d): bool => $d["parentID"] === $lastID);
+                                            $last[$key] = $lastValue->filter(fn(Dictionary $dictionary): bool => $dictionary["parentID"] === $lastID);
                                         } elseif ($lastValue instanceof Dictionary) {
                                             if ($lastValue["parentID"] !== $lastID) {
                                                 $last->removeValueForKey($key);
@@ -171,10 +171,10 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         $isTerminalValue = ($property instanceof SQLColumn) || ($propertyDescription instanceof ExpressionDescription);
                         if ($isTerminalValue) {
                             if ($cursor instanceof ArrayClass) {
-                                if ($property instanceof SQLPrimaryKey && !$cursor->contains(fn(Dictionary $d): bool => $d[$primaryKeyName] === $value)) {
+                                if ($property instanceof SQLPrimaryKey && !$cursor->contains(fn(Dictionary $dictionary): bool => $dictionary[$primaryKeyName] === $value)) {
                                     $cursor->append(new Dictionary([$primaryKeyName => $value]));
                                 }
-                                $element = $cursor->first(fn(Dictionary $d): bool => $d[$primaryKeyName] === $childrenID) ?? $cursor->last;
+                                $element = $cursor->first(fn(Dictionary $dictionary): bool => $dictionary[$primaryKeyName] === $childrenID) ?? $cursor->last;
                                 $cursor = &$element;
                             }
                             if ($cursor instanceof Dictionary) {
