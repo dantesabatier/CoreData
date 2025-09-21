@@ -37,7 +37,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         parent::__construct($request, $context, $sqlCore);
     }
 
-    private function coerceExpressionValueIfNeeded(mixed $value, ?ExpressionDescription $description): mixed
+    private function coerceExpressionValueIfNeeded(mixed $value, PropertyDescription $description): mixed
     {
         if ($description instanceof ExpressionDescription) {
             return ManagedObject::coercedValue($value, $description->resultType, isOptional: $description->isOptional);
@@ -114,27 +114,26 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                 $isNonDictionaryResultType = ($this->request->resultType !== FetchRequestResultType::dictionaryResultType);
                 foreach ($row as $pattern => $value) {
                     $value ??= Nil::nil();
-                    $keyComponents = $this->split($pattern);
-                    $keyPathComponents = $keyComponents->dropLast(1);
+                    $keyPathComponents = $this->split($pattern);
+                    $propertyKeyPathComponents = $keyPathComponents->dropLast(1);
                     $primaryKeyName = $cursorEntity->primaryKey->columnName;
-                    $lastComponentIndex = $keyComponents->indexBefore($keyComponents->endIndex);
-                    if ($keyComponents[$lastComponentIndex] === $primaryKeyName) {
-                        $propertyKeyPath = $keyPathComponents->join(".");
+                    if ($keyPathComponents[$keyPathComponents->indexBefore($keyPathComponents->endIndex)] === $primaryKeyName) {
+                        $propertyKeyPath = $propertyKeyPathComponents->join(".");
                         if ($value instanceof Nil) {
                             $nullPropertyPrefixes->append($propertyKeyPath);
                         } else {
                             $nullPropertyPrefixes->remove($propertyKeyPath);
                         }
                     }
-                    $keyPath = $keyComponents->join(".");
+                    $keyPath = $keyPathComponents->join(".");
                     $hasNullifiedPrefix = $nullPropertyPrefixes->contains(fn(string $prefix): bool => str_starts_with($keyPath, $prefix));
                     if ($hasNullifiedPrefix) {
                         continue;
                     }
                     $relationship = null;
                     $cursor = &$root;
-                    [$childrenID, $parentID] = $this->buildRelationalIDSets($keyPathComponents, $cursorEntity, $row);
-                    foreach ($keyComponents as $key) {
+                    [$childrenID, $parentID] = $this->buildRelationalIDSets($propertyKeyPathComponents, $cursorEntity, $row);
+                    foreach ($keyPathComponents as $key) {
                         $property = $cursorEntity->propertiesByName[$key] ?? $cursorEntity->compositeAttributeNameToSQLProperty[$key];
                         $propertyDescription = $property?->propertyDescription ?? $this->request->propertiesToFetch?->first(fn(string|PropertyDescription $p): bool => $p instanceof PropertyDescription ? $p->name === $key : $p === $key);
                         $isNavigational = ($property instanceof SQLRelationship) || ($property instanceof SQLAttribute && $property->isCompositeAttribute);
@@ -172,7 +171,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 $primaryKeyName = $cursorEntity->primaryKey->columnName;
                             }
                         }
-                        $isTerminalValue = ($property instanceof SQLColumn) || ($propertyDescription instanceof ExpressionDescription);
+                        $isTerminalValue = $property instanceof SQLColumn || $propertyDescription instanceof ExpressionDescription;
                         if ($isTerminalValue) {
                             if ($cursor instanceof ArrayClass) {
                                 if ($property instanceof SQLPrimaryKey && !$cursor->contains(fn(Dictionary $dictionary): bool => $dictionary[$primaryKeyName] === $value)) {
@@ -182,8 +181,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 $cursor = &$element;
                             }
                             if ($cursor instanceof Dictionary) {
-                                $coercedValue = $this->coerceExpressionValueIfNeeded($value, $propertyDescription instanceof ExpressionDescription ? $propertyDescription : null);
-                                $cursor[$key] = $coercedValue;
+                                $cursor[$key] = $this->coerceExpressionValueIfNeeded($value, $propertyDescription);
                                 if ($cursor !== $root) {
                                     $cursor["parentID"] = $parentID;
                                 }
