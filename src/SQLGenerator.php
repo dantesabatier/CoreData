@@ -1233,7 +1233,7 @@ class SQLGenerator extends ObjectClass
     {
         $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
         $this->raisesForNotApplicableKeys = false;
-        /** @psalm-suppress RedundantCondition, TypeDoesNotContainType */
+        /** @psalm-suppress RedundantCondition */
         if (SS_COREDATA_USES_RELATIONSHIPS_SORT_DESCRIPTORS):
             /** @var Set<SQLToMany> $toManyRelationships */
             $toManyRelationships = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->flatMap(fn(Expression $expression): ArrayClass => $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLForeignKey || $property instanceof SQLToMany)->compactMap(function (SQLProperty $property): ?SQLProperty {
