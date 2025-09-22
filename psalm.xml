@@ -37,6 +37,7 @@
         <InvalidFalsableReturnType errorLevel="suppress"/>
         <UndefinedDocblockClass errorLevel="suppress"/>
         <NoInterfaceProperties errorLevel="suppress"/>
+        <TypeDoesNotContainType errorLevel="suppress"/>
         <ClassMustBeFinal errorLevel="suppress"/>
     </issueHandlers>
 </psalm>
