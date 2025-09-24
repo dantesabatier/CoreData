@@ -31,7 +31,7 @@ class SQLBatchInsertRequestContext extends SQLBatchOperationRequestContext
     }
 
     #[Override]
-    public function executeRequestCore(): bool
+    protected function executeRequestCore(): bool
     {
         if (!($insertStatement = $this->insertStatement)) {
             return false;

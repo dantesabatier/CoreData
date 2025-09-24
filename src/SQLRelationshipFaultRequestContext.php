@@ -18,7 +18,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
     }
 
     #[Override]
-    public function executeRequestCore(): bool
+    protected function executeRequestCore(): bool
     {
         $debugLogLevel = $this->debugLogLevel;
         $this->debugLogLevel = 0;

@@ -37,7 +37,7 @@ class SQLObjectFaultRequestContext extends SQLStoreRequestContext
     }
 
     #[Override]
-    public function executeRequestCore(): bool
+    protected function executeRequestCore(): bool
     {
         $context = new SQLFetchRequestContext($this->fetchRequest, $this->context, $this->sqlCore);
         $context->executeRequestUsingConnection($this->connection);

@@ -23,7 +23,7 @@ class SQLSaveChangesRequestContext extends SQLStoreRequestContext
     }
 
     #[Override]
-    public function executeRequestCore(): bool
+    protected function executeRequestCore(): bool
     {
         if (!($statement = $this->generator->statement)) {
             return false;

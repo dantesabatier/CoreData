@@ -270,7 +270,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     }
 
     #[Override]
-    public function executeRequestCore(): bool
+    protected function executeRequestCore(): bool
     {
         $time = absolute_time_get_current();
         $statement = $this->connection->execute($this->fetchStatement);

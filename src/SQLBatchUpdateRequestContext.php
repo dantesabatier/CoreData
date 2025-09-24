@@ -42,7 +42,7 @@ class SQLBatchUpdateRequestContext extends SQLBatchOperationRequestContext
     }
 
     #[Override]
-    public function executeRequestCore(): bool
+    protected function executeRequestCore(): bool
     {
         if (!($updateStatement = $this->updateStatement)) {
             return false;

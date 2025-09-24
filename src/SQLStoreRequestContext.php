@@ -6,9 +6,8 @@ use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
-use function Sabatier\Foundation\request_concrete_implementation;
 
-/** * @internal */
+/** @internal */
 abstract class SQLStoreRequestContext extends ObjectClass
 {
     protected(set) SQLConnection $connection;
@@ -42,13 +41,6 @@ abstract class SQLStoreRequestContext extends ObjectClass
     /**
      * @throws Exception
      */
-    public function executeEpilogue(): void
-    {
-    }
-
-    /**
-     * @throws Exception
-     */
     public function executeRequestUsingConnection(SQLConnection $connection): bool
     {
         $this->connection = $connection;
@@ -64,15 +56,19 @@ abstract class SQLStoreRequestContext extends ObjectClass
     /**
      * @throws Exception
      */
-    public function executeRequestCore(): bool
+    protected function executeEpilogue(): void
     {
-        request_concrete_implementation($this, __FUNCTION__);
     }
 
     /**
      * @throws Exception
      */
-    public function executePrologue(): void
+    abstract protected function executeRequestCore(): bool;
+
+    /**
+     * @throws Exception
+     */
+    protected function executePrologue(): void
     {
     }
 }

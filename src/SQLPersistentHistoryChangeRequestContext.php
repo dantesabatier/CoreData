@@ -148,7 +148,7 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
     }
 
     #[Override]
-    public function executeRequestCore(): bool
+    protected function executeRequestCore(): bool
     {
         if ($this->request->isDelete) {
             if ($transactionNumber = $this->request->transactionNumber) {

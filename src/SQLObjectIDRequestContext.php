@@ -18,7 +18,7 @@ class SQLObjectIDRequestContext extends SQLStoreRequestContext
     }
 
     #[Override]
-    public function executeRequestCore(): bool
+    protected function executeRequestCore(): bool
     {
         return true;
     }
