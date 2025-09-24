@@ -41,21 +41,6 @@ abstract class SQLStoreRequestContext extends ObjectClass
     /**
      * @throws Exception
      */
-    public function executeRequestUsingConnection(SQLConnection $connection): bool
-    {
-        $this->connection = $connection;
-        $this->connection->connect();
-        $this->executePrologue();
-        $ok = $this->executeRequestCore();
-        if ($ok) {
-            $this->executeEpilogue();
-        }
-        return $ok;
-    }
-
-    /**
-     * @throws Exception
-     */
     protected function executeEpilogue(): void
     {
     }
@@ -70,5 +55,20 @@ abstract class SQLStoreRequestContext extends ObjectClass
      */
     protected function executePrologue(): void
     {
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function executeRequestUsingConnection(SQLConnection $connection): bool
+    {
+        $this->connection = $connection;
+        $this->connection->connect();
+        $this->executePrologue();
+        $ok = $this->executeRequestCore();
+        if ($ok) {
+            $this->executeEpilogue();
+        }
+        return $ok;
     }
 }
