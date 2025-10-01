@@ -1460,8 +1460,10 @@ class SQLGenerator extends ObjectClass
 
     private function prepareStatementForBatchDeleteRequest(BatchDeleteRequest $request): void
     {
+        /** @var EntityDescription $entity */
+        $entity = $request->fetchRequest->entity->isRootEntity ? $request->fetchRequest->entity : $request->fetchRequest->entity->rootEntity;
         /** @noinspection SqlWithoutWhere */
-        $this->string = "DELETE `{$request->fetchRequest->entity->name}` FROM `{$request->fetchRequest->entity->name}`";
+        $this->string = "DELETE `$entity->name` FROM `$entity->name`";
     }
 
     /**
