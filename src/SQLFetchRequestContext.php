@@ -280,11 +280,13 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
             FetchRequestResultType::countResultType => $this->numericalResults($statement),
         };
         if ($this->debugLogLevel) {
-            $message = sprintf("CoreData: annotation: total execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $this->result->count, human_readable_plural("element", $this->result->count));
-            if ($this->debugLogLevel > 3) {
-                $message .= "\n$this->result";
+            if ($this->request->resultType !== FetchRequestResultType::countResultType) {
+                $message = sprintf("CoreData: annotation: total execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $this->result->count, human_readable_plural("element", $this->result->count));
+                if ($this->debugLogLevel > 3) {
+                    $message .= "\n$this->result";
+                }
+                error_log($message);
             }
-            error_log($message);
             if ($this->debugLogLevel > 4) {
                 $statement = $this->connection->execute(new SQLStatement("ANALYZE FORMAT=JSON {$this->fetchStatement->string}", $this->fetchStatement->arguments));
                 error_log($statement->fetchColumn());
