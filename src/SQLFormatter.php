@@ -94,12 +94,12 @@ class SQLFormatter extends Formatter
             }
             return new SQLFormatterToken($type, substr($string, 0, $last));
         }
-        if ($string[0] === "\"" || $string[0] === "'" || $string[0] === "`" || $string[0] === "[") {
+        if (in_array($string[0], ["\"", "'", "`", "["], true)) {
             return new SQLFormatterToken((($string[0] === "`" || $string[0] === "[") ? SQLFormatterTokenType::backtickQuote : SQLFormatterTokenType::quote), $this->quoted($string));
         }
         if (($string[0] === "@" || $string[0] === ":") && isset($string[1])) {
             $ret = new SQLFormatterToken(SQLFormatterTokenType::variable);
-            if ($string[1] === "\"" || $string[1] === "'" || $string[1] === "`") {
+            if (in_array($string[1], ["\"", "'", "`"], true)) {
                 /** @psalm-suppress PossiblyNullOperand */
                 $ret->value = $string[0] . $this->quoted(substr($string, 1));
             } else {
@@ -269,7 +269,7 @@ class SQLFormatter extends Formatter
                     if ($next->value === ";" || $next->value === "(") {
                         break;
                     }
-                    if ($next->type === SQLFormatterTokenType::reservedToplevel || $next->type === SQLFormatterTokenType::reservedNewline || $next->type === SQLFormatterTokenType::comment || $next->type === SQLFormatterTokenType::blockComment) {
+                    if (in_array($next->type, [SQLFormatterTokenType::reservedToplevel, SQLFormatterTokenType::reservedNewline, SQLFormatterTokenType::comment, SQLFormatterTokenType::blockComment], true)) {
                         break;
                     }
                     $length += strlen((string)$next->value);
@@ -347,7 +347,7 @@ class SQLFormatter extends Formatter
                     $return = rtrim($return, " ");
                 }
             }
-            if ($token->value === "." || $token->value === "," || $token->value === ";") {
+            if (in_array($token->value, [".", ",", ";"], true)) {
                 $return = rtrim($return, " ");
             }
             $return .= "$highlighted ";
