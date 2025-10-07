@@ -25,7 +25,7 @@ class MappingModelBuilder
     public function canTransformAttributeType(AttributeType $source, AttributeType $destination): bool
     {
         return match ($source) {
-            AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float, AttributeType::boolean => $destination === AttributeType::integer16 || $destination === AttributeType::integer32 || $destination === AttributeType::integer64 || $destination === AttributeType::decimal || $destination === AttributeType::double || $destination === AttributeType::float || $destination === AttributeType::string,
+            AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float, AttributeType::boolean => in_array($destination, [AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float, AttributeType::string], true),
             default => $source === $destination,
         };
     }
