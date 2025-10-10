@@ -15,11 +15,13 @@ class SQLSaveChangesRequestContext extends SQLStoreRequestContext
             return $request;
         }
     }
+    public bool $isWritingRequest {
+        get => true;
+    }
 
     public function __construct(SaveChangesRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         parent::__construct($request, $context, $sqlCore);
-        $this->isWritingRequest = true;
     }
 
     #[Override]

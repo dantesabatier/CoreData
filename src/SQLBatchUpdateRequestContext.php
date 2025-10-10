@@ -38,7 +38,6 @@ class SQLBatchUpdateRequestContext extends SQLBatchOperationRequestContext
     public function __construct(BatchUpdateRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         parent::__construct($request, $context, $sqlCore);
-        $this->isWritingRequest = true;
     }
 
     #[Override]

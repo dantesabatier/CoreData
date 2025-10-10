@@ -34,11 +34,13 @@ class SQLBatchDeleteRequestContext extends SQLBatchOperationRequestContext
     private(set) ?SQLStatement $deleteStatement {
         get => $this->deleteStatement ??= $this->generator->statement;
     }
+    public bool $isWritingRequest {
+        get => true;
+    }
 
     public function __construct(BatchDeleteRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         parent::__construct($request, $context, $sqlCore);
-        $this->isWritingRequest = true;
     }
 
     #[Override]

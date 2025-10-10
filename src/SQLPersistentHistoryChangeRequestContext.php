@@ -26,12 +26,16 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
             return $request;
         }
     }
+    public bool $isWritingRequest {
+        get => $this->request->isDelete;
+    }
+    public bool $hasHistoryTracking {
+        get => true;
+    }
 
     public function __construct(PersistentHistoryChangeRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         parent::__construct($request, $context, $sqlCore);
-        $this->isWritingRequest = $request->isDelete;
-        $this->hasHistoryTracking = true;
     }
 
     /**
@@ -50,9 +54,7 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
         }
         $context = new SQLPersistentHistoryChangeRequestContext($request, $this->context, $this->sqlCore);
         $context->executeRequestUsingConnection($this->connection);
-        $context = new SQLSaveChangesRequestContext(new SaveChangesRequest(deletedObjects: new Set($context->result)), $this->context, $this->sqlCore);
-        $context->hasHistoryTracking = true;
-        return $context;
+        return new SQLSaveChangesRequestContext(new SaveChangesRequest(deletedObjects: new Set($context->result)), $this->context, $this->sqlCore);
     }
 
     /** @noinspection PhpUnusedPrivateMethodInspection */

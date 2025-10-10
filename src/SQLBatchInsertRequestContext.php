@@ -23,11 +23,13 @@ class SQLBatchInsertRequestContext extends SQLBatchOperationRequestContext
     public ?SQLStatement $insertStatement {
         get => $this->insertStatement ??= $this->generator->statement;
     }
+    public bool $isWritingRequest {
+        get => true;
+    }
 
     public function __construct(BatchInsertRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         parent::__construct($request, $context, $sqlCore);
-        $this->isWritingRequest = true;
     }
 
     #[Override]
