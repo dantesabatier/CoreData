@@ -7,13 +7,13 @@ use PDOStatement;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Nil;
-use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\Slice;
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_plural;
 use function Sabatier\Foundation\human_readable_time;
+use function Sabatier\Foundation\human_readable_value;
 
 /** @internal */
 class SQLFetchRequestContext extends SQLStoreRequestContext
@@ -30,6 +30,10 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     }
     private(set) SQLStatement $fetchStatement {
         get => $this->fetchStatement ??= $this->generator->statement ?? fatal_error();
+    }
+    private float $timestamp = 0;
+    private(set) PDOStatement $statement {
+        get => $this->statement ??= $this->connection->execute($this->fetchStatement);
     }
 
     public function __construct(FetchRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
@@ -209,15 +213,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     }
 
     /**
-     * @param PDOStatement $statement
-     * @return ArrayClass<Number>
-     */
-    private function numericalResults(PDOStatement $statement): ArrayClass
-    {
-        return new ArrayClass([new Number((int)$statement->fetchColumn())]);
-    }
-
-    /**
      * @param ArrayClass<Dictionary<mixed>> $dictionaries
      * @return ArrayClass<ManagedObject>
      */
@@ -270,17 +265,27 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     }
 
     #[Override]
+    protected function executePrologue(): void
+    {
+        $this->timestamp = absolute_time_get_current();
+    }
+
+    #[Override]
     protected function executeRequestCore(): bool
     {
-        $time = absolute_time_get_current();
-        $statement = $this->connection->execute($this->fetchStatement);
         $this->result = match ($this->request->resultType) {
-            FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType => $this->managedResults($this->dictionaryResults($statement)),
-            FetchRequestResultType::dictionaryResultType => $this->dictionaryResults($statement),
-            FetchRequestResultType::countResultType => $this->numericalResults($statement),
+            FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType => $this->managedResults($this->dictionaryResults($this->statement)),
+            FetchRequestResultType::dictionaryResultType => $this->dictionaryResults($this->statement),
+            FetchRequestResultType::countResultType => fatal_error(sprintf("CoreData: annotation: invalid result type: %s", human_readable_value($this->request->resultType))),
         };
+        return true;
+    }
+
+    #[Override]
+    protected function executeEpilogue(): void
+    {
         if ($this->debugLogLevel) {
-            $message = sprintf("CoreData: annotation: total execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $this->result->count, human_readable_plural("element", $this->result->count));
+            $message = sprintf("CoreData: annotation: total execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $this->timestamp), $this->result->count, human_readable_plural("element", $this->result->count));
             if ($this->debugLogLevel > 3) {
                 $message .= "\n$this->result";
             }
@@ -290,6 +295,5 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                 error_log($statement->fetchColumn());
             }
         }
-        return true;
     }
 }

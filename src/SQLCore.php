@@ -293,7 +293,10 @@ class SQLCore extends IncrementalStore
      */
     private function processFetchRequest(FetchRequest $request, ManagedObjectContext $context): ArrayClass
     {
-        return $this->processRequestContext(new SQLFetchRequestContext($request, $context, $this));
+        return $this->processRequestContext(match ($request->resultType) {
+            FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType, FetchRequestResultType::dictionaryResultType => new SQLFetchRequestContext($request, $context, $this),
+            FetchRequestResultType::countResultType => new SQLCountRequestContext($request, $context, $this)
+        });
     }
 
     /**
