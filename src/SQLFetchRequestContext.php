@@ -31,7 +31,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     private(set) SQLStatement $fetchStatement {
         get => $this->fetchStatement ??= $this->generator->statement ?? fatal_error();
     }
-    private float $timestamp = 0;
+    private(set) float $duration = 0;
     private(set) PDOStatement $statement {
         get => $this->statement ??= $this->connection->execute($this->fetchStatement);
     }
@@ -267,7 +267,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     #[Override]
     protected function executePrologue(): void
     {
-        $this->timestamp = absolute_time_get_current();
+        $this->duration = absolute_time_get_current();
     }
 
     #[Override]
@@ -284,8 +284,9 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     #[Override]
     protected function executeEpilogue(): void
     {
+        $this->duration = absolute_time_get_current() - $this->duration;
         if ($this->debugLogLevel) {
-            $message = sprintf("CoreData: annotation: total execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $this->timestamp), $this->result->count, human_readable_plural("element", $this->result->count));
+            $message = sprintf("CoreData: annotation: total execution time: %s for %d %s", human_readable_time($this->duration), $this->result->count, human_readable_plural("element", $this->result->count));
             if ($this->debugLogLevel > 3) {
                 $message .= "\n$this->result";
             }
