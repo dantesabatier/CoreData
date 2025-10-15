@@ -18,3 +18,9 @@ const MigratePersistentStoresAutomaticallyOption = "MigratePersistentStoresAutom
  * @var string Key to attempt to create the mapping model automatically. The corresponding value is a bool. If it is true and the value of the MigratePersistentStoresAutomaticallyOption is true, the coordinator will attempt to infer a mapping model if none can be found.
  */
 const InferMappingModelAutomaticallyOption = "InferMappingModelAutomaticallyOption";
+
+/** @var string The key for specifying your staged migration manager. */
+const PersistentStoreStagedMigrationManagerOptionKey = "PersistentStoreStagedMigrationManagerOptionKey";
+
+/** @var string The key for enabling deferred lightweight migrations. */
+const PersistentStoreDeferredLightweightMigrationOptionKey = "PersistentStoreDeferredLightweightMigrationOptionKey";

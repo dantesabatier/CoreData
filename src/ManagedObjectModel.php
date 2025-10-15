@@ -64,6 +64,10 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     private(set) Dictionary $entityVersionHashesByName {
         get => $this->entityVersionHashesByName ??= new Dictionary();
     }
+    /** @var string The Base64-encoded 128-bit model version hash. */
+    public string $versionChecksum {
+        get => $this->versionHash;
+    }
     /** @var Set<string> The set of developer-defined version identifiers for the model. Merged models return the combined collection of identifiers. The Core Data framework does not give models a default identifier, nor does it depend on this value at runtime. For models created in Xcode, you set this value in the model inspector. This value is meant to be used as a debugging hint to help you determine the models that were combined to create a merged model. */
     public Set $versionIdentifiers {
         get => $this->versionIdentifiers ??= new Set();

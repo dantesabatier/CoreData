@@ -335,6 +335,24 @@ class PersistentStoreCoordinator extends ObjectClass
     }
 
     /**
+     * Executes a single pending task of a deferred lightweight migration
+     *
+     * @throws Exception
+     */
+    public function finishDeferredLightweightMigrationTask(): void
+    {
+    }
+
+    /**
+     * Executes all remaining tasks of a deferred lightweight migration.
+     *
+     * @throws Exception
+     */
+    public function finishDeferredLightweightMigration(): void
+    {
+    }
+
+    /**
      * Asynchronously performs the block on the coordinator's queue.
      * @param Closure(): void $block
      */

@@ -104,8 +104,6 @@ const ValidationPredicateErrorKey = "ValidationPredicateErrorKey";
 const ValidationValueErrorKey = "ValidationValueErrorKey";
 
 const ConflictListErrorKey = "conflictList";
-/** @var string The key for specifying your staged migration manager. */
-const PersistentStoreStagedMigrationManagerOptionKey = "PersistentStoreStagedMigrationManagerOptionKey";
 
 // Other
 
