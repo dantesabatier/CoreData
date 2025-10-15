@@ -17,7 +17,7 @@ use const Sabatier\Foundation\kCFBundleNameKey;
  * <code>
  *     $manager = new StagedMigrationManager($stages);
  *     $options = new Dictionary([MigratePersistentStoresAutomaticallyOption => true, InferMappingModelAutomaticallyOption => true,PersistentStoreStagedMigrationManagerOptionKey => $manager]);
- *     $store = $coordinator->addPersistentStoreWithType(PersistentStoreType::sql, $storeURL, $options);
+ *     $store = $coordinator->addPersistentStoreWithType(PersistentStoreType::sql, null, $storeURL, $options);
  * </code>
  */
 class StagedMigrationManager extends ObjectClass
