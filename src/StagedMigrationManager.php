@@ -23,7 +23,9 @@ use const Sabatier\Foundation\kCFBundleNameKey;
 class StagedMigrationManager extends ObjectClass
 {
     /** @var PersistentContainer|null The container that provides access to the migrating persistent store. */
-    private(set) ?PersistentContainer $container = null;
+    private(set) ?PersistentContainer $container {
+        get => $this->container ??= $this->createPersistentContainer();
+    }
 
     /**
      * Creates a migration manager with the specified stages.
@@ -32,14 +34,20 @@ class StagedMigrationManager extends ObjectClass
      */
     public function __construct(public readonly ArrayClass $stages)
     {
+    }
+
+    private function createPersistentContainer(): ?PersistentContainer
+    {
         $bundle = Bundle::main();
-        /** @var string|null $name */
-        $name = $bundle->object(kCFBundleNameKey);
-        if ($name) {
-            $url = $bundle->url($name, "plist");
-            if ($url && FileManager::default()->fileExists($url->path)) {
-                $this->container = new PersistentContainer($name, new ManagedObjectModel($url));
-            }
+        if (!($name = $bundle->object(kCFBundleNameKey))) {
+            return null;
         }
+        if (!($url = $bundle->url($name, "plist"))) {
+            return null;
+        }
+        if (!FileManager::default()->fileExists($url->path)) {
+            return null;
+        }
+        return new PersistentContainer($name, new ManagedObjectModel($url));
     }
 }
