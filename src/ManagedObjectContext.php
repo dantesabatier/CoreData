@@ -472,7 +472,7 @@ class ManagedObjectContext extends ObjectClass
      */
     public function obtainPermanentIDs(ArrayClass $objects): bool
     {
-        $results = $objects->map(fn(ManagedObject $object): bool => $this->obtainPermanentID($object));
+        $results = $objects->map($this->obtainPermanentID(...));
         NotificationCenter::default()->postNotificationName(self::didSaveObjectIDsNotification, $this);
         return !$results->containsElement(false);
     }

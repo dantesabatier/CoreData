@@ -43,7 +43,7 @@ readonly class FaultingSetMutationMethod
     {
         return new FaultingSetMutationMethod(sprintf("remove%s", ucfirst($key)), function (Set $set) use ($obj, $key): void {
             $mutableSet = clone $obj->mutableSetValueForKey($key);
-            $mutableSet->removeAll(fn(ManagedObject $object): bool => $set->containsElement($object));
+            $mutableSet->removeAll($set->containsElement(...));
             $obj->setValueForKey($mutableSet, $key);
         });
     }

@@ -41,7 +41,7 @@ class SQLFormatter extends Formatter
     {
         if (!self::$initialized) {
             $transform = fn(string $e): string => preg_quote($e, "/");
-            $map = array_combine(self::$reserved, array_map("strlen", self::$reserved));
+            $map = array_combine(self::$reserved, array_map(strlen(...), self::$reserved));
             arsort($map);
             self::$reserved = array_keys($map);
             self::$regexBoundaries = "(" . implode("|", array_map($transform, self::$boundaries)) . ")";
@@ -357,7 +357,7 @@ class SQLFormatter extends Formatter
             if ($token->value === "-" && isset($tokens[$i + 1]) && $tokens[$i + 1]->type === SQLFormatterTokenType::number && isset($tokens[$i - 1])) {
                 /** @psalm-suppress InvalidArrayOffset */
                 $prev = $tokens[$i - 1]->type;
-                if ($prev !== SQLFormatterTokenType::quote && $prev !== SQLFormatterTokenType::backtickQuote && $prev !== SQLFormatterTokenType::word && $prev !== SQLFormatterTokenType::number) {
+                if (!in_array($prev, [SQLFormatterTokenType::quote, SQLFormatterTokenType::backtickQuote, SQLFormatterTokenType::word, SQLFormatterTokenType::number], true)) {
                     $return = rtrim($return, " ");
                 }
             }

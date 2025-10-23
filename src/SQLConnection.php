@@ -547,12 +547,12 @@ class SQLConnection extends ObjectClass
     {
         $adapter = $this->adapter ?? fatal_error();
         /** @var Set<SQLStatement> $statements */
-        $statements = new Set($entities)->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->manyToManyRelationships)->map(fn(SQLManyToMany $manyToMany): SQLStatement => $adapter->newCreateTableStatementForManyToMany($manyToMany));
+        $statements = new Set($entities)->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->manyToManyRelationships)->map($adapter->newCreateTableStatementForManyToMany(...));
         if (!$statements->isEmpty) {
             $this->execute(SQLStatement::merging(new ArrayClass($statements)));
         }
         /** @var Set<SQLStatement> $statements */
-        $statements = new Set($entities)->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->manyToManyRelationships)->map(fn(SQLManyToMany $manyToMany): SQLStatement => $adapter->newCreateIndexesStatementForManyToMany($manyToMany));
+        $statements = new Set($entities)->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->manyToManyRelationships)->map($adapter->newCreateIndexesStatementForManyToMany(...));
         if (!$statements->isEmpty) {
             $this->execute(SQLStatement::merging(new ArrayClass($statements)));
         }
