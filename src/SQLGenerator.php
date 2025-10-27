@@ -1027,7 +1027,7 @@ class SQLGenerator extends ObjectClass
                 $string .= "$destinationEntity->tableName.{$relationship->inverseToOne->foreignKey->columnName} = $destination.{$entity->primaryKey->columnName}";
             }
         } elseif ($relationship instanceof SQLManyToMany) {
-            $string .= "{$destinationEntity->tableName}_$relationship->correlationTableName.$relationship->inverseColumnName = $entity->tableName.{$entity->primaryKey->columnName}";
+            $string .= "{$destinationEntity->tableName}_$relationship->correlationTableName.$relationship->inverseColumnName = $destination.{$entity->primaryKey->columnName}";
         }
         return "$string)";
     }
