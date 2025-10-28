@@ -477,6 +477,7 @@ class ManagedObjectContext extends ObjectClass
         return !$results->containsElement(false);
     }
 
+    /** @noinspection PhpReturnValueOfMethodIsNeverUsedInspection */
     private function obtainPermanentID(ManagedObject $object): bool
     {
         if ($object->objectID->isTemporaryID && (($persistentStore = $this->persistentStoreCoordinator?->persistentStoreForObject($object)))) {
