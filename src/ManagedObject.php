@@ -799,7 +799,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if ($value instanceof Value) {
             $value = $value->value;
         }
-        $coercedValue = fn(string $t): string|int|bool|float|BackedEnum|null => match ($t) {
+        $coercedValue = fn(string $type): string|int|bool|float|BackedEnum|null => match ($type) {
             "int" => $value instanceof BackedEnum ? $value : (int)$value,
             "bool" => (function () use ($value, $write): bool|int {
                 if ($value === null) {
@@ -813,9 +813,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             "float", => (float)$value,
             default => $value
         };
-        $optionalValue = fn(string $t): mixed => match (typeof($value)) {
-            "null" => $isOptional ? null : $coercedValue($t),
-            default => $coercedValue($t)
+        $optionalValue = fn(string $type): mixed => match (typeof($value)) {
+            "null" => $isOptional ? null : $coercedValue($type),
+            default => $coercedValue($type)
         };
         /** @noinspection PhpVoidFunctionResultUsedInspection */
         return match ($type) {
