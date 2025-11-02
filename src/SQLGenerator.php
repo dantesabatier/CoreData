@@ -988,11 +988,8 @@ class SQLGenerator extends ObjectClass
         if (!$keyPathToCollection || !$collectionOperator) {
             fatal_error("Invalid argument: unsupported expression \"$expression\"");
         }
-        /** @var SQLRelationship $relationship */
-        $relationship = $entity->propertiesByName[$keyPathToCollection];
-        if ($relationship instanceof SQLToOne) {
-            fatal_error("Invalid argument: unsupported expression \"$expression\"");
-        }
+        $relationship = $entity->propertiesByName[$keyPathToCollection] ?? fatal_error("Invalid argument: invalid key path \"$keyPathToCollection\" for entity $entity->debugDescription");
+        $relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany ?: fatal_error("Invalid argument: unsupported expression \"$expression\"");
         $inverseRelationship = $relationship->inverseRelationship;
         $destinationEntity = $relationship->destinationEntity;
         if (($collectionOperator === KeyValueOperator::countKeyValueOperator && $keyPathToProperty) || ($collectionOperator !== KeyValueOperator::countKeyValueOperator && !$keyPathToProperty)) {
@@ -1021,12 +1018,12 @@ class SQLGenerator extends ObjectClass
         $string .= $generator->whereClause ? " AND " : " WHERE ";
         if ($relationship instanceof SQLToMany) {
             if ($destinationEntity->isKindOfSQLEntity($entity)) {
-                //FIXME: It doesn't work, the right side of the predicate requires a constant
+                //FIXME: It doesn't work, the right side of the predicate apparently requires a constant value
                 $string .= "{$destinationEntity->tableName}_{$relationship->inverseToOne->name}.{$entity->primaryKey->columnName} = $destination.{$relationship->inverseToOne->foreignKey->columnName}";
             } else {
                 $string .= "$destinationEntity->tableName.{$relationship->inverseToOne->foreignKey->columnName} = $destination.{$entity->primaryKey->columnName}";
             }
-        } elseif ($relationship instanceof SQLManyToMany) {
+        } else {
             $string .= "{$destinationEntity->tableName}_$relationship->correlationTableName.$relationship->inverseColumnName = $destination.{$entity->primaryKey->columnName}";
         }
         return "$string)";
