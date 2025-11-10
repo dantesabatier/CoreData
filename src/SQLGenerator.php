@@ -684,9 +684,9 @@ class SQLGenerator extends ObjectClass
         };
     }
 
-    private function isSubqueryKeyPath(Expression $expression): bool
+    private function isKeyPathExpression(Expression $expression): bool
     {
-        return $expression->expressionType === ExpressionType::keyPath && new Set(explode(".", (string)$expression))->count > 1;
+        return $expression->expressionType === ExpressionType::keyPath;
     }
 
     private function buildKeyPathExpression(Expression $expression, ?bool &$isDeterministic = true): string
@@ -900,32 +900,35 @@ class SQLGenerator extends ObjectClass
     private function preparePredicate(Predicate $predicate, string &$clause): void
     {
         if ($predicate instanceof CompoundPredicate) {
-            $subpredicates = $predicate->subpredicates;
-            $max = $subpredicates->indexBefore($subpredicates->endIndex);
-            $type = $predicate->compoundPredicateType;
-            if ($type === CompoundPredicateLogicalType::not) {
-                $clause .= "NOT ";
-            }
-            if ($max) {
-                $clause .= "(";
-            }
-            foreach ($subpredicates as $idx => $subpredicate) {
-                $this->preparePredicate($subpredicate, $clause);
-                if ($idx < $max) {
-                    if ($type === CompoundPredicateLogicalType::and) {
-                        $clause .= " AND ";
-                    } elseif ($type === CompoundPredicateLogicalType::or) {
-                        $clause .= " OR ";
-                    }
+            $this->prepareCompoundPredicate($predicate, $clause);
+        } elseif ($predicate instanceof ComparisonPredicate) {
+            $this->prepareComparisonPredicate($predicate, $clause);
+        }
+    }
+
+    private function prepareCompoundPredicate(CompoundPredicate $predicate, string &$clause): void
+    {
+        $subpredicates = $predicate->subpredicates;
+        $max = $subpredicates->indexBefore($subpredicates->endIndex);
+        $type = $predicate->compoundPredicateType;
+        if ($type === CompoundPredicateLogicalType::not) {
+            $clause .= "NOT ";
+        }
+        if ($max) {
+            $clause .= "(";
+        }
+        foreach ($subpredicates as $idx => $subpredicate) {
+            $this->preparePredicate($subpredicate, $clause);
+            if ($idx < $max) {
+                if ($type === CompoundPredicateLogicalType::and) {
+                    $clause .= " AND ";
+                } elseif ($type === CompoundPredicateLogicalType::or) {
+                    $clause .= " OR ";
                 }
             }
-            if ($max) {
-                $clause .= ")";
-            }
-            return;
         }
-        if ($predicate instanceof ComparisonPredicate) {
-            $this->prepareComparisonPredicate($predicate, $clause);
+        if ($max) {
+            $clause .= ")";
         }
     }
 
@@ -933,13 +936,10 @@ class SQLGenerator extends ObjectClass
     {
         if ($predicate->comparisonPredicateModifier === ComparisonPredicateModifier::direct) {
             $this->buildClauseWithSimplePredicate($predicate, $clause);
-            return;
-        }
-        if ($this->isSubqueryKeyPath($predicate->leftExpression)) {
+        } elseif ($this->isKeyPathExpression($predicate->leftExpression) || $this->isKeyPathExpression($predicate->rightExpression)) {
             $this->buildClauseWithSelectPredicate($predicate, $clause);
-        }
-        if ($this->isSubqueryKeyPath($predicate->rightExpression)) {
-            $this->buildClauseWithSelectPredicate($predicate, $clause);
+        } else {
+            fatal_error("Invalid argument: invalid predicate $predicate");
         }
     }
 
