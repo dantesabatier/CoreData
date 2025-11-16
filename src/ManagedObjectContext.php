@@ -882,15 +882,29 @@ class ManagedObjectContext extends ObjectClass
         $this->hasChanges = false;
     }
 
+    private function createSaveChangesRequest(Set ...$sets): SaveChangesRequest
+    {
+        $setsToSave = new ArrayClass($sets)->map(fn(Set $set): ?Set => $set->isEmpty ? null : $set)->array;
+        return new SaveChangesRequest(...$setsToSave);
+    }
+
+    private function hasPendingChanges(): bool
+    {
+        return !$this->insertedObjects->isEmpty || !$this->updatedObjects->isEmpty || !$this->deletedObjects->isEmpty;
+    }
+
     /**
      * @throws Exception
      */
     private function newSaveRequestForCurrentState(): ?SaveChangesRequest
     {
-        if ($this->insertedObjects->isEmpty && $this->updatedObjects->isEmpty && $this->deletedObjects->isEmpty) {
+        $this->performSaveOperations();
+        $this->prepareObjectsForPersistence();
+        $this->performSaveOperations();
+        if (!$this->hasPendingChanges()) {
             return null;
         }
-        return new SaveChangesRequest($this->insertedObjects->isEmpty ? null : $this->insertedObjects, $this->updatedObjects->isEmpty ? null : $this->updatedObjects, $this->deletedObjects->isEmpty ? null : $this->deletedObjects);
+        return $this->createSaveChangesRequest($this->insertedObjects, $this->updatedObjects, $this->deletedObjects);
     }
 
     /**
@@ -908,9 +922,6 @@ class ManagedObjectContext extends ObjectClass
             return true;
         }
         $this->savingInProgress = true;
-        $this->performSaveOperations();
-        $this->prepareObjectsForPersistence();
-        $this->performSaveOperations();
         if ($changesRequest = $this->newSaveRequestForCurrentState()) {
             NotificationCenter::default()->postNotificationName(self::willSaveObjectsNotification, $this);
             $this->execute($changesRequest);
