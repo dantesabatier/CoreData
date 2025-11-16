@@ -162,14 +162,14 @@ class SQLConnection extends ObjectClass
         }
         $pdo = $this->pdo();
         if ($statement->arguments->isEmpty) {
-            $prepare = $pdo->query($statement->string);
+            $pdoStatement = $pdo->query($statement->string);
             if (SQLCore::$debugDefault) {
-                error_log(sprintf("CoreData: annotation: total fetch execution time: %s for %s row(s)", human_readable_time(absolute_time_get_current() - $time), $prepare->rowCount()));
+                error_log(sprintf("CoreData: annotation: execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $pdoStatement->rowCount(), human_readable_plural("row", $pdoStatement->rowCount())));
             }
-            return $prepare;
+            return $pdoStatement;
         }
-        $prepare = $pdo->prepare($statement->string);
-        $prepare->execute($statement->arguments->map(function (mixed $e): mixed {
+        $pdoStatement = $pdo->prepare($statement->string);
+        $pdoStatement->execute($statement->arguments->map(function (mixed $e): mixed {
             if ($e instanceof Nil || $e instanceof BackedEnum) {
                 return $e->value;
             }
@@ -188,9 +188,9 @@ class SQLConnection extends ObjectClass
             return $e;
         })->array);
         if (SQLCore::$debugDefault) {
-            error_log(sprintf("CoreData: annotation: fetch execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $prepare->rowCount(), human_readable_plural("row", $prepare->rowCount())));
+            error_log(sprintf("CoreData: annotation: execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $pdoStatement->rowCount(), human_readable_plural("row", $pdoStatement->rowCount())));
         }
-        return $prepare;
+        return $pdoStatement;
     }
 
     /**
