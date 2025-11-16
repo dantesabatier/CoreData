@@ -370,13 +370,7 @@ class SQLGenerator extends ObjectClass
                         return "{$this->buildDerivationExpression($property->derivationExpression)} AS $property->name";
                     }
                 } elseif ($property instanceof ExpressionDescription) {
-                    /** @var Expression $expression */
-                    $expression = $property->expression ?? fatal_error("Invalid argument: invalid property $property");
-                    return match ($expression->expressionType) {
-                        ExpressionType::function => "{$this->buildFunctionExpression($expression)} AS $property->name",
-                        ExpressionType::conditional => "{$this->buildConditionalExpression($expression)} AS $property->name",
-                        default => fatal_error("Invalid argument: unsupported expression $expression")
-                    };
+                    return "{$this->buildExpression($property->expression ?? fatal_error("Invalid argument: invalid property $property"))} AS $property->name";
                 }
                 return "$entity->tableName.$property->name";
             }));
@@ -989,7 +983,9 @@ class SQLGenerator extends ObjectClass
             fatal_error("Invalid argument: unsupported expression \"$expression\"");
         }
         $relationship = $entity->propertiesByName[$keyPathToCollection] ?? fatal_error("Invalid argument: invalid key path \"$keyPathToCollection\" for entity $entity->debugDescription");
-        $relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany ?: fatal_error("Invalid argument: unsupported expression \"$expression\"");
+        if (!$relationship instanceof SQLToMany && !$relationship instanceof SQLManyToMany) {
+            fatal_error("Invalid argument: unsupported expression \"$expression\"");
+        }
         $inverseRelationship = $relationship->inverseRelationship;
         $destinationEntity = $relationship->destinationEntity;
         if (($collectionOperator === KeyValueOperator::countKeyValueOperator && $keyPathToProperty) || ($collectionOperator !== KeyValueOperator::countKeyValueOperator && !$keyPathToProperty)) {
@@ -1045,6 +1041,7 @@ class SQLGenerator extends ObjectClass
         if (!$operator instanceof ExpressionOperator) {
             fatal_error("Invalid argument: unsupported expression \"$expression\"");
         }
+        //TERNARY(deadline != null, datediff:('DAY', deadline, date), 0)
         $isDeterministic = $operator->isDeterministic;
         $arguments = $expression->arguments ?? fatal_error("Invalid argument: unsupported expression \"$expression\"");
         switch ($operator->operatorType) {
