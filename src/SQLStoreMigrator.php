@@ -266,8 +266,12 @@ class SQLStoreMigrator
                             } else {
                                 $this->removedColumns->append($source);
                             }
-                        } elseif (($source->sqlType !== $destination->sqlType || $source->isOptional !== $destination->isOptional || $source->isUnique !== $destination->isUnique || $source->minValue !== $destination->minValue || $source->maxValue !== $destination->maxValue || $source->defaultValue !== $destination->defaultValue || ($source->isDerivedAttribute !== $destination->isDerivedAttribute) || ($source->isDerivedAttribute && $destination->isDerivedAttribute && (string)$source->derivationExpression !== (string)$destination->derivationExpression)) && ($statement = $this->adapter->newRenameColumnStatement($source, $destination))) {
-                            $this->connection->execute($statement);
+                        } elseif (($source->sqlType !== $destination->sqlType || $source->isOptional !== $destination->isOptional || $source->isUnique !== $destination->isUnique || $source->minValue !== $destination->minValue || $source->maxValue !== $destination->maxValue || $source->defaultValue !== $destination->defaultValue || ($source->isDerivedAttribute !== $destination->isDerivedAttribute) || ($source->isDerivedAttribute && $destination->isDerivedAttribute && (string)$source->derivationExpression !== (string)$destination->derivationExpression))) {
+                            if ($destination->isDerivedAttribute && ($statement = $this->adapter->newCreateColumnStatement($source, $destination))) {
+                                $this->connection->execute($statement);
+                            } elseif ($statement = $this->adapter->newRenameColumnStatement($source, $destination)) {
+                                $this->connection->execute($statement);
+                            }
                         }
                         if (!$source->isTransient && $destination->isTransient) {
                             $this->removedColumns->append($source);
