@@ -121,6 +121,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                     $keyPathComponents = $this->split($pattern);
                     $propertyKeyPathComponents = $keyPathComponents->dropLast(1);
                     $primaryKeyName = $cursorEntity->primaryKey->columnName;
+                    $entityKeyName = $cursorEntity->entityKey->columnName;
                     if ($keyPathComponents[$keyPathComponents->indexBefore($keyPathComponents->endIndex)] === $primaryKeyName) {
                         $propertyKeyPath = $propertyKeyPathComponents->join(".");
                         if ($value instanceof Nil) {
@@ -173,6 +174,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 $relationship = $property;
                                 $cursorEntity = $relationship->destinationEntity;
                                 $primaryKeyName = $cursorEntity->primaryKey->columnName;
+                                $entityKeyName = $cursorEntity->entityKey->columnName;
                             }
                         }
                         $isTerminalValue = $property instanceof SQLColumn || $propertyDescription instanceof ExpressionDescription;
@@ -185,7 +187,14 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 $cursor = &$element;
                             }
                             if ($cursor instanceof Dictionary) {
-                                $cursor[$key] = $this->coerceExpressionValueIfNeeded($value, $propertyDescription);
+                                $value = $this->coerceExpressionValueIfNeeded($value, $propertyDescription);
+                                if ($key === $primaryKeyName || $key === $entityKeyName) {
+                                    if ($isNonDictionaryResultType) {
+                                        $cursor[$key] = $value;
+                                    }
+                                } else {
+                                    $cursor[$key] = $value;
+                                }
                                 if ($cursor !== $root) {
                                     $cursor["parentID"] = $parentID;
                                 }
