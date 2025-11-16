@@ -32,8 +32,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         get => $this->fetchStatement ??= $this->generator->statement ?? fatal_error();
     }
     private(set) float $duration = 0;
-    private(set) PDOStatement $statement {
-        get => $this->statement ??= $this->connection->execute($this->fetchStatement);
+    private(set) PDOStatement $queryStatement {
+        get => $this->queryStatement ??= $this->connection->execute($this->fetchStatement);
     }
 
     public function __construct(FetchRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
@@ -274,8 +274,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     protected function executeRequestCore(): bool
     {
         $this->result = match ($this->request->resultType) {
-            FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType => $this->managedResults($this->dictionaryResults($this->statement)),
-            FetchRequestResultType::dictionaryResultType => $this->dictionaryResults($this->statement),
+            FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType => $this->managedResults($this->dictionaryResults($this->queryStatement)),
+            FetchRequestResultType::dictionaryResultType => $this->dictionaryResults($this->queryStatement),
             FetchRequestResultType::countResultType => fatal_error(sprintf("CoreData: annotation: invalid result type: %s", human_readable_value($this->request->resultType))),
         };
         return true;
