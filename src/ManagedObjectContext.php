@@ -684,22 +684,6 @@ class ManagedObjectContext extends ObjectClass
         $this->updatedObjects->formUnion($updates->filter(fn(ManagedObject $managedObject): bool => !$managedObject->isDeleted));
     }
 
-    private function processPendingUnmergedChanges(): void
-    {
-        foreach ($this->unprocessedInserts as $unprocessedInsert) {
-            $object = $this->object($unprocessedInsert->objectID);
-            $object->willSave();
-        }
-        foreach ($this->unprocessedChanges as $unprocessedChange) {
-            $object = $this->object($unprocessedChange->objectID);
-            $object->willSave();
-        }
-        foreach ($this->unprocessedDeletes as $unprocessedDelete) {
-            $object = $this->object($unprocessedDelete->objectID);
-            $object->prepareForDeletion();
-        }
-    }
-
     /**
      * Forces the context to process changes to the object graph.
      * @throws Exception
@@ -754,7 +738,7 @@ class ManagedObjectContext extends ObjectClass
             parent::observeValue($keyPath, $object, $change, $context);
             return;
         }
-        if ($this->processingChanges || $this->savingInProgress || !($value = $change->newValue) || !$object instanceof ManagedObject || $object->isSuppressingKVO || $object->isSuppressingChangeNotifications) {
+        if ($this->processingChanges || !($value = $change->newValue) || !$object instanceof ManagedObject || $object->isSuppressingKVO || $object->isSuppressingChangeNotifications) {
             return;
         }
         if (!($property = $object->entity->propertiesByName[$keyPath])) {
@@ -845,8 +829,9 @@ class ManagedObjectContext extends ObjectClass
     /**
      * @throws Exception
      */
-    private function newSaveRequestForCurrentState(): ?SaveChangesRequest
+    private function performSaveOperations(): void
     {
+        $this->processPendingChanges();
         $this->obtainPermanentIDs(new ArrayClass($this->insertedObjects));
         $insertedObjects = clone $this->insertedObjects;
         foreach ($insertedObjects as $insertedObject) {
@@ -874,6 +859,26 @@ class ManagedObjectContext extends ObjectClass
             $deletedObject->validateForDelete();
             $this->detectConflicts($deletedObject);
         }
+    }
+
+    private function prepareObjectsForPersistence(): void
+    {
+        foreach ($this->insertedObjects as $insertedObject) {
+            $insertedObject->willSave();
+        }
+        foreach ($this->updatedObjects as $updatedObject) {
+            $updatedObject->willSave();
+        }
+        foreach ($this->deletedObjects as $deletedObject) {
+            $deletedObject->prepareForDeletion();
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function newSaveRequestForCurrentState(): ?SaveChangesRequest
+    {
         if ($this->insertedObjects->isEmpty && $this->updatedObjects->isEmpty && $this->deletedObjects->isEmpty) {
             return null;
         }
@@ -894,9 +899,10 @@ class ManagedObjectContext extends ObjectClass
         if ($this->savingInProgress) {
             return true;
         }
-        $this->processPendingUnmergedChanges();
         $this->savingInProgress = true;
-        $this->processPendingChanges();
+        $this->performSaveOperations();
+        $this->prepareObjectsForPersistence();
+        $this->performSaveOperations();
         if ($changesRequest = $this->newSaveRequestForCurrentState()) {
             NotificationCenter::default()->postNotificationName(self::willSaveObjectsNotification, $this);
             $this->execute($changesRequest);

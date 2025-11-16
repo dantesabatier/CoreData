@@ -30,6 +30,7 @@ use Sabatier\Foundation\Value;
 use Sabatier\Foundation\ValueTransformer;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
+use function Sabatier\Foundation\is_equal;
 use function Sabatier\Foundation\typeof;
 use const Sabatier\Foundation\CocoaErrorDomain;
 use const Sabatier\Foundation\KeyValueValidationError;
@@ -579,7 +580,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         }
         /** @var PropertyDescription|null $property */
         $property = $this->entity->propertiesByName[$key];
-        if ($property instanceof PropertyDescription && !$property->isTransient && !$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription && !$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications) {
+        if ($property instanceof PropertyDescription && !$property->isTransient && !$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription && !$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications && !is_equal($value, $this->primitiveValueForKey($key))) {
             $this->changedValuesForCurrentEvent[$key] = $value ?? Nil::nil();
         }
         if ($property instanceof AttributeDescription || $property instanceof FetchedPropertyDescription) {
