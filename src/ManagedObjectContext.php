@@ -874,6 +874,14 @@ class ManagedObjectContext extends ObjectClass
         }
     }
 
+    private function clearChanges(): void
+    {
+        $this->insertedObjects->removeAll();
+        $this->updatedObjects->removeAll();
+        $this->deletedObjects->removeAll();
+        $this->hasChanges = false;
+    }
+
     /**
      * @throws Exception
      */
@@ -908,10 +916,7 @@ class ManagedObjectContext extends ObjectClass
             $this->execute($changesRequest);
             NotificationCenter::default()->postNotificationName(self::didSaveObjectsNotification, $this, new Dictionary([InsertedObjectsKey => $changesRequest->insertedObjects, UpdatedObjectsKey => $changesRequest->updatedObjects, DeletedObjectsKey => $changesRequest->deletedObjects]));
         }
-        $this->insertedObjects->removeAll();
-        $this->updatedObjects->removeAll();
-        $this->deletedObjects->removeAll();
-        $this->hasChanges = false;
+        $this->clearChanges();
         $this->savingInProgress = false;
         return true;
     }
@@ -942,11 +947,8 @@ class ManagedObjectContext extends ObjectClass
         foreach ($this->byHashAssociationTable as $registeredObject) {
             $this->unregister($registeredObject);
         }
-        $this->insertedObjects->removeAll();
-        $this->updatedObjects->removeAll();
-        $this->deletedObjects->removeAll();
         $this->byHashAssociationTable->removeAll();
-        $this->hasChanges = false;
+        $this->clearChanges();
     }
 
     /**
@@ -962,10 +964,7 @@ class ManagedObjectContext extends ObjectClass
             $this->refault($updatedObject);
             $updatedObject->awakeFromSnapshotEvents(SnapshotEventType::rollback | SnapshotEventType::refresh);
         }
-        $this->insertedObjects->removeAll();
-        $this->updatedObjects->removeAll();
-        $this->deletedObjects->removeAll();
-        $this->hasChanges = false;
+        $this->clearChanges();
     }
 
     /**
