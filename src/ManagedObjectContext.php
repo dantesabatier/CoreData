@@ -882,10 +882,9 @@ class ManagedObjectContext extends ObjectClass
         $this->hasChanges = false;
     }
 
-    private function createSaveChangesRequest(Set ...$sets): SaveChangesRequest
+    private function createSaveChangesRequest(): SaveChangesRequest
     {
-        $setsToSave = new ArrayClass($sets)->map(fn(Set $set): ?Set => $set->isEmpty ? null : $set)->array;
-        return new SaveChangesRequest(...$setsToSave);
+        return new SaveChangesRequest(...new ArrayClass([$this->insertedObjects, $this->updatedObjects, $this->deletedObjects])->map(fn(Set $set): ?Set => $set->isEmpty ? null : $set)->array);
     }
 
     private function hasPendingChanges(): bool
@@ -904,7 +903,7 @@ class ManagedObjectContext extends ObjectClass
         if (!$this->hasPendingChanges()) {
             return null;
         }
-        return $this->createSaveChangesRequest($this->insertedObjects, $this->updatedObjects, $this->deletedObjects);
+        return $this->createSaveChangesRequest();
     }
 
     /**
