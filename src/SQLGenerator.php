@@ -29,6 +29,7 @@ use Sabatier\Foundation\Predicates\ExpressionOperator;
 use Sabatier\Foundation\Predicates\ExpressionOperatorType;
 use Sabatier\Foundation\Predicates\ExpressionType;
 use Sabatier\Foundation\Predicates\Predicate;
+use Sabatier\Foundation\Predicates\PredicateOperatorSymbol;
 use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Sequence;
 use Sabatier\Foundation\Set;
@@ -722,13 +723,13 @@ class SQLGenerator extends ObjectClass
     private function buildClauseWithSimplePredicate(ComparisonPredicate $predicate, string &$clause): void
     {
         if ($predicate->predicateOperatorType == PredicateOperatorType::lessThan) {
-            $this->prepareClauseWithSimplePredicate($predicate, $clause, "<");
+            $this->prepareClauseWithSimplePredicate($predicate, $clause, PredicateOperatorSymbol::lessThan);
         } elseif ($predicate->predicateOperatorType == PredicateOperatorType::lessThanOrEqualTo) {
-            $this->prepareClauseWithSimplePredicate($predicate, $clause, "<=");
+            $this->prepareClauseWithSimplePredicate($predicate, $clause, PredicateOperatorSymbol::lessThanOrEqualTo);
         } elseif ($predicate->predicateOperatorType == PredicateOperatorType::greaterThan) {
-            $this->prepareClauseWithSimplePredicate($predicate, $clause, ">");
+            $this->prepareClauseWithSimplePredicate($predicate, $clause, PredicateOperatorSymbol::greaterThan);
         } elseif ($predicate->predicateOperatorType == PredicateOperatorType::greaterThanOrEqualTo) {
-            $this->prepareClauseWithSimplePredicate($predicate, $clause, ">=");
+            $this->prepareClauseWithSimplePredicate($predicate, $clause, PredicateOperatorSymbol::greaterThanOrEqualTo);
         } elseif ($predicate->predicateOperatorType == PredicateOperatorType::equalTo) {
             $this->prepareEqual($predicate, $clause);
         } elseif ($predicate->predicateOperatorType == PredicateOperatorType::notEqualTo) {
