@@ -3,10 +3,7 @@
 namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\Bundle;
-use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\ObjectClass;
-use const Sabatier\Foundation\kCFBundleNameKey;
 
 /**
  * An object that handles the migration event loop and provides access to the migrating persistent store.
@@ -23,9 +20,7 @@ use const Sabatier\Foundation\kCFBundleNameKey;
 class StagedMigrationManager extends ObjectClass
 {
     /** @var PersistentContainer|null The container that provides access to the migrating persistent store. */
-    private(set) ?PersistentContainer $container {
-        get => $this->container ??= $this->createPersistentContainer();
-    }
+    public ?PersistentContainer $container = null;
 
     /**
      * Creates a migration manager with the specified stages.
@@ -34,20 +29,5 @@ class StagedMigrationManager extends ObjectClass
      */
     public function __construct(public readonly ArrayClass $stages)
     {
-    }
-
-    private function createPersistentContainer(): ?PersistentContainer
-    {
-        $bundle = Bundle::main();
-        if (!($name = $bundle->object(kCFBundleNameKey))) {
-            return null;
-        }
-        if (!($url = $bundle->url($name, "plist"))) {
-            return null;
-        }
-        if (!FileManager::default()->fileExists($url->path)) {
-            return null;
-        }
-        return new PersistentContainer($name, new ManagedObjectModel($url));
     }
 }
