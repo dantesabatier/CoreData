@@ -262,7 +262,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     if ($this->isSubclass(ManagedObject::class)) {
                         $this->createMutationMethods($key);
                     }
-                    $value ??= new FaultingSet($this, $property);
                 }
             }
             $this->setPrimitiveValueForKey($value, $key);
