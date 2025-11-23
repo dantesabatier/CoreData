@@ -1042,7 +1042,6 @@ class SQLGenerator extends ObjectClass
         if (!$operator instanceof ExpressionOperator) {
             fatal_error("Invalid argument: unsupported expression \"$expression\"");
         }
-        //TERNARY(deadline != null, datediff:('DAY', deadline, date), 0)
         $isDeterministic = $operator->isDeterministic;
         $arguments = $expression->arguments ?? fatal_error("Invalid argument: unsupported expression \"$expression\"");
         switch ($operator->operatorType) {
