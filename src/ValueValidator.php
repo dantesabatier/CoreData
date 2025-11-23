@@ -3,6 +3,7 @@
 namespace Sabatier\CoreData;
 
 use BackedEnum;
+use Countable;
 use Sabatier\Foundation\Value;
 
 /** @internal */
@@ -12,6 +13,9 @@ abstract class ValueValidator extends Validator
     {
         if ($object instanceof Value || $object instanceof BackedEnum) {
             return $object->value;
+        }
+        if ($object instanceof Countable) {
+            return $object->count();
         }
         if ($object instanceof ManagedObjectID) {
             return $object->referenceObject;
