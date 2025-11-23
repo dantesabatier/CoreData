@@ -1083,6 +1083,7 @@ class SQLGenerator extends ObjectClass
             case ExpressionOperatorType::substring:
             case ExpressionOperatorType::replace:
             case ExpressionOperatorType::length:
+            case ExpressionOperatorType::trim:
             case ExpressionOperatorType::isNull:
             case ExpressionOperatorType::ifNull:
             case ExpressionOperatorType::nullIf:
@@ -1108,6 +1109,9 @@ class SQLGenerator extends ObjectClass
                 break;
             case ExpressionOperatorType::concat:
                 $function = "CONCAT_WS";
+                break;
+            case ExpressionOperatorType::regexpReplace:
+                $function = "REGEXP_REPLACE";
                 break;
             case ExpressionOperatorType::index:
                 $function = "ELT";
