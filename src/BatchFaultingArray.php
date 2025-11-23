@@ -82,8 +82,11 @@ class BatchFaultingArray extends ArrayClass
         $request = $this->request;
         $request->fetchOffset = $this->fetchOffset;
         $request->fetchLimit = $this->fetchLimit;
+        $debugDefault = SQLCore::$debugDefault;
+        SQLCore::$debugDefault = 0;
         /** @noinspection PhpUnhandledExceptionInspection */
         $result = $this->context->fetch($request);
+        SQLCore::$debugDefault = $debugDefault;
         $this->cursor += 1;
         return $result;
     }
