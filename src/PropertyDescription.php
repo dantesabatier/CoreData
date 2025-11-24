@@ -2,7 +2,6 @@
 
 namespace Sabatier\CoreData;
 
-use Exception;
 use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
@@ -56,7 +55,7 @@ abstract class PropertyDescription extends ObjectClass
     private(set) ArrayClass $validationWarnings {
         get => $this->validationWarnings ??= $this->validationPredicates->map(fn(Predicate $predicate): string => $predicate->predicateFormat);
     }
-    /** @var string The version hash for the receiver. The version hash is used to uniquely identify a property based on its configuration. The version hash uses only values which affect the persistence of data and the user-defined {@see versionHashModifier} value. (The values which affect persistence are the name of the property, and the flags for isOptional, isTransient, and isReadOnly.) This value is stored as part of the version information in the metadata for stores, as well as a definition of a property involved in an PropertyMapping object. */
+    /** @var string The version hash for the receiver. The version hash is used to uniquely identify a property based on its configuration. The version hash uses only values which affect the persistence of data and the user-defined {@see versionHashModifier} value. (The values which affect persistence are the name of the property, and the flags for isOptional, isTransient, and isReadOnly.) This value is stored as part of the version information in the metadata for stores, as well as a definition of a property involved in a {@see PropertyMapping} object. */
     public string $versionHash {
         get {
             $this->versionHashInStyle($hash, VersionHashStyle::default);
@@ -106,10 +105,7 @@ abstract class PropertyDescription extends ObjectClass
         $this->validationWarnings = $validationWarnings ?? new ArrayClass();
     }
 
-    /**
-     * @throws Exception
-     * @internal
-     */
+    /** @internal */
     public function versionHashInStyle(?string &$out, VersionHashStyle $style): void
     {
         $out = KeyedArchiver::archivedData($this->jsonSerialize());
