@@ -557,7 +557,7 @@ class ManagedObjectContext extends ObjectClass
      * @param bool $mergeChanges A Boolean value.
      * If $mergeChanges is false, then $object is turned into a fault and any pending changes are lost.
      * The object remains a fault until it is accessed again, at which time its property values will be reloaded from the store or last cached state.
-     * If $mergeChanges is true, then $object is turned into a fault, and object's property values are reloaded from the values from the store or the last cached state, then any changes that were made (in the local context) are re-applied over those (now newly updated) values.
+     * If $mergeChanges is true, then $object is turned into a fault, and object's property values are reloaded from the values from the store or the last cached state; then any changes that were made (in the local context) are re-applied over those (now newly updated) values.
      * (If $mergeChanges is true, the merge of the values into $object will always succeed in this case there is therefore no such thing as a “merge conflict” or a merge that is not possible.)
      */
     public function refresh(ManagedObject $object, bool $mergeChanges = false): void
