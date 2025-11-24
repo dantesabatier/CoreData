@@ -179,6 +179,12 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                         "isMinValueBounded", "isMaxValueBounded", "isMinCountBounded", "isMaxCountBounded" => true,
                         default => false
                     });
+                    if ($description->offsetExists("minCount")) {
+                        $description["minValue"] = $description["minCount"];
+                    }
+                    if ($description->offsetExists("maxCount")) {
+                        $description["maxValue"] = $description["maxCount"];
+                    }
                     $relationship = new RelationshipDescription();
                     $relationship->entity = $entity;
                     $relationship->setValuesForKeys($description);
