@@ -469,7 +469,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     /**
      * Returns the fetch request with a specified name.
      * @param string $name A string containing the name of a fetch request template.
-     * @return FetchRequest|null The fetch request named name.
+     * @return FetchRequest|null The fetch request named $name.
      */
     public function fetchRequestTemplate(string $name): ?FetchRequest
     {
