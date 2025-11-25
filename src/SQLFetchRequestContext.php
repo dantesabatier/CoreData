@@ -33,6 +33,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     }
     private(set) float $duration = 0;
     private(set) PDOStatement $queryStatement {
+        /** @noinspection PhpUnhandledExceptionInspection */
         get => $this->queryStatement ??= $this->connection->execute($this->fetchStatement);
     }
 
