@@ -175,16 +175,16 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             $relationships = $dictionary["relationships"];
             if ($relationships) {
                 $properties->appendContentsOf($relationships->map(function (Dictionary $description) use ($entity): RelationshipDescription {
+                    if ($description["isMinCountBounded"] && $description->offsetExists("minCount")) {
+                        $description["minValue"] = $description["minCount"];
+                    }
+                    if ($description["isMaxCountBounded"] && $description->offsetExists("maxCount")) {
+                        $description["maxValue"] = $description["maxCount"];
+                    }
                     $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
                         "isMinValueBounded", "isMaxValueBounded", "isMinCountBounded", "isMaxCountBounded" => true,
                         default => false
                     });
-                    if ($description->offsetExists("minCount")) {
-                        $description["minValue"] = $description["minCount"];
-                    }
-                    if ($description->offsetExists("maxCount")) {
-                        $description["maxValue"] = $description["maxCount"];
-                    }
                     $relationship = new RelationshipDescription();
                     $relationship->entity = $entity;
                     $relationship->setValuesForKeys($description);
