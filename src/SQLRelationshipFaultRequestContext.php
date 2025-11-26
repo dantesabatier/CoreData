@@ -41,6 +41,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
                 $fetchRequest = new FetchRequest();
                 $fetchRequest->entity = $destinationEntity->entityDescription;
                 $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($referenceObject));
+                $fetchRequest->includesPendingChanges = true;
                 $fetchRequest->resultType = FetchRequestResultType::managedObjectIDResultType;
                 $this->result = $this->sqlCore->execute($fetchRequest, $this->context)->first ?? Nil::nil();
                 $this->debugLogLevel = $debugLogLevel;
@@ -55,6 +56,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $destinationEntity->entityDescription;
             $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($columnName), Expression::expressionForConstantValue($this->objectID));
+            $fetchRequest->includesPendingChanges = true;
             $fetchRequest->resultType = FetchRequestResultType::managedObjectIDResultType;
             $this->result = $this->sqlCore->execute($fetchRequest, $this->context);
         } elseif ($property instanceof SQLManyToMany) {
@@ -64,6 +66,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
             $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($this->objectID));
             /** @psalm-suppress InvalidPropertyAssignmentValue */
             $fetchRequest->propertiesToFetch = new ArrayClass([$property->relationshipDescription]);
+            $fetchRequest->includesPendingChanges = true;
             $first = $this->sqlCore->execute($fetchRequest, $this->context)->first;
             if ($first instanceof ManagedObject) {
                 $this->result = $first->primitiveValueForKey($property->name) ?? new ArrayClass();
