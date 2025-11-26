@@ -28,6 +28,7 @@ class SQLObjectFaultRequestContext extends SQLStoreRequestContext
         $fetchRequest = new FetchRequest();
         $fetchRequest->entity = $objectID->entity;
         $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($objectID));
+        $fetchRequest->propertiesToFetch = $objectID->entity->properties;
         $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
         parent::__construct($fetchRequest, $context, $sqlCore);
         $this->objectID = $objectID;

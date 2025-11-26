@@ -18,7 +18,6 @@ readonly class FaultHandler
     public function fulfillFault(ManagedObject $object, ?ManagedObjectContext $context = null): void
     {
         $context ??= $object->managedObjectContext;
-        $entity = $object->entity;
         /** @var IncrementalStoreNode|AtomicStoreCacheNode|null $newValues */
         $newValues = $this->persistentStore->newValuesForObjectWithID($object->objectID, $context);
         if ($newValues === null) {
@@ -28,19 +27,7 @@ readonly class FaultHandler
             $newValues = $newValues->values;
         }
         $object->isSuppressingKVO = true;
-        $committedValues = $object->committedValuesForKeys(null);
-        foreach ($entity as $property) {
-            if ($property instanceof AttributeDescription) {
-                $value = $newValues->valueForKey($property->name);
-                if ($value !== null) {
-                    $object->setValueForKey($value, $property->name);
-                }
-            } elseif ($property instanceof RelationshipDescription) {
-                if ($committedValues[$property->name]) {
-                    $object->valueForKey($property->name);
-                }
-            }
-        }
+        $object->setValuesForKeys($newValues);
         $object->faultingState = 0;
         $object->isFault = false;
         $object->isSuppressingKVO = false;
