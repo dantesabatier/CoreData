@@ -164,7 +164,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         get => $this->entityName ??= $this->entity->name;
     }
     final public string $description {
-        get => sprintf("<%s %s> (entity: %s; id: %s %s; data: %s)", $this->class, $this->hash, $this->entity->name, $this->objectID->hash, $this->objectID->description, $this->isFault ? "<fault>" : $this->dictionaryWithValues($this->serializationKeys->filter(fn(string $key): bool => !$this->isRelationshipForKeyFault($key)))->description);
+        get => sprintf("<%s %s> (entity: %s; id: %s %s; data: %s)", $this->class, $this->hash, $this->entity->name, $this->objectID->hash, $this->objectID->description, $this->isFault ? "<fault>" : $this->dictionaryWithValues($this->serializationKeys->filter(fn(string $key): bool => !$this->isPropertyForKeyFault($key)))->description);
     }
 
     /**
@@ -215,10 +215,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public function hasFaultForRelationshipNamed(string $key): bool
     {
         $this->entity->relationshipsByName->offsetExists($key) ?: $this->valueForUndefinedKey($key);
-        return $this->isRelationshipForKeyFault($key);
+        return $this->isPropertyForKeyFault($key);
     }
 
-    private function isRelationshipForKeyFault(string $key): bool
+    private function isPropertyForKeyFault(string $key): bool
     {
         $value = $this->primitiveValueForKey($key);
         $property = $this->entity->propertiesByName[$key];
@@ -496,7 +496,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if ($property instanceof DerivedAttributeDescription && !$value && $this->isRelationshipForKeyFault($key)) {
+            if ($property instanceof DerivedAttributeDescription && !$value && $this->isPropertyForKeyFault($key)) {
                 $value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional);
                 $this->setPrimitiveValueForKey($value, $key);
             }
@@ -506,7 +506,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if (!$this->isSuppressingKVO && $this->isInserted && $this->isRelationshipForKeyFault($key)) {
+            if (!$this->isSuppressingKVO && $this->isInserted && $this->isPropertyForKeyFault($key)) {
                 $value ??= new FaultingArray($this, $property);
                 if ($property->fetchRequest !== null) {
                     $fetchRequest = clone $property->fetchRequest;
@@ -547,7 +547,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if (!$this->isSuppressingKVO && $this->isInserted && $this->isRelationshipForKeyFault($key)) {
+            if (!$this->isSuppressingKVO && $this->isInserted && $this->isPropertyForKeyFault($key)) {
                 $store = $context->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null");
                 $newValue = $store->newValueForRelationship($property, $this->objectID, $context);
                 if ($property->isToMany) {
@@ -608,7 +608,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $set->setSet($value);
                 $value = $set;
                 $change = $this->mutableSetValueForKey($key);
-                if (!$this->isSuppressingKVO && $this->isAwakeFromFetch && $this->isInserted && $this->isRelationshipForKeyFault($key)) {
+                if (!$this->isSuppressingKVO && $this->isAwakeFromFetch && $this->isInserted && $this->isPropertyForKeyFault($key)) {
                     /** @var FaultingSet $change */
                     $change = $this->valueForKey($key);
                     /** @var ManagedObject $managedObject */
@@ -648,7 +648,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 assert($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null, sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $this->entity->name, $key, ManagedObject::class, ManagedObjectID::class, typeof($value)));
                 $change = $value;
                 $current = $this->primitiveValueForKey($key);
-                if ($this->isInserted && $this->isRelationshipForKeyFault($key)) {
+                if ($this->isInserted && $this->isPropertyForKeyFault($key)) {
                     $current = $this->valueForKey($key);
                 }
                 assert($current instanceof ManagedObject || $current instanceof ManagedObjectID || $current === null, sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $this->entity->name, $key, ManagedObject::class, ManagedObjectID::class, typeof($current)));
