@@ -983,7 +983,7 @@ class SQLGenerator extends ObjectClass
         if (!$keyPathToCollection || !$collectionOperator) {
             fatal_error("Invalid argument: unsupported expression \"$expression\"");
         }
-        $relationship = $entity->propertiesByName[$keyPathToCollection] ?? fatal_error("Invalid argument: invalid key path \"$keyPathToCollection\" for entity $entity->debugDescription");
+        $relationship = $entity->propertiesByName[$keyPathToCollection] ?? fatal_error("Invalid argument: invalid key path \"$keyPathToCollection\" for entity $entity");
         if (!$relationship instanceof SQLToMany && !$relationship instanceof SQLManyToMany) {
             fatal_error("Invalid argument: unsupported expression \"$expression\"");
         }
