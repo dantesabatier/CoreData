@@ -12,6 +12,7 @@ namespace Sabatier\CoreData;
 use BackedEnum;
 use Exception;
 use PDO;
+use Pdo\Mysql;
 use PDOStatement;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Bundle;
@@ -108,7 +109,7 @@ class SQLConnection extends ObjectClass
     private function pdo(): PDO
     {
         if ($this->pdo === null) {
-            $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC];
+            $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, Mysql::ATTR_USE_BUFFERED_QUERY => true];
             if ($timeout = $this->sqlCore?->options?->valueForKey(PersistentStoreTimeoutOption)) {
                 $options[PDO::ATTR_TIMEOUT] = $timeout;
             }
