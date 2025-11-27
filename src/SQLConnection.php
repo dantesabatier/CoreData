@@ -41,15 +41,27 @@ class SQLConnection extends ObjectClass
         get => $this->adapter?->sqlCore;
     }
     private(set) bool $hasMetadataTable {
+        /**
+         * @throws Exception
+         */
         get => $this->hasMetadataTable ??= (bool)$this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?", new ArrayClass([$this->schema->name, "PersistentStoreMetadata"])))->fetchColumn();
     }
     private(set) bool $hasCachedModelTable {
+        /**
+         * @throws Exception
+         */
         get => $this->hasCachedModelTable ??= (bool)$this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?", new ArrayClass([$this->schema->name, "ManagedObjectModel"])))->fetchColumn();
     }
     private(set) bool $hasPersistentHistoryTables {
+        /**
+         * @throws Exception
+         */
         get => $this->hasPersistentHistoryTables ??= (bool)$this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name IN (?, ?)", new ArrayClass([$this->schema->name, "PersistentHistoryTransaction", "PersistentHistoryChange"])))->fetchColumn();
     }
     private(set) ?ManagedObjectModel $cachedModel {
+        /**
+         * @throws Exception
+         */
         get {
             if (!isset($this->cachedModel)) {
                 $this->connect();

@@ -1,6 +1,6 @@
 <?php
 
-/** @noinspection PhpInternalEntityUsedInspection, SpellCheckingInspection */
+/** @noinspection PhpInternalEntityUsedInspection */
 
 namespace Sabatier\CoreData;
 

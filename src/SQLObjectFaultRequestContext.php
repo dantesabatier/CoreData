@@ -18,20 +18,18 @@ class SQLObjectFaultRequestContext extends SQLStoreRequestContext
             return $request;
         }
     }
-    public readonly ManagedObjectID $objectID;
 
-    public function __construct(ManagedObjectID $objectID, ManagedObjectContext $context, SQLCore $sqlCore)
+    public function __construct(public readonly ManagedObjectID $objectID, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         /** @var SQLEntity $entity */
-        $entity = $sqlCore->model->entitiesByName[$objectID->entityName] ?? fatal_error("Entity not found: $objectID->entityName");
+        $entity = $sqlCore->model->entitiesByName[$this->objectID->entityName] ?? fatal_error("Entity not found: {$this->objectID->entityName}");
         /** @var FetchRequest<Dictionary> $fetchRequest */
         $fetchRequest = new FetchRequest();
-        $fetchRequest->entity = $objectID->entity;
-        $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($objectID));
-        $fetchRequest->propertiesToFetch = $objectID->entity->properties;
+        $fetchRequest->entity = $this->objectID->entity;
+        $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($this->objectID));
+        $fetchRequest->propertiesToFetch = $this->objectID->entity->properties;
         $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
         parent::__construct($fetchRequest, $context, $sqlCore);
-        $this->objectID = $objectID;
     }
 
     #[Override]
