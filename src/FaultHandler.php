@@ -26,10 +26,11 @@ readonly class FaultHandler
         if ($newValues instanceof IncrementalStoreNode) {
             $newValues = $newValues->values;
         }
+        $newValues["isInserted"] = true;
+        $newValues["isFault"] = false;
+        $newValues["faultingState"] = 0;
         $object->isSuppressingKVO = true;
         $object->setValuesForKeys($newValues);
-        $object->faultingState = 0;
-        $object->isFault = false;
         $object->isSuppressingKVO = false;
         if (!$object->isAwakeFromFetch) {
             $object->isAwakeFromFetch = true;
