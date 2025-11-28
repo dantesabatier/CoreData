@@ -79,7 +79,7 @@ class SQLConnection extends ObjectClass
     public string $bundleID {
         get => Bundle::main()->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString;
     }
-    private ?PDO $pdo = null;
+    private ?Mysql $mysql = null;
     private(set) bool $isOpen = false;
 
     public function __construct(public readonly ?SQLAdapter $adapter = null)
@@ -106,16 +106,16 @@ class SQLConnection extends ObjectClass
         return true;
     }
 
-    private function pdo(): PDO
+    private function mysql(): Mysql
     {
-        if ($this->pdo === null) {
+        if ($this->mysql === null) {
             $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, Mysql::ATTR_USE_BUFFERED_QUERY => true];
             if ($timeout = $this->sqlCore?->options?->valueForKey(PersistentStoreTimeoutOption)) {
                 $options[PDO::ATTR_TIMEOUT] = $timeout;
             }
-            $this->pdo = PDO::connect("mysql:host={$this->schema->host};charset={$this->schema->charset};unix_socket={$this->schema->socket};", $this->schema->credential->user, $this->schema->credential->password, $options);
+            $this->mysql = Mysql::connect("mysql:host={$this->schema->host};charset={$this->schema->charset};unix_socket={$this->schema->socket};", $this->schema->credential->user, $this->schema->credential->password, $options);
         }
-        return $this->pdo;
+        return $this->mysql;
     }
 
     /**
@@ -134,7 +134,7 @@ class SQLConnection extends ObjectClass
         if ($this->createSchemaIfNeeded()) {
             return true;
         }
-        $this->pdo()->exec("USE `$schemaName`");
+        $this->mysql()->exec("USE `$schemaName`");
         return true;
     }
 
@@ -149,7 +149,7 @@ class SQLConnection extends ObjectClass
         if (SQLCore::$debugDefault) {
             error_log("CoreData: annotation: Disconnecting from sql database \"{$this->schema->name}\"");
         }
-        $this->pdo = null;
+        $this->mysql = null;
         $this->isOpen = false;
         return true;
     }
@@ -173,15 +173,15 @@ class SQLConnection extends ObjectClass
             }
             error_log(sprintf("CoreData: sql: \n%s", $statement->formatted($style)));
         }
-        $pdo = $this->pdo();
+        $mysql = $this->mysql();
         if ($statement->arguments->isEmpty) {
-            $pdoStatement = $pdo->query($statement->string);
+            $pdoStatement = $mysql->query($statement->string);
             if (SQLCore::$debugDefault) {
                 error_log(sprintf("CoreData: annotation: execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $pdoStatement->rowCount(), human_readable_plural("row", $pdoStatement->rowCount())));
             }
             return $pdoStatement;
         }
-        $pdoStatement = $pdo->prepare($statement->string);
+        $pdoStatement = $mysql->prepare($statement->string);
         $pdoStatement->execute($statement->arguments->map(function (mixed $e): mixed {
             if ($e instanceof Nil || $e instanceof BackedEnum) {
                 return $e->value;
@@ -432,7 +432,7 @@ class SQLConnection extends ObjectClass
 
     public function lastInsertRowID(): int
     {
-        return (int)$this->pdo()->lastInsertId();
+        return (int)$this->mysql()->lastInsertId();
     }
 
     /**
@@ -440,7 +440,7 @@ class SQLConnection extends ObjectClass
      */
     public function fetchMaxPrimaryKey(string $entityName): int
     {
-        $entity = $this->sqlCore?->model?->entitiesByName[$entityName] ?? fatal_error("Invalid argument: entity \"$entityName\" does not exists");
+        $entity = $this->sqlCore?->model?->entitiesByName?->valueForKey($entityName) ?? fatal_error("Invalid argument: entity \"$entityName\" does not exists");
         return (int)$this->execute(new SQLStatement("SELECT MAX({$entity->primaryKey->columnName}) FROM `$entity->tableName`"))->fetchColumn();
     }
 
