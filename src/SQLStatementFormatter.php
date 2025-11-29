@@ -30,7 +30,7 @@ class SQLStatementFormatter extends Formatter
             $string = sprintf(str_replace(["%", "?"], ["%%", "%s"], $string), ...$object->arguments->map(fn(mixed $e): string => match (typeof($e)) {
                 ManagedObjectID::class => (string)$e->referenceObject,
                 Date::class, UUID::class, URL::class => "'$e'",
-                "string" => mb_check_encoding($e, "UTF-8") ? "'" . addslashes((string) $e) . "'" : "(binary data)",
+                "string" => mb_check_encoding($e, "UTF-8") ? "'" . addslashes((string)$e) . "'" : "(binary data)",
                 default => (function () use ($e): string {
                     if ($e instanceof Value) {
                         $e = $e->value;
