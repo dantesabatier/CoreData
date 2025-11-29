@@ -270,10 +270,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     }
                 }
             } elseif ($property instanceof RelationshipDescription) {
-                if ($property->isToMany) {
-                    if ($this->isSubclass(ManagedObject::class)) {
-                        $this->createMutationMethods($key);
-                    }
+                if ($property->isToMany && $this->isSubclass(ManagedObject::class)) {
+                    $this->createMutationMethods($key);
                 }
             }
             $this->setPrimitiveValueForKey($value, $key);
