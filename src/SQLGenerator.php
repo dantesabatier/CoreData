@@ -972,26 +972,24 @@ class SQLGenerator extends ObjectClass
         $clause .= ")";
     }
 
-    private function buildDerivedKeyPathExpression(Expression $expression, ?string $destination = null, ?bool &$isDeterministic = true): string
+    /**
+     * @return array{0: SQLRelationship, 1: string, 2: ?string}
+     */
+    private function parseAndValidateKvcExpression(Expression $expression): array
     {
-        if (!$expression->usesKVC) {
-            return $this->buildKeyPathExpression($expression, $isDeterministic);
-        }
-        $entity = $this->entity;
-        $destination ??= $entity->tableName;
         [$keyPathToCollection, $collectionOperator, $keyPathToProperty] = kvc_components((string)$expression);
-        if (!$keyPathToCollection || !$collectionOperator) {
-            fatal_error("Invalid argument: unsupported expression \"$expression\"");
-        }
-        $relationship = $entity->propertiesByName[$keyPathToCollection] ?? fatal_error("Invalid argument: invalid key path \"$keyPathToCollection\" for entity $entity");
-        if (!$relationship instanceof SQLToMany && !$relationship instanceof SQLManyToMany) {
-            fatal_error("Invalid argument: unsupported expression \"$expression\"");
-        }
+        $keyPathToCollection && $collectionOperator ?: fatal_error("Invalid argument: invalid expression $expression");
+        $relationship = $this->entity->propertiesByName[$keyPathToCollection] ?: fatal_error("Invalid argument: invalid key path \"$keyPathToCollection\" for entity $this->entity");
+        $relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany ?: fatal_error("Invalid argument: unsupported expression \"$expression\"");
+        $hasProperty = (bool)$keyPathToProperty;
+        $isCount = $collectionOperator === KeyValueOperator::countKeyValueOperator;
+        $isCount !== $hasProperty ?: fatal_error("Invalid expression \"$expression\"");
+        return [$relationship, $collectionOperator, $keyPathToProperty];
+    }
+
+    private function createSubQueryGenerator(SQLRelationship $relationship, string $collectionOperator, ?string $keyPathToProperty): SQLGenerator
+    {
         $inverseRelationship = $relationship->inverseRelationship;
-        $destinationEntity = $relationship->destinationEntity;
-        if (($collectionOperator === KeyValueOperator::countKeyValueOperator && $keyPathToProperty) || ($collectionOperator !== KeyValueOperator::countKeyValueOperator && !$keyPathToProperty)) {
-            fatal_error("Invalid expression \"$expression\"");
-        }
         /** @var ArrayClass<string|PropertyDescription> $propertiesToFetch */
         $propertiesToFetch = new ArrayClass([$inverseRelationship->relationshipDescription]);
         if ($collectionOperator !== KeyValueOperator::countKeyValueOperator) {
@@ -1001,7 +999,7 @@ class SQLGenerator extends ObjectClass
         $requestContext = $this->requestContext;
         $managedObjectModel = $requestContext->sqlCore->persistentStoreCoordinator->managedObjectModel;
         /** @var EntityDescription $entityForFetchRequest */
-        $entityForFetchRequest = $managedObjectModel->entitiesByName[$destinationEntity->entityDescription->name];
+        $entityForFetchRequest = $managedObjectModel->entitiesByName[$relationship->destinationEntity->entityDescription->name];
         $fetchRequest = new FetchRequest();
         $fetchRequest->entity = $entityForFetchRequest;
         $fetchRequest->propertiesToFetch = $propertiesToFetch;
@@ -1011,19 +1009,42 @@ class SQLGenerator extends ObjectClass
         $generator->raisesForNotApplicableKeys = false;
         $generator->keyValueOperator = $collectionOperator;
         $generator->resetSQL();
-        $string = "($generator->statement";
-        $string .= $generator->whereClause ? " AND " : " WHERE ";
+        return $generator;
+    }
+
+    private function buildCorrelationCondition(SQLToMany|SQLManyToMany $relationship, string $destination): string
+    {
+        $entity = $this->entity;
+        $destinationEntity = $relationship->destinationEntity;
+        $delimiter = $destination === $entity->tableName ? "." : "_";
+        $outerColumnReference = "$destination$delimiter";
         if ($relationship instanceof SQLToMany) {
             if ($destinationEntity->isKindOfSQLEntity($entity)) {
-                //FIXME: It doesn't work, the right side of the predicate apparently requires a constant value
-                $string .= "{$destinationEntity->tableName}_{$relationship->inverseToOne->name}.{$entity->primaryKey->columnName} = $destination.{$relationship->inverseToOne->foreignKey->columnName}";
+                $outerColumnReference .= $relationship->inverseToOne->foreignKey->columnName;
+                $innerColumnReference = "{$destinationEntity->tableName}_{$relationship->inverseToOne->name}.{$entity->primaryKey->columnName}";
             } else {
-                $string .= "$destinationEntity->tableName.{$relationship->inverseToOne->foreignKey->columnName} = $destination.{$entity->primaryKey->columnName}";
+                $outerColumnReference .= $entity->primaryKey->columnName;
+                $innerColumnReference = "$destinationEntity->tableName.{$relationship->inverseToOne->foreignKey->columnName}";
             }
         } else {
-            $string .= "{$destinationEntity->tableName}_$relationship->correlationTableName.$relationship->inverseColumnName = $destination.{$entity->primaryKey->columnName}";
+            $outerColumnReference .= $entity->primaryKey->columnName;
+            $innerColumnReference = "{$destinationEntity->tableName}_$relationship->correlationTableName.$relationship->inverseColumnName";
         }
-        return "$string)";
+        return "$innerColumnReference = $outerColumnReference";
+    }
+
+    private function buildDerivedKeyPathExpression(Expression $expression, ?string $destination = null, ?bool &$isDeterministic = true): string
+    {
+        if (!$expression->usesKVC) {
+            return $this->buildKeyPathExpression($expression, $isDeterministic);
+        }
+        $destination ??= $this->entity->tableName;
+        [$relationship, $collectionOperator, $keyPathToProperty] = $this->parseAndValidateKvcExpression($expression);
+        $generator = $this->createSubQueryGenerator($relationship, $collectionOperator, $keyPathToProperty);
+        $prefix = "($generator->statement";
+        $connector = $generator->whereClause ? " AND " : " WHERE ";
+        $correlationCondition = $this->buildCorrelationCondition($relationship, $destination);
+        return "$prefix$connector$correlationCondition)";
     }
 
     public function buildDerivationExpression(Expression $expression, ?string $destination = null, ?bool &$isDeterministic = true): string
