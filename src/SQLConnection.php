@@ -161,17 +161,7 @@ class SQLConnection extends ObjectClass
     {
         $time = absolute_time_get_current();
         if (SQLCore::$debugDefault) {
-            $style = SQLStatementFormatterStyle::string;
-            if (SQLCore::$debugDefault > 1) {
-                $style |= SQLStatementFormatterStyle::arguments;
-                if (SQLCore::$debugDefault > 2) {
-                    $style |= SQLStatementFormatterStyle::prettyPrint;
-                }
-            }
-            if (SQLCore::$coloredLoggingDefault) {
-                $style |= SQLStatementFormatterStyle::highlighted;
-            }
-            error_log(sprintf("CoreData: sql: \n%s", $statement->formatted($style)));
+            error_log(sprintf("CoreData: sql: \n%s", $statement->formatted(SQLStatementFormatterStyle::defaultFormatterStyle())));
         }
         $mysql = $this->mysql();
         if ($statement->arguments->isEmpty) {

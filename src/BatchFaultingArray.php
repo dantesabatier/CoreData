@@ -40,6 +40,9 @@ class BatchFaultingArray extends ArrayClass
         $this->context = $context;
         $this->objectIDs = new ArrayClass();
         $debugDefault = SQLCore::$debugDefault;
+        if ($debugDefault && ($sqlCore = $context->persistentStoreCoordinator->persistentStores->first) && $sqlCore instanceof SQLCore && ($statement = new SQLGenerator(new SQLFetchRequestContext($this->request, $context, $sqlCore))->statement)) {
+            error_log(sprintf("CoreData: sql: \n%s", $statement->formatted(SQLStatementFormatterStyle::defaultFormatterStyle())));
+        }
         SQLCore::$debugDefault = 0;
         /** @noinspection PhpUnhandledExceptionInspection */
         $this->length = $context->count($this->request);
