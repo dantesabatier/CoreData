@@ -861,7 +861,7 @@ class ManagedObjectContext extends ObjectClass
         }
     }
 
-    private function prepareObjectsForPersistence(): void
+    private function notifyObjectsWillSave(): void
     {
         foreach ($this->insertedObjects as $insertedObject) {
             $insertedObject->willSave();
@@ -871,6 +871,16 @@ class ManagedObjectContext extends ObjectClass
         }
         foreach ($this->deletedObjects as $deletedObject) {
             $deletedObject->prepareForDeletion();
+        }
+    }
+
+    private function notifyObjectsDidSave(): void
+    {
+        foreach ($this->insertedObjects as $insertedObject) {
+            $insertedObject->didSave();
+        }
+        foreach ($this->updatedObjects as $updatedObject) {
+            $updatedObject->didSave();
         }
     }
 
@@ -898,8 +908,9 @@ class ManagedObjectContext extends ObjectClass
     private function newSaveRequestForCurrentState(): ?SaveChangesRequest
     {
         $this->performSaveOperations();
-        $this->prepareObjectsForPersistence();
+        $this->notifyObjectsWillSave();
         $this->performSaveOperations();
+        $this->notifyObjectsDidSave();
         if (!$this->hasPendingChanges()) {
             return null;
         }
