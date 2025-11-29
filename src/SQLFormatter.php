@@ -380,10 +380,7 @@ class SQLFormatter extends Formatter
         }
         $highlight = ($this->style & SQLFormatterStyle::highlighted) !== 0;
         if (!($this->style & SQLFormatterStyle::prettyPrint)) {
-            if ($highlight) {
-                return $this->highlight($object);
-            }
-            return $object;
+            return $highlight ? $this->highlight($object) : $object;
         }
         return $this->format($object, $highlight);
     }
