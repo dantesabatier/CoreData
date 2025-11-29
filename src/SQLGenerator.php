@@ -488,62 +488,63 @@ class SQLGenerator extends ObjectClass
      */
     private function appendJoinsForRelationships(ArrayClass $relationships): void
     {
-        $source = "";
-        $entity = $this->entity;
-        $cursor = $entity->tableName;
+        $parentTableAlias = "";
+        $currentEntity = $this->entity;
+        $aliasPathAccumulator = $currentEntity->tableName;
         $request = $this->request;
         $resultType = $request->resultType;
-        $serialization = $request->serialization;
+        $currentSerialization = $request->serialization;
         /** @var SQLRelationship $relationship */
         foreach ($relationships as $relationship) {
             $name = $relationship->name;
-            $destination = "{$cursor}_$name";
+            $joinedTableAlias = "{$aliasPathAccumulator}_$name";
             if ($relationship instanceof SQLToOne) {
-                $this->addJoinForToOneRelationship($relationship, $source, $destination);
+                $this->addJoinForToOneRelationship($relationship, $parentTableAlias, $joinedTableAlias);
             } elseif ($relationship instanceof SQLToMany) {
-                $this->addJoinForToManyRelationship($relationship, $source, $destination);
+                $this->addJoinForToManyRelationship($relationship, $parentTableAlias, $joinedTableAlias);
             } elseif ($relationship instanceof SQLManyToMany) {
-                $this->addJoinForManyToManyRelationship($relationship, $source, $destination);
+                $this->addJoinForManyToManyRelationship($relationship, $parentTableAlias, $joinedTableAlias);
             }
-            $entity = $relationship->destinationEntity;
+            $currentEntity = $relationship->destinationEntity;
             if ($resultType !== FetchRequestResultType::countResultType) {
-                $columnNames = $entity->columnsToFetch->map(fn(SQLColumn $column): string => "$destination.$column->columnName AS {$destination}_$column->columnName");
-                $dictionary = $serialization[$name];
-                if ($dictionary instanceof Dictionary) {
-                    $serialization = clone $dictionary;
-                    $serializationKeys = $serialization->keys->filter(function (string $key) use ($entity): bool {
+                $columnNames = $currentEntity->columnsToFetch->map(fn(SQLColumn $column): string => "$joinedTableAlias.$column->columnName AS {$joinedTableAlias}_$column->columnName");
+                $nestedSerialization = $currentSerialization[$name];
+                if ($nestedSerialization instanceof Dictionary) {
+                    $currentSerialization = clone $nestedSerialization;
+                    $serializationKeys = $currentSerialization->keys->filter(function (string $key) use ($currentEntity): bool {
                         /** @var SQLProperty $property */
-                        $property = $entity->propertiesByName[$key] ?? fatal_error("$entity->tableName does not contains a property named \"$key\"");
+                        $property = $currentEntity->propertiesByName[$key] ?? fatal_error("$currentEntity->tableName does not contains a property named \"$key\"");
                         return !$property->isTransient;
                     });
-                    if (!$serializationKeys->containsElement($entity->primaryKey->columnName)) {
-                        $serializationKeys->insertAt($entity->primaryKey->columnName, 0);
+                    if (!$serializationKeys->containsElement($currentEntity->primaryKey->columnName)) {
+                        $serializationKeys->insertAt($currentEntity->primaryKey->columnName, 0);
                     }
-                    if (!$entity->entityDescription->isPersistentHistoryEntity && !$serializationKeys->containsElement($entity->entityKey->columnName)) {
-                        $serializationKeys->insertAt($entity->entityKey->columnName, 1);
+                    if (!$currentEntity->entityDescription->isPersistentHistoryEntity && !$serializationKeys->containsElement($currentEntity->entityKey->columnName)) {
+                        $serializationKeys->insertAt($currentEntity->entityKey->columnName, 1);
                     }
                     /** @var ArrayClass<string> $columnNames */
-                    $columnNames = $serializationKeys->compactMap(function (string $key) use ($entity, $destination): ?string {
-                        $property = $entity->propertiesByName[$key];
+                    $columnNames = $serializationKeys->compactMap(function (string $key) use ($currentEntity, $joinedTableAlias): ?string {
+                        /** @var SQLProperty|null $property */
+                        $property = $currentEntity->propertiesByName[$key];
                         if ($property instanceof SQLEntityKey || $property instanceof SQLPrimaryKey) {
-                            return "$destination.$property->columnName AS {$destination}_$property->columnName";
+                            return "$joinedTableAlias.$property->columnName AS {$joinedTableAlias}_$property->columnName";
                         }
                         if ($property instanceof SQLAttribute) {
                             if (($expression = $property->derivationExpression) && $expression->usesKVC) {
-                                $bk = $this->entity;
-                                $this->entity = $entity;
-                                $result = $this->buildDerivationExpression($expression, $destination);
-                                $this->entity = $bk;
-                                return "$result AS {$destination}_$property->columnName";
+                                $backupEntity = $this->entity;
+                                $this->entity = $currentEntity;
+                                $result = $this->buildDerivationExpression($expression, $joinedTableAlias);
+                                $this->entity = $backupEntity;
+                                return "$result AS {$joinedTableAlias}_$property->columnName";
                             }
-                            return "$destination.$property->columnName AS {$destination}_$property->columnName";
+                            return "$joinedTableAlias.$property->columnName AS {$joinedTableAlias}_$property->columnName";
                         }
                         return null;
                     });
                 }
                 if (!$columnNames->isEmpty) {
-                    $copy = clone $columnNames;
-                    foreach ($copy as $columnName) {
+                    $columnsToCheck = clone $columnNames;
+                    foreach ($columnsToCheck as $columnName) {
                         if (str_contains($this->selectList, $columnName)) {
                             $columnNames->remove($columnName);
                             if (str_contains($columnName, "?")) {
@@ -558,9 +559,9 @@ class SQLGenerator extends ObjectClass
                     }
                 }
             }
-            $source = $destination;
-            $cursor .= "_";
-            $cursor .= $name;
+            $parentTableAlias = $joinedTableAlias;
+            $aliasPathAccumulator .= "_";
+            $aliasPathAccumulator .= $name;
         }
     }
 
@@ -687,7 +688,7 @@ class SQLGenerator extends ObjectClass
     private function buildKeyPathExpression(Expression $expression, ?bool &$isDeterministic = true): string
     {
         if ($expression->usesKVC) {
-            return $this->buildDerivedKeyPathExpression($expression, null, $isDeterministic);
+            return $this->buildDerivedKeyPathExpression($expression, isDeterministic: $isDeterministic);
         }
         $tableName = $this->entity->tableName;
         $keyPath = $tableName;
@@ -979,7 +980,7 @@ class SQLGenerator extends ObjectClass
     {
         [$keyPathToCollection, $collectionOperator, $keyPathToProperty] = kvc_components((string)$expression);
         $keyPathToCollection && $collectionOperator ?: fatal_error("Invalid argument: invalid expression $expression");
-        $relationship = $this->entity->propertiesByName[$keyPathToCollection] ?: fatal_error("Invalid argument: invalid key path \"$keyPathToCollection\" for entity $this->entity");
+        $relationship = $this->entity->propertiesByName[$keyPathToCollection] ?? fatal_error("Invalid argument: invalid key path \"$keyPathToCollection\" for entity $this->entity");
         $relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany ?: fatal_error("Invalid argument: unsupported expression \"$expression\"");
         $hasProperty = (bool)$keyPathToProperty;
         $isCount = $collectionOperator === KeyValueOperator::countKeyValueOperator;
@@ -1012,12 +1013,13 @@ class SQLGenerator extends ObjectClass
         return $generator;
     }
 
-    private function buildCorrelationCondition(SQLToMany|SQLManyToMany $relationship, string $destination): string
+    private function buildCorrelationCondition(SQLToMany|SQLManyToMany $relationship, string $tableAlias): string
     {
         $entity = $this->entity;
         $destinationEntity = $relationship->destinationEntity;
-        $delimiter = $destination === $entity->tableName ? "." : "_";
-        $outerColumnReference = "$destination$delimiter";
+        $isTableAlias = $tableAlias !== $entity->tableName;
+        $delimiter = $isTableAlias ? "_" : ".";
+        $outerColumnReference = "$tableAlias$delimiter";
         if ($relationship instanceof SQLToMany) {
             if ($destinationEntity->isKindOfSQLEntity($entity)) {
                 $outerColumnReference .= $relationship->inverseToOne->foreignKey->columnName;
@@ -1033,26 +1035,26 @@ class SQLGenerator extends ObjectClass
         return "$innerColumnReference = $outerColumnReference";
     }
 
-    private function buildDerivedKeyPathExpression(Expression $expression, ?string $destination = null, ?bool &$isDeterministic = true): string
+    private function buildDerivedKeyPathExpression(Expression $expression, ?string $tableAlias = null, ?bool &$isDeterministic = true): string
     {
         if (!$expression->usesKVC) {
             return $this->buildKeyPathExpression($expression, $isDeterministic);
         }
-        $destination ??= $this->entity->tableName;
+        $tableAlias ??= $this->entity->tableName;
         [$relationship, $collectionOperator, $keyPathToProperty] = $this->parseAndValidateKvcExpression($expression);
         $generator = $this->createSubQueryGenerator($relationship, $collectionOperator, $keyPathToProperty);
         $prefix = "($generator->statement";
         $connector = $generator->whereClause ? " AND " : " WHERE ";
-        $correlationCondition = $this->buildCorrelationCondition($relationship, $destination);
+        $correlationCondition = $this->buildCorrelationCondition($relationship, $tableAlias);
         return "$prefix$connector$correlationCondition)";
     }
 
-    public function buildDerivationExpression(Expression $expression, ?string $destination = null, ?bool &$isDeterministic = true): string
+    public function buildDerivationExpression(Expression $expression, ?string $tableAlias = null, ?bool &$isDeterministic = true): string
     {
         return match ($expression->expressionType) {
             ExpressionType::conditional => $this->buildConditionalExpression($expression, $isDeterministic),
             ExpressionType::function => $this->buildFunctionExpression($expression, $isDeterministic),
-            ExpressionType::keyPath => $this->buildDerivedKeyPathExpression($expression, $destination, $isDeterministic),
+            ExpressionType::keyPath => $this->buildDerivedKeyPathExpression($expression, $tableAlias, $isDeterministic),
             default => fatal_error("Invalid argument: unsupported expression \"$expression\"")
         };
     }
