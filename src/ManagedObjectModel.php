@@ -491,8 +491,9 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     {
         $fetchRequest = $this->fetchRequestTemplate($name);
         if (!$substitutionVariables->isEmpty && $fetchRequest && (($predicate = $fetchRequest->predicate))) {
-            $fetchRequest = clone $fetchRequest;
-            $fetchRequest->predicate = $predicate->withSubstitutionVariables($substitutionVariables);
+            $fetchRequest = clone($fetchRequest, [
+                "predicate" => $predicate->withSubstitutionVariables($substitutionVariables)
+            ]);
         }
         return $fetchRequest;
     }
