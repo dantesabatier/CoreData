@@ -19,7 +19,7 @@ class SQLForeignOrderKey extends SQLColumn
             return $relationshipDescription;
         }
     }
-    protected(set) string $columnName {
+    public string $columnName {
         get => $this->columnName ??= $this->relationshipDescription->destinationEntity->attributesByName->first?->name ?? SQLEntity::primaryKeyName;
     }
     public readonly SQLForeignKey $foreignKey;
