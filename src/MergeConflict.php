@@ -28,7 +28,7 @@ class MergeConflict extends ObjectClass
         get => $this->objectSnapshot ??= $this->sourceObject->dictionaryWithValues($this->sourceObject->persistentProperties->map(fn(PropertyDescription $property): string => $property->name));
     }
     public string $description {
-        get => sprintf("%s (%s) for %s (%s) with objectID %s with oldVersion = %s and newVersion = %s and old object snapshot %s", $this->class, $this->hash, ManagedObject::class, $this->sourceObject->hash, $this->sourceObject->objectID->description, $this->oldVersionNumber, $this->newVersionNumber, human_readable_value($this->cachedSnapshot));
+        get => sprintf("%s (%s) for %s (%s) with objectID %s with oldVersion = %s and newVersion = %s and old object snapshot %s", $this->class, $this->hash, $this->sourceObject::class, $this->sourceObject->hash, $this->sourceObject->objectID->description, $this->oldVersionNumber, $this->newVersionNumber, human_readable_value($this->cachedSnapshot));
     }
 
     /**
@@ -41,5 +41,10 @@ class MergeConflict extends ObjectClass
      */
     public function __construct(public readonly ManagedObject $sourceObject, public readonly int $newVersionNumber, public readonly int $oldVersionNumber, public readonly ?Dictionary $cachedSnapshot = null, public readonly ?Dictionary $persistedSnapshot = null)
     {
+    }
+
+    public function jsonSerialize(): Dictionary
+    {
+        return new Dictionary(["cachedSnapshot" => $this->cachedSnapshot, "persistedSnapshot" => $this->persistedSnapshot, "proposedSnapshot" => $this->objectSnapshot]);
     }
 }

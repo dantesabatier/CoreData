@@ -33,7 +33,8 @@ use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\typeof;
 use const Sabatier\Foundation\CocoaErrorDomain;
-use const Sabatier\Foundation\KeyValueValidationError;
+use const Sabatier\Foundation\LocalizedDescriptionKey;
+use const Sabatier\Foundation\LocalizedFailureReasonErrorKey;
 use const Sabatier\Foundation\NotFound;
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
@@ -972,7 +973,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             if (!($validationPredicate = $property?->validationPredicates->first(fn(Predicate $predicate) => !$predicate->evaluate($this)))) {
                 continue;
             }
-            throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, KeyValueValidationError, new Dictionary([ValidationObjectErrorKey => $this, ValidationValueErrorKey => $value, ValidationKeyErrorKey => $key, ValidationPredicateErrorKey => $validationPredicate])));
+            throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, ManagedObjectConstraintValidationError, new Dictionary([LocalizedDescriptionKey => "Constraint Violation", LocalizedFailureReasonErrorKey => "The value being assigned does not satisfy the constraints ($validationPredicate) defined for property \"$key\" on entity \"{$this->entity->name}\".", ValidationObjectErrorKey => $this, ValidationValueErrorKey => $value, ValidationKeyErrorKey => $key, ValidationPredicateErrorKey => $validationPredicate])));
         }
     }
 

@@ -34,4 +34,9 @@ class ConstraintConflict extends ObjectClass
     public function __construct(public readonly ArrayClass $constraint, public readonly ?ManagedObject $databaseObject, public readonly ?Dictionary $databaseSnapshot, public readonly ArrayClass $conflictingObjects, public readonly ArrayClass $conflictingSnapshots)
     {
     }
+
+    public function jsonSerialize(): Dictionary
+    {
+        return $this->constraintValues;
+    }
 }

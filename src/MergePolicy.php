@@ -17,6 +17,8 @@ use Sabatier\Foundation\Error;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\ObjectClass;
 use const Sabatier\Foundation\CocoaErrorDomain;
+use const Sabatier\Foundation\LocalizedDescriptionKey;
+use const Sabatier\Foundation\LocalizedFailureReasonErrorKey;
 
 /**
  * A policy object that you use to resolve conflicts between the persistent store and in-memory versions of managed objects.
@@ -61,7 +63,7 @@ class MergePolicy extends ObjectClass
             $this->process($conflictList, $mergeConflict, $sourceObject, $cachedSnapshot, $persistedSnapshot);
         }
         if (!$conflictList->isEmpty) {
-            throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, ManagedObjectConstraintMergeError, new Dictionary(["conflictList" => $conflictList->join(", ")])));
+            throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, ManagedObjectConstraintMergeError, new Dictionary([LocalizedDescriptionKey => "Instance Merge Conflict", LocalizedFailureReasonErrorKey => "The system encountered an inconsistency while attempting to merge multiple instances of the managed object. One or more attributes could not be reconciled.", ConflictListErrorKey => $conflictList])));
         }
     }
 
@@ -86,7 +88,7 @@ class MergePolicy extends ObjectClass
             }
         }
         if (!$conflictList->isEmpty) {
-            throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, 133021, new Dictionary([ConflictListErrorKey => $conflictList->join(", ")])));
+            throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, ManagedObjectConstraintValidationError, new Dictionary([LocalizedDescriptionKey => "Validation Error", LocalizedFailureReasonErrorKey => "The managed object failed to meet required validation rules or constraints. One or more attributes contain invalid, missing, or inconsistent values.", ConflictListErrorKey => $conflictList])));
         }
     }
 

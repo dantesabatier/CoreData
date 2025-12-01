@@ -10,6 +10,7 @@ use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\Predicate;
+use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
 
@@ -35,16 +36,16 @@ abstract class PropertyDescription extends ObjectClass
                 /** @var ArrayClass<Predicate> $validationPredicates */
                 $validationPredicates = new ArrayClass();
                 $minValue = $this->minValue;
-                if ($minValue !== null) {
-                    $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new MinimumValueValidator($minValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
+                if (is_numeric($minValue)) {
+                    $validationPredicates->append(new ComparisonPredicate(Expression::expressionForKeyPath($this->name), Expression::expressionForConstantValue($minValue), PredicateOperatorType::greaterThanOrEqualTo));
                 }
                 $maxValue = $this->maxValue;
-                if ($maxValue !== null) {
-                    $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new MaximumValueValidator($maxValue)), Expression::expressionForKeyPath($this->name), selector: "validate"));
+                if (is_numeric($maxValue)) {
+                    $validationPredicates->append(new ComparisonPredicate(Expression::expressionForKeyPath($this->name), Expression::expressionForConstantValue($maxValue), PredicateOperatorType::lessThanOrEqualTo));
                 }
                 $regex = $this->regex;
-                if ($regex) {
-                    $validationPredicates->append(new ComparisonPredicate(Expression::expressionForConstantValue(new RegexValidator($regex)), Expression::expressionForKeyPath($this->name), selector: "validate"));
+                if (is_string($regex)) {
+                    $validationPredicates->append(new ComparisonPredicate(Expression::expressionForKeyPath($this->name), Expression::expressionForConstantValue($regex), PredicateOperatorType::matches));
                 }
                 $this->validationPredicates = $validationPredicates;
             }
