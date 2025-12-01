@@ -82,6 +82,7 @@ class BatchFaultingArray extends ArrayClass
 
     private function arrayFromObjectIDs(): ArrayClass
     {
+        $this->context->reset();
         $request = $this->request;
         $request->fetchOffset = $this->fetchOffset;
         $request->fetchLimit = $this->fetchLimit;
