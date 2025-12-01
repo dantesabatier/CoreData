@@ -32,9 +32,10 @@ class BatchFaultingArray extends ArrayClass
     public function __construct(FetchRequest $fetchRequest, ManagedObjectContext $context)
     {
         parent::__construct();
-        $this->request = clone $fetchRequest;
-        $this->request->fetchBatchSize = 0;
-        $this->request->resultType = FetchRequestResultType::managedObjectIDResultType;
+        $this->request = clone($fetchRequest, [
+            "fetchBatchSize" => 0,
+            "resultType" => FetchRequestResultType::managedObjectIDResultType,
+        ]);
         $this->resultType = $fetchRequest->resultType;
         $this->fetchLimit = $fetchRequest->fetchBatchSize;
         $this->context = $context;
