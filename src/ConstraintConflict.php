@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
@@ -17,7 +18,7 @@ class ConstraintConflict extends ObjectClass
 {
     /** @var Dictionary The values that the conflicting objects had when the conflict was created. */
     private(set) Dictionary $constraintValues {
-        get => $this->constraintValues ??= new Dictionary();
+        get => $this->constraintValues ??= $this->conflictingObjects->first?->dictionaryWithValues($this->constraint) ?? new Dictionary();
     }
     public string $description {
         get => sprintf("%s %s for constraint (%s): database(%s): conflictedObjects (%s):", $this->class, $this->hash, $this->constraint->join(", "), human_readable_value($this->databaseObject), $this->conflictingObjects->join(", "));
@@ -35,6 +36,7 @@ class ConstraintConflict extends ObjectClass
     {
     }
 
+    #[Override]
     public function jsonSerialize(): Dictionary
     {
         return $this->constraintValues;

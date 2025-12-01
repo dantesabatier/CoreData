@@ -63,7 +63,7 @@ class MergePolicy extends ObjectClass
             $this->process($conflictList, $mergeConflict, $sourceObject, $cachedSnapshot, $persistedSnapshot);
         }
         if (!$conflictList->isEmpty) {
-            throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, ManagedObjectConstraintMergeError, new Dictionary([LocalizedDescriptionKey => "Instance Merge Conflict", LocalizedFailureReasonErrorKey => "The system encountered an inconsistency while attempting to merge multiple instances of the managed object. One or more attributes could not be reconciled.", ConflictListErrorKey => $conflictList])));
+            throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, ManagedObjectConstraintMergeError, new Dictionary([LocalizedDescriptionKey => "Instance Merge Conflict", LocalizedFailureReasonErrorKey => "The system encountered an inconsistency while attempting to merge multiple instances of the managed object.", ConflictListErrorKey => $conflictList])));
         }
     }
 
@@ -88,7 +88,7 @@ class MergePolicy extends ObjectClass
             }
         }
         if (!$conflictList->isEmpty) {
-            throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, ManagedObjectConstraintValidationError, new Dictionary([LocalizedDescriptionKey => "Validation Error", LocalizedFailureReasonErrorKey => "The managed object failed to meet required validation rules or constraints. One or more attributes contain invalid, missing, or inconsistent values.", ConflictListErrorKey => $conflictList])));
+            throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, ManagedObjectConstraintValidationError, new Dictionary([LocalizedDescriptionKey => "Uniqueness constraint conflict", LocalizedFailureReasonErrorKey => "The save operation failed because one or more managed objects violated a unique constraint defined in the data model.", ConflictListErrorKey => $conflictList])));
         }
     }
 

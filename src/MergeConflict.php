@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
 use function Sabatier\Foundation\human_readable_value;
@@ -43,6 +44,7 @@ class MergeConflict extends ObjectClass
     {
     }
 
+    #[Override]
     public function jsonSerialize(): Dictionary
     {
         return new Dictionary(["cachedSnapshot" => $this->cachedSnapshot, "persistedSnapshot" => $this->persistedSnapshot, "proposedSnapshot" => $this->objectSnapshot]);
