@@ -103,6 +103,24 @@ abstract class AtomicStore extends PersistentStore
         return $dictionary;
     }
 
+    private function resolvePredicateObjectReferences(Predicate $predicate, FetchRequest $fetchRequest): Predicate
+    {
+        if ($predicate instanceof ComparisonPredicate) {
+            $expressions = new ArrayClass([$predicate->rightExpression, $predicate->leftExpression]);
+            if (($keyPathExpression = $expressions->first(fn(Expression $expression): bool => $expression->expressionType === ExpressionType::keyPath && str_ends_with($expression->keyPath, SQLEntity::primaryKeyName))) && ($constantValueExpression = $expressions->first(fn(Expression $expression): bool => !$expression->isEqual($keyPathExpression))) && !$constantValueExpression->constantValue instanceof ManagedObjectID) {
+                $expressionForConstantValue = Expression::expressionForConstantValue($this->objectID($fetchRequest->entity, $constantValueExpression->constantValue));
+                $rightExpression = $keyPathExpression === $predicate->rightExpression ? $keyPathExpression : $expressionForConstantValue;
+                $leftExpression = $constantValueExpression === $predicate->leftExpression ? $expressionForConstantValue : $keyPathExpression;
+                return new ComparisonPredicate($rightExpression, $leftExpression, $predicate->predicateOperatorType, $predicate->comparisonPredicateModifier, $predicate->options);
+            }
+            return $predicate;
+        }
+        if ($predicate instanceof CompoundPredicate) {
+            return new CompoundPredicate($predicate->compoundPredicateType, $predicate->subpredicates->map(fn(Predicate $subpredicate): Predicate => $this->resolvePredicateObjectReferences($subpredicate, $fetchRequest)));
+        }
+        return $predicate;
+    }
+
     private function executeFetchRequest(FetchRequest $request, ManagedObjectContext $context): ArrayClass
     {
         $resultType = $request->resultType;
@@ -129,26 +147,9 @@ abstract class AtomicStore extends PersistentStore
                 $objects[] = $object;
             }
         }
-        /** @var CompoundPredicate|ComparisonPredicate|null $predicate */
         $predicate = $request->predicate;
         if ($predicate) {
-            $fn = function (Predicate $predicate) use ($request, &$fn): Predicate {
-                if ($predicate instanceof ComparisonPredicate) {
-                    $expressions = new ArrayClass([$predicate->rightExpression, $predicate->leftExpression]);
-                    if (($keyPathExpression = $expressions->first(fn(Expression $expression): bool => $expression->expressionType === ExpressionType::keyPath && str_ends_with($expression->keyPath, SQLEntity::primaryKeyName))) && ($constantValueExpression = $expressions->first(fn(Expression $expression): bool => !$expression->isEqual($keyPathExpression))) && !$constantValueExpression->constantValue instanceof ManagedObjectID) {
-                        $expressionForConstantValue = Expression::expressionForConstantValue($this->objectID($request->entity, $constantValueExpression->constantValue));
-                        $rightExpression = $keyPathExpression === $predicate->rightExpression ? $keyPathExpression : $expressionForConstantValue;
-                        $leftExpression = $constantValueExpression === $predicate->leftExpression ? $expressionForConstantValue : $keyPathExpression;
-                        return new ComparisonPredicate($rightExpression, $leftExpression, $predicate->predicateOperatorType, $predicate->comparisonPredicateModifier, $predicate->options);
-                    }
-                    return $predicate;
-                }
-                if ($predicate instanceof CompoundPredicate) {
-                    return new CompoundPredicate($predicate->compoundPredicateType, $predicate->subpredicates->map(fn(Predicate $subpredicate): Predicate => $fn($subpredicate)));
-                }
-                return $predicate;
-            };
-            $predicate = $fn($predicate);
+            $predicate = $this->resolvePredicateObjectReferences($predicate, $request);
         }
         if ($resultType === FetchRequestResultType::managedObjectResultType) {
             if ($predicate) {

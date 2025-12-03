@@ -474,6 +474,30 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         $this->changedValues[$key] = $value;
     }
 
+    private function replaceFetchVariablesInExpression(Expression $expression, FetchedPropertyDescription $fetchedPropertyDescription): Expression
+    {
+        if (($expression->expressionType === ExpressionType::variable) || (($expression->expressionType === ExpressionType::keyPath) && $expression->operand?->expressionType === ExpressionType::variable)) {
+            return Expression::expressionForConstantValue($expression->expressionValue($this, new Dictionary(["\$FETCH_SOURCE" => $this, "\$FETCHED_PROPERTY" => $fetchedPropertyDescription])));
+        }
+        return $expression;
+    }
+
+    private function replaceFetchVariablesInPredicate(Predicate $predicate, FetchedPropertyDescription $fetchedPropertyDescription): Predicate
+    {
+        if ($predicate instanceof ComparisonPredicate) {
+            $leftExpression = $this->replaceFetchVariablesInExpression($predicate->leftExpression, $fetchedPropertyDescription);
+            $rightExpression = $this->replaceFetchVariablesInExpression($predicate->rightExpression, $fetchedPropertyDescription);
+            if ($leftExpression !== $predicate->leftExpression || $rightExpression !== $predicate->rightExpression) {
+                return new ComparisonPredicate($leftExpression, $rightExpression, $predicate->predicateOperatorType, $predicate->comparisonPredicateModifier, $predicate->options);
+            }
+            return $predicate;
+        }
+        if ($predicate instanceof CompoundPredicate) {
+            return new CompoundPredicate($predicate->compoundPredicateType, $predicate->subpredicates->map(fn(Predicate $subpredicate): Predicate => $this->replaceFetchVariablesInPredicate($subpredicate, $fetchedPropertyDescription)));
+        }
+        return $predicate;
+    }
+
     /**
      * Returns the value for the property specified by $key.
      *
@@ -513,28 +537,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         $fetchRequest->entity = EntityDescription::entity($entityName, $context);
                     }
                     if ($predicate = $fetchRequest->predicate) {
-                        $fn = function (Predicate $predicate) use (&$fn, $property): Predicate {
-                            if ($predicate instanceof ComparisonPredicate) {
-                                $expression = function (Expression $expression) use ($property): Expression {
-                                    if (($expression->expressionType === ExpressionType::variable) || (($expression->expressionType === ExpressionType::keyPath) && $expression->operand?->expressionType === ExpressionType::variable)) {
-                                        return Expression::expressionForConstantValue($expression->expressionValue($this, new Dictionary(["\$FETCH_SOURCE" => $this, "\$FETCHED_PROPERTY" => $property])));
-                                    }
-                                    return $expression;
-                                };
-                                $leftExpression = $expression($predicate->leftExpression);
-                                $rightExpression = $expression($predicate->rightExpression);
-                                if ($leftExpression !== $predicate->leftExpression || $rightExpression !== $predicate->rightExpression) {
-                                    return new ComparisonPredicate($leftExpression, $rightExpression, $predicate->predicateOperatorType, $predicate->comparisonPredicateModifier, $predicate->options);
-                                }
-                                return $predicate;
-                            }
-                            if ($predicate instanceof CompoundPredicate) {
-                                return new CompoundPredicate($predicate->compoundPredicateType, $predicate->subpredicates->map(
-                                    fn(Predicate $subpredicate): Predicate => $fn($subpredicate)));
-                            }
-                            return $predicate;
-                        };
-                        $fetchRequest->predicate = $fn($predicate);
+                        $fetchRequest->predicate = $this->replaceFetchVariablesInPredicate($predicate, $property);
                     }
                     $value->setArray($context->fetch($fetchRequest));
                 }
