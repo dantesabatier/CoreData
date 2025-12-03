@@ -103,12 +103,12 @@ abstract class AtomicStore extends PersistentStore
         return $dictionary;
     }
 
-    private function resolvePredicateObjectReferences(Predicate $predicate, FetchRequest $fetchRequest): Predicate
+    private function resolvePredicateObjectReferences(Predicate $predicate, EntityDescription $entity): Predicate
     {
         if ($predicate instanceof ComparisonPredicate) {
             $expressions = new ArrayClass([$predicate->rightExpression, $predicate->leftExpression]);
             if (($keyPathExpression = $expressions->first(fn(Expression $expression): bool => $expression->expressionType === ExpressionType::keyPath && str_ends_with($expression->keyPath, SQLEntity::primaryKeyName))) && ($constantValueExpression = $expressions->first(fn(Expression $expression): bool => !$expression->isEqual($keyPathExpression))) && !$constantValueExpression->constantValue instanceof ManagedObjectID) {
-                $expressionForConstantValue = Expression::expressionForConstantValue($this->objectID($fetchRequest->entity, $constantValueExpression->constantValue));
+                $expressionForConstantValue = Expression::expressionForConstantValue($this->objectID($entity, $constantValueExpression->constantValue));
                 $rightExpression = $keyPathExpression === $predicate->rightExpression ? $keyPathExpression : $expressionForConstantValue;
                 $leftExpression = $constantValueExpression === $predicate->leftExpression ? $expressionForConstantValue : $keyPathExpression;
                 return new ComparisonPredicate($rightExpression, $leftExpression, $predicate->predicateOperatorType, $predicate->comparisonPredicateModifier, $predicate->options);
@@ -116,7 +116,7 @@ abstract class AtomicStore extends PersistentStore
             return $predicate;
         }
         if ($predicate instanceof CompoundPredicate) {
-            return new CompoundPredicate($predicate->compoundPredicateType, $predicate->subpredicates->map(fn(Predicate $subpredicate): Predicate => $this->resolvePredicateObjectReferences($subpredicate, $fetchRequest)));
+            return new CompoundPredicate($predicate->compoundPredicateType, $predicate->subpredicates->map(fn(Predicate $subpredicate): Predicate => $this->resolvePredicateObjectReferences($subpredicate, $entity)));
         }
         return $predicate;
     }
@@ -149,7 +149,7 @@ abstract class AtomicStore extends PersistentStore
         }
         $predicate = $request->predicate;
         if ($predicate) {
-            $predicate = $this->resolvePredicateObjectReferences($predicate, $request);
+            $predicate = $this->resolvePredicateObjectReferences($predicate, $request->entity);
         }
         if ($resultType === FetchRequestResultType::managedObjectResultType) {
             if ($predicate) {
