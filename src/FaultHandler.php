@@ -2,7 +2,6 @@
 
 namespace Sabatier\CoreData;
 
-use Exception;
 use const Sabatier\Foundation\NotFound;
 
 /** @internal */
@@ -12,9 +11,7 @@ readonly class FaultHandler
     {
     }
 
-    /**
-     * @throws Exception
-     */
+    /** @noinspection PhpUnhandledExceptionInspection */
     public function fulfillFault(ManagedObject $object, ?ManagedObjectContext $context = null): void
     {
         $context ??= $object->managedObjectContext;
@@ -38,9 +35,6 @@ readonly class FaultHandler
         }
     }
 
-    /**
-     * @throws Exception
-     */
     public function turnObjectIntoFault(/** @noinspection PhpUnusedParameterInspection */ ManagedObject $object, ?ManagedObjectContext $context = null): void
     {
         $object->isSuppressingKVO = true;

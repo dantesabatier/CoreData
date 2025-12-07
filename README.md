@@ -1,6 +1,6 @@
 # Core Data
 
-An open source implementation of *[Core Data](https://developer.apple.com/documentation/coredata)*, a wonderful, very complex and beautifully designed framework, responsable for many bundled applications, services and frameworks in macOS and iOS that I created using mostly my intuition and experience developing Cocoa applications.
+An open source implementation of *[Core Data](https://developer.apple.com/documentation/coredata)*, a wonderful, very complex and beautifully designed framework, responsible for many bundled applications, services and frameworks in macOS and iOS that I created using mostly my intuition and experience developing Cocoa applications.
 
 ## What is Core Data?
 
@@ -13,7 +13,7 @@ Core Data provides two abstract types of persistent stores:
 
 Core Data also provides the implementation of two specific persistent store types, XML and SQL (each a subclass of atomic and incremental stores, respectively).
 
-Core Data use a managed object model (ManagedObjectModel), so, to update the structure of the persistent store, all you have to do is to update the model and the framework will do the rest, all unattended and automatic, no typing required a single line of code and without the need to execute any commands.
+Core Data uses a managed object model (ManagedObjectModel), so, to update the structure of the persistent store, all you have to do is to update the model, and the framework will do the rest, all unattended and automatic, no typing required a single line of code and without the need to execute any command.
 
 ## License
 

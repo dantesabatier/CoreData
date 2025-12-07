@@ -1048,10 +1048,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public function willAccessValueForKey(?string $key): void
     {
         if ($key === null) {
-            try {
-                $this->faultHandler->fulfillFault($this);
-            } catch (Exception) {
-            }
+            $this->faultHandler->fulfillFault($this);
         }
     }
 
