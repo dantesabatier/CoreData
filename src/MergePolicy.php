@@ -16,7 +16,7 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Error;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\ObjectClass;
-use const Sabatier\Foundation\CocoaErrorDomain;
+use function Sabatier\Foundation\localized_string;
 use const Sabatier\Foundation\LocalizedDescriptionKey;
 use const Sabatier\Foundation\LocalizedFailureReasonErrorKey;
 
@@ -63,7 +63,7 @@ class MergePolicy extends ObjectClass
             $this->process($conflictList, $mergeConflict, $sourceObject, $cachedSnapshot, $persistedSnapshot);
         }
         if (!$conflictList->isEmpty) {
-            throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, ManagedObjectConstraintMergeError, new Dictionary([LocalizedDescriptionKey => "Instance Merge Conflict", LocalizedFailureReasonErrorKey => "The system encountered an inconsistency while attempting to merge multiple instances of the managed object.", ConflictListErrorKey => $conflictList])));
+            throw new InternalInconsistencyException(error: new Error(CoreDataErrorDomain, ManagedObjectConstraintMergeError, new Dictionary([LocalizedDescriptionKey => localized_string("Instance Merge Conflict"), LocalizedFailureReasonErrorKey => localized_string("The system encountered an inconsistency while attempting to merge multiple instances of the managed object."), ConflictListErrorKey => $conflictList])));
         }
     }
 
@@ -88,7 +88,7 @@ class MergePolicy extends ObjectClass
             }
         }
         if (!$conflictList->isEmpty) {
-            throw new InternalInconsistencyException(error: new Error(CocoaErrorDomain, ManagedObjectConstraintValidationError, new Dictionary([LocalizedDescriptionKey => "Uniqueness constraint conflict", LocalizedFailureReasonErrorKey => "The save operation failed because one or more managed objects violated a unique constraint defined in the data model.", ConflictListErrorKey => $conflictList])));
+            throw new InternalInconsistencyException(error: new Error(CoreDataErrorDomain, ManagedObjectConstraintValidationError, new Dictionary([LocalizedDescriptionKey => localized_string("Uniqueness constraint conflict"), LocalizedFailureReasonErrorKey => localized_string("The save operation failed because one or more managed objects violated a unique constraint defined in the data model."), ConflictListErrorKey => $conflictList])));
         }
     }
 

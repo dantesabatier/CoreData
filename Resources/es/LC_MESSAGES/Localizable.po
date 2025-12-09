@@ -1,0 +1,37 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-12-08 16:12-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Constraint Violation"
+msgstr "Violación de restricción"
+
+#, php-format
+msgid "The value being assigned does not satisfy the constraints (%s) defined for property \"%s\" on entity \"%s\"."
+msgstr "El valor que se está asignando no satisface las restricciones (%s) definidas para la propiedad \"%s\" en la entidad \"%s\"."
+
+msgid "Instance Merge Conflict"
+msgstr "Conflicto de fusión de instancias"
+
+msgid "The system encountered an inconsistency while attempting to merge multiple instances of the managed object."
+msgstr "El sistema encontró una inconsistencia al intentar fusionar varias instancias del objeto administrado."
+
+msgid "Uniqueness constraint conflict"
+msgstr "Conflicto de restricciones de unicidad"
+
+msgid "The save operation failed because one or more managed objects violated a unique constraint defined in the data model."
+msgstr "La operación de guardar falló porque uno o más objetos administrados violaron una restricción única definida en el modelo de datos."
