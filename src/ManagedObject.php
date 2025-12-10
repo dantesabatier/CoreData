@@ -964,19 +964,23 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     private function validateChangedValues(): void
     {
         !$this->changedValues->isEmpty ?: fatal_error("invalid state: changed values is empty");
-        foreach ($this->changedValues as $key => $value) {
+        /** @var Set<PropertyDescription> $properties */
+        $properties = new Set($this->changedValues->keys->compactMap(fn(string $key): ?PropertyDescription => $this->entity->propertiesByName[$key]));
+        $properties->appendContentsOf($this->persistentProperties->filter(fn(PropertyDescription $property): bool => !$property->isOptional));
+        foreach ($properties as $property) {
+            if ($property->isTransient) {
+                continue;
+            }
+            $key = $property->name;
+            $value = $this->changedValues[$key];
             if ($value instanceof Nil) {
                 continue;
             }
-            /** @var PropertyDescription|null $property */
-            $property = $this->entity->propertiesByName[$key];
-            if ($property?->isTransient) {
+            if (!($predicate = $property->validationPredicates->first(fn(Predicate $predicate) => !$predicate->evaluate($this)))) {
                 continue;
             }
-            if (!($validationPredicate = $property?->validationPredicates->first(fn(Predicate $predicate) => !$predicate->evaluate($this)))) {
-                continue;
-            }
-            throw new InternalInconsistencyException(error: new Error(CoreDataErrorDomain, ManagedObjectConstraintValidationError, new Dictionary([LocalizedDescriptionKey => localized_string("Constraint Violation"), LocalizedFailureReasonErrorKey => sprintf(localized_string("The value being assigned does not satisfy the constraints (%s) defined for property \"%s\" on entity \"%s\"."), $validationPredicate, $key, $this->entity->name), ValidationObjectErrorKey => $this, ValidationValueErrorKey => $value, ValidationKeyErrorKey => $key, ValidationPredicateErrorKey => $validationPredicate])));
+            $error = new Error(CoreDataErrorDomain, ManagedObjectConstraintValidationError, new Dictionary([LocalizedDescriptionKey => localized_string("Constraint Violation"), LocalizedFailureReasonErrorKey => sprintf(localized_string("The value being assigned does not satisfy the constraints (%s) defined for property \"%s\" on entity \"%s\"."), $predicate, $key, $this->entity->name), ValidationObjectErrorKey => $this, ValidationValueErrorKey => $value, ValidationKeyErrorKey => $key, ValidationPredicateErrorKey => $predicate]));
+            throw new InternalInconsistencyException(error: $error);
         }
     }
 
