@@ -16,6 +16,9 @@ class BatchFaultingArray extends ArrayClass
     public int $count {
         get => $this->length;
     }
+    public array $array {
+        get => iterator_to_array($this);
+    }
     private int $fetchLimit;
     /** @noinspection PhpPropertyOnlyWrittenInspection */
     private int $fetchOffset {
