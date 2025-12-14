@@ -16,6 +16,7 @@ class BatchFaultingArray extends ArrayClass
     public int $count {
         get => $this->length;
     }
+    /** @var array<ManagedObjectID|ManagedObject> */
     public array $array {
         get => iterator_to_array($this);
     }
@@ -35,16 +36,18 @@ class BatchFaultingArray extends ArrayClass
     public function __construct(FetchRequest $fetchRequest, ManagedObjectContext $context)
     {
         parent::__construct();
-        $this->request = clone($fetchRequest, [
+        /** @var FetchRequest $request */
+        $request = clone($fetchRequest, [
             "fetchBatchSize" => 0,
             "resultType" => FetchRequestResultType::managedObjectIDResultType,
         ]);
+        $this->request = $request;
         $this->resultType = $fetchRequest->resultType;
         $this->fetchLimit = $fetchRequest->fetchBatchSize;
         $this->context = $context;
         $this->objectIDs = new ArrayClass();
         $debugDefault = SQLCore::$debugDefault;
-        if ($debugDefault && ($sqlCore = $context->persistentStoreCoordinator->persistentStores->first) && $sqlCore instanceof SQLCore && ($statement = new SQLGenerator(new SQLFetchRequestContext($this->request, $context, $sqlCore))->statement)) {
+        if ($debugDefault && ($sqlCore = $context->persistentStoreCoordinator?->persistentStores->first) && $sqlCore instanceof SQLCore && ($statement = new SQLGenerator(new SQLFetchRequestContext($this->request, $context, $sqlCore))->statement)) {
             error_log(sprintf("CoreData: sql: \n%s", $statement->formatted(SQLStatementFormatterStyle::defaultFormatterStyle())));
         }
         SQLCore::$debugDefault = 0;

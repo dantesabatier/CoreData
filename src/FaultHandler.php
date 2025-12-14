@@ -20,9 +20,7 @@ readonly class FaultHandler
         if ($newValues === null) {
             return;
         }
-        if ($newValues instanceof IncrementalStoreNode) {
-            $newValues = $newValues->values;
-        }
+        $newValues = $newValues instanceof AtomicStoreCacheNode ? $newValues->propertyCache : $newValues->values;
         $newValues["isInserted"] = true;
         $newValues["isFault"] = false;
         $newValues["faultingState"] = 0;

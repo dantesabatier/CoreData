@@ -553,6 +553,7 @@ class SQLGenerator extends ObjectClass
                 }
             }
         }
+        /** @psalm-suppress RedundantCondition */
         if (!$columnNames->isEmpty) {
             $this->selectList .= ", ";
             $this->selectList .= $columnNames->join(", ");
@@ -996,14 +997,14 @@ class SQLGenerator extends ObjectClass
     }
 
     /**
-     * @return array{0: SQLRelationship, 1: string, 2: ?string}
+     * @return array{0: SQLToMany|SQLManyToMany, 1: string, 2: string}
      */
     private function parseAndValidateKvcExpression(Expression $expression): array
     {
         [$keyPathToCollection, $collectionOperator, $keyPathToProperty] = kvc_components((string)$expression);
         $keyPathToCollection && $collectionOperator ?: fatal_error("Invalid argument: invalid expression $expression");
         $relationship = $this->entity->propertiesByName[$keyPathToCollection] ?? fatal_error("Invalid argument: invalid key path \"$keyPathToCollection\" for entity $this->entity");
-        $relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany ?: fatal_error("Invalid argument: unsupported expression \"$expression\"");
+        assert($relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany, sprintf("Invalid argument: invalid key path \"%s\" for entity %s", $keyPathToCollection, $this->entity));
         $hasProperty = (bool)$keyPathToProperty;
         $isCount = $collectionOperator === KeyValueOperator::countKeyValueOperator;
         $isCount !== $hasProperty ?: fatal_error("Invalid expression \"$expression\"");
