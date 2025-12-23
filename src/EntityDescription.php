@@ -35,7 +35,7 @@ class EntityDescription extends ObjectClass implements IteratorAggregate, Counta
     }
     /** @var bool A Boolean value that indicates whether the receiver represents an abstract entity. An abstract entity might be Shape, with concrete sub-entities such as Rectangle, Triangle, and Circle. */
     public bool $isAbstract = false;
-    /** @var Dictionary|null The user info dictionary of the receiver. */
+    /** @var Dictionary<mixed>|null The user info dictionary of the receiver. */
     public ?Dictionary $userInfo = null;
     /** @var ArrayClass<EntityDescription> $subentities An array containing the sub-entities of the receiver. */
     public ArrayClass $subentities {

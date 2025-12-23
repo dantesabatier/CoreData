@@ -98,7 +98,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     }
 
     /**
-     * @param Dictionary $dictionary
+     * @param Dictionary<mixed> $dictionary
      * @param EntityDescription|null $superentity
      * @return EntityDescription
      */
@@ -129,7 +129,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             $entity->versionHashModifier = $dictionary["versionHashModifier"];
             /** @var ArrayClass<PropertyDescription> $properties */
             $properties = new ArrayClass();
-            /** @var ArrayClass<Dictionary>|null $attributes */
+            /** @var ArrayClass<Dictionary<mixed>>|null $attributes */
             $attributes = $dictionary["attributes"];
             if ($attributes) {
                 $properties->appendContentsOf($attributes->map(function (Dictionary $description) use ($entity): AttributeDescription {
@@ -171,7 +171,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                     return $attribute;
                 }));
             }
-            /** @var ArrayClass<Dictionary>|null $relationships */
+            /** @var ArrayClass<Dictionary<mixed>>|null $relationships */
             $relationships = $dictionary["relationships"];
             if ($relationships) {
                 $properties->appendContentsOf($relationships->map(function (Dictionary $description) use ($entity): RelationshipDescription {
@@ -191,7 +191,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                     return $relationship;
                 }));
             }
-            /** @var ArrayClass<Dictionary>|null $fetchedProperties */
+            /** @var ArrayClass<Dictionary<mixed>>|null $fetchedProperties */
             $fetchedProperties = $dictionary["fetchedProperties"];
             if ($fetchedProperties) {
                 $properties->appendContentsOf($fetchedProperties->map(function (Dictionary $description) use ($entity): FetchedPropertyDescription {
@@ -222,12 +222,12 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                 }));
             }
             $entity->properties = $properties;
-            /** @var Dictionary|null $superentity */
+            /** @var Dictionary<mixed>|null $superentity */
             $superentity = $dictionary["superentity"];
             if ($superentity) {
                 $entity->superentity = $this->newEntity($superentity);
             }
-            /** @var ArrayClass<Dictionary>|null $subentities */
+            /** @var ArrayClass<Dictionary<mixed>>|null $subentities */
             $subentities = $dictionary["subentities"];
             if ($subentities) {
                 $entity->subentities = $subentities->map(fn(Dictionary $description): EntityDescription => $this->newEntity($description, $entity));
@@ -235,7 +235,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
             /** @var ArrayClass<ArrayClass<string>> $uniquenessConstraints */
             $uniquenessConstraints = $dictionary["uniquenessConstraints"] ?? new ArrayClass();
             $entity->uniquenessConstraints = $uniquenessConstraints;
-            /** @var ArrayClass<Dictionary>|null $indexes */
+            /** @var ArrayClass<Dictionary<mixed>>|null $indexes */
             $indexes = $dictionary["indexes"];
             if ($indexes) {
                 $entity->indexes = $indexes->map(function (Dictionary $dictionary) use ($entity): FetchIndexDescription {
@@ -248,7 +248,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                     if ($partialIndexPredicateFormat) {
                         $fetchIndex->partialIndexPredicate = Predicate::format($partialIndexPredicateFormat);
                     }
-                    /** @var ArrayClass<Dictionary> $elements */
+                    /** @var ArrayClass<Dictionary<mixed>> $elements */
                     $elements = $dictionary["elements"] ?? new ArrayClass();
                     $fetchIndex->elements = $elements->map(function (Dictionary $dictionary) use ($name, $entity): FetchIndexElementDescription {
                         /** @var string|null $expressionFormat */
@@ -317,12 +317,12 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
 
     private function recreate(Dictionary $dictionary): void
     {
-        /** @var ArrayClass<Dictionary>|null $entities */
+        /** @var ArrayClass<Dictionary<mixed>>|null $entities */
         $entities = $dictionary["entities"];
         if ($entities) {
             $this->entities = $entities->map(fn(Dictionary $dictionary): EntityDescription => $this->newEntity($dictionary));
         }
-        /** @var ArrayClass<Dictionary>|null $fetchRequestTemplates */
+        /** @var ArrayClass<Dictionary<mixed>>|null $fetchRequestTemplates */
         $fetchRequestTemplates = $dictionary["fetchRequests"];
         if ($fetchRequestTemplates) {
             foreach ($fetchRequestTemplates as $fetchRequestTemplate) {
@@ -336,7 +336,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
                 }
             }
         }
-        /** @var ArrayClass<Dictionary>|null $configurations */
+        /** @var ArrayClass<Dictionary<mixed>>|null $configurations */
         $configurations = $dictionary["configurations"];
         if ($configurations) {
             foreach ($configurations as $configuration) {
@@ -368,7 +368,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     /**
      * Returns a merged model from a specified array for the version information in provided metadata.
      * @param ArrayClass<Bundle> $bundles An array of bundles.
-     * @param Dictionary $metadata A dictionary containing version information from the metadata for a persistent store.
+     * @param Dictionary<mixed> $metadata A dictionary containing version information from the metadata for a persistent store.
      * @return ManagedObjectModel|null The managed object model used to create the store for the metadata.
      * If a model cannot be created to match the version information specified by $metadata, it returns null.
      */
@@ -382,7 +382,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
      *
      * This is the companion method to {@see mergedModel()}.
      * @param ArrayClass<ManagedObjectModel> $models An array of ManagedObjectModel.
-     * @param Dictionary $metadata A dictionary containing version information from the metadata for a persistent store.
+     * @param Dictionary<mixed> $metadata A dictionary containing version information from the metadata for a persistent store.
      * @return ManagedObjectModel|null A merged model from $models for the version information in $metadata. If a model cannot be created to match the version information in $metadata, it returns null.
      */
     public static function merging(/** @noinspection PhpUnusedParameterInspection */ ArrayClass $models, Dictionary $metadata): ?ManagedObjectModel
@@ -482,7 +482,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
      * The $$substitutionVariables dictionary must provide values for all the variables.
      * This method provides the usual way to bind an “abstractly” defined fetch request template to a concrete fetch.
      * @param string $name A string containing the name of a fetch request template.
-     * @param Dictionary $substitutionVariables A dictionary containing key-value pairs where the keys are the names of variables specified in the template;
+     * @param Dictionary<mixed> $substitutionVariables A dictionary containing key-value pairs where the keys are the names of variables specified in the template;
      * the corresponding values are substituted before the fetch request is returned.
      * The dictionary must provide values for all the variables in the template.
      * @return FetchRequest|null A copy of the fetch request template with the variables substituted by values from variables.
@@ -518,7 +518,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
      * This method compares the version information in the store metadata with the entity versions of a given configuration.
      * For information on specific differences, use {@see entityVersionHashesByName} and perform an entity-by-entity comparison.
      * @param string|null $configuration The name of a configuration in the receiver. Pass null to specify no configuration.
-     * @param Dictionary $metadata Metadata for a persistent store.
+     * @param Dictionary<mixed> $metadata Metadata for a persistent store.
      * @return bool true if the configuration in the receiver specified by configuration is compatible with the store metadata given by metadata, otherwise false.
      */
     public function isConfigurationCompatibleWithStoreMetadata(?string $configuration, Dictionary $metadata): bool
@@ -556,7 +556,7 @@ class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Count
     #[Override]
     public function jsonSerialize(): Dictionary
     {
-        /** @var Dictionary<ArrayClass<Dictionary>> $dictionary */
+        /** @var Dictionary<ArrayClass<Dictionary<mixed>>> $dictionary */
         $dictionary = new Dictionary();
         $dictionary["entities"] = $this->entitiesByName->filter(fn(EntityDescription $entity): bool => !$entity->isPersistentHistoryEntity && $entity->isRootEntity)->map(fn(EntityDescription $entity): Dictionary => $entity->jsonSerialize());
         $dictionary["fetchRequests"] = $this->fetchRequestTemplatesByName->mapValues(fn(FetchRequest $fetchRequest, string $templateName): Dictionary => new Dictionary(["name" => $templateName, "entityName" => $fetchRequest->entityName, "predicateString" => $fetchRequest->predicate?->predicateFormat, "resultType" => $fetchRequest->resultType !== FetchRequestResultType::managedObjectResultType ? $fetchRequest->resultType->value : null]))->values;

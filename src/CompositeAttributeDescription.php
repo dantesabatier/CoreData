@@ -32,7 +32,7 @@ class CompositeAttributeDescription extends AttributeDescription
     public function versionHashInStyle(?string &$out, VersionHashStyle $style): void
     {
         parent::versionHashInStyle($data, $style);
-        /** @var Dictionary $dictionary */
+        /** @var Dictionary<mixed> $dictionary */
         $dictionary = KeyedUnarchiver::unarchiveTopLevelObjectWithData((string)$data);
         $dictionary["elements"] = $this->elements->map(function (AttributeDescription $element) use ($style): Dictionary {
             $element->versionHashInStyle($data, $style);

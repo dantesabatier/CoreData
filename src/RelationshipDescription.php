@@ -73,7 +73,7 @@ class RelationshipDescription extends PropertyDescription
     public function versionHashInStyle(?string &$out, VersionHashStyle $style): void
     {
         parent::versionHashInStyle($data, $style);
-        /** @var Dictionary $dictionary */
+        /** @var Dictionary<mixed> $dictionary */
         $dictionary = KeyedUnarchiver::unarchiveTopLevelObjectWithData((string)$data);
         if ($this->deleteRule !== DeleteRule::nullifyDeleteRule) {
             $dictionary["deleteRule"] = $this->deleteRule->value;

@@ -24,7 +24,7 @@ use function Sabatier\Foundation\human_readable_value;
  */
 class MergeConflict extends ObjectClass
 {
-    /** @var Dictionary A dictionary containing the values of the source object. */
+    /** @var Dictionary<mixed> A dictionary containing the values of the source object. */
     private(set) Dictionary $objectSnapshot {
         get => $this->objectSnapshot ??= $this->sourceObject->dictionaryWithValues($this->sourceObject->persistentProperties->map(fn(PropertyDescription $property): string => $property->name));
     }
@@ -37,8 +37,8 @@ class MergeConflict extends ObjectClass
      * @param ManagedObject $sourceObject The source object for the conflict.
      * @param int $newVersionNumber The new version number for the change. A value of 0 means the object was deleted and the corresponding snapshot is null.
      * @param int $oldVersionNumber The old version number for the change.
-     * @param Dictionary|null $cachedSnapshot A dictionary containing the values of sourceObject held in the persistent store coordinator layer.
-     * @param Dictionary|null $persistedSnapshot A dictionary containing the values of sourceObject held in the persistent store.
+     * @param Dictionary<mixed>|null $cachedSnapshot A dictionary containing the values of sourceObject held in the persistent store coordinator layer.
+     * @param Dictionary<mixed>|null $persistedSnapshot A dictionary containing the values of sourceObject held in the persistent store.
      */
     public function __construct(public readonly ManagedObject $sourceObject, public readonly int $newVersionNumber, public readonly int $oldVersionNumber, public readonly ?Dictionary $cachedSnapshot = null, public readonly ?Dictionary $persistedSnapshot = null)
     {

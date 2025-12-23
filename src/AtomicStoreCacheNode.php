@@ -18,7 +18,7 @@ use Sabatier\Foundation\ObjectClass;
  */
 class AtomicStoreCacheNode extends ObjectClass
 {
-    /** @var Dictionary The property cache dictionary of the node. */
+    /** @var Dictionary<mixed> The property cache dictionary of the node. */
     public Dictionary $propertyCache;
 
     /**

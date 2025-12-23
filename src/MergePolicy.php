@@ -155,8 +155,8 @@ class MergePolicy extends ObjectClass
      * @param ArrayClass<MergeConflict|ConstraintConflict> $conflictList
      * @param MergeConflict|ConstraintConflict $conflict
      * @param ManagedObject $sourceObject
-     * @param Dictionary $cachedSnapshot
-     * @param Dictionary $persistedSnapshot
+     * @param Dictionary<mixed> $cachedSnapshot
+     * @param Dictionary<mixed> $persistedSnapshot
      * @return void
      */
     private function process(ArrayClass $conflictList, MergeConflict|ConstraintConflict $conflict, ManagedObject $sourceObject, Dictionary $cachedSnapshot, Dictionary $persistedSnapshot): void

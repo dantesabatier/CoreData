@@ -36,7 +36,7 @@ class MigrationManager extends ObjectClass
     private(set) MappingModel $mappingModel;
     /** @var ManagedObjectContext The managed object context the migration manager uses for reading the source persistent store. This context is created on demand as part of the initialization of the Core Data stacks used for migration. */
     private(set) ManagedObjectContext $sourceContext;
-    /** @var Dictionary|null The user info for the migration manager. */
+    /** @var Dictionary<mixed>|null The user info for the migration manager. */
     public ?Dictionary $userInfo = null;
     /** @var bool A Boolean value that indicates whether the migration manager tries to use a store-specific migration manager to perform the migration. */
     public bool $usesStoreSpecificMigrationManager = true;
@@ -268,11 +268,11 @@ class MigrationManager extends ObjectClass
      * This method performs compatibility checks on the source and destination models and the mapping model.
      * @param URL $sourceURL The location of an existing persistent store. A store must exist at this URL.
      * @param PersistentStoreType $sourceType The type of store at sourceURL (see {@see PersistentStoreCoordinator} for possible values).
-     * @param Dictionary|null $sourceOptions A dictionary of options for the source (see {@see PersistentStoreCoordinator} for possible values).
+     * @param Dictionary<mixed>|null $sourceOptions A dictionary of options for the source (see {@see PersistentStoreCoordinator} for possible values).
      * @param MappingModel $mappingModel The mapping model to use to affect the migration.
      * @param URL $destinationURL The location of the destination store.
      * @param PersistentStoreType $destinationType The type of store at dURL (see {@see PersistentStoreCoordinator} for possible values).
-     * @param Dictionary|null $destinationOptions A dictionary of options for the destination (see {@see PersistentStoreCoordinator} for possible values).
+     * @param Dictionary<mixed>|null $destinationOptions A dictionary of options for the destination (see {@see PersistentStoreCoordinator} for possible values).
      * @return bool true if the migration proceeds without errors during the compatibility checks or migration, otherwise false.
      * @throws Exception If an error occurs during the validation or migration, upon return contains an error object that describes the problem.
      */

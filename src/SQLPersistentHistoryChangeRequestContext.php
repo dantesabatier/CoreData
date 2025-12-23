@@ -141,7 +141,7 @@ class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
 
     private function transactionFromResult(Dictionary $dictionary): PersistentHistoryTransaction
     {
-        /** @var Set<Dictionary>|null $changes */
+        /** @var Set<Dictionary<mixed>>|null $changes */
         $changes = $dictionary["changes"];
         if ($changes) {
             $dictionary["changes"] = new ArrayClass($changes->compactMap($this->changeFromResult(...)));

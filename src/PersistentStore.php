@@ -27,7 +27,7 @@ abstract class PersistentStore extends ObjectClass
     public string $identifier {
         get => $this->identifier ??= new UUID()->uuidString;
     }
-    /** @var Dictionary The metadata for the persistent store. The dictionary must include the store type. */
+    /** @var Dictionary<mixed> The metadata for the persistent store. The dictionary must include the store type. */
     public Dictionary $metadata {
         get => $this->metadata ??= new Dictionary([StoreTypeKey => $this->type, StoreUUIDKey => $this->identifier]);
     }
@@ -49,7 +49,7 @@ abstract class PersistentStore extends ObjectClass
      * @param PersistentStoreCoordinator $persistentStoreCoordinator A persistent store coordinator.
      * @param string $configurationName The name of the managed object model configuration to use.
      * @param URL $url The URL of the store to load.
-     * @param Dictionary|null $options A dictionary containing configuration options.
+     * @param Dictionary<mixed>|null $options A dictionary containing configuration options.
      * @see PersistentStoreCoordinator for a list of key names for options in this dictionary.
      */
     public function __construct(public readonly PersistentStoreCoordinator $persistentStoreCoordinator, public readonly string $configurationName, public URL $url, private(set) ?Dictionary $options = null {
@@ -212,7 +212,7 @@ abstract class PersistentStore extends ObjectClass
      * Returns the metadata from the persistent store at the given URL.
      * Subclasses must override this method.
      * @param URL $url The location of the store.
-     * @return Dictionary The metadata from the persistent store at url.
+     * @return Dictionary<mixed> The metadata from the persistent store at url.
      * @throws Exception If an error occurs, upon return contains an error that describes the problem.
      */
     public static function metadataForPersistentStore(/** @noinspection PhpUnusedParameterInspection */ URL $url): Dictionary
@@ -223,7 +223,7 @@ abstract class PersistentStore extends ObjectClass
     /**
      * Sets the metadata for the store at a given URL.
      * Subclasses must override this method to set metadata appropriately.
-     * @param Dictionary|null $metadata The metadata for the store at url.
+     * @param Dictionary<mixed>|null $metadata The metadata for the store at url.
      * @param URL $url The location of the store.
      * @return bool true if the metadata was written correctly, otherwise false.
      * @throws Exception

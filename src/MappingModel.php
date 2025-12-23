@@ -60,9 +60,9 @@ class MappingModel extends ObjectClass
     {
         if ($url) {
             //FIXME: implement url loading, test it and improve it
-            /** @var Dictionary $dictionary */
+            /** @var Dictionary<mixed> $dictionary */
             $dictionary = PropertyListSerialization::propertyListWithURL($url);
-            /** @var ArrayClass<Dictionary>|null $entities */
+            /** @var ArrayClass<Dictionary<mixed>>|null $entities */
             $entities = $dictionary["entities"];
             if ($entities) {
                 $this->entityMappings = $entities->map(function (Dictionary $dictionary): EntityMapping {
@@ -88,12 +88,12 @@ class MappingModel extends ObjectClass
                     if ($mappingType) {
                         $mapping->mappingType = EntityMappingType::from($mappingType);
                     }
-                    /** @var ArrayClass<Dictionary>|null $attributes */
+                    /** @var ArrayClass<Dictionary<mixed>>|null $attributes */
                     $attributes = $dictionary["attributes"];
                     if ($attributes) {
                         $mapping->attributeMappings = $attributes->map($transform);
                     }
-                    /** @var ArrayClass<Dictionary>|null $relationships */
+                    /** @var ArrayClass<Dictionary<mixed>>|null $relationships */
                     $relationships = $dictionary["relationships"];
                     if ($relationships) {
                         $mapping->relationshipMappings = $relationships->map($transform);

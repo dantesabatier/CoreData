@@ -121,7 +121,7 @@ class XMLObjectStore extends AtomicStore
             $entityName = $element->getAttribute("name");
             $entity = $this->entitiesForConfiguration[$entityName];
             assert($entity instanceof EntityDescription);
-            /** @var Dictionary $info */
+            /** @var Dictionary<mixed> $info */
             $info = $this->xmlInfo[$entity->name] ?? new Dictionary();
             $cacheNode = $this->createCacheNodeFromXMLElement($element);
             $attributeElements = $element->getElementsByTagName("attribute");

@@ -119,8 +119,8 @@ class PersistentStoreCoordinator extends ObjectClass
      * Returns metadata for a specific type of persistent store at the provided location.
      * @param PersistentStoreType $storeType The store type.
      * @param URL $storeURL The store's location.
-     * @param Dictionary|null $options A dictionary containing key-value pairs that specify store behavior and characteristics.
-     * @return Dictionary
+     * @param Dictionary<mixed>|null $options A dictionary containing key-value pairs that specify store behavior and characteristics.
+     * @return Dictionary<mixed>
      * @throws Exception
      */
     public static function metadataForPersistentStore(/** @noinspection PhpUnusedParameterInspection */ PersistentStoreType $storeType, URL $storeURL, ?Dictionary $options = null): Dictionary
@@ -132,10 +132,10 @@ class PersistentStoreCoordinator extends ObjectClass
 
     /**
      * Adds metadata to a specific type of persistent store at the provided location.
-     * @param Dictionary|null $metadata A dictionary that contains the metadata to associate with the store.
+     * @param Dictionary<mixed>|null $metadata A dictionary that contains the metadata to associate with the store.
      * @param PersistentStoreType $storeType The store type.
      * @param URL $storeURL The store's location.
-     * @param Dictionary|null $options A dictionary containing key-value pairs that specify store behavior and characteristics. {@see StoreOptions.php}
+     * @param Dictionary<mixed>|null $options A dictionary containing key-value pairs that specify store behavior and characteristics. {@see StoreOptions.php}
      * @throws Exception
      */
     public static function setMetadataForPersistentStore(?Dictionary $metadata, PersistentStoreType $storeType, URL $storeURL, ?Dictionary $options = null): void
@@ -151,7 +151,7 @@ class PersistentStoreCoordinator extends ObjectClass
     /**
      * Returns a dictionary that contains the metadata currently stored and that will be stored in a given persistent store.
      * @param PersistentStore $store A persistent store.
-     * @return Dictionary A dictionary that contains the metadata currently stored or to-be-stored in store.
+     * @return Dictionary<mixed> A dictionary that contains the metadata currently stored or to-be-stored in store.
      * @throws Exception
      */
     public function metadata(PersistentStore $store): Dictionary
@@ -161,7 +161,7 @@ class PersistentStoreCoordinator extends ObjectClass
 
     /**
      * Sets the metadata stored in the persistent store during the next save operation executed on it to metadata.
-     * @param Dictionary $metadata A dictionary containing metadata for the store.
+     * @param Dictionary<mixed> $metadata A dictionary containing metadata for the store.
      * @param PersistentStore $store A persistent store.
      * The store type and UUID ({@see StoreTypeKey} and {@see StoreUUIDKey}) are always added automatically, however {@see StoreUUIDKey} is only added if it is not set manually as part of the dictionary argument.
      * Setting the metadata for a store does not change the information on disk until the store is actually saved.
@@ -178,7 +178,7 @@ class PersistentStoreCoordinator extends ObjectClass
      * @param string|null $configuration The name of a configuration in the receiver's managed object model that will be used by the new store.
      * The configuration can be null, in which case no other configurations are allowed.
      * @param URL $storeURL The file location of the persistent store.
-     * @param Dictionary|null $options A dictionary containing key-value pairs that specify whether the store should be read-only and whether (for an XML store) the XML file should be validated against the DTD before it is read.
+     * @param Dictionary<mixed>|null $options A dictionary containing key-value pairs that specify whether the store should be read-only and whether (for an XML store) the XML file should be validated against the DTD before it is read.
      * For key definitions, see {@see IgnorePersistentStoreVersioningOption}, {@see MigratePersistentStoresAutomaticallyOption}, {@see InferMappingModelAutomaticallyOption}, {@see ReadOnlyPersistentStoreOption}, {@see ValidateXMLStoreOption}, {@see PersistentStoreTimeoutOption}. This value may be null.
      * @return PersistentStore
      * @throws Exception If a new store cannot be created, upon return contains an error that describes the problem
@@ -233,7 +233,7 @@ class PersistentStoreCoordinator extends ObjectClass
      * Deletes (or truncates) the target persistent store in accordance with the store class' requirements.
      * @param URL $url The location of the store.
      * @param PersistentStoreType $type The type of the persistent store.
-     * @param Dictionary|null $options The options of the persistent store.
+     * @param Dictionary<mixed>|null $options The options of the persistent store.
      * @return bool true on success; otherwise false.
      * @throws Exception
      */
@@ -252,7 +252,7 @@ class PersistentStoreCoordinator extends ObjectClass
      * After invocation of this method, the specified store is removed from the coordinator, thus store is no longer a useful reference.
      * @param PersistentStore $store A persistent store.
      * @param URL $destinationURL A URL object that specifies the location for the new store.
-     * @param Dictionary|null $destinationOptions A dictionary containing key value pairs that specify whether the store should be read-only and whether (for an XML store) the XML file should be validated against the DTD before it is read.
+     * @param Dictionary<mixed>|null $destinationOptions A dictionary containing key value pairs that specify whether the store should be read-only and whether (for an XML store) the XML file should be validated against the DTD before it is read.
      * @param PersistentStoreType $destinationType The new store type.
      * @return PersistentStore|null If the migration is successful, the new store, otherwise null.
      * @throws Exception
@@ -304,9 +304,9 @@ class PersistentStoreCoordinator extends ObjectClass
     /**
      * Replace the destination persistent store with the source store.
      * @param URL $destinationURL A URL object that specifies the location for the new store.
-     * @param Dictionary|null $destinationOptions A dictionary containing key value pairs that specify whether the store should be read-only and whether (for an XML store) the XML file should be validated against the DTD before it is read.
+     * @param Dictionary<mixed>|null $destinationOptions A dictionary containing key value pairs that specify whether the store should be read-only and whether (for an XML store) the XML file should be validated against the DTD before it is read.
      * @param URL $sourceURL A URL object that specifies the location of a persistent store.
-     * @param Dictionary|null $sourceOptions A dictionary.
+     * @param Dictionary<mixed>|null $sourceOptions A dictionary.
      * @param PersistentStoreType $storeType The store type of the replacement store.
      */
     public function replacePersistentStore(URL $destinationURL, ?Dictionary $destinationOptions, URL $sourceURL, ?Dictionary $sourceOptions, PersistentStoreType $storeType): void
@@ -320,7 +320,7 @@ class PersistentStoreCoordinator extends ObjectClass
      * Sends a request to all the persistent stores associated with the coordinator.
      * @param PersistentStoreRequest $request A fetch or save request.
      * @param ManagedObjectContext $context The context against which $request should be executed.
-     * @return ArrayClass<ManagedObject|ManagedObjectID|Dictionary|Number>|ArrayClass<ArrayClass<ManagedObject|ManagedObjectID|Dictionary|Number>> An array containing managed objects, managed object IDs, or dictionaries as appropriate for a fetch request; an empty array if $request is a save request, or null if an error occurred.
+     * @return ArrayClass<ManagedObject|ManagedObjectID|Dictionary<mixed>|Number>|ArrayClass<ArrayClass<ManagedObject|ManagedObjectID|Dictionary|Number>> An array containing managed objects, managed object IDs, or dictionaries as appropriate for a fetch request; an empty array if $request is a save request, or null if an error occurred.
      * User-defined requests return arrays of arrays, where a nested array is the result returned from a single store.
      * @throws Exception If an error occurs, upon return contains an error object that describes the problem.
      */

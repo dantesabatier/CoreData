@@ -23,7 +23,7 @@ abstract class PropertyDescription extends ObjectClass
     public string $name = UnknownName;
     /** @var EntityDescription The entity description of the receiver. */
     public EntityDescription $entity;
-    /** @var Dictionary|null The user info dictionary of the receiver. */
+    /** @var Dictionary<mixed>|null The user info dictionary of the receiver. */
     public ?Dictionary $userInfo = null;
     /** @var bool A Boolean value that indicates whether the receiver is optional. The optionality flag specifies whether a property's value can be null before an object can be saved to a persistent store. */
     public bool $isOptional = true;

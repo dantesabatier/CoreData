@@ -294,7 +294,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * Returns a dictionary containing the keys and new values of persistent properties with changes since the last fetching or saving of the managed object.
      *
      * This method only reports changes to properties that are persistent properties of the receiver, not changes to transient properties or custom instance variables.
-     * @return Dictionary A dictionary with keys that are the names of persistent properties with changes since last fetching or saving the receiver, and with the new values for those properties.
+     * @return Dictionary<mixed> A dictionary with keys that are the names of persistent properties with changes since last fetching or saving the receiver, and with the new values for those properties.
      */
     public function changedValues(): Dictionary
     {
@@ -306,7 +306,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * Returns a dictionary containing the keys and new values of persistent properties with changes since the last fetching or saving of the managed object.
      *
      * This method only reports changes to properties that are persistent properties of the receiver, not changes to transient properties or custom instance variables.
-     * @return Dictionary A dictionary with keys that are the names of persistent properties with changes since the last posting of {@see ManagedObjectContextObjectsDidChange}, and with the new values for those properties.
+     * @return Dictionary<mixed> A dictionary with keys that are the names of persistent properties with changes since the last posting of {@see ManagedObjectContextObjectsDidChange}, and with the new values for those properties.
      */
     public function changedValuesForCurrentEvent(): Dictionary
     {
@@ -323,7 +323,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * </code>
      * It is more efficient to use null than to pass an array of all the property keys.
      * @param ArrayClass<string>|null $keys An array containing names of properties, or null.
-     * @return Dictionary A dictionary containing the last fetched or saved values of the receiver for the properties specified by keys.
+     * @return Dictionary<mixed> A dictionary containing the last fetched or saved values of the receiver for the properties specified by keys.
      */
     public function committedValuesForKeys(?ArrayClass $keys): Dictionary
     {

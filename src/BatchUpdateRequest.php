@@ -20,7 +20,7 @@ class BatchUpdateRequest extends PersistentStoreRequest
 {
     /** @var Predicate|null A predicate that identifies the objects to update. */
     public ?Predicate $predicate = null;
-    /** @var Dictionary|null A dictionary of property description pairs that describe the updates. */
+    /** @var Dictionary<mixed>|null A dictionary of property description pairs that describe the updates. */
     public ?Dictionary $propertiesToUpdate = null;
     /** @var bool A Boolean value that indicates whether to update subentities. */
     public bool $includesSubentities = true;

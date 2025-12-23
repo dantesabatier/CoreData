@@ -61,7 +61,7 @@ class EntityMapping extends ObjectClass
     public ?ArrayClass $attributeMappings = null;
     /** @var ArrayClass<PropertyMapping>|null The array of relationship mappings for the entity mapping. The order of mappings in the array specifies the order in which the mappings will be processed during a migration. */
     public ?ArrayClass $relationshipMappings = null;
-    /** @var Dictionary|null The user info dictionary for the entity mapping. You can use the info dictionary in any way that might be useful in your migration. */
+    /** @var Dictionary<mixed>|null The user info dictionary for the entity mapping. You can use the info dictionary in any way that might be useful in your migration. */
     public ?Dictionary $userInfo = null;
     public string $description {
         get => sprintf("<%s %s %s>", $this->class, $this->name, $this->hash);

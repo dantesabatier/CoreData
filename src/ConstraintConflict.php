@@ -16,7 +16,7 @@ use function Sabatier\Foundation\human_readable_value;
  */
 class ConstraintConflict extends ObjectClass
 {
-    /** @var Dictionary The values that the conflicting objects had when the conflict was created. */
+    /** @var Dictionary<mixed> The values that the conflicting objects had when the conflict was created. */
     private(set) Dictionary $constraintValues {
         get => $this->constraintValues ??= $this->conflictingObjects->first?->dictionaryWithValues($this->constraint) ?? new Dictionary();
     }
@@ -28,9 +28,9 @@ class ConstraintConflict extends ObjectClass
      * Initializes a constraint conflict.
      * @param ArrayClass<string> $constraint The constraint that has been violated.
      * @param ManagedObject|null $databaseObject The object whose database row is using constraint values.
-     * @param Dictionary|null $databaseSnapshot The values currently stored in the database.
+     * @param Dictionary<mixed>|null $databaseSnapshot The values currently stored in the database.
      * @param ArrayClass<ManagedObject> $conflictingObjects The managed objects that are in conflict.
-     * @param ArrayClass<Dictionary> $conflictingSnapshots The original property values of objects in violation of the constraint.
+     * @param ArrayClass<Dictionary<mixed>> $conflictingSnapshots The original property values of objects in violation of the constraint.
      */
     public function __construct(public readonly ArrayClass $constraint, public readonly ?ManagedObject $databaseObject, public readonly ?Dictionary $databaseSnapshot, public readonly ArrayClass $conflictingObjects, public readonly ArrayClass $conflictingSnapshots)
     {

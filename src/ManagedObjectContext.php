@@ -52,7 +52,7 @@ class ManagedObjectContext extends ObjectClass
             $this->persistentStoreCoordinator = $value;
             NotificationCenter::default()->removeObserver($this, PersistentStoreCoordinatorWillRemoveStore);
             NotificationCenter::default()->addObserverForName(PersistentStoreCoordinatorWillRemoveStore, $value, function (Notification $notification): void {
-                /** @var Dictionary $userInfo */
+                /** @var Dictionary<mixed> $userInfo */
                 $userInfo = $notification->userInfo;
                 /** @var ArrayClass<PersistentStore> $stores */
                 $stores = $userInfo[RemovedPersistentStoresKey];
@@ -73,7 +73,7 @@ class ManagedObjectContext extends ObjectClass
     public ?ManagedObjectContext $parent = null;
     /** @var string|null The developer-provided name of the context. */
     public ?string $name = null;
-    /** @var Dictionary The user information for the context. */
+    /** @var Dictionary<mixed> The user information for the context. */
     private(set) Dictionary $userInfo {
         get => $this->userInfo ??= new Dictionary();
     }

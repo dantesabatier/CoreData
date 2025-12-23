@@ -19,7 +19,7 @@ use Sabatier\Foundation\Predicates\Expression;
  */
 class PropertyMapping extends ObjectClass
 {
-    /** @var Dictionary|null The user info for the property mapping. */
+    /** @var Dictionary<mixed>|null The user info for the property mapping. */
     public ?Dictionary $userInfo = null;
     public string $description {
         get => sprintf("<%s %s %s>", $this->class, $this->name, $this->hash);

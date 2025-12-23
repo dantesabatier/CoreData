@@ -497,7 +497,7 @@ class SQLGenerator extends ObjectClass
     /**
      * @return ArrayClass<string>
      */
-    private function generateColumnNames(SQLEntity $currentEntity, string $joinedTableAlias, mixed $nestedSerialization): ArrayClass
+    private function generateColumnNames(SQLEntity $currentEntity, string $joinedTableAlias, ?Dictionary $nestedSerialization): ArrayClass
     {
         $columnNames = $currentEntity->columnsToFetch->map(fn(SQLColumn $column): string => "$joinedTableAlias.$column->columnName AS {$joinedTableAlias}_$column->columnName");
         if ($nestedSerialization instanceof Dictionary) {
@@ -575,7 +575,7 @@ class SQLGenerator extends ObjectClass
             $this->addJoinForRelationship($relationship, $parentTableAlias, $joinedTableAlias);
             $currentEntity = $relationship->destinationEntity;
             if ($this->request->resultType !== FetchRequestResultType::countResultType) {
-                /** @var Dictionary|mixed $nestedSerialization */
+                /** @var Dictionary<mixed>|null $nestedSerialization */
                 $nestedSerialization = $currentSerialization[$name];
                 $columnNames = $this->generateColumnNames($currentEntity, $joinedTableAlias, $nestedSerialization);
                 $this->appendUniqueColumnsToSelectList($columnNames);
@@ -1449,7 +1449,7 @@ class SQLGenerator extends ObjectClass
     {
         /** @var ArrayClass<mixed> $arguments */
         $arguments = new ArrayClass();
-        /** @var Dictionary $propertiesToUpdate */
+        /** @var Dictionary<mixed> $propertiesToUpdate */
         $propertiesToUpdate = $request->propertiesToUpdate;
         $this->string .= " SET {$propertiesToUpdate->map(function (mixed $value, string $key) use (&$arguments): string {
                 if (is_string($value)) {
