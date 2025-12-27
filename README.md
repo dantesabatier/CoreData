@@ -27,16 +27,26 @@ composer require sabatier/foundation:dev-master
 ### Basic Fetching and Saving
 
 ```php
-use Sabatier\CoreData\ManagedObjectContext;
+use Sabatier\Foundation\Bundle;
+use Sabatier\Foundation\Date;
+use Sabatier\Foundation\Error;
+use Sabatier\CoreData\PersistentContainer;
+use Sabatier\CoreData\PersistentStoreDescription;
 use Sabatier\CoreData\FetchRequest;
 
 // 1. Initialize the context
-$context = new ManagedObjectContext();
-$context->persistentStoreCoordinator = $myCoordinator;
+$name = Bundle::main()->object(kCFBundleNameKey);
+$container = new PersistentContainer($name);
+$container->loadPersistentStores(function (PersistentStoreDescription $description, ?Error $error): void {
+    if ($error) {
+        fatal_error("Unable to load persistent stores: $error");
+    }
+});
+$context = $container->viewContext;
 
 // 2. Prepare a fetch request with batching
 $fetchRequest = new FetchRequest();
-$fetchRequest->entity = $model->entitiesByName['Employee'];
+$fetchRequest->entity = EntitityDescription::entity("Employee", $context);
 $fetchRequest->fetchBatchSize = 50;
 
 // 3. Execute fetch (returns a BatchFaultingArray)
@@ -45,7 +55,7 @@ $employees = $context->fetch($fetchRequest);
 foreach ($employees as $employee) {
     echo $employee->lastName;
     // Objects are automatically turned from faults into realized objects here
-    $employee->lastAccessDate = now(); 
+    $employee->lastAccessDate = new Date(); 
 }
 
 // 4. Persist changes
