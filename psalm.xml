@@ -14,14 +14,21 @@
         <InaccessibleProperty errorLevel="suppress"/>
         <InvalidArgument>
             <errorLevel type="suppress">
+                <file name="src/EntityMigrationPolicy.php"/>
                 <file name="src/FaultingSetMutationMethods.php"/>
                 <file name="src/ManagedObject.php"/>
                 <file name="src/ManagedObjectModel.php"/>
+                <file name="src/MigrationManager.php"/>
                 <file name="src/PersistentStoreCoordinator.php"/>
                 <file name="src/SQLFetchRequestContext.php"/>
                 <file name="src/SQLGenerator.php"/>
             </errorLevel>
         </InvalidArgument>
+        <InvalidReturnType>
+            <errorLevel type="suppress">
+                <file name="src/PersistentStore.php"/>
+            </errorLevel>
+        </InvalidReturnType>
         <PossiblyNullReference>
             <errorLevel type="suppress">
                 <file name="src/XMLObjectStore.php"/>
