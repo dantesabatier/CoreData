@@ -78,3 +78,7 @@ The framework is designed as a multi-layered stack that separates the object gra
 ### 4. Performance Mechanisms
 - **`FaultHandler`**: Automatically manages "Faulting." It keeps the application's memory usage low by creating "hollow" objects that only load their full data when a property is actually accessed.
 - **`BatchFaultingArray`**: A specialized collection that enables seamless iteration over massive result sets. It fetches data in batches, ensuring that only the necessary objects are in memory at any given time.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE.md` file for details.
