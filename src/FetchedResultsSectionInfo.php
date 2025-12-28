@@ -19,7 +19,7 @@ class FetchedResultsSectionInfo
      * @param ArrayClass $objects The array of objects in the section.
      * @param string|null $indexTitle The index title of the section.
      */
-    public function __construct(public readonly string $name, public readonly ArrayClass $objects, public ?string $indexTitle)
+    public function __construct(public readonly string $name, public readonly ArrayClass $objects, public ?string $indexTitle = null)
     {
     }
 }

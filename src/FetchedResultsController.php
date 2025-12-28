@@ -4,24 +4,30 @@ namespace Sabatier\CoreData;
 
 use Exception;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\IndexPath;
+use Sabatier\Foundation\Notification;
+use Sabatier\Foundation\NotificationCenter;
 use Sabatier\Foundation\ObjectClass;
-use Sabatier\Foundation\SortDescriptor;
-use function Sabatier\Foundation\fatal_error;
+use Sabatier\Foundation\Set;
 use const Sabatier\Foundation\NotFound;
 
 /**
  * A controller that you use to manage the results of a Core Data fetch request and to display data to the user.
- * @template ResultType
+ * @template ResultType of ManagedObject
  */
 class FetchedResultsController extends ObjectClass
 {
     /** @var FetchedResultsControllerDelegate|null The object that is notified when the fetched results changed. If you do not specify a delegate, the controller does not track changes to managed objects associated with its managed object context. */
     public ?FetchedResultsControllerDelegate $delegate = null;
     /** @var ArrayClass<ResultType> The results of the fetch. The results array only includes instances of the entity specified by the fetch request (fetchRequest) and that match its predicate. (If the fetch request has no predicate, then the results array includes all instances of the entity specified by the fetch request.) The results array reflects the in-memory state of managed objects in the controller's managed object context, not their state in the persistent store. The returned array does not, however, update as managed objects are inserted, modified, or deleted. */
-    private(set) ArrayClass $fetchedObjects;
+    private(set) ArrayClass $fetchedObjects {
+        get => $this->fetchedObjects ??= new ArrayClass();
+    }
     /** @var ArrayClass<FetchedResultsSectionInfo> The sections for the fetch results. */
-    private(set) ArrayClass $sections;
+    private(set) ArrayClass $sections {
+        get => $this->sections ??= new ArrayClass();
+    }
     /** @var ArrayClass<string> The array of section index titles. The default implementation returns the array created by calling {@see sectionIndexTitle()} on all the known sections. You should override this method if you want to return a different array for the section index. You only need this method if you use a section index. */
     public ArrayClass $sectionIndexTitles {
         get => $this->sections->map(fn(FetchedResultsSectionInfo $section): string => (string)$section->indexTitle);
@@ -36,8 +42,77 @@ class FetchedResultsController extends ObjectClass
      */
     public function __construct(public readonly FetchRequest $fetchRequest, public readonly ManagedObjectContext $managedObjectContext, public readonly ?string $sectionNameKeyPath = null, public readonly ?string $cacheName = null)
     {
-        $this->fetchedObjects = new ArrayClass();
-        $this->sections = new ArrayClass();
+        NotificationCenter::default()->addObserverForName(ManagedObjectContext::didChangeObjectsNotification, $this->managedObjectContext, function (Notification $notification): void {
+            $this->processManagedObjectContextChanges($notification);
+        });
+    }
+
+    /**
+     * @param ArrayClass<ResultType> $objects
+     * @param string $keyPath
+     * @return ArrayClass<FetchedResultsSectionInfo>
+     */
+    private function buildSections(ArrayClass $objects, string $keyPath): ArrayClass
+    {
+        return $objects->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<FetchedResultsSectionInfo> $initialResult
+             * @param ResultType $object
+             * @return Dictionary<FetchedResultsSectionInfo>
+             */
+            function (Dictionary $initialResult, mixed $object) use ($keyPath): Dictionary {
+                $sectionName = $object->valueForKeyPath($keyPath) ?? "";
+                /** @var FetchedResultsSectionInfo $sectionInfo */
+                $sectionInfo = $initialResult[$sectionName] ?? new FetchedResultsSectionInfo($sectionName, new ArrayClass());
+                $sectionInfo->objects->append($object);
+                $initialResult[$sectionName] = $sectionInfo;
+                return $initialResult;
+            })->values;
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function processManagedObjectContextChanges(Notification $notification): void
+    {
+        /** @var Dictionary<Set<ResultType>> $userInfo */
+        $userInfo = $notification->userInfo ?? new Dictionary();
+        /** @var Set<ResultType> $inserted */
+        $inserted = $userInfo[InsertedObjectsKey] ?? new Set();
+        /** @var Set<ResultType> $updated */
+        $updated = $userInfo[UpdatedObjectsKey] ?? new Set();
+        /** @var Set<ResultType> $deleted */
+        $deleted = $userInfo[DeletedObjectsKey] ?? new Set();
+        /** @var ArrayClass<ResultType> $affected */
+        $affected= new ArrayClass($inserted);
+        $affected->appendContentsOf($updated);
+        $affected->appendContentsOf($deleted);
+        $affected = $affected->filter(
+        /**
+         * @param ResultType $object
+         * @return bool
+         */
+            fn(mixed $object): bool => $object->entity->name === $this->fetchRequest->entityName);
+        if ($affected->isEmpty) {
+            return;
+        }
+        $oldFetched = $this->fetchedObjects;
+        $newFetched = $oldFetched->filter(
+        /**
+         * @param ResultType $object
+         * @return bool
+         */
+            fn(mixed $object): bool => !$deleted->containsElement($object));
+        $newFetched->appendContentsOf($inserted);
+        if ($sortDescriptors = $this->fetchRequest->sortDescriptors) {
+            $newFetched = $newFetched->sorted($sortDescriptors);
+        }
+        $difference = $newFetched->difference($oldFetched)->inferringMoves();
+        $this->fetchedObjects = $newFetched;
+        if ($this->sectionNameKeyPath !== null) {
+            $this->sections = $this->buildSections($newFetched, $this->sectionNameKeyPath);
+        }
+        $this->delegate?->controllerDidChangeContentWithDifference($this, $difference);
     }
 
     /**
@@ -51,10 +126,11 @@ class FetchedResultsController extends ObjectClass
     {
         $sectionNameKeyPath = $this->sectionNameKeyPath ?? "";
         $this->fetchedObjects = $this->managedObjectContext->fetch($this->fetchRequest);
-        if ($sectionNameKeyPath !== "" && !$this->fetchRequest->sortDescriptors?->contains(fn(SortDescriptor $sortDescriptor): bool => $sortDescriptor->key === $sectionNameKeyPath)) {
-            fatal_error();
+        if ($sectionNameKeyPath !== "") {
+            $this->sections = $this->buildSections($this->fetchedObjects, $sectionNameKeyPath);
+        } else {
+            $this->sections = new ArrayClass([new FetchedResultsSectionInfo($sectionNameKeyPath, $this->fetchedObjects, $this->sectionIndexTitle($sectionNameKeyPath))]);
         }
-        $this->sections = new ArrayClass([new FetchedResultsSectionInfo($sectionNameKeyPath, $this->fetchedObjects, $this->sectionIndexTitle($sectionNameKeyPath))]);
     }
 
     /**
