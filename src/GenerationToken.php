@@ -10,7 +10,7 @@
 namespace Sabatier\CoreData;
 
 /** @internal */
-readonly class GenerationToken
+final readonly class GenerationToken
 {
     public function __construct(public PersistentStore $store, public int $origin, public int $generation)
     {

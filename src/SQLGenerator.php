@@ -42,7 +42,7 @@ use function Sabatier\Foundation\kvc_components;
 use function Sabatier\Foundation\typeof;
 
 /** @internal */
-class SQLGenerator extends ObjectClass
+final class SQLGenerator extends ObjectClass
 {
     private string $string;
     private string $selectList;

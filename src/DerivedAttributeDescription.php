@@ -20,7 +20,7 @@ use Sabatier\Foundation\Predicates\Expression;
  * Create a derived $searchName attribute to reflect a name attribute with the case and diacritics removed for more efficient comparison.
  * Create a derived $relationshipCount attribute to reflect the number of objects in a relationship and avoid having to do a join.
  */
-class DerivedAttributeDescription extends AttributeDescription
+final class DerivedAttributeDescription extends AttributeDescription
 {
     /** @internal */
     public PropertyDescriptionType $propertyType = PropertyDescriptionType::derivedAttribute;

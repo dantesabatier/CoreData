@@ -14,7 +14,7 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Number;
 
 /** @internal */
-class UnknownRequestTypeResult extends PersistentStoreResult
+final class UnknownRequestTypeResult extends PersistentStoreResult
 {
     /**
      * @param ArrayClass<ArrayClass<ManagedObject|ManagedObjectID|Dictionary<mixed>|Number>> $subresults

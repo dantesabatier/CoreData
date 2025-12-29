@@ -27,7 +27,7 @@ use Sabatier\Foundation\Value;
 use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
-class XMLObjectStore extends AtomicStore
+final class XMLObjectStore extends AtomicStore
 {
     public string $type {
         get => XMLStoreType;

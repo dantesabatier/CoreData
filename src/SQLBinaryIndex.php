@@ -3,7 +3,7 @@
 namespace Sabatier\CoreData;
 
 /** @internal */
-class SQLBinaryIndex extends SQLIndex
+final class SQLBinaryIndex extends SQLIndex
 {
     public function __construct(FetchIndexDescription $indexDescription, SQLEntity $entity)
     {

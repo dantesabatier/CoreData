@@ -16,7 +16,7 @@ use Sabatier\Foundation\ObjectClass;
 /**
  * A concrete class used to represent basic nodes in a Core Data incremental store.
  */
-class IncrementalStoreNode extends ObjectClass
+final class IncrementalStoreNode extends ObjectClass
 {
     /**
      * Returns an object initialized with the given values.

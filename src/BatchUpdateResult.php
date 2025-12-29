@@ -15,7 +15,7 @@ use Sabatier\Foundation\Number;
 /**
  * The result returned when executing a batch update request.
  */
-class BatchUpdateResult extends PersistentStoreResult
+final class BatchUpdateResult extends PersistentStoreResult
 {
     /** @var ArrayClass<ManagedObjectID>|Number The result of a batch-update request. */
     public readonly ArrayClass|Number $result;

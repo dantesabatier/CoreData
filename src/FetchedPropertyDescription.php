@@ -21,7 +21,7 @@ use Sabatier\Foundation\KeyValueCoding;
  * Unlike other relationships, which are all sets, an ordered array represents fetched properties just as if you executed the fetch request yourself. The fetch request associated with the property can have a sort ordering. The value for a fetched property of a managed object does not support {@see KeyValueCoding::mutableArrayValueForKey()}.
  * Fetch requests set on a fetched property have 2 special variable bindings you can use: $FETCH_SOURCE and $FETCHED_PROPERTY. The source refers to the specific managed object that has this property; the property refers to the FetchedPropertyDescription object itself (which may have a user info associated with it that you want to use).
  */
-class FetchedPropertyDescription extends PropertyDescription
+final class FetchedPropertyDescription extends PropertyDescription
 {
     /** @internal */
     public PropertyDescriptionType $propertyType = PropertyDescriptionType::fetchedProperty;

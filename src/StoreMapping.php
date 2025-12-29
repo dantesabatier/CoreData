@@ -12,7 +12,7 @@ namespace Sabatier\CoreData;
 use Sabatier\Foundation\ObjectClass;
 
 /** @internal */
-class StoreMapping extends ObjectClass
+abstract class StoreMapping extends ObjectClass
 {
     public ?string $externalName = null;
 }

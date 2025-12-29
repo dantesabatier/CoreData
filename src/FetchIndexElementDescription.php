@@ -17,7 +17,7 @@ use function Sabatier\Foundation\fatal_error;
 /**
  * Description of an Index Element
  */
-class FetchIndexElementDescription extends ObjectClass
+final class FetchIndexElementDescription extends ObjectClass
 {
     public FetchIndexDescription $indexDescription;
     /** @var string The specified name in the property description. */

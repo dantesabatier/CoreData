@@ -22,7 +22,7 @@ use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 /**
  * A change representing the insertion, update, or deletion of a managed object in the persistent store.
  */
-class PersistentHistoryChange extends ObjectClass
+final class PersistentHistoryChange extends ObjectClass
 {
     /** @var EntityDescription|null The entity description of the persistent history change entity. The entity description of a {@see PersistentHistoryChange}, includes its properties, which can be useful for filtering your persistent history change request. */
     public static ?EntityDescription $entityDescription = null;

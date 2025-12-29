@@ -17,7 +17,7 @@ use Sabatier\Foundation\ObjectClass;
  * A bookmark for keeping track of the most recent history that you've processed.
  * You can save a token to disk and fetch history when your app loads based on that token.
  */
-class PersistentHistoryToken extends ObjectClass
+final class PersistentHistoryToken extends ObjectClass
 {
     /**
      * @param Dictionary<Number> $storeTokens

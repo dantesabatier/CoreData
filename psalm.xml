@@ -45,6 +45,11 @@
         <UndefinedDocblockClass errorLevel="suppress"/>
         <NoInterfaceProperties errorLevel="suppress"/>
         <TypeDoesNotContainType errorLevel="suppress"/>
-        <ClassMustBeFinal errorLevel="suppress"/>
+        <ClassMustBeFinal>
+            <errorLevel type="suppress">
+                <file name="src/EntityMigrationPolicy.php"/>
+                <file name="src/ManagedObject.php"/>
+            </errorLevel>
+        </ClassMustBeFinal>
     </issueHandlers>
 </psalm>

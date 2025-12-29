@@ -10,7 +10,7 @@ use Closure;
  *
  * For example, to support a migration that changes an optional attribute to be nonoptional, you might assign a handler to the stage’s willMigrateHandler property that sets any nil instances of that attribute to a default value, thereby ensuring the migration succeeds. To access the store you’re migrating, use the container property of the migration manager that Core Data provides to every handler.
  */
-class CustomMigrationStage extends MigrationStage
+final class CustomMigrationStage extends MigrationStage
 {
     /** @var Closure(StagedMigrationManager, CustomMigrationStage): void|null The handler to execute before the stage runs. Use this handler to prepare the persistent store’s data for the pending migration. Access the store using the container property of the handler’s migrationManager parameter. */
     public ?Closure $willMigrateHandler = null;

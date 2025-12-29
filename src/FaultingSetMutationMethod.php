@@ -6,7 +6,7 @@ use Closure;
 use Sabatier\Foundation\Set;
 
 /** @internal */
-readonly class FaultingSetMutationMethod
+final readonly class FaultingSetMutationMethod
 {
     public function __construct(public string $name, public Closure $closure)
     {

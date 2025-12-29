@@ -21,7 +21,7 @@ use function Sabatier\Foundation\fatal_error;
  *
  * @implements IteratorAggregate<PropertyDescription>
  */
-class EntityDescription extends ObjectClass implements IteratorAggregate, Countable
+final class EntityDescription extends ObjectClass implements IteratorAggregate, Countable
 {
     /** @var string The entity name of the receiver. */
     public string $name = UnknownName;

@@ -13,9 +13,9 @@ use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\typeof;
 
 /** @internal */
-class SQLStatementFormatter extends Formatter
+final class SQLStatementFormatter extends Formatter
 {
-    public function __construct(#[ExpectedValues(flagsFromClass: SQLStatementFormatterStyle::class)] public int $style = SQLStatementFormatterStyle::string)
+    public function __construct(#[ExpectedValues(flagsFromClass: SQLStatementFormatterStyle::class)] public int $style = SQLStatementFormatterStyle::interpolateStrings)
     {
     }
 
@@ -26,7 +26,7 @@ class SQLStatementFormatter extends Formatter
             return null;
         }
         $string = $object->string;
-        if ($this->style & SQLStatementFormatterStyle::arguments) {
+        if ($this->style & SQLStatementFormatterStyle::includeArguments) {
             $string = sprintf(str_replace(["%", "?"], ["%%", "%s"], $string), ...$object->arguments->map(fn(mixed $e): string => match (typeof($e)) {
                 ManagedObjectID::class => (string)$e->referenceObject,
                 Date::class, UUID::class, URL::class => "'$e'",
@@ -44,7 +44,7 @@ class SQLStatementFormatter extends Formatter
             })->array);
         }
         $style = SQLFormatterStyle::none;
-        if ($this->style & SQLStatementFormatterStyle::highlighted) {
+        if ($this->style & SQLStatementFormatterStyle::highlight) {
             $style |= SQLFormatterStyle::highlighted;
         }
         if ($this->style & SQLStatementFormatterStyle::prettyPrint) {

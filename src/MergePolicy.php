@@ -29,7 +29,7 @@ use const Sabatier\Foundation\LocalizedFailureReasonErrorKey;
  * Between the cached state at the persistent store coordinator and the external store (file, database, and so forth).
  * Conflicts are represented by instances of {@see MergeConflict}.
  */
-class MergePolicy extends ObjectClass
+final class MergePolicy extends ObjectClass
 {
     /**
      * Returns a merge policy initialized with a given policy type.

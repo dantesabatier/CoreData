@@ -5,7 +5,7 @@ namespace Sabatier\CoreData;
 use const Sabatier\Foundation\NotFound;
 
 /** @internal */
-readonly class FaultHandler
+final readonly class FaultHandler
 {
     public function __construct(public PersistentStore $persistentStore)
     {

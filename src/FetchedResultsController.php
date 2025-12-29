@@ -17,7 +17,7 @@ use const Sabatier\Foundation\NotFound;
  * A controller that you use to manage the results of a Core Data fetch request and to display data to the user.
  * @template ResultType of ManagedObject
  */
-class FetchedResultsController extends ObjectClass
+final class FetchedResultsController extends ObjectClass
 {
     /** @var FetchedResultsControllerDelegate|null The object that is notified when the fetched results changed. If you do not specify a delegate, the controller does not track changes to managed objects associated with its managed object context. */
     public ?FetchedResultsControllerDelegate $delegate = null;

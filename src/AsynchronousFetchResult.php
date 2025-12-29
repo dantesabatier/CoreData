@@ -15,7 +15,7 @@ use Sabatier\Foundation\ArrayClass;
 /**
  * A fetch result object that encompasses the response from an executed asynchronous fetch request.
  */
-class AsynchronousFetchResult extends PersistentStoreAsynchronousResult
+final class AsynchronousFetchResult extends PersistentStoreAsynchronousResult
 {
     /**
      * AsynchronousFetchResult constructor.

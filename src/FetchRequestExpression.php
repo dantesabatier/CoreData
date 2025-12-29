@@ -19,7 +19,7 @@ use function Sabatier\Foundation\typeof;
 /**
  * An expression that evaluates the result of a fetch request on a managed object context.
  */
-class FetchRequestExpression extends Expression
+final class FetchRequestExpression extends Expression
 {
     /**
      * @param Expression $requestExpression The expression for the receiver's fetch request.

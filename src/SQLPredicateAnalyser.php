@@ -19,7 +19,7 @@ use Sabatier\Foundation\Predicates\PredicateOperator;
 use Sabatier\Foundation\Predicates\PredicateVisitor;
 
 /** @internal */
-class SQLPredicateAnalyser implements PredicateVisitor
+final class SQLPredicateAnalyser implements PredicateVisitor
 {
     /** @var ArrayClass<Predicate> */
     public ArrayClass $allModifierPredicates;

@@ -33,7 +33,7 @@ use function Sabatier\Foundation\human_readable_time;
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /** @internal */
-class SQLConnection extends ObjectClass
+final class SQLConnection extends ObjectClass
 {
     private(set) SQLSchema $schema {
         get => $this->schema ??= SQLSchema::schema($this->sqlCore?->url?->host);
@@ -128,7 +128,7 @@ class SQLConnection extends ObjectClass
         }
         $this->isOpen = true;
         $schemaName = $this->schema->name;
-        if (SQLCore::$debugDefault) {
+        if (SQLCore::$debugLevel->value) {
             error_log(sprintf("CoreData: annotation: Connecting to %s database \"%s\"", SQLStoreType, $schemaName));
         }
         if ($this->createSchemaIfNeeded()) {
@@ -146,7 +146,7 @@ class SQLConnection extends ObjectClass
         if (!$this->isOpen) {
             return true;
         }
-        if (SQLCore::$debugDefault) {
+        if (SQLCore::$debugLevel->value) {
             error_log("CoreData: annotation: Disconnecting from sql database \"{$this->schema->name}\"");
         }
         $this->mysql = null;
@@ -160,13 +160,13 @@ class SQLConnection extends ObjectClass
     public function execute(SQLStatement $statement): PDOStatement
     {
         $time = absolute_time_get_current();
-        if (SQLCore::$debugDefault) {
+        if (SQLCore::$debugLevel->value) {
             error_log(sprintf("CoreData: sql: \n%s", $statement->formatted(SQLStatementFormatterStyle::defaultFormatterStyle())));
         }
         $mysql = $this->mysql();
         if ($statement->arguments->isEmpty) {
             $pdoStatement = $mysql->query($statement->string);
-            if (SQLCore::$debugDefault) {
+            if (SQLCore::$debugLevel->value) {
                 error_log(sprintf("CoreData: annotation: execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $pdoStatement->rowCount(), human_readable_plural("row", $pdoStatement->rowCount())));
             }
             return $pdoStatement;
@@ -190,7 +190,7 @@ class SQLConnection extends ObjectClass
             }
             return $e;
         })->array);
-        if (SQLCore::$debugDefault) {
+        if (SQLCore::$debugLevel->value) {
             error_log(sprintf("CoreData: annotation: execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $pdoStatement->rowCount(), human_readable_plural("row", $pdoStatement->rowCount())));
         }
         return $pdoStatement;
@@ -578,7 +578,7 @@ class SQLConnection extends ObjectClass
         $time = absolute_time_get_current();
         $model = $this->sqlCore?->model ?? fatal_error("invalid argument: model cannot be null");
         $database = $this->schema->name;
-        if (SQLCore::$debugDefault) {
+        if (SQLCore::$debugLevel->value) {
             error_log("CoreData: annotation: creating database \"$database\"");
         }
         $this->execute(new SQLStatement("CREATE DATABASE `$database`"));
@@ -592,7 +592,7 @@ class SQLConnection extends ObjectClass
         }
         $this->createManyToManyTablesForEntities($entities);
         $this->saveCachedModel($model);
-        if (SQLCore::$debugDefault) {
+        if (SQLCore::$debugLevel->value) {
             error_log("CoreData: annotation: database \"$database\" created, total execution time: " . human_readable_time(absolute_time_get_current() - $time));
         }
         return true;

@@ -17,7 +17,7 @@ use Sabatier\Foundation\Predicates\Expression;
 /**
  * A mapping instance that specifies in a model how to map from a property in a source entity to a property in a destination entity.
  */
-class PropertyMapping extends ObjectClass
+final class PropertyMapping extends ObjectClass
 {
     /** @var Dictionary<mixed>|null The user info for the property mapping. */
     public ?Dictionary $userInfo = null;

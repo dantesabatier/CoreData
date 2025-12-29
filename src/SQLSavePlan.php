@@ -3,7 +3,7 @@
 namespace Sabatier\CoreData;
 
 /** @internal */
-readonly class SQLSavePlan
+final readonly class SQLSavePlan
 {
     public ManagedObjectContext $savingContext;
     public SaveChangesRequest $saveRequest;

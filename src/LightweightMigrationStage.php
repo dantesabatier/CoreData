@@ -9,7 +9,7 @@ use Sabatier\Foundation\ArrayClass;
  *
  * Use LightweightMigrationStage when you have a series of models to migrate, and those models are compatible with lightweight migrations. Instances of this class supplement your custom migration stages and help maintain a consistent stage order for the entire migration.
  */
-class LightweightMigrationStage extends MigrationStage
+final class LightweightMigrationStage extends MigrationStage
 {
     /**
      * @param ArrayClass<string> $versionChecksums The array of version checksums.

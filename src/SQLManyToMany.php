@@ -15,7 +15,7 @@ use Sabatier\Foundation\ComparisonResult;
 use Sabatier\Foundation\SortDescriptor;
 
 /** @internal */
-class SQLManyToMany extends SQLRelationship
+final class SQLManyToMany extends SQLRelationship
 {
     public SQLManyToMany $inverseManyToMany {
         get {

@@ -13,7 +13,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Predicates\Expression;
 
 /** @internal */
-class MappingModelBuilder
+final class MappingModelBuilder
 {
     /** @internal */
     public static int $migrationDebugLevel = 0;

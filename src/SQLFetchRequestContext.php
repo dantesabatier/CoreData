@@ -298,13 +298,14 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     protected function executeEpilogue(): void
     {
         $this->duration = absolute_time_get_current() - $this->duration;
-        if ($this->debugLogLevel) {
+        $level = $this->debugLevel->value;
+        if ($level) {
             $message = sprintf("CoreData: annotation: total execution time: %s for %d %s", human_readable_time($this->duration), $this->result->count, human_readable_plural("element", $this->result->count));
-            if ($this->debugLogLevel > 3) {
+            if ($level > SQLDebugLevel::prettyFormatSQL->value) {
                 $message .= "\n$this->result";
             }
             error_log($message);
-            if ($this->debugLogLevel > 4) {
+            if ($level > SQLDebugLevel::includeResults->value) {
                 $statement = $this->connection->execute(new SQLStatement("ANALYZE FORMAT=JSON {$this->fetchStatement->string}", $this->fetchStatement->arguments));
                 error_log($statement->fetchColumn());
             }

@@ -14,7 +14,7 @@ use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
-class SQLStoreMigrator
+final class SQLStoreMigrator
 {
     private SQLAdapter $adapter;
     private SQLConnection $connection;

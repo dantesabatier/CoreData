@@ -6,7 +6,7 @@ use Override;
 use Sabatier\Foundation\ArrayClass;
 
 /** @internal */
-class SQLObjectIDSetFetchRequestContext extends SQLFetchRequestContext
+final class SQLObjectIDSetFetchRequestContext extends SQLFetchRequestContext
 {
     public readonly ArrayClass $idSets;
     public readonly string $columnName;

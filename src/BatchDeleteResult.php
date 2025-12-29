@@ -15,7 +15,7 @@ use Sabatier\Foundation\Number;
 /**
  * The result returned when executing a batch delete request.
  */
-class BatchDeleteResult extends PersistentStoreResult
+final class BatchDeleteResult extends PersistentStoreResult
 {
     /** @var ArrayClass<ManagedObjectID>|Number The result of a batch-deletion request, either the number of deleted objects, the identifiers of the deleted objects, or a status value. */
     public readonly ArrayClass|Number $result;

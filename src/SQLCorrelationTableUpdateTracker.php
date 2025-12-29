@@ -8,7 +8,7 @@ use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Set;
 
 /** @internal */
-class SQLCorrelationTableUpdateTracker extends ObjectClass
+final class SQLCorrelationTableUpdateTracker extends ObjectClass
 {
     /** @var Set<ManagedObject>|null */
     private(set) ?Set $inserts = null;

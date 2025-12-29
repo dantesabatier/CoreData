@@ -15,7 +15,7 @@ use Sabatier\Foundation\Number;
 /**
  * The result that Core Data returns when executing a batch-insertion request.
  */
-class BatchInsertResult extends PersistentStoreResult
+final class BatchInsertResult extends PersistentStoreResult
 {
     /** @var ArrayClass<ManagedObjectID>|Number The result of a batch-insertion request. */
     public readonly ArrayClass|Number $result;

@@ -15,7 +15,7 @@ use Sabatier\Foundation\Set;
 /**
  * An encapsulation of a collection of changes to be made by an object store in response to a save operation on a managed object context.
  */
-class SaveChangesRequest extends PersistentStoreRequest
+final class SaveChangesRequest extends PersistentStoreRequest
 {
     /**
      * Initializes a save changes request with collections of given changes.

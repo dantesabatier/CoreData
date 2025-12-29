@@ -10,7 +10,7 @@
 namespace Sabatier\CoreData;
 
 /** @internal */
-class SQLToOne extends SQLRelationship
+final class SQLToOne extends SQLRelationship
 {
     private(set) SQLForeignKey $foreignKey {
         get => $this->foreignKey ??= new SQLForeignKey($this->entity, $this->relationshipDescription, $this);

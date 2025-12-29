@@ -16,7 +16,7 @@ use Sabatier\Foundation\URL;
 /**
  * A description object used to create and load a persistent store.
  */
-class PersistentStoreDescription extends ObjectClass
+final class PersistentStoreDescription extends ObjectClass
 {
     /** @var string The type of store this description represents.
      * A string constant (such as {@see SQLStoreType}) that specifies the type of the new store see {@see PersistentStoreCoordinator}. */

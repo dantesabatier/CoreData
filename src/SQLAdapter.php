@@ -11,7 +11,7 @@ use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 
 /** @internal */
-class SQLAdapter extends ObjectClass
+final class SQLAdapter extends ObjectClass
 {
     public function __construct(public readonly SQLCore $sqlCore)
     {

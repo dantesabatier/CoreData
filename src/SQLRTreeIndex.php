@@ -6,7 +6,7 @@ use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
 
 /** @internal */
-class SQLRTreeIndex extends SQLIndex
+final class SQLRTreeIndex extends SQLIndex
 {
     public function __construct(FetchIndexDescription $indexDescription, SQLEntity $entity)
     {

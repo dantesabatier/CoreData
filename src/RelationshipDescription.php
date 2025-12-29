@@ -14,7 +14,7 @@ use function Sabatier\Foundation\human_readable_value;
  *
  * RelationshipDescription extends PropertyDescription to describe features appropriate to relationships, including cardinality (the number of objects allowed in the relationship), the destination entity, and delete rules.
  */
-class RelationshipDescription extends PropertyDescription
+final class RelationshipDescription extends PropertyDescription
 {
     /** @internal */
     public PropertyDescriptionType $propertyType = PropertyDescriptionType::relationship;

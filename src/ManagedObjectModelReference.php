@@ -9,7 +9,7 @@ use Sabatier\Foundation\URL;
 /**
  * An object that describes a specific version of an object model.
  */
-class ManagedObjectModelReference extends ObjectClass
+final class ManagedObjectModelReference extends ObjectClass
 {
     /**
      * Creates an object model reference for the specified model.

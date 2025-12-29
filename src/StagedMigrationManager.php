@@ -17,7 +17,7 @@ use Sabatier\Foundation\ObjectClass;
  *     $store = $coordinator->addPersistentStoreWithType(PersistentStoreType::sql, null, $storeURL, $options);
  * </code>
  */
-class StagedMigrationManager extends ObjectClass
+final class StagedMigrationManager extends ObjectClass
 {
     /** @var PersistentContainer|null The container that provides access to the migrating persistent store. */
     public ?PersistentContainer $container = null;

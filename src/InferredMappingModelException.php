@@ -7,6 +7,6 @@ use Sabatier\Foundation\InternalInconsistencyException;
 /**
  * Exception to denote a problem with the creation of an inferred mapping model.
  */
-class InferredMappingModelException extends InternalInconsistencyException
+final class InferredMappingModelException extends InternalInconsistencyException
 {
 }

@@ -27,7 +27,7 @@ use const Sabatier\Foundation\kCFBundleNameKey;
  * A programmatic representation of the model file describing your objects.
  * @implements IteratorAggregate<EntityDescription>
  */
-class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Countable
+final class ManagedObjectModel extends ObjectClass implements IteratorAggregate, Countable
 {
     /** @var Dictionary<ArrayClass<EntityDescription>> */
     private Dictionary $entitiesByConfigurationName {

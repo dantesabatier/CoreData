@@ -10,7 +10,7 @@
 namespace Sabatier\CoreData;
 
 /** @internal */
-class SQLForeignEntityKey extends SQLColumn
+final class SQLForeignEntityKey extends SQLColumn
 {
     protected(set) string $name {
         get => $this->name ??= $this->relationshipDescription->destinationEntity->name;

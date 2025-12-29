@@ -8,7 +8,7 @@ use Sabatier\Foundation\Number;
 use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
-class SQLBatchInsertRequestContext extends SQLBatchOperationRequestContext
+final class SQLBatchInsertRequestContext extends SQLBatchOperationRequestContext
 {
     public BatchInsertRequest $request {
         get {

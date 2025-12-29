@@ -10,6 +10,6 @@
 namespace Sabatier\CoreData;
 
 /** @internal */
-class SQLOptLockKey extends SQLColumn
+final class SQLOptLockKey extends SQLColumn
 {
 }

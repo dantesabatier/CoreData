@@ -9,6 +9,7 @@ use Rector\CodeQuality\Rector\If_\CombineIfRector;
 use Rector\CodeQuality\Rector\If_\ExplicitBoolCompareRector;
 use Rector\CodeQuality\Rector\Isset_\IssetOnPropertyObjectToPropertyExistsRector;
 use Rector\Config\RectorConfig;
+use Rector\DeadCode\Rector\ClassMethod\RemoveEmptyClassMethodRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPrivateMethodParameterRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPrivateMethodRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessParamTagRector;
@@ -60,7 +61,10 @@ try {
             ReturnBinaryOrToEarlyReturnRector::class => [
                 __DIR__ . "/src/SQLGenerator.php",
             ],
-            IssetOnPropertyObjectToPropertyExistsRector::class
+            IssetOnPropertyObjectToPropertyExistsRector::class,
+            RemoveEmptyClassMethodRector::class => [
+                __DIR__ . "/src/SQLCore.php",
+            ],
         ])->withPreparedSets(deadCode: true, codeQuality: true, earlyReturn: true);
 } catch (InvalidConfigurationException $e) {
     error_log($e->getMessage());

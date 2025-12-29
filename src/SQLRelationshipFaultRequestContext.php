@@ -10,7 +10,7 @@ use Sabatier\Foundation\Predicates\Expression;
 use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
-class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
+final class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
 {
     public function __construct(public readonly ManagedObjectID $objectID, public readonly RelationshipDescription $relationship, ManagedObjectContext $context, SQLCore $sqlCore)
     {
@@ -20,8 +20,8 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
     #[Override]
     protected function executeRequestCore(): bool
     {
-        $debugLogLevel = $this->debugLogLevel;
-        $this->debugLogLevel = 0;
+        $debugLevel = $this->debugLevel;
+        $this->debugLevel = SQLDebugLevel::none;
         /** @var SQLEntity $entity */
         $entity = $this->sqlModel->entitiesByName[$this->objectID->entity->name] ?? fatal_error();
         $property = $entity->propertiesByName[$this->relationship->name] ?? fatal_error("$entity unable to find relationship {$this->relationship->name} in {$entity->propertiesByName->keys}");
@@ -44,7 +44,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
                 $fetchRequest->includesPendingChanges = true;
                 $fetchRequest->resultType = FetchRequestResultType::managedObjectIDResultType;
                 $this->result = $this->sqlCore->execute($fetchRequest, $this->context)->first ?? Nil::nil();
-                $this->debugLogLevel = $debugLogLevel;
+                $this->debugLevel = $debugLevel;
                 return true;
             }
             $this->result = Nil::nil();
@@ -72,7 +72,7 @@ class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
                 $this->result = $first->primitiveValueForKey($property->name) ?? new ArrayClass();
             }
         }
-        $this->debugLogLevel = $debugLogLevel;
+        $this->debugLevel = $debugLevel;
         return true;
     }
 }

@@ -10,7 +10,7 @@
 namespace Sabatier\CoreData;
 
 /** @internal */
-class SQLPrimaryKey extends SQLColumn
+final class SQLPrimaryKey extends SQLColumn
 {
     public PropertyDescriptionType $propertyType {
         get => PropertyDescriptionType::private;

@@ -10,7 +10,7 @@
 namespace Sabatier\CoreData;
 
 /** @internal */
-class SQLForeignKey extends SQLColumn
+final class SQLForeignKey extends SQLColumn
 {
     public RelationshipDescription $relationshipDescription {
         get {

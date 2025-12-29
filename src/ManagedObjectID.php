@@ -20,7 +20,7 @@ use Sabatier\Foundation\URL;
  * Object IDs can be transformed into a URI representation which can be archived and recreated later to refer back to a given object (using {@see PersistentStoreCoordinator::managedObjectID()}) (PersistentStoreCoordinator) and {@see ManagedObjectContext::object()} (ManagedObjectContext). For example, the last selected group in an application could be stored in the user defaults through the group object's ID. You can also use object ID URI representations to store “weak” relationships across persistent stores (where no hard join is possible).
  * @psalm-suppress MissingConstructor
  */
-class ManagedObjectID extends ObjectClass implements FetchRequestResult
+final class ManagedObjectID extends ObjectClass implements FetchRequestResult
 {
     /** @var PersistentStore|null The persistent store that fetched the object for the object ID. */
     public ?PersistentStore $persistentStore = null;

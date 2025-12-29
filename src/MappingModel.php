@@ -22,7 +22,7 @@ use function Sabatier\Foundation\fatal_error;
 /**
  * A model instance that specifies how to map a model from a source to a destination managed object model.
  */
-class MappingModel extends ObjectClass
+final class MappingModel extends ObjectClass
 {
     /** @internal */
     public static int $migrationDebugLevel = 0;

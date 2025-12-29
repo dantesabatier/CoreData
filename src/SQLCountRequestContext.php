@@ -9,7 +9,7 @@ use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
 
 /** @internal */
-class SQLCountRequestContext extends SQLFetchRequestContext
+final class SQLCountRequestContext extends SQLFetchRequestContext
 {
     #[Override]
     protected function executeRequestCore(): bool

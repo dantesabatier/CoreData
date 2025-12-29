@@ -15,7 +15,7 @@ use Sabatier\Foundation\Number;
 /**
  * The result of a request to fetch persistent history.
  */
-class PersistentHistoryResult extends PersistentStoreResult
+final class PersistentHistoryResult extends PersistentStoreResult
 {
     /** @var ArrayClass<ManagedObjectID|PersistentHistoryTransaction|PersistentHistoryChange|Number>|Number The result of the history request determined by the persistent history result type. */
     public readonly ArrayClass|Number $result;

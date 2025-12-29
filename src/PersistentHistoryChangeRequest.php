@@ -16,7 +16,7 @@ use Sabatier\Foundation\Number;
 /**
  * A request to fetch or purge persistent history.
  */
-class PersistentHistoryChangeRequest extends PersistentStoreRequest
+final class PersistentHistoryChangeRequest extends PersistentStoreRequest
 {
     /** @var FetchRequest|null The specified fetch request, when retrieving history. */
     public ?FetchRequest $fetchRequest = null;

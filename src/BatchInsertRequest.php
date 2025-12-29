@@ -17,7 +17,7 @@ use Sabatier\Foundation\Dictionary;
 /**
  * A request to insert a batch of data in a persistent store.
  */
-class BatchInsertRequest extends PersistentStoreRequest
+final class BatchInsertRequest extends PersistentStoreRequest
 {
     /** @var string The name of the managed entity to insert data into. */
     public string $entityName {

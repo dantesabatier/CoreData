@@ -20,7 +20,7 @@ use function Sabatier\Foundation\fatal_error;
 /**
  * The description of the index.
  */
-class FetchIndexDescription extends ObjectClass
+final class FetchIndexDescription extends ObjectClass
 {
     /** @var EntityDescription The entity description for the fetch index description. */
     public EntityDescription $entity;

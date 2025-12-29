@@ -10,7 +10,7 @@ use Sabatier\Foundation\URL;
 use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
-class StoreMigrationPolicy
+final class StoreMigrationPolicy
 {
     public static int $migrationDebugLevel = 0;
     /** @var ArrayClass<Bundle>|null */

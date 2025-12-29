@@ -6,7 +6,7 @@ use Closure;
 use Override;
 
 /** @internal */
-class SQLBlockRequestContext extends SQLStoreRequestContext
+final class SQLBlockRequestContext extends SQLStoreRequestContext
 {
     public readonly Closure $block;
 

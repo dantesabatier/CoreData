@@ -22,7 +22,7 @@ use function Sabatier\Foundation\human_readable_value;
  * Between the cached state at the persistent store coordinator layer and the external store (file, database, and so forth). In this case, the merge conflict has a cached snapshot and a persisted snapshot. The source object is also provided as a convenience, but it is not directly involved in the conflict.
  * Snapshot dictionaries include values for all attributes and to-one relationships, but not to-many relationships. Relationship values are ManagedObjectID references. To-many relationships must be pulled from the persistent store as needed.
  */
-class MergeConflict extends ObjectClass
+final class MergeConflict extends ObjectClass
 {
     /** @var Dictionary<mixed> A dictionary containing the values of the source object. */
     private(set) Dictionary $objectSnapshot {

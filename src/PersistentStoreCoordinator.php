@@ -29,7 +29,7 @@ use const Sabatier\Foundation\LocalizedFailureReasonErrorKey;
 /**
  * A coordinator that uses the model to help contexts and persistent stores communicate.
  */
-class PersistentStoreCoordinator extends ObjectClass
+final class PersistentStoreCoordinator extends ObjectClass
 {
     /** @var Dictionary<class-string<PersistentStore>>|null */
     private static ?Dictionary $registeredStoreTypes = null;

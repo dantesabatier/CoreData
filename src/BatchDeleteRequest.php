@@ -14,7 +14,7 @@ use JetBrains\PhpStorm\Pure;
 /**
  * A request that deletes objects in the SQL persistent store without loading them into memory.
  */
-class BatchDeleteRequest extends PersistentStoreRequest
+final class BatchDeleteRequest extends PersistentStoreRequest
 {
     /** @var BatchDeleteRequestResultType The type of result the request provides when it executes. */
     public BatchDeleteRequestResultType $resultType = BatchDeleteRequestResultType::statusOnly;

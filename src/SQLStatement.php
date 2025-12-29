@@ -22,7 +22,7 @@ use function Sabatier\Foundation\string_is_equal;
 use function Sabatier\Foundation\string_search;
 
 /** @internal */
-class SQLStatement extends ObjectClass
+final class SQLStatement extends ObjectClass
 {
     public string $description {
         get => $this->formatted();
@@ -58,7 +58,7 @@ class SQLStatement extends ObjectClass
         };
     }
 
-    public function formatted(#[ExpectedValues(flagsFromClass: SQLStatementFormatterStyle::class)] int $style = SQLStatementFormatterStyle::string | SQLStatementFormatterStyle::arguments): string
+    public function formatted(#[ExpectedValues(flagsFromClass: SQLStatementFormatterStyle::class)] int $style = SQLStatementFormatterStyle::interpolateStrings | SQLStatementFormatterStyle::includeArguments): string
     {
         return new SQLStatementFormatter($style)->string($this) ?? $this->string;
     }

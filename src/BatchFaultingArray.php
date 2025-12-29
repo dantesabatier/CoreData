@@ -10,7 +10,7 @@ use function Sabatier\Foundation\invalid_mutation;
  * @extends ArrayClass<ManagedObject|ManagedObjectID>
  * @internal
  */
-class BatchFaultingArray extends ArrayClass
+final class BatchFaultingArray extends ArrayClass
 {
     private int $length;
     public int $count {
@@ -46,14 +46,14 @@ class BatchFaultingArray extends ArrayClass
         $this->fetchLimit = $fetchRequest->fetchBatchSize;
         $this->context = $context;
         $this->objectIDs = new ArrayClass();
-        $debugDefault = SQLCore::$debugDefault;
-        if ($debugDefault && ($sqlCore = $context->persistentStoreCoordinator?->persistentStores->first) && $sqlCore instanceof SQLCore && ($statement = new SQLGenerator(new SQLFetchRequestContext($this->request, $context, $sqlCore))->statement)) {
+        $debugDefault = SQLCore::$debugLevel;
+        if ($debugDefault->value && ($sqlCore = $context->persistentStoreCoordinator?->persistentStores->first) && $sqlCore instanceof SQLCore && ($statement = new SQLGenerator(new SQLFetchRequestContext($this->request, $context, $sqlCore))->statement)) {
             error_log(sprintf("CoreData: sql: \n%s", $statement->formatted(SQLStatementFormatterStyle::defaultFormatterStyle())));
         }
-        SQLCore::$debugDefault = 0;
+        SQLCore::$debugLevel = SQLDebugLevel::none;
         /** @noinspection PhpUnhandledExceptionInspection */
         $this->length = $context->count($this->request);
-        SQLCore::$debugDefault = $debugDefault;
+        SQLCore::$debugLevel = $debugDefault;
     }
 
     #[Override]
@@ -92,11 +92,11 @@ class BatchFaultingArray extends ArrayClass
         $request = $this->request;
         $request->fetchOffset = $this->fetchOffset;
         $request->fetchLimit = $this->fetchLimit;
-        $debugDefault = SQLCore::$debugDefault;
-        SQLCore::$debugDefault = 0;
+        $debugDefault = SQLCore::$debugLevel;
+        SQLCore::$debugLevel = SQLDebugLevel::none;
         /** @noinspection PhpUnhandledExceptionInspection */
         $result = $this->context->fetch($request);
-        SQLCore::$debugDefault = $debugDefault;
+        SQLCore::$debugLevel = $debugDefault;
         $this->cursor += 1;
         return $result;
     }

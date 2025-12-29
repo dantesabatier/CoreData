@@ -59,14 +59,14 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             if (!isset($this->isInserted)) {
                 if (!$this->objectID->isTemporaryID && ($persistentStore = $this->objectID->persistentStore)) {
                     try {
-                        $debugDefault = SQLCore::$debugDefault;
-                        SQLCore::$debugDefault = 0;
+                        $debugDefault = SQLCore::$debugLevel;
+                        SQLCore::$debugLevel = SQLDebugLevel::none;
                         /** @var FetchRequest<Number> $fetchRequest */
                         $fetchRequest = $this::fetchRequest();
                         $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($this->objectID));
                         $fetchRequest->affectedStores = new ArrayClass([$persistentStore]);
                         $this->isInserted = (bool)$this->managedObjectContext->count($fetchRequest);
-                        SQLCore::$debugDefault = $debugDefault;
+                        SQLCore::$debugLevel = $debugDefault;
                     } catch (Exception) {
                     }
                 }

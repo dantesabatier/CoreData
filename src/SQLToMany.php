@@ -10,7 +10,7 @@
 namespace Sabatier\CoreData;
 
 /** @internal */
-class SQLToMany extends SQLRelationship
+final class SQLToMany extends SQLRelationship
 {
     public SQLToOne $inverseToOne {
         get {

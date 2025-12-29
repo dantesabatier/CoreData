@@ -15,7 +15,7 @@ use JetBrains\PhpStorm\Pure;
 /**
  * A fetch request that retrieves results asynchronously and supports progress notification.
  */
-class AsynchronousFetchRequest extends PersistentStoreRequest
+final class AsynchronousFetchRequest extends PersistentStoreRequest
 {
     /** @var int A configuration parameter that helps Core Data with scheduling the asynchronous fetch request. */
     public int $estimatedResultCount = 0;

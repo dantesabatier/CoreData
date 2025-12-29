@@ -20,13 +20,13 @@ abstract class SQLStoreRequestContext extends ObjectClass
     protected(set) mixed $result {
         get => $this->result ??= new ArrayClass();
     }
-    public int $debugLogLevel {
-        get => SQLCore::$debugDefault;
-        set => SQLCore::$debugDefault = $value;
+    public SQLDebugLevel $debugLevel {
+        get => SQLCore::$debugLevel;
+        set => SQLCore::$debugLevel = $value;
     }
     public bool $useColoredLogging {
-        get => SQLCore::$coloredLoggingDefault;
-        set => SQLCore::$coloredLoggingDefault = $value;
+        get => SQLCore::$debugColorOutputDefault;
+        set => SQLCore::$debugColorOutputDefault = $value;
     }
     public SQLModel $sqlModel {
         get => $this->sqlCore->model;

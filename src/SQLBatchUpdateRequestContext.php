@@ -7,7 +7,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Number;
 
 /** @internal */
-class SQLBatchUpdateRequestContext extends SQLBatchOperationRequestContext
+final class SQLBatchUpdateRequestContext extends SQLBatchOperationRequestContext
 {
     public BatchUpdateRequest $request {
         get {

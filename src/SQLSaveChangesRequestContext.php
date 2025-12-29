@@ -6,7 +6,7 @@ use Override;
 use Sabatier\Foundation\Number;
 
 /** @internal */
-class SQLSaveChangesRequestContext extends SQLStoreRequestContext
+final class SQLSaveChangesRequestContext extends SQLStoreRequestContext
 {
     public SaveChangesRequest $request {
         get {

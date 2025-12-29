@@ -25,10 +25,10 @@ use Sabatier\Foundation\UUID;
 use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
-class SQLCore extends IncrementalStore
+final class SQLCore extends IncrementalStore
 {
-    public static int $debugDefault = 0;
-    public static bool $coloredLoggingDefault = false;
+    public static SQLDebugLevel $debugLevel = SQLDebugLevel::none;
+    public static bool $debugColorOutputDefault = false;
     public string $type {
         get => SQLStoreType;
     }

@@ -7,7 +7,7 @@ use Sabatier\Foundation\ArrayClass;
 /**
  * A protocol that defines the interface for section objects vended by a fetched results' controller.
  */
-class FetchedResultsSectionInfo
+final class FetchedResultsSectionInfo
 {
     /** @var int The number of objects (rows) in the section. */
     public int $numberOfObjects {

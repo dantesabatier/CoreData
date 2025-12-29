@@ -8,7 +8,7 @@ use Sabatier\Foundation\Dictionary;
 /**
  * @internal
  */
-class MigrationContext
+final class MigrationContext
 {
     /** @var Dictionary<ManagedObject> */
     private Dictionary $bySourceAssociationTable {

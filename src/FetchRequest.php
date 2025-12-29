@@ -18,7 +18,7 @@ use function Sabatier\Foundation\fatal_error;
  * A description of search criteria used to retrieve data from a persistent store.
  * @template ResultType
  */
-class FetchRequest extends PersistentStoreRequest
+final class FetchRequest extends PersistentStoreRequest
 {
     /** @var bool A Boolean value that indicates whether the fetch request includes subentities in the results. */
     public bool $includesSubentities = true;

@@ -3,7 +3,7 @@
 namespace Sabatier\CoreData;
 
 /** @internal */
-class SQLFormatterStyle
+final class SQLFormatterStyle
 {
     final const int none = 0;
     final const int highlighted = 1;

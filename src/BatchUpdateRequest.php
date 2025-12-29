@@ -16,7 +16,7 @@ use Sabatier\Foundation\Predicates\Predicate;
 /**
  * A request to Core Data to do a batch update of data in a persistent store without loading any data into memory.
  */
-class BatchUpdateRequest extends PersistentStoreRequest
+final class BatchUpdateRequest extends PersistentStoreRequest
 {
     /** @var Predicate|null A predicate that identifies the objects to update. */
     public ?Predicate $predicate = null;

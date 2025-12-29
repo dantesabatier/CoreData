@@ -10,7 +10,7 @@
 namespace Sabatier\CoreData;
 
 /** @internal */
-readonly class SQLCredential
+final readonly class SQLCredential
 {
     public function __construct(public string $user, public ?string $password = null)
     {

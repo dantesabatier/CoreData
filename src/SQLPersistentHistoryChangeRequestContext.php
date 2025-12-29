@@ -17,7 +17,7 @@ use function Sabatier\Foundation\fatal_error;
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /** @internal */
-class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
+final class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestContext
 {
     public PersistentHistoryChangeRequest $request {
         get {

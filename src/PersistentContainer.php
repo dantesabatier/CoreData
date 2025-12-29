@@ -25,7 +25,7 @@ use Sabatier\Foundation\URL;
  *
  * PersistentContainer simplifies the creation and management of the Core Data stack by handling the creation of the managed object model ({@see ManagedObjectModel}), persistent store coordinator ({@see PersistentStoreCoordinator}), and the managed object context ({@see ManagedObjectContext}).
  */
-class PersistentContainer extends ObjectClass
+final class PersistentContainer extends ObjectClass
 {
     /** @var string The container’s name. This property is passed in as part of the initialization of the persistent container. This name is used to locate the {@see ManagedObjectModel} (if the {@see ManagedObjectModel} object is not passed in as part of the initialization) and is used to name the persistent store. */
     public readonly string $name;

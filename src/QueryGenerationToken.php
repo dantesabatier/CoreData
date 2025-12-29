@@ -17,7 +17,7 @@ use function Sabatier\Foundation\read_random;
  *
  * When a managed object context is pinned to a specific generation of the app data, a query generation token will be associated with that context.
  */
-class QueryGenerationToken extends ObjectClass
+final class QueryGenerationToken extends ObjectClass
 {
     private static ?QueryGenerationToken $current = null;
     private string $token {

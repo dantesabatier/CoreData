@@ -14,7 +14,7 @@ use function Sabatier\Foundation\human_readable_value;
  * A constraint conflict occurs when your data model is using unique constraints and one or more managed objects are violating that constraint.
  * When this error occurs, the error instance can be interrogated to determine which instance of {@see ManagedObject} is violating the constraint and which property on the {@see ManagedObject} instance is in violation.
  */
-class ConstraintConflict extends ObjectClass
+final class ConstraintConflict extends ObjectClass
 {
     /** @var Dictionary<mixed> The values that the conflicting objects had when the conflict was created. */
     private(set) Dictionary $constraintValues {

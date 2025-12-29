@@ -39,7 +39,7 @@ use function Sabatier\Foundation\typeof;
  *
  * A context consists of a group of related model objects that represent an internally consistent view of one or more persistent stores. Changes to managed objects remain in memory in the associated context until Core Data saves that context to one or more persistent stores. A single managed object instance exists in one and only one context, but multiple copies of an object can exist in different contexts. Therefore, an object is unique to a particular context.
  */
-class ManagedObjectContext extends ObjectClass
+final class ManagedObjectContext extends ObjectClass
 {
     private const string observationContext = "observationContext";
     final public const string didChangeObjectsNotification = ManagedObjectContextObjectsDidChange;

@@ -10,7 +10,7 @@ use Sabatier\Foundation\Formatter;
 use function Sabatier\Foundation\escape_sequence;
 
 /** @internal */
-class SQLFormatter extends Formatter
+final class SQLFormatter extends Formatter
 {
     private static bool $initialized = false;
     /** @var string[] $reserved */

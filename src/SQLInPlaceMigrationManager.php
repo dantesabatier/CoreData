@@ -7,7 +7,7 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\URL;
 
 /** @internal */
-class SQLInPlaceMigrationManager extends MigrationManager
+final class SQLInPlaceMigrationManager extends MigrationManager
 {
     #[Override]
     public function migrateStore(URL $sourceURL, PersistentStoreType $sourceType, ?Dictionary $sourceOptions, MappingModel $mappingModel, URL $destinationURL, PersistentStoreType $destinationType, ?Dictionary $destinationOptions): bool

@@ -5,26 +5,27 @@ namespace Sabatier\CoreData;
 use JetBrains\PhpStorm\ExpectedValues;
 
 /** @internal */
-class SQLStatementFormatterStyle
+final class SQLStatementFormatterStyle
 {
     final const int none = 0;
-    final const int string = 1;
-    final const int arguments = 2;
+    final const int interpolateStrings = 1;
+    final const int includeArguments = 2;
     final const int prettyPrint = 4;
-    final const int highlighted = 8;
+    final const int highlight = 8;
 
     #[ExpectedValues(flagsFromClass: SQLStatementFormatterStyle::class)]
     public static function defaultFormatterStyle(): int
     {
-        $style = SQLStatementFormatterStyle::string;
-        if (SQLCore::$debugDefault > 1) {
-            $style |= SQLStatementFormatterStyle::arguments;
+        $style = SQLStatementFormatterStyle::interpolateStrings;
+        $level = SQLCore::$debugLevel->value;
+        if ($level > SQLDebugLevel::rawSQL->value) {
+            $style |= SQLStatementFormatterStyle::includeArguments;
         }
-        if (SQLCore::$debugDefault > 2) {
+        if ($level > SQLDebugLevel::sqlWithParams->value) {
             $style |= SQLStatementFormatterStyle::prettyPrint;
         }
-        if (SQLCore::$coloredLoggingDefault) {
-            $style |= SQLStatementFormatterStyle::highlighted;
+        if (SQLCore::$debugColorOutputDefault) {
+            $style |= SQLStatementFormatterStyle::highlight;
         }
         return $style;
     }

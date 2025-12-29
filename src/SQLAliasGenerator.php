@@ -5,7 +5,7 @@ namespace Sabatier\CoreData;
 use Sabatier\Foundation\Dictionary;
 
 /** @internal */
-class SQLAliasGenerator
+final class SQLAliasGenerator
 {
     private int $nextTableAlias = 0;
     public string $tableBase;

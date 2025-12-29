@@ -10,7 +10,7 @@
 namespace Sabatier\CoreData;
 
 /** @internal */
-class MemoryObjectStore extends MappedObjectStore
+final class MemoryObjectStore extends MappedObjectStore
 {
     public string $type {
         get => InMemoryStoreType;

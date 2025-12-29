@@ -12,7 +12,7 @@ namespace Sabatier\CoreData;
 use Sabatier\Foundation\Set;
 
 /** @internal */
-class RefreshRequest extends PersistentStoreRequest
+final class RefreshRequest extends PersistentStoreRequest
 {
     /** @var Set<ManagedObject> */
     private(set) Set $refreshObjects {

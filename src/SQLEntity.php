@@ -9,7 +9,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 
 /** @internal */
-class SQLEntity extends StoreMapping
+final class SQLEntity extends StoreMapping
 {
     final public const string primaryKeyName = "objectID";
     final public const string entityKeyName = "entityName";

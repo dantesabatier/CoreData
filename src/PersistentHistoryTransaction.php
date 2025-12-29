@@ -23,7 +23,7 @@ use const Sabatier\Foundation\NotFound;
 /**
  * A set of changes in the persistent history based on a context save or batch operation.
  */
-class PersistentHistoryTransaction extends ObjectClass
+final class PersistentHistoryTransaction extends ObjectClass
 {
     /** @var EntityDescription|null The entity description of the persistent history transaction entity. The entity description of {@see PersistentHistoryTransaction} lists the properties of the persistent history change. This can be useful for filtering your request.The entity description of the persistent history transaction entity. The entity description of {@see PersistentHistoryTransaction} lists the properties of the persistent history change. This can be useful for filtering your request. */
     public static ?EntityDescription $entityDescription = null;

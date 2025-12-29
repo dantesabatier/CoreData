@@ -13,7 +13,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 
 /** @internal */
-class SQLModel extends StoreMapping
+final class SQLModel extends StoreMapping
 {
     /** @var Dictionary<SQLEntity> */
     public readonly Dictionary $entitiesByName;

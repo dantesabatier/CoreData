@@ -5,7 +5,7 @@ namespace Sabatier\CoreData;
 /**
  * Constants that specify the reason the managed object may need to reinitialize its values.
  */
-class SnapshotEventType
+final class SnapshotEventType
 {
     /** @var int Specifies a change due to undo from insertion. */
     final const int undoInsertion = 1 << 1;

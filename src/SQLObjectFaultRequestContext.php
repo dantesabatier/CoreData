@@ -9,7 +9,7 @@ use Sabatier\Foundation\Predicates\Expression;
 use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
-class SQLObjectFaultRequestContext extends SQLStoreRequestContext
+final class SQLObjectFaultRequestContext extends SQLStoreRequestContext
 {
     public FetchRequest $fetchRequest {
         get {

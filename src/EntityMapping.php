@@ -18,7 +18,7 @@ use Sabatier\Foundation\Predicates\Expression;
 /**
  * A mapping instance that specifies how to map an entity from a source to a destination managed object model.
  */
-class EntityMapping extends ObjectClass
+final class EntityMapping extends ObjectClass
 {
     /** @var string|null The source entity name for the entity mapping. */
     public ?string $sourceEntityName = null;

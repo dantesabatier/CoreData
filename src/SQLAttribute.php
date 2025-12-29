@@ -14,7 +14,7 @@ use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
-class SQLAttribute extends SQLColumn
+final class SQLAttribute extends SQLColumn
 {
     public AttributeDescription $attributeDescription {
         get {
