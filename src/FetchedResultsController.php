@@ -10,6 +10,7 @@ use Sabatier\Foundation\Notification;
 use Sabatier\Foundation\NotificationCenter;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Set;
+use function Sabatier\Foundation\capitalize;
 use const Sabatier\Foundation\NotFound;
 
 /**
@@ -84,7 +85,7 @@ class FetchedResultsController extends ObjectClass
         /** @var Set<ResultType> $deleted */
         $deleted = $userInfo[DeletedObjectsKey] ?? new Set();
         /** @var ArrayClass<ResultType> $affected */
-        $affected= new ArrayClass($inserted);
+        $affected = new ArrayClass($inserted);
         $affected->appendContentsOf($updated);
         $affected->appendContentsOf($deleted);
         $affected = $affected->filter(
@@ -186,6 +187,6 @@ class FetchedResultsController extends ObjectClass
      */
     public function sectionIndexTitle(string $sectionName): ?string
     {
-        return ucfirst($sectionName);
+        return capitalize($sectionName);
     }
 }
