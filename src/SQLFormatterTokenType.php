@@ -10,7 +10,7 @@ enum SQLFormatterTokenType: int
     case quote = 2;
     case backtickQuote = 3;
     case reserved = 4;
-    case reservedToplevel = 5;
+    case reservedTopLevel = 5;
     case reservedNewline = 6;
     case boundary = 7;
     case comment = 8;

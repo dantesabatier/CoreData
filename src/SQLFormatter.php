@@ -61,7 +61,7 @@ final class SQLFormatter extends Formatter
         }, match ($token->type) {
             SQLFormatterTokenType::quote => EscapeSequenceColor::green,
             SQLFormatterTokenType::boundary, SQLFormatterTokenType::function => EscapeSequenceColor::brightWhite,
-            SQLFormatterTokenType::reserved, SQLFormatterTokenType::reservedToplevel, SQLFormatterTokenType::reservedNewline => EscapeSequenceColor::yellow,
+            SQLFormatterTokenType::reserved, SQLFormatterTokenType::reservedTopLevel, SQLFormatterTokenType::reservedNewline => EscapeSequenceColor::yellow,
             SQLFormatterTokenType::comment, SQLFormatterTokenType::blockComment, SQLFormatterTokenType::variable => EscapeSequenceColor::brightBlack,
             SQLFormatterTokenType::number => EscapeSequenceColor::brightBlue,
             SQLFormatterTokenType::error => EscapeSequenceColor::red,
@@ -121,7 +121,7 @@ final class SQLFormatter extends Formatter
         if (!$previous || $previous->value !== ".") {
             $upper = strtoupper($string);
             if (preg_match("/^(" . self::$regexReservedToplevel . ")(\$|\\s|" . self::$regexBoundaries . ")/", $upper, $matches)) {
-                return new SQLFormatterToken(SQLFormatterTokenType::reservedToplevel, substr($string, 0, strlen($matches[1])));
+                return new SQLFormatterToken(SQLFormatterTokenType::reservedTopLevel, substr($string, 0, strlen($matches[1])));
             }
             if (preg_match("/^(" . self::$regexReservedNewline . ")($|\s|" . self::$regexBoundaries . ")/", $upper, $matches)) {
                 return new SQLFormatterToken(SQLFormatterTokenType::reservedNewline, substr($string, 0, strlen($matches[1])));
@@ -269,7 +269,7 @@ final class SQLFormatter extends Formatter
                     if ($next->value === ";" || $next->value === "(") {
                         break;
                     }
-                    if (in_array($next->type, [SQLFormatterTokenType::reservedToplevel, SQLFormatterTokenType::reservedNewline, SQLFormatterTokenType::comment, SQLFormatterTokenType::blockComment], true)) {
+                    if (in_array($next->type, [SQLFormatterTokenType::reservedTopLevel, SQLFormatterTokenType::reservedNewline, SQLFormatterTokenType::comment, SQLFormatterTokenType::blockComment], true)) {
                         break;
                     }
                     $length += strlen((string)$next->value);
@@ -306,7 +306,7 @@ final class SQLFormatter extends Formatter
                 if (!$added_newline) {
                     $return .= "\n" . str_repeat($tab, $indentLevel);
                 }
-            } elseif ($token->type === SQLFormatterTokenType::reservedToplevel) {
+            } elseif ($token->type === SQLFormatterTokenType::reservedTopLevel) {
                 $increaseSpecialIndent = true;
                 reset($indentTypes);
                 if (current($indentTypes) === "special") {
@@ -379,7 +379,7 @@ final class SQLFormatter extends Formatter
             return null;
         }
         $highlight = ($this->style & SQLFormatterStyle::highlighted) !== 0;
-        if (!($this->style & SQLFormatterStyle::prettyPrint)) {
+        if (!($this->style & SQLFormatterStyle::prettyPrinted)) {
             return $highlight ? $this->highlight($object) : $object;
         }
         return $this->format($object, $highlight);

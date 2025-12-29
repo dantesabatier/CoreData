@@ -48,7 +48,7 @@ final class SQLStatementFormatter extends Formatter
             $style |= SQLFormatterStyle::highlighted;
         }
         if ($this->style & SQLStatementFormatterStyle::prettyPrint) {
-            $style |= SQLFormatterStyle::prettyPrint;
+            $style |= SQLFormatterStyle::prettyPrinted;
         }
         $formatter = new SQLFormatter($style);
         return $formatter->string($string);
