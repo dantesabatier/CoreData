@@ -96,8 +96,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public bool $isFault = true;
     /** @var int The faulting state of the managed object. 0 if the object is fully initialized as a managed object and not transitioning to or from another state, otherwise some other value. */
     public int $faultingState = NotFound;
+    /** @var SerializationRule Serialization rule. Defines how the object's properties contribute to its external serializable representation. */
     public SerializationRule $serializationRule = SerializationRule::attributesAndRelationships;
-    /** @var ArrayClass<string> */
+    /** @var ArrayClass<string> Explicit list of properties included in the object's serializable representation. Used both when recursively preparing related objects for serialization and when producing JSON output through jsonSerialize(). */
     public ArrayClass $serializationKeys {
         get {
             if (!isset($this->serializationKeys)) {
@@ -1087,7 +1088,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         return $object->jsonSerialize();
     }
 
-    private function serializedRelationshipValueForRelationship(RelationshipDescription $relationship): Set|Dictionary|null
+    private function serializedRelationshipValue(RelationshipDescription $relationship): Set|Dictionary|null
     {
         $key = $relationship->name;
         $value = $this->valueForKey($key);
@@ -1115,8 +1116,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     }
                     $dictionary[$key] = $value;
                 } elseif ($property instanceof RelationshipDescription) {
-                    if (!($value = $this->serializedRelationshipValueForRelationship($property))) {
-                        /** @noinspection PhpVoidFunctionResultUsedInspection */
+                    if (!($value = $this->serializedRelationshipValue($property))) {
                         $value = $property->isOptional ? Nil::nil() : ($property->isToMany ? new Set() : fatal_error(sprintf("%s property \"%s\" is not optional", $this->debugDescription, $property->name)));
                     }
                     $dictionary[$key] = $value;
@@ -1131,12 +1131,26 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     }
 
     /**
-     * @psalm-suppress LessSpecificReturnStatement, MoreSpecificReturnType
-     * @return static
+     * Configures the object and its reachable relationships according to a given serialization shape.
+     *
+     * When provided with a nested dictionary describing the desired properties and relationships,
+     * this method:
+     *   1. Updates the object's `serializationRule` to `custom`.
+     *   2. Sets `serializationKeys` to include exactly the specified properties.
+     *   3. Recursively applies the same rules to related ManagedObjects, ensuring the entire object graph
+     *      conforms to the requested shape.
+     *
+     * The resulting object graph is fully prepared for JSON serialization via `jsonSerialize()`.
+     *
+     * If no serialization shape is provided (null or empty), the object is returned unchanged.
+     *
+     * @param Dictionary<mixed>|null $serialization Nested dictionary specifying the properties and relationships to include.
+     *
+     * @return static The same object instance, with serialization rules applied.
      */
-    public function serialized(?Dictionary $serialization = null): self
+    public function serialized(?Dictionary $serialization = null): static
     {
-        return ManagedObjectSerializer::shared()->serialized($this, $serialization);
+        return ManagedObjectSerializationPreparer::shared()->serialized($this, $serialization);
     }
 
     #[Override]

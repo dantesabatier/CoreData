@@ -5,17 +5,17 @@ namespace Sabatier\CoreData;
 use Sabatier\Foundation\Dictionary;
 
 /** @internal */
-final class ManagedObjectSerializer
+final class ManagedObjectSerializationPreparer
 {
-    private static ?ManagedObjectSerializer $shared = null;
+    private static ?ManagedObjectSerializationPreparer $shared = null;
 
-    public static function shared(): ManagedObjectSerializer
+    public static function shared(): ManagedObjectSerializationPreparer
     {
-        self::$shared ??= new ManagedObjectSerializer();
+        self::$shared ??= new ManagedObjectSerializationPreparer();
         return self::$shared;
     }
 
-    private function update(ManagedObject $object, Dictionary $dictionary): void
+    private function applySerializationShape(ManagedObject $object, Dictionary $dictionary): void
     {
         if ($dictionary->isEmpty) {
             return;
@@ -30,7 +30,7 @@ final class ManagedObjectSerializer
         $object->serializationKeys = $serializationKeys;
     }
 
-    private function serialization(string $propertyName, Dictionary $dictionary): ?Dictionary
+    private function subShapeForProperty(string $propertyName, Dictionary $dictionary): ?Dictionary
     {
         if ($dictionary[$propertyName]) {
             return $dictionary[$propertyName];
@@ -40,7 +40,7 @@ final class ManagedObjectSerializer
                 return $value;
             }
             if ($value instanceof Dictionary) {
-                $serialization = $this->serialization($propertyName, $value);
+                $serialization = $this->subShapeForProperty($propertyName, $value);
                 if (!$serialization?->isEmpty) {
                     return $serialization;
                 }
@@ -49,9 +49,9 @@ final class ManagedObjectSerializer
         return null;
     }
 
-    private function serialize(ManagedObject $object, Dictionary $dictionary): void
+    private function prepareObjectGraph(ManagedObject $object, Dictionary $dictionary): void
     {
-        $this->update($object, $dictionary);
+        $this->applySerializationShape($object, $dictionary);
         foreach ($object->entity as $property) {
             if ($property instanceof AttributeDescription) {
                 continue;
@@ -61,7 +61,7 @@ final class ManagedObjectSerializer
             if ($value === null) {
                 continue;
             }
-            $serialization = $this->serialization($key, $dictionary);
+            $serialization = $this->subShapeForProperty($key, $dictionary);
             if (!$serialization instanceof Dictionary) {
                 continue;
             }
@@ -71,18 +71,18 @@ final class ManagedObjectSerializer
                     $obj = $object->managedObjectContext->object($obj);
                 }
                 if ($obj instanceof ManagedObject) {
-                    $this->serialize($obj, $serialization);
+                    $this->prepareObjectGraph($obj, $serialization);
                 }
             }
         }
     }
 
-    public function serialized(ManagedObject $object, ?Dictionary $dictionary): ManagedObject
+    public function serialized(ManagedObject $object, ?Dictionary $dictionary): mixed
     {
         if (!$dictionary || $dictionary->isEmpty) {
             return $object;
         }
-        $this->serialize($object, $dictionary);
+        $this->prepareObjectGraph($object, $dictionary);
         return $object;
     }
 }
