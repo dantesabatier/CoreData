@@ -2,6 +2,8 @@
 
 namespace Sabatier\CoreData;
 
+use Sabatier\Foundation\Dictionary;
+
 /**
  * Defines the strategy for determining the default set of properties of a ManagedObject to include in `serializationKeys` when preparing the object for serialization.
  *
@@ -16,6 +18,6 @@ enum SerializationRule: int
     case attributesOnly = 0;
     /** Both attributes (non-transient) and relationships are included. Relationships are expanded recursively, stopping as needed to avoid infinite loops. */
     case attributesAndRelationships = 1;
-    /** A custom set of properties is applied explicitly via a serialization shape (Dictionary) provided to `serialized()`. */
+    /** A custom set of properties is applied explicitly via a serialization shape ({@see Dictionary}) provided to {@see ManagedObject::serialized()}. */
     case custom = 2;
 }
