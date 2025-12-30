@@ -245,7 +245,7 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
      */
     public static function entity(string $entityName, ManagedObjectContext $context): EntityDescription
     {
-        return $context->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[$entityName] ?? fatal_error(sprintf("%s %s(%s) does not exist", static::class, __FUNCTION__, $entityName));
+        return $context->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[$entityName] ?? fatal_error(sprintf("%s %s(%s) does not exist", EntityDescription::class, __FUNCTION__, $entityName));
     }
 
     /**

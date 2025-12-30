@@ -62,7 +62,7 @@ final class PersistentStoreCoordinator extends ObjectClass
 
     public static function registerStoreClass(?string $persistentStoreClass, PersistentStoreType $storeType): void
     {
-        static::registeredStoreTypes()[$storeType->value] = $persistentStoreClass;
+        PersistentStoreCoordinator::registeredStoreTypes()[$storeType->value] = $persistentStoreClass;
     }
 
     /**
@@ -240,7 +240,7 @@ final class PersistentStoreCoordinator extends ObjectClass
     public function destroyPersistentStoreAtURL(URL $url, PersistentStoreType $type, ?Dictionary $options = null): bool
     {
         /** @var class-string<PersistentStore> $persistentStoreClass */
-        $persistentStoreClass = static::registeredStoreTypes()[$type->value];
+        $persistentStoreClass = PersistentStoreCoordinator::registeredStoreTypes()[$type->value];
         return $persistentStoreClass::destroyPersistentStoreAtURL($url, $options);
     }
 
@@ -312,7 +312,7 @@ final class PersistentStoreCoordinator extends ObjectClass
     public function replacePersistentStore(URL $destinationURL, ?Dictionary $destinationOptions, URL $sourceURL, ?Dictionary $sourceOptions, PersistentStoreType $storeType): void
     {
         /** @var class-string<PersistentStore> $persistentStoreClass */
-        $persistentStoreClass = static::registeredStoreTypes()[$storeType->value];
+        $persistentStoreClass = PersistentStoreCoordinator::registeredStoreTypes()[$storeType->value];
         $persistentStoreClass::replacePersistentStoreAtURL($destinationURL, $destinationOptions, $sourceURL, $sourceOptions);
     }
 

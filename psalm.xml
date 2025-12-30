@@ -49,6 +49,7 @@
             <errorLevel type="suppress">
                 <file name="src/EntityMigrationPolicy.php"/>
                 <file name="src/ManagedObject.php"/>
+                <file name="src/PersistentContainer.php"/>
             </errorLevel>
         </ClassMustBeFinal>
     </issueHandlers>
