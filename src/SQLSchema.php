@@ -19,8 +19,8 @@ final class SQLSchema
     {
     }
 
-    public static function schema(?string $name = null): self
+    public static function schema(?string $name = null): SQLSchema
     {
-        return new self($name ?? ProcessInfo::processInfo()->environment["SQL_SCHEMA_NAME"] ?? fatal_error("Environment variable \"SQL_SCHEMA_NAME\" cannot be null"), ProcessInfo::processInfo()->environment["SQL_SCHEMA_HOST"] ?? "localhost", new SQLCredential(ProcessInfo::processInfo()->environment["SQL_SCHEMA_CREDENTIAL_USER"] ?? "root", ProcessInfo::processInfo()->environment["SQL_SCHEMA_CREDENTIAL_PASSWORD"]));
+        return new SQLSchema($name ?? ProcessInfo::processInfo()->environment["SQL_SCHEMA_NAME"] ?? fatal_error("Environment variable \"SQL_SCHEMA_NAME\" cannot be null"), ProcessInfo::processInfo()->environment["SQL_SCHEMA_HOST"] ?? "localhost", new SQLCredential(ProcessInfo::processInfo()->environment["SQL_SCHEMA_CREDENTIAL_USER"] ?? "root", ProcessInfo::processInfo()->environment["SQL_SCHEMA_CREDENTIAL_PASSWORD"]));
     }
 }

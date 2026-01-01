@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+/** @internal */
 enum SQLDebugLevel: int
 {
     case none = 0;
