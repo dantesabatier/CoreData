@@ -22,7 +22,7 @@ use Sabatier\Foundation\Predicates\CompoundPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\ExpressionType;
 use Sabatier\Foundation\Predicates\Predicate;
-use Sabatier\Foundation\SensitivePropertyValue;
+use Sabatier\Foundation\SensitiveValue;
 use Sabatier\Foundation\Sequence;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
@@ -780,7 +780,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         return $keys->reduce(new Dictionary(), function (Dictionary $initial, string $key): Dictionary {
             $value = $this->valueForKey($key);
             if ($this->entity->propertiesByName[$key]?->isSensitive) {
-                $value = new SensitivePropertyValue($value);
+                $value = new SensitiveValue($value);
             }
             $initial[$key] = $value;
             return $initial;
@@ -1112,7 +1112,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 if ($property instanceof AttributeDescription) {
                     $value = $this->valueForKey($key) ?? Nil::nil();
                     if ($property->isSensitive) {
-                        $value = new SensitivePropertyValue($value);
+                        $value = new SensitiveValue($value);
                     }
                     $dictionary[$key] = $value;
                 } elseif ($property instanceof RelationshipDescription) {
