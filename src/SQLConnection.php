@@ -28,8 +28,8 @@ use Sabatier\Foundation\URL;
 use Sabatier\Foundation\ValueTransformer;
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\fatal_error;
-use function Sabatier\Foundation\human_readable_plural;
 use function Sabatier\Foundation\human_readable_time;
+use function Sabatier\Foundation\pluralize;
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /** @internal */
@@ -167,7 +167,7 @@ final class SQLConnection extends ObjectClass
         if ($statement->arguments->isEmpty) {
             $pdoStatement = $mysql->query($statement->string);
             if (SQLCore::$debugLevel->value) {
-                error_log(sprintf("CoreData: annotation: execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $pdoStatement->rowCount(), human_readable_plural("row", $pdoStatement->rowCount())));
+                error_log(sprintf("CoreData: annotation: execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $pdoStatement->rowCount(), pluralize("row", $pdoStatement->rowCount())));
             }
             return $pdoStatement;
         }
@@ -191,7 +191,7 @@ final class SQLConnection extends ObjectClass
             return $e;
         })->array);
         if (SQLCore::$debugLevel->value) {
-            error_log(sprintf("CoreData: annotation: execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $pdoStatement->rowCount(), human_readable_plural("row", $pdoStatement->rowCount())));
+            error_log(sprintf("CoreData: annotation: execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $pdoStatement->rowCount(), pluralize("row", $pdoStatement->rowCount())));
         }
         return $pdoStatement;
     }

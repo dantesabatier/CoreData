@@ -11,9 +11,9 @@ use Sabatier\Foundation\Set;
 use Sabatier\Foundation\Slice;
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\fatal_error;
-use function Sabatier\Foundation\human_readable_plural;
 use function Sabatier\Foundation\human_readable_time;
 use function Sabatier\Foundation\human_readable_value;
+use function Sabatier\Foundation\pluralize;
 
 /** @internal */
 class SQLFetchRequestContext extends SQLStoreRequestContext
@@ -300,7 +300,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         $this->duration = absolute_time_get_current() - $this->duration;
         $level = $this->debugLevel->value;
         if ($level) {
-            $message = sprintf("CoreData: annotation: total execution time: %s for %d %s", human_readable_time($this->duration), $this->result->count, human_readable_plural("element", $this->result->count));
+            $message = sprintf("CoreData: annotation: total execution time: %s for %d %s", human_readable_time($this->duration), $this->result->count, pluralize("element", $this->result->count));
             if ($level > SQLDebugLevel::prettyFormatSQL->value) {
                 $message .= "\n$this->result";
             }
