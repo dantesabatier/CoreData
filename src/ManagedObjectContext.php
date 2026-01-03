@@ -31,7 +31,6 @@ use Sabatier\Foundation\Set;
 use Sabatier\Foundation\UndoManager;
 use Sabatier\Foundation\URL;
 use function Sabatier\Foundation\fatal_error;
-use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\typeof;
 
 /**
@@ -183,7 +182,7 @@ final class ManagedObjectContext extends ObjectClass
         /** @psalm-suppress InvalidArgument */
         return $request->fetchBatchSize ? match ($request->resultType) {
             FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType => new UnknownRequestTypeResult(new BatchFaultingArray($request, $this)),
-            default => fatal_error(sprintf("Invalid fetch request: %s->fetchBatchSize cannot be used with %s", FetchRequest::class, human_readable_value($request->resultType))),
+            FetchRequestResultType::dictionaryResultType, FetchRequestResultType::countResultType => $this->executePersistentStoreRequest($request),
         } : $this->executePersistentStoreRequest($request);
     }
 
