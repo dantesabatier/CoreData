@@ -16,7 +16,7 @@ final readonly class FaultingSetMutationMethod
     {
         return new FaultingSetMutationMethod(sprintf("add%sObject", ucfirst($key)), function (ManagedObject $object) use ($obj, $key): void {
             $mutableSet = clone $obj->mutableSetValueForKey($key);
-            $mutableSet->append($object);
+            $mutableSet->insert($object);
             $obj->setValueForKey($mutableSet, $key);
         });
     }
@@ -32,11 +32,15 @@ final readonly class FaultingSetMutationMethod
 
     public static function addMethod(ManagedObject $obj, string $key): FaultingSetMutationMethod
     {
-        return new FaultingSetMutationMethod(sprintf("add%s", ucfirst($key)), function (Set $set) use ($obj, $key): void {
-            $mutableSet = clone $obj->mutableSetValueForKey($key);
-            $mutableSet->formUnion($set);
-            $obj->setValueForKey($mutableSet, $key);
-        });
+        return new FaultingSetMutationMethod(sprintf("add%s", ucfirst($key)),
+            /**
+             * @param Set<ManagedObject> $set
+             */
+            function (Set $set) use ($obj, $key): void {
+                $mutableSet = clone $obj->mutableSetValueForKey($key);
+                $mutableSet->formUnion($set);
+                $obj->setValueForKey($mutableSet, $key);
+            });
     }
 
     public static function removeMethod(ManagedObject $obj, string $key): FaultingSetMutationMethod

@@ -154,7 +154,7 @@ final class XMLObjectStore extends AtomicStore
                 }
             }
             $this->xmlInfo[$entity->name] = $info;
-            $cacheNodes->append($cacheNode);
+            $cacheNodes->insert($cacheNode);
         }
         $this->addCacheNodes($cacheNodes);
     }
@@ -247,11 +247,11 @@ final class XMLObjectStore extends AtomicStore
         /** @var Set<ManagedObjectID> $managedObjectIDs */
         $managedObjectIDs = new Set();
         if ($value instanceof Set) {
-            $managedObjectIDs->appendContentsOf($value->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID));
+            $managedObjectIDs->formUnion($value->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID));
         } elseif ($value instanceof ManagedObject) {
-            $managedObjectIDs->append($value->objectID);
+            $managedObjectIDs->insert($value->objectID);
         } elseif ($value instanceof ManagedObjectID) {
-            $managedObjectIDs->append($value);
+            $managedObjectIDs->insert($value);
         }
         return $managedObjectIDs;
     }

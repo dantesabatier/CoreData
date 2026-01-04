@@ -253,7 +253,7 @@ abstract class AtomicStore extends PersistentStore
             /** @var Set<AtomicStoreCacheNode> $deletedNodes */
             $deletedNodes = new Set();
             foreach ($deletedObjects as $deletedObject) {
-                $deletedNodes->append($this->cacheNode($deletedObject->objectID) ?? fatal_error("Unable to delete an uncached object $deletedObject"));
+                $deletedNodes->insert($this->cacheNode($deletedObject->objectID) ?? fatal_error("Unable to delete an uncached object $deletedObject"));
                 $this->removeObject($deletedObject);
             }
             $this->willRemoveCacheNodes($deletedNodes);

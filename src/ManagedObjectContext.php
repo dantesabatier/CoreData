@@ -429,7 +429,7 @@ final class ManagedObjectContext extends ObjectClass
         $object->awakeFromInsert();
         if (!$this->processingChanges) {
             $this->hasChanges = true;
-            $this->insertedObjects->append($object);
+            $this->insertedObjects->insert($object);
         }
         $this->register($object);
     }
@@ -441,7 +441,7 @@ final class ManagedObjectContext extends ObjectClass
     public function delete(ManagedObject $object): void
     {
         $this->hasChanges = true;
-        $this->deletedObjects->append($object);
+        $this->deletedObjects->insert($object);
         $this->insertedObjects->remove($object);
         $this->updatedObjects->remove($object);
     }
@@ -561,7 +561,7 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function refresh(ManagedObject $object, bool $mergeChanges = false): void
     {
-        $this->refreshedObjects->append($object);
+        $this->refreshedObjects->insert($object);
         $this->refault($object, $mergeChanges);
     }
 
@@ -598,7 +598,7 @@ final class ManagedObjectContext extends ObjectClass
             if ($inverseRelationship->isToMany) {
                 foreach ($insertions as $insertion) {
                     $set = $insertion->mutableSetValueForKey($inverseRelationship->name);
-                    $set->append($object);
+                    $set->insert($object);
                 }
                 $store = $object->objectID->persistentStore;
                 if ($store instanceof SQLCore) {
@@ -614,7 +614,7 @@ final class ManagedObjectContext extends ObjectClass
             }
         } else {
             $object->setValueForKey($insertions->first, $relationship->name);
-            $this->updatedObjects->append($object);
+            $this->updatedObjects->insert($object);
         }
         $this->insertedObjects->formUnion($insertions);
     }
@@ -652,19 +652,19 @@ final class ManagedObjectContext extends ObjectClass
                     $object->setPrimitiveValueForKey($set, $relationship->name);
                     $this->deletedObjects->remove($object);
                     $this->insertedObjects->remove($object);
-                    $this->updatedObjects->append($object);
+                    $this->updatedObjects->insert($object);
                     foreach ($deletions as $deletion) {
                         $deletion->setPrimitiveValueForKey(Nil::nil(), $inverseRelationship->name);
                         $this->deletedObjects->remove($deletion);
                         $this->insertedObjects->remove($deletion);
-                        $this->updatedObjects->append($deletion);
+                        $this->updatedObjects->insert($deletion);
                     }
                 }
             } else {
                 $object->setPrimitiveValueForKey(Nil::nil(), $relationship->name);
                 $this->deletedObjects->remove($object);
                 $this->insertedObjects->remove($object);
-                $this->updatedObjects->append($object);
+                $this->updatedObjects->insert($object);
             }
         } elseif ($deleteRule === DeleteRule::cascadeDeleteRule) {
             foreach ($deletions as $deletion) {
@@ -722,7 +722,7 @@ final class ManagedObjectContext extends ObjectClass
                 }
             }
             if ($attributesChanged) {
-                $this->updatedObjects->append($object);
+                $this->updatedObjects->insert($object);
             }
         }
         $this->resetAllChanges();
@@ -837,7 +837,7 @@ final class ManagedObjectContext extends ObjectClass
             if ($insertedObject->isInserted) {
                 $this->insertedObjects->remove($insertedObject);
                 if ($insertedObject->isUpdated) {
-                    $this->updatedObjects->append($insertedObject);
+                    $this->updatedObjects->insert($insertedObject);
                 }
                 continue;
             }

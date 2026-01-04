@@ -126,7 +126,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                     if ($keyPathComponents[$keyPathComponents->indexBefore($keyPathComponents->endIndex)] === $primaryKeyName) {
                         $propertyKeyPath = $propertyKeyPathComponents->join(".");
                         if ($value instanceof Nil) {
-                            $nullPropertyPrefixes->append($propertyKeyPath);
+                            $nullPropertyPrefixes->insert($propertyKeyPath);
                         } else {
                             $nullPropertyPrefixes->remove($propertyKeyPath);
                         }

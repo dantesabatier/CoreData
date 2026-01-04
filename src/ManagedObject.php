@@ -417,6 +417,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if (!$relationship->isToMany) {
             fatal_error("$this->debugDescription does not contains a to many relationship named \"$key\"");
         }
+        /** @var Set<ManagedObject>|null $mutableSet */
         $mutableSet = $this->primitiveValueForKey($key);
         if (!$mutableSet instanceof FaultingSet) {
             $set = new FaultingSet($this, $relationship);
@@ -976,7 +977,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         !$this->changedValues->isEmpty ?: fatal_error("invalid state: changed values is empty");
         /** @var Set<PropertyDescription> $properties */
         $properties = new Set($this->changedValues->keys->compactMap(fn(string $key): ?PropertyDescription => $this->entity->propertiesByName[$key]));
-        $properties->appendContentsOf($this->persistentProperties->filter(fn(PropertyDescription $property): bool => !$property->isOptional));
+        $properties->formUnion($this->persistentProperties->filter(fn(PropertyDescription $property): bool => !$property->isOptional));
         foreach ($properties as $property) {
             if ($property->isTransient) {
                 continue;

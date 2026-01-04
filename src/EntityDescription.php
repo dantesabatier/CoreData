@@ -183,18 +183,18 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
         $superentity = $this->superentity;
         $rootEntity = $superentity;
         while ($superentity) {
-            $properties->appendContentsOf($superentity->properties);
-            $indexes->appendContentsOf($superentity->indexes);
+            $properties->formUnion($superentity->properties);
+            $indexes->formUnion($superentity->indexes);
             $superentity = $superentity->superentity;
             if ($superentity) {
                 $rootEntity = $superentity;
             }
         }
-        $properties->appendContentsOf($this->properties);
-        $indexes->appendContentsOf($this->indexes);
+        $properties->formUnion($this->properties);
+        $indexes->formUnion($this->indexes);
         foreach ($this->subentities as $subentity) {
-            $properties->appendContentsOf($subentity->properties);
-            $indexes->appendContentsOf($subentity->indexes);
+            $properties->formUnion($subentity->properties);
+            $indexes->formUnion($subentity->indexes);
         }
         $this->rootEntity = $rootEntity;
         $this->isRootEntity = $rootEntity === null;

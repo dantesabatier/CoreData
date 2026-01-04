@@ -343,7 +343,7 @@ final class SQLGenerator extends ObjectClass
         /** @var Set<string> $columnNames */
         $columnNames = new Set();
         if ($this->keyValueOperator === KeyValueOperator::countKeyValueOperator) {
-            $columnNames->append("$entity->tableName.{$entity->primaryKey->columnName}");
+            $columnNames->insert("$entity->tableName.{$entity->primaryKey->columnName}");
         }
         $appendInferredColumnNames = true;
         if (($request->resultType === FetchRequestResultType::countResultType && $this->keyValueOperator === KeyValueOperator::countKeyValueOperator) || $request->returnsObjectsAsFaults || !$request->includesPropertyValues) {
@@ -351,7 +351,7 @@ final class SQLGenerator extends ObjectClass
         }
         if ($appendInferredColumnNames) {
             if (!$entity->entityDescription->isPersistentHistoryEntity && $request->resultType !== FetchRequestResultType::countResultType) {
-                $columnNames->append("$entity->tableName.{$entity->entityKey->columnName}");
+                $columnNames->insert("$entity->tableName.{$entity->entityKey->columnName}");
             }
             $keys = $request->serialization->keys->filter(function (string $key) use ($entity): bool {
                 /** @var SQLProperty $property */
@@ -365,7 +365,7 @@ final class SQLGenerator extends ObjectClass
             }
             $properties->appendContentsOf($keys->filter(fn(string $key): bool => $request->entity->attributesByName->contains(fn(AttributeDescription $attribute): bool => !$attribute->isTransient && $attribute->name === $key)));
             /** @psalm-suppress InvalidArgument */
-            $columnNames->appendContentsOf($properties->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => is_string($property) ? $entity->attributes->first(fn(SQLAttribute $attribute): bool => !$attribute->isCompositeAttribute && !$attribute->isTransient && $attribute->name === $property)?->attributeDescription : (($property instanceof AttributeDescription && !$property instanceof CompositeAttributeDescription) || $property instanceof ExpressionDescription ? $property : null))->map(function (PropertyDescription $property) use ($entity): string {
+            $columnNames->formUnion($properties->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => is_string($property) ? $entity->attributes->first(fn(SQLAttribute $attribute): bool => !$attribute->isCompositeAttribute && !$attribute->isTransient && $attribute->name === $property)?->attributeDescription : (($property instanceof AttributeDescription && !$property instanceof CompositeAttributeDescription) || $property instanceof ExpressionDescription ? $property : null))->map(function (PropertyDescription $property) use ($entity): string {
                 if ($property instanceof AttributeDescription) {
                     if ($property instanceof DerivedAttributeDescription && $property->derivationExpression?->usesKVC) {
                         return "{$this->buildDerivationExpression($property->derivationExpression)} AS $property->name";
@@ -376,7 +376,7 @@ final class SQLGenerator extends ObjectClass
                 return "$entity->tableName.$property->name";
             }));
         }
-        $columnNames->appendContentsOf($entity->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary): ArrayClass => $dictionary->values->map(fn(SQLAttribute $attribute): string => "$entity->tableName.$attribute->name")));
+        $columnNames->formUnion($entity->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary): ArrayClass => $dictionary->values->map(fn(SQLAttribute $attribute): string => "$entity->tableName.$attribute->name")));
         $this->selectList .= $columnNames->join(", ");
     }
 
@@ -609,8 +609,8 @@ final class SQLGenerator extends ObjectClass
             if ($property instanceof RelationshipDescription) {
                 /** @psalm-suppress PossiblyNullOperand */
                 $current = $parent . $key;
-                $expressions->append(Expression::expressionForKeyPath($current));
-                $expressions->appendContentsOf($this->keyPathExpressionsForFetchRequestSerialization($value, $current, $property->destinationEntity));
+                $expressions->insert(Expression::expressionForKeyPath($current));
+                $expressions->formUnion($this->keyPathExpressionsForFetchRequestSerialization($value, $current, $property->destinationEntity));
             }
         }
         return $expressions;
@@ -627,14 +627,14 @@ final class SQLGenerator extends ObjectClass
         $predicate ??= $this->request->predicate;
         if ($predicate instanceof ComparisonPredicate) {
             if ($predicate->leftExpression->expressionType === ExpressionType::keyPath) {
-                $expressions->append($predicate->leftExpression);
+                $expressions->insert($predicate->leftExpression);
             }
             if ($predicate->rightExpression->expressionType === ExpressionType::keyPath) {
-                $expressions->append($predicate->rightExpression);
+                $expressions->insert($predicate->rightExpression);
             }
         } elseif ($predicate instanceof CompoundPredicate) {
             foreach ($predicate->subpredicates as $subpredicate) {
-                $expressions->appendContentsOf($this->keyPathExpressionsForFetchRequestPredicate($subpredicate));
+                $expressions->formUnion($this->keyPathExpressionsForFetchRequestPredicate($subpredicate));
             }
         }
         return $expressions;
@@ -1290,17 +1290,17 @@ final class SQLGenerator extends ObjectClass
         $arguments = new ArrayClass();
         /** @var Set<string> $columnNames */
         $columnNames = new Set();
-        $columnNames->appendContentsOf([$entity->primaryKey->columnName, $entity->entityKey->columnName]);
+        $columnNames->formUnion([$entity->primaryKey->columnName, $entity->entityKey->columnName]);
         foreach ($insertedObjects as $insertedObject) {
             foreach ($entity->properties as $property) {
                 if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey) {
-                    $columnNames->append($property->name);
+                    $columnNames->insert($property->name);
                 } elseif ($property instanceof SQLAttribute) {
                     if ($insertedObject->changedValuesForCurrentEvent()->offsetExists($property->name)) {
-                        $columnNames->append($property->columnName);
+                        $columnNames->insert($property->columnName);
                     }
                 } elseif ($property instanceof SQLToOne) {
-                    $columnNames->append($property->foreignKey->columnName);
+                    $columnNames->insert($property->foreignKey->columnName);
                 } elseif ($property instanceof SQLToMany) {
                     if ($insertedObject->entity->propertiesByName[$property->name]) {
                         /** @var Set<ManagedObject> $mutableSet */
@@ -1360,7 +1360,7 @@ final class SQLGenerator extends ObjectClass
                         if ($property instanceof SQLToOne) {
                             $key = $property->foreignKey->columnName;
                         }
-                        $columnNames->append($key);
+                        $columnNames->insert($key);
                     }
                 }
             }

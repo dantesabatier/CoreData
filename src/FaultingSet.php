@@ -34,15 +34,6 @@ final class FaultingSet extends Set
     }
 
     #[Override]
-    public function append(mixed $element): void
-    {
-        if ($element instanceof ManagedObject) {
-            $element = $element->objectID;
-        }
-        parent::append($element);
-    }
-
-    #[Override]
     public function insert(mixed $newElement): array
     {
         if ($newElement instanceof ManagedObject) {

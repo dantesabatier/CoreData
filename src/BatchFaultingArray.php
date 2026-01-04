@@ -63,12 +63,6 @@ final class BatchFaultingArray extends ArrayClass
     }
 
     #[Override]
-    public function insert(mixed $newElement): never
-    {
-        invalid_mutation();
-    }
-
-    #[Override]
     public function insertAt(mixed $element, int $at): void
     {
         invalid_mutation();
