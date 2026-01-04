@@ -170,9 +170,13 @@ class MigrationManager extends ObjectClass
                 $destinationInstances = $relationshipsByName[$relationshipKey] ?? new ArrayClass();
                 $value = $source->valueForKey($key);
                 if ($value instanceof Set) {
-                    $destinationInstances->appendContentsOf($expression->expressionValue($source, new Dictionary(["\$manager" => $this, "\$source" => new ArrayClass($value->map(fn(ManagedObject|ManagedObjectID $e): ManagedObject => $e instanceof ManagedObject ? $e : $this->sourceContext->object($e)))])));
+                    /** @var Dictionary<mixed> $context */
+                    $context = new Dictionary(["\$manager" => $this, "\$source" => new ArrayClass($value->map(fn(ManagedObject|ManagedObjectID $e): ManagedObject => $e instanceof ManagedObject ? $e : $this->sourceContext->object($e)))]);
+                    $destinationInstances->appendContentsOf($expression->expressionValue($source, $context));
                 } elseif ($value instanceof ManagedObject) {
-                    $destinationInstances->appendContentsOf($expression->expressionValue($source, new Dictionary(["\$manager" => $this, "\$source" => new ArrayClass([$value])])));
+                    /** @var Dictionary<mixed> $context */
+                    $context = new Dictionary(["\$manager" => $this, "\$source" => new ArrayClass([$value])]);
+                    $destinationInstances->appendContentsOf($expression->expressionValue($source, $context));
                 } elseif ($value) {
                     fatal_error(sprintf("Unexpected value \"%s\" for relationship %s->%s", typeof($value), $source->entity->name, $key));
                 }
@@ -366,7 +370,7 @@ class MigrationManager extends ObjectClass
         $relationshipsByName = $this->byMappingBySourceRelationshipsAssociationTable[$relationshipName];
         if ($relationshipsByName) {
             return $sourceInstances->flatMap(fn(ManagedObject $sourceInstance): ArrayClass => /** @var ArrayClass<ManagedObject> */
-                    $relationshipsByName[(string)$sourceInstance->objectID] ?? new ArrayClass());
+                $relationshipsByName[(string)$sourceInstance->objectID] ?? new ArrayClass());
         }
         return new ArrayClass();
     }

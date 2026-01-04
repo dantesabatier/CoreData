@@ -40,10 +40,16 @@ trait FaultingSetMutationMethods
      */
     public function createMutationMethods(string $key): Dictionary
     {
-        $this->faultingSetMutationMethods->merge(new ArrayClass([FaultingSetMutationMethod::addObjectMethod($this, $key), FaultingSetMutationMethod::removeObjectMethod($this, $key), FaultingSetMutationMethod::addMethod($this, $key), FaultingSetMutationMethod::removeMethod($this, $key), FaultingSetMutationMethod::intersectMethod($this, $key), FaultingSetMutationMethod::setMethod($this, $key)])->reduce(new Dictionary(), function (Dictionary $dictionary, FaultingSetMutationMethod $method): Dictionary {
-            $dictionary[$method->name] = $method;
-            return $dictionary;
-        }));
+        $this->faultingSetMutationMethods->merge(new ArrayClass([FaultingSetMutationMethod::addObjectMethod($this, $key), FaultingSetMutationMethod::removeObjectMethod($this, $key), FaultingSetMutationMethod::addMethod($this, $key), FaultingSetMutationMethod::removeMethod($this, $key), FaultingSetMutationMethod::intersectMethod($this, $key), FaultingSetMutationMethod::setMethod($this, $key)])->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<FaultingSetMutationMethod> $dictionary
+             * @param FaultingSetMutationMethod $method
+             * @return Dictionary<FaultingSetMutationMethod>
+             */
+            function (Dictionary $dictionary, FaultingSetMutationMethod $method): Dictionary {
+                $dictionary[$method->name] = $method;
+                return $dictionary;
+            }));
         return $this->faultingSetMutationMethods;
     }
 }

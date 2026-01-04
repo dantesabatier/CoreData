@@ -141,6 +141,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                     [$childrenID, $parentID] = $this->buildRelationalIDSets($propertyKeyPathComponents, $cursorEntity, $row);
                     foreach ($keyPathComponents as $key) {
                         $property = $cursorEntity->propertiesByName[$key] ?? $cursorEntity->compositeAttributeNameToSQLProperty[$key];
+                        /** @var PropertyDescription|null $propertyDescription */
                         $propertyDescription = $property?->propertyDescription ?? $this->request->propertiesToFetch?->first(fn(string|PropertyDescription $p): bool => $p instanceof PropertyDescription ? $p->name === $key : $p === $key);
                         $isNavigational = ($property instanceof SQLRelationship) || ($property instanceof SQLAttribute && $property->isCompositeAttribute);
                         if ($isNavigational) {
@@ -187,7 +188,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 $element = $cursor->first(fn(Dictionary $dictionary): bool => $dictionary[$primaryKeyName] === $childrenID) ?? $cursor->last;
                                 $cursor = &$element;
                             }
-                            if ($cursor instanceof Dictionary) {
+                            if ($cursor instanceof Dictionary && $propertyDescription instanceof PropertyDescription) {
                                 $value = $this->coerceExpressionValueIfNeeded($value, $propertyDescription);
                                 if ($key === $primaryKeyName || $key === $entityKeyName) {
                                     if ($isNonDictionaryResultType) {

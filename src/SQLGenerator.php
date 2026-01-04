@@ -223,7 +223,7 @@ final class SQLGenerator extends ObjectClass
             }
             $this->useDistinct = $request->returnsDistinctResults;
             if (!$this->useDistinct && $this->autoDistinct) {
-                $this->useDistinct = ($request->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $entity->propertiesByName[$property])?->contains(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription)) || ($request->serialization->contains(fn(mixed $e): bool => $e instanceof Dictionary));
+                $this->useDistinct = ($request->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $entity->propertiesByName[$property])?->contains(fn(?PropertyDescription $property): bool => $property instanceof RelationshipDescription)) || ($request->serialization->contains(fn(mixed $e): bool => $e instanceof Dictionary));
             }
             $this->prepareSelectStatementWithFetchRequest($request);
             $this->prepareJoinStatementsForPredicateAndRelationships();
@@ -1016,7 +1016,7 @@ final class SQLGenerator extends ObjectClass
         $inverseRelationship = $relationship->inverseRelationship;
         /** @var ArrayClass<string|PropertyDescription> $propertiesToFetch */
         $propertiesToFetch = new ArrayClass([$inverseRelationship->relationshipDescription]);
-        if ($collectionOperator !== KeyValueOperator::countKeyValueOperator) {
+        if ($keyPathToProperty && $collectionOperator !== KeyValueOperator::countKeyValueOperator) {
             $propertiesToFetch->append($keyPathToProperty);
         }
         /** @var SQLFetchRequestContext $requestContext */

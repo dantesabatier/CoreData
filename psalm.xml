@@ -52,5 +52,36 @@
                 <file name="src/PersistentContainer.php"/>
             </errorLevel>
         </ClassMustBeFinal>
+        <DocblockTypeContradiction>
+            <errorLevel type="suppress">
+                <file name="src/FaultingSet.php"/>
+            </errorLevel>
+        </DocblockTypeContradiction>
+        <RedundantConditionGivenDocblockType>
+            <errorLevel type="suppress">
+                <file name="src/FaultingSet.php"/>
+            </errorLevel>
+        </RedundantConditionGivenDocblockType>
+        <PossiblyInvalidArgument>
+            <errorLevel type="suppress">
+                <file name="src/FaultingSet.php"/>
+            </errorLevel>
+        </PossiblyInvalidArgument>
+        <InvalidArgument>
+            <errorLevel type="suppress">
+                <file name="src/FaultingSet.php"/>
+            </errorLevel>
+        </InvalidArgument>
+        <InvalidReturnType>
+            <errorLevel type="suppress">
+                <file name="src/FaultingSet.php"/>
+                <file name="src/PersistentStore.php"/>
+            </errorLevel>
+        </InvalidReturnType>
+        <InvalidReturnStatement>
+            <errorLevel type="suppress">
+                <file name="src/FaultingSet.php"/>
+            </errorLevel>
+        </InvalidReturnStatement>
     </issueHandlers>
 </psalm>

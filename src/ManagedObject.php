@@ -435,6 +435,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if (!($property = $this->entity->propertiesByName[$key])) {
             return $this->valueForUndefinedKey($key);
         }
+        /** @var ArrayClass<ManagedObject>|null $mutableArray */
         $mutableArray = $this->primitiveValueForKey($key);
         if (!$mutableArray instanceof FaultingArray) {
             $array = new FaultingArray($this, $property);
@@ -478,7 +479,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     private function replaceFetchVariablesInExpression(Expression $expression, FetchedPropertyDescription $fetchedPropertyDescription): Expression
     {
         if (($expression->expressionType === ExpressionType::variable) || (($expression->expressionType === ExpressionType::keyPath) && $expression->operand?->expressionType === ExpressionType::variable)) {
-            return Expression::expressionForConstantValue($expression->expressionValue($this, new Dictionary(["\$FETCH_SOURCE" => $this, "\$FETCHED_PROPERTY" => $fetchedPropertyDescription])));
+            /** @var Dictionary<mixed> $context */
+            $context = new Dictionary(["\$FETCH_SOURCE" => $this, "\$FETCHED_PROPERTY" => $fetchedPropertyDescription]);
+            return Expression::expressionForConstantValue($expression->expressionValue($this, $context));
         }
         return $expression;
     }
@@ -777,14 +780,20 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     #[Override]
     public function dictionaryWithValues(ArrayClass $keys): Dictionary
     {
-        return $keys->reduce(new Dictionary(), function (Dictionary $initial, string $key): Dictionary {
-            $value = $this->valueForKey($key);
-            if ($this->entity->propertiesByName[$key]?->isSensitive) {
-                $value = new SensitiveValue($value);
-            }
-            $initial[$key] = $value;
-            return $initial;
-        });
+        return $keys->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<mixed> $initial
+             * @param string $key
+             * @return Dictionary<mixed>
+             */
+            function (Dictionary $initial, string $key): Dictionary {
+                $value = $this->valueForKey($key);
+                if ($this->entity->propertiesByName[$key]?->isSensitive) {
+                    $value = new SensitiveValue($value);
+                }
+                $initial[$key] = $value;
+                return $initial;
+            });
     }
 
     /**
@@ -1107,27 +1116,33 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     #[Override]
     public function jsonSerialize(): Dictionary
     {
-        return $this->serializationKeys->reduce(new Dictionary(), function (Dictionary &$dictionary, string $key): Dictionary {
-            if ($property = $this->entity->propertiesByName[$key]) {
-                if ($property instanceof AttributeDescription) {
-                    $value = $this->valueForKey($key) ?? Nil::nil();
-                    if ($property->isSensitive) {
-                        $value = new SensitiveValue($value);
+        return $this->serializationKeys->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<mixed> $dictionary
+             * @param string $key
+             * @return Dictionary<mixed>
+             */
+            function (Dictionary &$dictionary, string $key): Dictionary {
+                if ($property = $this->entity->propertiesByName[$key]) {
+                    if ($property instanceof AttributeDescription) {
+                        $value = $this->valueForKey($key) ?? Nil::nil();
+                        if ($property->isSensitive) {
+                            $value = new SensitiveValue($value);
+                        }
+                        $dictionary[$key] = $value;
+                    } elseif ($property instanceof RelationshipDescription) {
+                        if (!($value = $this->serializedRelationshipValue($property))) {
+                            $value = $property->isOptional ? Nil::nil() : ($property->isToMany ? new Set() : fatal_error(sprintf("%s property \"%s\" is not optional", $this->debugDescription, $property->name)));
+                        }
+                        $dictionary[$key] = $value;
+                    } else {
+                        $dictionary[$key] = $this->valueForKey($key);
                     }
-                    $dictionary[$key] = $value;
-                } elseif ($property instanceof RelationshipDescription) {
-                    if (!($value = $this->serializedRelationshipValue($property))) {
-                        $value = $property->isOptional ? Nil::nil() : ($property->isToMany ? new Set() : fatal_error(sprintf("%s property \"%s\" is not optional", $this->debugDescription, $property->name)));
-                    }
-                    $dictionary[$key] = $value;
                 } else {
-                    $dictionary[$key] = $this->valueForKey($key);
+                    $dictionary[$key] = $this->valueForKey($key) ?? Nil::nil();
                 }
-            } else {
-                $dictionary[$key] = $this->valueForKey($key) ?? Nil::nil();
-            }
-            return $dictionary;
-        });
+                return $dictionary;
+            });
     }
 
     /**

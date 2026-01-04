@@ -345,7 +345,9 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
                 /** @var ArrayClass<string>|null $entityNames */
                 $entityNames = $configuration["entities"];
                 if ($configurationName && $entityNames) {
-                    $this->setEntities($entityNames->compactMap(fn(string $entityName): ?EntityDescription => $this->entitiesByName[$entityName]), $configurationName);
+                    /** @var ArrayClass<EntityDescription> $entities */
+                    $entities = $entityNames->compactMap(fn(string $entityName): ?EntityDescription => $this->entitiesByName[$entityName]);
+                    $this->setEntities($entities, $configurationName);
                 }
             }
         }
@@ -374,7 +376,9 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
      */
     public static function mergedModel(ArrayClass $bundles, Dictionary $metadata): ?ManagedObjectModel
     {
-        return ManagedObjectModel::merging($bundles->compactMap(fn(Bundle $bundle): ?ManagedObjectModel => (($name = $bundle->object(kCFBundleNameKey)) && ($url = $bundle->url($name, "plist"))) ? new ManagedObjectModel($url) : null), $metadata);
+        /** @var ArrayClass<ManagedObjectModel> $compacted */
+        $compacted = $bundles->compactMap(fn(Bundle $bundle): ?ManagedObjectModel => (($name = $bundle->object(kCFBundleNameKey)) && ($url = $bundle->url($name, "plist"))) ? new ManagedObjectModel($url) : null);
+        return ManagedObjectModel::merging($compacted, $metadata);
     }
 
     /**
@@ -524,10 +528,16 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
     public function isConfigurationCompatibleWithStoreMetadata(?string $configuration, Dictionary $metadata): bool
     {
         if ($metadata[StoreModelVersionHashesKey]) {
-            return KeyedArchiver::archivedData($this->entities($configuration)?->reduce(new Dictionary(), function (Dictionary &$result, EntityDescription $entity): Dictionary {
-                    $result[$entity->name] = $entity->versionHash;
-                    return $result;
-                }) ?? $this->entityVersionHashesByName) === $metadata[StoreModelVersionHashesKey];
+            return KeyedArchiver::archivedData($this->entities($configuration)?->reduce(new Dictionary(),
+                    /**
+                     * @param Dictionary<string> $result
+                     * @param EntityDescription $entity
+                     * @return Dictionary<string>
+                     */
+                    function (Dictionary &$result, EntityDescription $entity): Dictionary {
+                        $result[$entity->name] = $entity->versionHash;
+                        return $result;
+                    }) ?? $this->entityVersionHashesByName) === $metadata[StoreModelVersionHashesKey];
         }
         return true;
     }

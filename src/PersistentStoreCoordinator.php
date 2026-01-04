@@ -383,10 +383,16 @@ final class PersistentStoreCoordinator extends ObjectClass
         if ($stores->isEmpty) {
             return null;
         }
-        return new PersistentHistoryToken($stores->reduce(new Dictionary(), function (Dictionary &$result, PersistentStore $store): Dictionary {
-            $result[$store->configurationName] = $store;
-            return $result;
-        }));
+        return new PersistentHistoryToken($stores->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<Number> $result
+             * @param PersistentStore $store
+             * @return Dictionary<Number>
+             */
+            function (Dictionary &$result, PersistentStore $store): Dictionary {
+                $result[$store->configurationName] = new Number($store->hash);
+                return $result;
+            }));
     }
 
     /**

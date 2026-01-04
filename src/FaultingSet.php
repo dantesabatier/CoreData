@@ -6,7 +6,7 @@ use Override;
 use Sabatier\Foundation\Set;
 
 /**
- * @extends Set<mixed>
+ * @extends Set<ManagedObject>
  * @internal
  */
 final class FaultingSet extends Set

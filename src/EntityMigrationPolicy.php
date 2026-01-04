@@ -60,7 +60,9 @@ class EntityMigrationPolicy extends ObjectClass
                 foreach ($attributeMappings as $attributeMapping) {
                     if ($expression = $attributeMapping->valueExpression) {
                         $key = $attributeMapping->name;
-                        $value = $expression->expressionValue($sourceInstance, new Dictionary(["\$manager" => $manager, "\$source" => $sourceInstance]));
+                        /** @var Dictionary<mixed> $context */
+                        $context = new Dictionary(["\$manager" => $manager, "\$source" => $sourceInstance]);
+                        $value = $expression->expressionValue($sourceInstance, $context);
                         $destinationInstance->setValueForKey($value, $key);
                     }
                 }

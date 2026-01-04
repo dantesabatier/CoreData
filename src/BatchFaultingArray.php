@@ -16,7 +16,7 @@ final class BatchFaultingArray extends ArrayClass
     public int $count {
         get => $this->length;
     }
-    /** @var array<ManagedObjectID|ManagedObject> */
+    /** @var list<ManagedObject>|list<ManagedObjectID> */
     public array $array {
         get => iterator_to_array($this);
     }
