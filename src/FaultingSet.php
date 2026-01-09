@@ -13,7 +13,7 @@ final class FaultingSet extends Set
 {
     private(set) bool $isFault = true;
 
-    public function __construct(public readonly ManagedObject $source, public readonly PropertyDescription $relationship)
+    public function __construct(public readonly ManagedObject $source, public readonly RelationshipDescription $relationship)
     {
         parent::__construct();
     }
