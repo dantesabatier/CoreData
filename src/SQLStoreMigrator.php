@@ -246,7 +246,8 @@ final class SQLStoreMigrator
                 $statement = $this->adapter->newDropColumnStatement($attribute);
                 $this->connection->execute($statement);
             }
-            foreach ($sourceEntity->properties as $source) {
+            $properties = $sourceEntity->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);
+            foreach ($properties as $source) {
                 if ($destination = $destinationEntity->properties->first(function (SQLProperty $destination) use ($source): bool {
                     if ($source instanceof SQLForeignKey && $destination instanceof SQLForeignKey) {
                         return $source->columnName === $destination->columnName;
@@ -267,7 +268,7 @@ final class SQLStoreMigrator
                                 $this->removedColumns->append($source);
                             }
                         } elseif (($source->sqlType !== $destination->sqlType || $source->isOptional !== $destination->isOptional || $source->isUnique !== $destination->isUnique || $source->minValue !== $destination->minValue || $source->maxValue !== $destination->maxValue || $source->defaultValue !== $destination->defaultValue || ($source->isDerivedAttribute !== $destination->isDerivedAttribute) || ($source->isDerivedAttribute && $destination->isDerivedAttribute && (string)$source->derivationExpression !== (string)$destination->derivationExpression))) {
-                            if ($destination->isDerivedAttribute && ($statement = $this->adapter->newCreateColumnStatement($source, $destination))) {
+                            if ($destination->isDerivedAttribute && ($statement = $this->adapter->newCreateColumnStatement($destination))) {
                                 $this->connection->execute($statement);
                             } elseif ($statement = $this->adapter->newRenameColumnStatement($source, $destination)) {
                                 $this->connection->execute($statement);
@@ -341,7 +342,6 @@ final class SQLStoreMigrator
             foreach ($destinationEntity->indexes as $index) {
                 $this->createIndexStatements->appendContentsOf($index->createTableStatements);
             }
-            $properties = $destinationEntity->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute && !$property->isCompositeAttribute && !$property->derivationExpression?->usesKVC && !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);
             foreach ($properties as $property) {
                 if ($property instanceof SQLAttribute && ($statement = $this->adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($property)))) {
                     $this->connection->execute($statement);

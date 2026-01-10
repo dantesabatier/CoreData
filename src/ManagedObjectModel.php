@@ -136,7 +136,7 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
                     /** @var string|null $derivationExpressionFormat */
                     $derivationExpressionFormat = $description["derivationExpressionFormat"];
                     $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
-                        "isDefaultValueBounded", "isMinValueBounded", "isMaxValueBounded", "derivationExpressionFormat" => true,
+                        "isDefaultValueBounded", "isMinValueBounded", "isMaxValueBounded", "derivationExpressionFormat", "accessControls" => true,
                         default => false
                     });
                     if ($derivationExpressionFormat) {
@@ -182,7 +182,7 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
                         $description["maxValue"] = $description["maxCount"];
                     }
                     $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
-                        "isMinValueBounded", "isMaxValueBounded", "isMinCountBounded", "isMaxCountBounded" => true,
+                        "isMinValueBounded", "isMaxValueBounded", "isMinCountBounded", "isMaxCountBounded", "accessControls" => true,
                         default => false
                     });
                     $relationship = new RelationshipDescription();
@@ -210,7 +210,7 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
                         }
                     }
                     $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
-                        "name", "fetchRequestEntityName", "fetchRequestPredicateFormat", "fetchRequestSortDescriptorKey", "fetchRequestSortDescriptorIsAscending" => true,
+                        "name", "fetchRequestEntityName", "fetchRequestPredicateFormat", "fetchRequestSortDescriptorKey", "fetchRequestSortDescriptorIsAscending", "accessControls" => true,
                         default => false
                     });
                     $fetchRequest->setValuesForKeys($description);
