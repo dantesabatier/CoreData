@@ -9,8 +9,6 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
-use Sabatier\Foundation\Predicates\ExpressionOperator;
-use Sabatier\Foundation\Predicates\ExpressionOperatorType;
 
 /** @internal */
 final class SQLAdapter extends ObjectClass
@@ -67,14 +65,7 @@ final class SQLAdapter extends ObjectClass
                 $string .= " $unsigned";
             }
             if ($expression = $column->derivationExpression) {
-                if ($expression->usesKVC) {
-                    return null;
-                }
-                $operator = $expression->operand;
-                if ($operator instanceof ExpressionOperator && match ($operator->operatorType) {
-                        ExpressionOperatorType::dateDiff => true,
-                        default => false
-                    }) {
+                if (new PredicatePersistenceChecker($expression)->isRuntimeOnly) {
                     return null;
                 }
                 return "$string {$this->generatedColumnExpression($expression, $column->entity->entityDescription)}";
