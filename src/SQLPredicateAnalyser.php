@@ -24,6 +24,8 @@ final readonly class SQLPredicateAnalyser implements PredicateVisitor
     /** @var ArrayClass<Expression> */
     public ArrayClass $functionExpressions;
     /** @var ArrayClass<Expression> */
+    public ArrayClass $setExpressions;
+    /** @var ArrayClass<Expression> */
     public ArrayClass $aggregateExpressions;
     /** @var ArrayClass<Expression> */
     public ArrayClass $subqueryExpressions;
@@ -57,6 +59,7 @@ final readonly class SQLPredicateAnalyser implements PredicateVisitor
             ExpressionType::variable => $this->variableExpressions,
             ExpressionType::keyPath => $this->keyPathExpressions,
             ExpressionType::function => $this->functionExpressions,
+            ExpressionType::unionSet, ExpressionType::intersectSet, ExpressionType::minusSet => $this->setExpressions,
             ExpressionType::subquery => $this->subqueryExpressions,
             ExpressionType::aggregate => $this->aggregateExpressions,
             ExpressionType::block => $this->blockExpressions,
