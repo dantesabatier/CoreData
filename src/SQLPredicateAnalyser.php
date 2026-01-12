@@ -16,6 +16,8 @@ use Sabatier\Foundation\Predicates\PredicateVisitor;
 final readonly class SQLPredicateAnalyser implements PredicateVisitor
 {
     /** @var ArrayClass<Expression> */
+    public ArrayClass $constantExpressions;
+    /** @var ArrayClass<Expression> */
     public ArrayClass $variableExpressions;
     /** @var ArrayClass<Expression> */
     public ArrayClass $keyPathExpressions;
@@ -32,6 +34,7 @@ final readonly class SQLPredicateAnalyser implements PredicateVisitor
 
     public function __construct()
     {
+        $this->constantExpressions = new ArrayClass();
         $this->variableExpressions = new ArrayClass();
         $this->keyPathExpressions = new ArrayClass();
         $this->functionExpressions = new ArrayClass();
@@ -50,6 +53,7 @@ final readonly class SQLPredicateAnalyser implements PredicateVisitor
     public function visitPredicateExpression(Expression $expression): void
     {
         if ($array = match ($expression->expressionType) {
+            ExpressionType::constantValue => $this->constantExpressions,
             ExpressionType::variable => $this->variableExpressions,
             ExpressionType::keyPath => $this->keyPathExpressions,
             ExpressionType::function => $this->functionExpressions,

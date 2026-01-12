@@ -653,7 +653,7 @@ final class SQLGenerator extends ObjectClass
         if ($expression->expressionType !== ExpressionType::keyPath) {
             return $properties;
         }
-        if (new PredicatePersistenceChecker($expression)->isRuntimeOnly) {
+        if (new PredicatePersistenceChecker($expression)->usesKVO) {
             return $properties;
         }
         $entity = $this->entity;
@@ -710,7 +710,7 @@ final class SQLGenerator extends ObjectClass
 
     private function buildKeyPathExpression(Expression $expression, ?bool &$isDeterministic = true): string
     {
-        if (new PredicatePersistenceChecker($expression)->isRuntimeOnly) {
+        if (new PredicatePersistenceChecker($expression)->usesKVO) {
             return $this->buildDerivedKeyPathExpression($expression, isDeterministic: $isDeterministic);
         }
         $tableName = $this->entity->tableName;
@@ -1060,7 +1060,7 @@ final class SQLGenerator extends ObjectClass
 
     private function buildDerivedKeyPathExpression(Expression $expression, ?string $tableAlias = null, ?bool &$isDeterministic = true): string
     {
-        if (!new PredicatePersistenceChecker($expression)->isRuntimeOnly) {
+        if (!new PredicatePersistenceChecker($expression)->usesKVO) {
             return $this->buildKeyPathExpression($expression, $isDeterministic);
         }
         $tableAlias ??= $this->entity->tableName;
@@ -1088,7 +1088,7 @@ final class SQLGenerator extends ObjectClass
         if (!$operator instanceof ExpressionOperator) {
             fatal_error("Invalid argument: unsupported expression \"$expression\"");
         }
-        $isDeterministic = $operator->isDeterministic;
+        $isDeterministic = new PredicatePersistenceChecker($expression)->isDeterministic;
         $arguments = $expression->arguments ?? fatal_error("Invalid argument: unsupported expression \"$expression\"");
         switch ($operator->operatorType) {
             case ExpressionOperatorType::addTo:

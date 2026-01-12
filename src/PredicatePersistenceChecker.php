@@ -9,14 +9,31 @@ use Sabatier\Foundation\Predicates\ExpressionOperator;
 use Sabatier\Foundation\Predicates\PredicateVisitorFlags;
 
 /** @internal */
-final readonly class PredicatePersistenceChecker
+final class PredicatePersistenceChecker
 {
-    public bool $isRuntimeOnly;
+    private SQLPredicateAnalyser $analyser {
+        get {
+            if (!isset($this->analyser)) {
+                $this->analyser = new SQLPredicateAnalyser();
+                $this->expression->accept($this->analyser, PredicateVisitorFlags::all);
+            }
+            return $this->analyser;
+        }
+    }
+    private(set) bool $usesKVC {
+        get => $this->usesKVC ??= $this->analyser->keyPathExpressions->contains(fn(Expression $expression): bool => str_contains($expression->predicateFormat, "."));
+    }
+    private(set) bool $usesKVO {
+        get => $this->usesKVO ??= $this->analyser->keyPathExpressions->contains(fn(Expression $expression): bool => str_contains($expression->predicateFormat, "@"));
+    }
+    private(set) bool $isDeterministic {
+        get => $this->isDeterministic ??= $this->analyser->functionExpressions->contains(fn(Expression $expression): bool => !$expression->operand instanceof ExpressionOperator);
+    }
+    private(set) bool $isRuntimeOnly {
+        get => $this->isRuntimeOnly ??= !$this->analyser->variableExpressions->isEmpty || !$this->analyser->subqueryExpressions->isEmpty || !$this->analyser->blockExpressions->isEmpty || $this->usesKVC || $this->usesKVO || $this->isDeterministic;
+    }
 
-    public function __construct(Expression $expression)
+    public function __construct(private readonly Expression $expression)
     {
-        $analyser = new SQLPredicateAnalyser();
-        $expression->accept($analyser, PredicateVisitorFlags::all);
-        $this->isRuntimeOnly = !$analyser->variableExpressions->isEmpty || !$analyser->subqueryExpressions->isEmpty || !$analyser->blockExpressions->isEmpty || $analyser->keyPathExpressions->contains(fn(Expression $expr): bool => str_contains($expr->keyPath, ".") || str_contains($expr->keyPath, "@")) || $analyser->functionExpressions->contains(fn(Expression $expression): bool => $expression->operand instanceof ExpressionOperator && !$expression->operand->isDeterministic);
     }
 }
