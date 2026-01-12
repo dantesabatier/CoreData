@@ -30,7 +30,7 @@ final class DerivationSchemaCompatibility
         get => $this->isDeterministic ??= !$this->analyser->functionExpressions->contains(fn(Expression $expression): bool => $expression->operand instanceof ExpressionOperator && !$expression->operand->isDeterministic);
     }
     private(set) bool $isRuntimeOnly {
-        get => $this->isRuntimeOnly ??= !$this->analyser->variableExpressions->isEmpty || !$this->analyser->subqueryExpressions->isEmpty || !$this->analyser->blockExpressions->isEmpty || $this->usesKVC || $this->usesKVO || !$this->isDeterministic;
+        get => $this->isRuntimeOnly ??= !$this->analyser->variableExpressions->isEmpty || !$this->analyser->setExpressions->isEmpty || !$this->analyser->subqueryExpressions->isEmpty || !$this->analyser->blockExpressions->isEmpty || $this->usesKVC || $this->usesKVO || !$this->isDeterministic;
     }
 
     public function __construct(private readonly Expression $expression)
