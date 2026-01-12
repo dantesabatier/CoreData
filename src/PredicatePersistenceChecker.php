@@ -17,6 +17,6 @@ final readonly class PredicatePersistenceChecker
     {
         $analyser = new SQLPredicateAnalyser();
         $expression->accept($analyser, PredicateVisitorFlags::all);
-        $this->isRuntimeOnly = !$analyser->variableExpressions->isEmpty || !$analyser->subqueryExpressions->isEmpty || $analyser->keyPathExpressions->contains(fn(Expression $expr): bool => str_contains($expr->keyPath, ".") || str_contains($expr->keyPath, "@")) || $analyser->functionExpressions->contains(fn(Expression $expression): bool => $expression->operand instanceof ExpressionOperator && !$expression->operand->isDeterministic);
+        $this->isRuntimeOnly = !$analyser->variableExpressions->isEmpty || !$analyser->subqueryExpressions->isEmpty || !$analyser->blockExpressions->isEmpty || $analyser->keyPathExpressions->contains(fn(Expression $expr): bool => str_contains($expr->keyPath, ".") || str_contains($expr->keyPath, "@")) || $analyser->functionExpressions->contains(fn(Expression $expression): bool => $expression->operand instanceof ExpressionOperator && !$expression->operand->isDeterministic);
     }
 }
