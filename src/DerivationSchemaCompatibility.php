@@ -9,7 +9,7 @@ use Sabatier\Foundation\Predicates\ExpressionOperator;
 use Sabatier\Foundation\Predicates\PredicateVisitorFlags;
 
 /** @internal */
-final class PredicatePersistenceChecker
+final class DerivationSchemaCompatibility
 {
     private SQLPredicateAnalyser $analyser {
         get {

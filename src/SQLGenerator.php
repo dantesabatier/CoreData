@@ -367,7 +367,7 @@ final class SQLGenerator extends ObjectClass
             /** @psalm-suppress InvalidArgument */
             $columnNames->formUnion($properties->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => is_string($property) ? $entity->attributes->first(fn(SQLAttribute $attribute): bool => !$attribute->isCompositeAttribute && !$attribute->isTransient && $attribute->name === $property)?->attributeDescription : (($property instanceof AttributeDescription && !$property instanceof CompositeAttributeDescription) || $property instanceof ExpressionDescription ? $property : null))->map(function (PropertyDescription $property) use ($entity): string {
                 if ($property instanceof AttributeDescription) {
-                    if ($property instanceof DerivedAttributeDescription && ($expression = $property->derivationExpression) && new PredicatePersistenceChecker($expression)->isRuntimeOnly) {
+                    if ($property instanceof DerivedAttributeDescription && ($expression = $property->derivationExpression) && new DerivationSchemaCompatibility($expression)->isRuntimeOnly) {
                         return "{$this->buildDerivationExpression($property->derivationExpression)} AS $property->name";
                     }
                 } elseif ($property instanceof ExpressionDescription) {
@@ -521,7 +521,7 @@ final class SQLGenerator extends ObjectClass
                     return "$joinedTableAlias.$property->columnName AS {$joinedTableAlias}_$property->columnName";
                 }
                 if ($property instanceof SQLAttribute) {
-                    if (($expression = $property->derivationExpression) && new PredicatePersistenceChecker($expression)->isRuntimeOnly) {
+                    if (($expression = $property->derivationExpression) && new DerivationSchemaCompatibility($expression)->isRuntimeOnly) {
                         $backupEntity = $this->entity;
                         $this->entity = $currentEntity;
                         $result = $this->buildDerivationExpression($expression, $joinedTableAlias);
@@ -653,7 +653,7 @@ final class SQLGenerator extends ObjectClass
         if ($expression->expressionType !== ExpressionType::keyPath) {
             return $properties;
         }
-        if (new PredicatePersistenceChecker($expression)->usesKVO) {
+        if (new DerivationSchemaCompatibility($expression)->usesKVO) {
             return $properties;
         }
         $entity = $this->entity;
@@ -710,7 +710,7 @@ final class SQLGenerator extends ObjectClass
 
     private function buildKeyPathExpression(Expression $expression, ?bool &$isDeterministic = true): string
     {
-        if (new PredicatePersistenceChecker($expression)->usesKVO) {
+        if (new DerivationSchemaCompatibility($expression)->usesKVO) {
             return $this->buildDerivedKeyPathExpression($expression, isDeterministic: $isDeterministic);
         }
         $tableName = $this->entity->tableName;
@@ -721,7 +721,7 @@ final class SQLGenerator extends ObjectClass
         $max = $properties->indexBefore($properties->endIndex);
         foreach ($properties as $idx => $property) {
             if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
-                if ($property instanceof SQLAttribute && ($expression = $property->derivationExpression) && new PredicatePersistenceChecker($expression)->isRuntimeOnly) {
+                if ($property instanceof SQLAttribute && ($expression = $property->derivationExpression) && new DerivationSchemaCompatibility($expression)->isRuntimeOnly) {
                     return $this->buildDerivationExpression($expression, $destination, $isDeterministic);
                 }
                 $keyPath .= ".";
@@ -1060,7 +1060,7 @@ final class SQLGenerator extends ObjectClass
 
     private function buildDerivedKeyPathExpression(Expression $expression, ?string $tableAlias = null, ?bool &$isDeterministic = true): string
     {
-        if (!new PredicatePersistenceChecker($expression)->usesKVO) {
+        if (!new DerivationSchemaCompatibility($expression)->usesKVO) {
             return $this->buildKeyPathExpression($expression, $isDeterministic);
         }
         $tableAlias ??= $this->entity->tableName;
@@ -1088,7 +1088,7 @@ final class SQLGenerator extends ObjectClass
         if (!$operator instanceof ExpressionOperator) {
             fatal_error("Invalid argument: unsupported expression \"$expression\"");
         }
-        $isDeterministic = new PredicatePersistenceChecker($expression)->isDeterministic;
+        $isDeterministic = new DerivationSchemaCompatibility($expression)->isDeterministic;
         $arguments = $expression->arguments ?? fatal_error("Invalid argument: unsupported expression \"$expression\"");
         switch ($operator->operatorType) {
             case ExpressionOperatorType::addTo:

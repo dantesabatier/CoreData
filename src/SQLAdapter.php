@@ -65,7 +65,7 @@ final class SQLAdapter extends ObjectClass
                 $string .= " $unsigned";
             }
             if ($expression = $column->derivationExpression) {
-                if (new PredicatePersistenceChecker($expression)->isRuntimeOnly) {
+                if (new DerivationSchemaCompatibility($expression)->isRuntimeOnly) {
                     return null;
                 }
                 return "$string {$this->generatedColumnExpression($expression, $column->entity->entityDescription)}";
