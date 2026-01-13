@@ -182,7 +182,7 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
                         $description["maxValue"] = $description["maxCount"];
                     }
                     $description->removeAll(fn(mixed $value, string $key): bool => match ($key) {
-                        "isMinValueBounded", "isMaxValueBounded", "isMinCountBounded", "isMaxCountBounded", "accessControls" => true,
+                        "isMinValueBounded", "isMaxValueBounded", "isMinCountBounded", "isMaxCountBounded", "isOwner", "accessControls" => true,
                         default => false
                     });
                     $relationship = new RelationshipDescription();
