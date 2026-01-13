@@ -40,6 +40,7 @@ final readonly class SQLPredicateAnalyser implements PredicateVisitor
         $this->variableExpressions = new ArrayClass();
         $this->keyPathExpressions = new ArrayClass();
         $this->functionExpressions = new ArrayClass();
+        $this->setExpressions = new ArrayClass();
         $this->aggregateExpressions = new ArrayClass();
         $this->subqueryExpressions = new ArrayClass();
         $this->blockExpressions = new ArrayClass();
