@@ -208,7 +208,7 @@ final class SQLEntity extends StoreMapping
     private(set) ArrayClass $columnsToFetch {
         get {
             if (!isset($this->columnsToFetch)) {
-                $columns = $this->properties->filter(fn(SQLProperty $property): bool => !($property->isTransient || $property instanceof SQLRelationship || $property instanceof SQLForeignKey) && (!$property instanceof SQLAttribute || ((($expression = $property->derivationExpression) ? !new DerivationSchemaCompatibility($expression)->isRuntimeOnly : !$property->isCompositeAttribute))));
+                $columns = $this->properties->filter(fn(SQLProperty $property): bool => !($property->isTransient || $property instanceof SQLRelationship || $property instanceof SQLForeignKey) && (!$property instanceof SQLAttribute || (($property->isDerivedAttribute ? !$property->isRuntimeOnly : !$property->isCompositeAttribute))));
                 $columns->appendContentsOf($this->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary
                 ): ArrayClass => $dictionary->values));
                 $this->columnsToFetch = $columns;
@@ -220,7 +220,7 @@ final class SQLEntity extends StoreMapping
     private(set) ArrayClass $columnsToCreate {
         get {
             if (!isset($this->columnsToCreate)) {
-                $columns = $this->properties->filter(fn(SQLProperty $property): bool => !$property instanceof SQLRelationship && ((!$property instanceof SQLAttribute || ((($expression = $property->derivationExpression) ? !new DerivationSchemaCompatibility($expression)->isRuntimeOnly : !$property->isCompositeAttribute)))));
+                $columns = $this->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient && !$property instanceof SQLRelationship && ((!$property instanceof SQLAttribute || (($property->isDerivedAttribute ? !$property->isRuntimeOnly : !$property->isCompositeAttribute)))));
                 $columns->appendContentsOf($this->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary
                 ): ArrayClass => $dictionary->values));
                 $this->columnsToCreate = $columns;
@@ -286,13 +286,13 @@ final class SQLEntity extends StoreMapping
         $this->properties->sort($by);
     }
 
-    public function columnAfter(SQLColumn $column): SQLColumn
+    public function columnAfter(SQLColumn $column): ?SQLColumn
     {
         /** @var ArrayClass<SQLColumn> $columns */
-        $columns = $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute && ($expression = $property->derivationExpression) && !new DerivationSchemaCompatibility($expression)->isRuntimeOnly && !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);
-        $idx = $columns->indexBefore($columns->indexOf($column) ?? $columns->endIndex);
-        if ($idx >= $columns->startIndex) {
-            return $columns[$idx];
+        $columns = $this->columnsToCreate;
+        $index = $columns->indexBefore($columns->indexOf($column) ?? $columns->endIndex);
+        if ($index >= $columns->startIndex) {
+            return $columns[$index];
         }
         return $this->entityKey;
     }

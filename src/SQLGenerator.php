@@ -367,7 +367,7 @@ final class SQLGenerator extends ObjectClass
             /** @psalm-suppress InvalidArgument */
             $columnNames->formUnion($properties->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => is_string($property) ? $entity->attributes->first(fn(SQLAttribute $attribute): bool => !$attribute->isCompositeAttribute && !$attribute->isTransient && $attribute->name === $property)?->attributeDescription : (($property instanceof AttributeDescription && !$property instanceof CompositeAttributeDescription) || $property instanceof ExpressionDescription ? $property : null))->map(function (PropertyDescription $property) use ($entity): string {
                 if ($property instanceof AttributeDescription) {
-                    if ($property instanceof DerivedAttributeDescription && ($expression = $property->derivationExpression) && new DerivationSchemaCompatibility($expression)->isRuntimeOnly) {
+                    if ($property instanceof DerivedAttributeDescription && $property->isRuntimeOnly) {
                         return "{$this->buildDerivationExpression($property->derivationExpression)} AS $property->name";
                     }
                 } elseif ($property instanceof ExpressionDescription) {
@@ -521,7 +521,7 @@ final class SQLGenerator extends ObjectClass
                     return "$joinedTableAlias.$property->columnName AS {$joinedTableAlias}_$property->columnName";
                 }
                 if ($property instanceof SQLAttribute) {
-                    if (($expression = $property->derivationExpression) && new DerivationSchemaCompatibility($expression)->isRuntimeOnly) {
+                    if (($expression = $property->derivationExpression) && $property->isRuntimeOnly) {
                         $backupEntity = $this->entity;
                         $this->entity = $currentEntity;
                         $result = $this->buildDerivationExpression($expression, $joinedTableAlias);
@@ -721,7 +721,7 @@ final class SQLGenerator extends ObjectClass
         $max = $properties->indexBefore($properties->endIndex);
         foreach ($properties as $idx => $property) {
             if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
-                if ($property instanceof SQLAttribute && ($expression = $property->derivationExpression) && new DerivationSchemaCompatibility($expression)->isRuntimeOnly) {
+                if ($property instanceof SQLAttribute && ($expression = $property->derivationExpression) && $property->isRuntimeOnly) {
                     return $this->buildDerivationExpression($expression, $destination, $isDeterministic);
                 }
                 $keyPath .= ".";

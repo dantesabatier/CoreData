@@ -26,6 +26,35 @@ final class DerivedAttributeDescription extends AttributeDescription
     public PropertyDescriptionType $propertyType = PropertyDescriptionType::derivedAttribute;
     /** @var Expression|null An expression for generating derived data. */
     public ?Expression $derivationExpression = null;
+    private bool $isCompatibilityResolved = false;
+    private ?DerivationSchemaCompatibility $compatibility {
+        get {
+            if ($this->isCompatibilityResolved) {
+                return $this->compatibility;
+            }
+            $this->isCompatibilityResolved = true;
+            if (!($derivationExpression = $this->derivationExpression)) {
+                return $this->compatibility = null;
+            }
+            return $this->compatibility = new DerivationSchemaCompatibility($derivationExpression);
+        }
+    }
+    /** @internal */
+    public bool $isDeterministic {
+        get => $this->compatibility && $this->compatibility->isDeterministic;
+    }
+    /** @internal */
+    public bool $usesKVC {
+        get => $this->compatibility && $this->compatibility->usesKVC;
+    }
+    /** @internal */
+    public bool $usesKVO {
+        get => $this->compatibility && $this->compatibility->usesKVO;
+    }
+    /** @internal */
+    public bool $isRuntimeOnly {
+        get => $this->compatibility && $this->compatibility->isRuntimeOnly;
+    }
 
     #[Override]
     public function jsonSerialize(): Dictionary

@@ -241,12 +241,12 @@ final class SQLStoreMigrator
             $properties = new Set($sourceEntity->properties);
             $properties->formUnion($destinationEntity->properties);
             /** @var Set<SQLAttribute> $attributes */
-            $attributes = $properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute && ($expression = $property->derivationExpression) && !new DerivationSchemaCompatibility($expression)->isRuntimeOnly && !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value)->reversed();
+            $attributes = $properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute && $property->isDerivedAttribute && !$property->isRuntimeOnly)->reversed();
             foreach ($attributes as $attribute) {
                 $statement = $this->adapter->newDropColumnStatement($attribute);
                 $this->connection->execute($statement);
             }
-            $properties = $sourceEntity->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);
+            $properties = $sourceEntity->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient && (!$property instanceof SQLAttribute || (($property->isDerivedAttribute && !$property->isRuntimeOnly))));
             foreach ($properties as $source) {
                 if ($destination = $destinationEntity->properties->first(function (SQLProperty $destination) use ($source): bool {
                     if ($source instanceof SQLForeignKey && $destination instanceof SQLForeignKey) {
@@ -268,7 +268,7 @@ final class SQLStoreMigrator
                                 $this->removedColumns->append($source);
                             }
                         } elseif (($source->sqlType !== $destination->sqlType || $source->isOptional !== $destination->isOptional || $source->isUnique !== $destination->isUnique || $source->minValue !== $destination->minValue || $source->maxValue !== $destination->maxValue || $source->defaultValue !== $destination->defaultValue || ($source->isDerivedAttribute !== $destination->isDerivedAttribute) || ($source->isDerivedAttribute && $destination->isDerivedAttribute && (string)$source->derivationExpression !== (string)$destination->derivationExpression))) {
-                            if ($destination->isDerivedAttribute && ($statement = $this->adapter->newCreateColumnStatement($destination))) {
+                            if ($destination->isDerivedAttribute && ($statement = $this->adapter->newCreateColumnStatement($destination, $destinationEntity->columnAfter($destination)))) {
                                 $this->connection->execute($statement);
                             } elseif ($statement = $this->adapter->newRenameColumnStatement($source, $destination)) {
                                 $this->connection->execute($statement);
@@ -321,7 +321,6 @@ final class SQLStoreMigrator
                     $this->removedManyToMany->append($source);
                 }
             }
-            $properties = $destinationEntity->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);
             foreach ($properties as $property) {
                 if ($property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
                     if ($attributes = $destinationEntity->byMappingByCompositeNameAssociationTable[$property->name]?->values) {
@@ -350,7 +349,7 @@ final class SQLStoreMigrator
             foreach ($sourceEntity->indexes as $index) {
                 $this->connection->execute(SQLStatement::merging($index->dropTableStatements));
             }
-            $properties = $destinationEntity->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient)->sort(fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value);
+            $properties = $destinationEntity->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient);
             foreach ($properties as $property) {
                 if ($property instanceof SQLToMany) {
                     if ($statement = $this->adapter->newCreateColumnStatement($property->inverseToOne->foreignKey)) {
