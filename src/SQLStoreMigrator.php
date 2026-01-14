@@ -246,7 +246,7 @@ final class SQLStoreMigrator
                 $statement = $this->adapter->newDropColumnStatement($attribute);
                 $this->connection->execute($statement);
             }
-            $properties = $sourceEntity->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient && (!$property instanceof SQLAttribute || (($property->isDerivedAttribute && !$property->isRuntimeOnly))));
+            $properties = $sourceEntity->persistentProperties;
             foreach ($properties as $source) {
                 if ($destination = $destinationEntity->properties->first(function (SQLProperty $destination) use ($source): bool {
                     if ($source instanceof SQLForeignKey && $destination instanceof SQLForeignKey) {
@@ -321,6 +321,7 @@ final class SQLStoreMigrator
                     $this->removedManyToMany->append($source);
                 }
             }
+            $properties = $destinationEntity->persistentProperties;
             foreach ($properties as $property) {
                 if ($property instanceof SQLAttribute || $property instanceof SQLForeignKey) {
                     if ($attributes = $destinationEntity->byMappingByCompositeNameAssociationTable[$property->name]?->values) {

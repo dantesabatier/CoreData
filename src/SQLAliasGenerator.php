@@ -2,35 +2,39 @@
 
 namespace Sabatier\CoreData;
 
-use Sabatier\Foundation\Dictionary;
-
 /** @internal */
 final class SQLAliasGenerator
 {
     private int $nextTableAlias = 0;
+    private int $nextVariableAlias = 0;
+    private int $nextTempTableAlias = 0;
+
     public string $tableBase;
     public string $variableBase;
-    /** @var Dictionary<string> */
-    private Dictionary $byBaseAssociationTable;
 
     public function __construct(public readonly int $nestingLevel = 1)
     {
-        $this->byBaseAssociationTable = new Dictionary();
+        $this->tableBase = "t{$nestingLevel}_";
+        $this->variableBase = "v{$nestingLevel}_";
+    }
+
+    public function generateTempTableName(): string
+    {
+        return "tmp{$this->nestingLevel}_" . ($this->nextTempTableAlias++);
     }
 
     public function generateTableAlias(): string
     {
-        $this->nextTableAlias = max($this->nestingLevel, $this->nextTableAlias);
-        if (!($alias = $this->byBaseAssociationTable[$this->tableBase])) {
-            $alias = "t$this->nextTableAlias";
-            $this->nextTableAlias += 1;
-            $this->byBaseAssociationTable[$this->tableBase] = $alias;
-        }
-        return $alias;
+        return $this->tableBase . ($this->nextTableAlias++);
     }
 
     public function generateSubqueryVariableAlias(): string
     {
-        return "";
+        return "sub{$this->nestingLevel}_" . ($this->nextVariableAlias++);
+    }
+
+    public function generateVariableAlias(): string
+    {
+        return $this->variableBase . ($this->nextVariableAlias++);
     }
 }

@@ -45,11 +45,11 @@ final class DerivedAttributeDescription extends AttributeDescription
     }
     /** @internal */
     public bool $usesKVC {
-        get => $this->compatibility && $this->compatibility->usesKVC;
+        get => $this->compatibility && $this->compatibility->usesKeyValueCoding;
     }
     /** @internal */
     public bool $usesKVO {
-        get => $this->compatibility && $this->compatibility->usesKVO;
+        get => $this->compatibility && $this->compatibility->usesKeyValueOperator;
     }
     /** @internal */
     public bool $isRuntimeOnly {

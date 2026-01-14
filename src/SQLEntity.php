@@ -121,8 +121,8 @@ final class SQLEntity extends StoreMapping
         get => $this->properties ??= $this->propertiesByName->values;
     }
     /** @var ArrayClass<SQLProperty> */
-    private(set) ArrayClass $uniqueProperties {
-        get => $this->uniqueProperties ??= $this->properties->filter(fn(SQLProperty $property): bool => $property->isUnique);
+    private(set) ArrayClass $persistentProperties {
+        get => $this->persistentProperties ??= $this->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient && ((!$property instanceof SQLAttribute || (($property->isDerivedAttribute ? !$property->isRuntimeOnly : !$property->isCompositeAttribute)))));
     }
     /** @var ArrayClass<SQLAttribute> */
     private(set) ArrayClass $attributes {
@@ -288,11 +288,11 @@ final class SQLEntity extends StoreMapping
 
     public function columnAfter(SQLColumn $column): ?SQLColumn
     {
-        /** @var ArrayClass<SQLColumn> $columns */
-        $columns = $this->columnsToCreate;
-        $index = $columns->indexBefore($columns->indexOf($column) ?? $columns->endIndex);
-        if ($index >= $columns->startIndex) {
-            return $columns[$index];
+        /** @var ArrayClass<SQLProperty> $properties */
+        $properties = $this->persistentProperties;
+        $index = $properties->indexBefore($properties->indexOf($column) ?? $properties->endIndex);
+        if ($index >= $properties->startIndex) {
+            return $properties[$index];
         }
         return $this->entityKey;
     }
