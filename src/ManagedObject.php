@@ -146,7 +146,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * @internal
      */
     private(set) ArrayClass $persistentProperties {
-        get => $this->persistentProperties ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => !$property->isTransient && !$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription);
+        get => $this->persistentProperties ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => !$property->isTransient && ($property instanceof DerivedAttributeDescription ? !$property->isRuntimeOnly : !$property instanceof FetchedPropertyDescription));
     }
     /**
      * @var ArrayClass<PropertyDescription>
