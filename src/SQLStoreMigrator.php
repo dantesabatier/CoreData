@@ -350,7 +350,7 @@ final class SQLStoreMigrator
             foreach ($sourceEntity->indexes as $index) {
                 $this->connection->execute(SQLStatement::merging($index->dropTableStatements));
             }
-            $properties = $destinationEntity->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient);
+            $properties = $destinationEntity->persistentProperties;
             foreach ($properties as $property) {
                 if ($property instanceof SQLToMany) {
                     if ($statement = $this->adapter->newCreateColumnStatement($property->inverseToOne->foreignKey)) {
