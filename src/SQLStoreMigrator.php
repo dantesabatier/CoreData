@@ -237,13 +237,13 @@ final class SQLStoreMigrator
                     $this->connection->execute($statement);
                 }
             }
-            /** @var Set<SQLProperty> $properties */
-            $properties = new Set($sourceEntity->properties);
-            $properties->formUnion($destinationEntity->properties);
+            /** @var Set<SQLColumn> $columnsToCreate */
+            $columnsToCreate = new Set($sourceEntity->columnsToCreate);
+            $columnsToCreate->formUnion($destinationEntity->columnsToCreate);
             /** @var Set<SQLAttribute> $attributes */
-            $attributes = $properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLAttribute && $property->isDerivedAttribute && !$property->isRuntimeOnly)->reversed();
-            foreach ($attributes as $attribute) {
-                $statement = $this->adapter->newDropColumnStatement($attribute);
+            $derivedAttributes = $columnsToCreate->filter(fn(SQLColumn $column): bool => $column instanceof SQLAttribute && $column->isDerivedAttribute)->reversed();
+            foreach ($derivedAttributes as $derivedAttribute) {
+                $statement = $this->adapter->newDropColumnStatement($derivedAttribute);
                 $this->connection->execute($statement);
             }
             $properties = $sourceEntity->persistentProperties;
