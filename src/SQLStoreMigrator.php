@@ -270,7 +270,7 @@ final class SQLStoreMigrator
                         } elseif (($source->sqlType !== $destination->sqlType || $source->isOptional !== $destination->isOptional || $source->isUnique !== $destination->isUnique || $source->minValue !== $destination->minValue || $source->maxValue !== $destination->maxValue || $source->defaultValue !== $destination->defaultValue || ($source->isDerivedAttribute !== $destination->isDerivedAttribute) || ($source->isDerivedAttribute && $destination->isDerivedAttribute && (string)$source->derivationExpression !== (string)$destination->derivationExpression))) {
                             if ($destination->isDerivedAttribute && ($statement = $this->adapter->newCreateColumnStatement($destination, $destinationEntity->columnAfter($destination)))) {
                                 $this->connection->execute($statement);
-                            } elseif ($statement = $this->adapter->newRenameColumnStatement($source, $destination)) {
+                            } elseif ($statement = $this->adapter->newModifyColumnStatement($source, $destination)) {
                                 $this->connection->execute($statement);
                             }
                         }
@@ -339,16 +339,20 @@ final class SQLStoreMigrator
                     $this->createIndexStatements->insert($this->adapter->newCreateIndexesStatementForManyToMany($property));
                 }
             }
-            foreach ($destinationEntity->indexes as $index) {
-                $this->createIndexStatements->formUnion($index->createTableStatements);
+            foreach ($destinationEntity->indexes as $destinationIndex) {
+                if (!$sourceEntity->indexes->containsElement($destinationIndex)) {
+                    $this->createIndexStatements->formUnion($destinationIndex->createTableStatements);
+                }
             }
             foreach ($properties as $property) {
                 if ($property instanceof SQLAttribute && ($statement = $this->adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($property)))) {
                     $this->connection->execute($statement);
                 }
             }
-            foreach ($sourceEntity->indexes as $index) {
-                $this->connection->execute(SQLStatement::merging($index->dropTableStatements));
+            foreach ($sourceEntity->indexes as $sourceIndex) {
+                if (!$destinationEntity->indexes->containsElement($sourceIndex)) {
+                    $this->connection->execute(SQLStatement::merging($sourceIndex->dropTableStatements));
+                }
             }
             $properties = $destinationEntity->persistentProperties;
             foreach ($properties as $property) {
