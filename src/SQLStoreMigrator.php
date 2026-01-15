@@ -301,7 +301,7 @@ final class SQLStoreMigrator
                             if ($destination instanceof SQLManyToMany) {
                                 $statement = $this->adapter->newCreateTableStatementForManyToMany($destination);
                                 $this->connection->execute($statement);
-                                $this->createIndexStatements[] = $this->adapter->newCreateIndexesStatementForManyToMany($destination);
+                                $this->createIndexStatements->insert($this->adapter->newCreateIndexesStatementForManyToMany($destination));
                             } elseif ($destination instanceof SQLToMany) {
                                 if ($statement = $this->adapter->newCreateColumnStatement($destination->inverseToOne->foreignKey)) {
                                     $this->connection->execute($statement);
