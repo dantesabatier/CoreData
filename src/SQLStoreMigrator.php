@@ -391,6 +391,9 @@ final class SQLStoreMigrator
         $this->prepareTransformedEntityMappings();
         $this->processTransformedEntityMappings();
         $this->recreateIndexes();
+        $this->removeUnusedRelationships();
+        $this->removeUnusedColumns();
+        $this->removeUnusedEntities();
     }
 
     /**
@@ -450,9 +453,6 @@ final class SQLStoreMigrator
      */
     public function disconnect(): void
     {
-        $this->removeUnusedRelationships();
-        $this->removeUnusedColumns();
-        $this->removeUnusedEntities();
         $this->connection->saveCachedModel($this->destinationModel);
         $this->connection->disconnect();
     }
