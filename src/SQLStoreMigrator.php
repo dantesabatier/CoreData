@@ -19,12 +19,12 @@ final class SQLStoreMigrator
     private SQLAdapter $adapter;
     private SQLConnection $connection;
     private SQLModel $sourceModel;
-    /** @var ArrayClass<SQLEntity> */
-    private ArrayClass $removedEntities;
-    /** @var ArrayClass<SQLManyToMany> */
-    private ArrayClass $removedManyToMany;
-    /** @var ArrayClass<SQLColumn> */
-    private ArrayClass $removedColumns;
+    /** @var Set<SQLEntity> */
+    private Set $removedEntities;
+    /** @var Set<SQLManyToMany> */
+    private Set $removedManyToMany;
+    /** @var Set<SQLColumn> */
+    private Set $removedColumns;
     /** @var Set<EntityMapping> */
     private Set $addedEntityMappings;
     /** @var Set<EntityMapping> */
@@ -33,8 +33,8 @@ final class SQLStoreMigrator
     private Set $copiedEntityMappings;
     /** @var Set<EntityMapping> */
     private Set $transformedEntityMappings;
-    /** @var ArrayClass<SQLStatement> */
-    private ArrayClass $createIndexStatements;
+    /** @var Set<SQLStatement> */
+    private Set $createIndexStatements;
 
     /**
      * @throws Exception
@@ -44,14 +44,14 @@ final class SQLStoreMigrator
         $this->connection = $this->store->schemaValidationConnection;
         $this->adapter = $this->connection->adapter ?? fatal_error();
         $this->sourceModel = new SQLModel($this->connection->cachedModel ?? fatal_error(), $this->store->configurationName);
-        $this->removedEntities = new ArrayClass();
-        $this->removedManyToMany = new ArrayClass();
-        $this->removedColumns = new ArrayClass();
+        $this->removedEntities = new Set();
+        $this->removedManyToMany = new Set();
+        $this->removedColumns = new Set();
         $this->addedEntityMappings = new Set();
         $this->removedEntityMappings = new Set();
         $this->copiedEntityMappings = new Set();
         $this->transformedEntityMappings = new Set();
-        $this->createIndexStatements = new ArrayClass();
+        $this->createIndexStatements = new Set();
     }
 
     /**
@@ -83,13 +83,13 @@ final class SQLStoreMigrator
     {
         foreach ($this->mappingModel->entityMappingsByName as $mapping) {
             if ($mapping->mappingType === EntityMappingType::addEntityMappingType) {
-                $this->addedEntityMappings[] = $mapping;
+                $this->addedEntityMappings->insert($mapping);
             } elseif ($mapping->mappingType === EntityMappingType::removeEntityMappingType) {
-                $this->removedEntityMappings[] = $mapping;
+                $this->removedEntityMappings->insert($mapping);
             } elseif ($mapping->mappingType === EntityMappingType::copyEntityMappingType) {
-                $this->copiedEntityMappings[] = $mapping;
+                $this->copiedEntityMappings->insert($mapping);
             } elseif ($mapping->mappingType === EntityMappingType::transformEntityMappingType) {
-                $this->transformedEntityMappings[] = $mapping;
+                $this->transformedEntityMappings->insert($mapping);
             }
         }
     }
@@ -111,12 +111,12 @@ final class SQLStoreMigrator
             $statement = $this->adapter->newCreateTableStatement($destinationEntity);
             $this->connection->execute($statement);
             if ($statement = $this->adapter->newCreateIndexesStatement($destinationEntity)) {
-                $this->createIndexStatements[] = $statement;
+                $this->createIndexStatements->insert($statement);
             }
             foreach ($destinationEntity->manyToManyRelationships as $manyToManyRelationship) {
                 $statement = $this->adapter->newCreateTableStatementForManyToMany($manyToManyRelationship);
                 $this->connection->execute($statement);
-                $this->createIndexStatements[] = $this->adapter->newCreateIndexesStatementForManyToMany($manyToManyRelationship);
+                $this->createIndexStatements->insert($this->adapter->newCreateIndexesStatementForManyToMany($manyToManyRelationship));
             }
         }
     }
@@ -132,7 +132,7 @@ final class SQLStoreMigrator
             if (!$sourceEntity) {
                 continue;
             }
-            $this->removedEntities[] = $sourceEntity;
+            $this->removedEntities->insert($sourceEntity);
         }
     }
 
@@ -153,7 +153,7 @@ final class SQLStoreMigrator
             }
             foreach ($destinationEntity->indexes as $index) {
                 if (!$sourceEntity->indexes->containsElement($index)) {
-                    $this->createIndexStatements->appendContentsOf($index->createTableStatements);
+                    $this->createIndexStatements->formUnion($index->createTableStatements);
                 }
             }
         }
@@ -263,9 +263,9 @@ final class SQLStoreMigrator
                         }
                         if ($source->isCompositeAttribute !== $destination->isCompositeAttribute) {
                             if ($attributes = $sourceEntity->byMappingByCompositeNameAssociationTable[$source->name]?->values) {
-                                $this->removedColumns->appendContentsOf($attributes);
+                                $this->removedColumns->formUnion($attributes);
                             } else {
-                                $this->removedColumns->append($source);
+                                $this->removedColumns->insert($source);
                             }
                         } elseif (($source->sqlType !== $destination->sqlType || $source->isOptional !== $destination->isOptional || $source->isUnique !== $destination->isUnique || $source->minValue !== $destination->minValue || $source->maxValue !== $destination->maxValue || $source->defaultValue !== $destination->defaultValue || ($source->isDerivedAttribute !== $destination->isDerivedAttribute) || ($source->isDerivedAttribute && $destination->isDerivedAttribute && (string)$source->derivationExpression !== (string)$destination->derivationExpression))) {
                             if ($destination->isDerivedAttribute && ($statement = $this->adapter->newCreateColumnStatement($destination, $destinationEntity->columnAfter($destination)))) {
@@ -275,7 +275,7 @@ final class SQLStoreMigrator
                             }
                         }
                         if (!$source->isTransient && $destination->isTransient) {
-                            $this->removedColumns->append($source);
+                            $this->removedColumns->insert($source);
                         }
                     } elseif ($source instanceof SQLForeignKey && $destination instanceof SQLForeignKey) {
                         if ($source->toOneRelationship->relationshipDescription->deleteRule !== $destination->toOneRelationship->relationshipDescription->deleteRule) {
@@ -296,7 +296,7 @@ final class SQLStoreMigrator
                             }
                         } else {
                             if ($source instanceof SQLManyToMany) {
-                                $this->removedManyToMany->append($source);
+                                $this->removedManyToMany->insert($source);
                             }
                             if ($destination instanceof SQLManyToMany) {
                                 $statement = $this->adapter->newCreateTableStatementForManyToMany($destination);
@@ -312,13 +312,13 @@ final class SQLStoreMigrator
                 } elseif ($source instanceof SQLAttribute || $source instanceof SQLForeignKey) {
                     if ($sourceEntity->isEqual($destinationEntity) && !$destinationEntity->properties->containsElement($source)) {
                         if ($attributes = $sourceEntity->byMappingByCompositeNameAssociationTable[$source->name]?->values) {
-                            $this->removedColumns->appendContentsOf($attributes);
+                            $this->removedColumns->formUnion($attributes);
                         } else {
-                            $this->removedColumns->append($source);
+                            $this->removedColumns->insert($source);
                         }
                     }
                 } elseif ($source instanceof SQLManyToMany) {
-                    $this->removedManyToMany->append($source);
+                    $this->removedManyToMany->insert($source);
                 }
             }
             $properties = $destinationEntity->persistentProperties;
@@ -336,11 +336,11 @@ final class SQLStoreMigrator
                 } elseif ($property instanceof SQLManyToMany) {
                     $statement = $this->adapter->newCreateTableStatementForManyToMany($property);
                     $this->connection->execute($statement);
-                    $this->createIndexStatements[] = $this->adapter->newCreateIndexesStatementForManyToMany($property);
+                    $this->createIndexStatements->insert($this->adapter->newCreateIndexesStatementForManyToMany($property));
                 }
             }
             foreach ($destinationEntity->indexes as $index) {
-                $this->createIndexStatements->appendContentsOf($index->createTableStatements);
+                $this->createIndexStatements->formUnion($index->createTableStatements);
             }
             foreach ($properties as $property) {
                 if ($property instanceof SQLAttribute && ($statement = $this->adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($property)))) {

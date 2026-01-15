@@ -67,7 +67,7 @@ final class SQLStatement extends ObjectClass
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof SQLStatement) {
-            return string_is_equal((string)$this, (string)$other, CompareOptions::caseInsensitive | CompareOptions::diacriticInsensitive);
+            return string_is_equal($this->description, $other->description, CompareOptions::caseInsensitive | CompareOptions::diacriticInsensitive);
         }
         return false;
     }

@@ -67,7 +67,7 @@ class SQLColumn extends SQLProperty
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof SQLColumn) {
-            return $this->columnName === $other->columnName;
+            return $this->columnName === $other->columnName && $this->entity->isEqual($other->entity);
         }
         return parent::isEqual($other);
     }

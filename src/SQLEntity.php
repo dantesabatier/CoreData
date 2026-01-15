@@ -306,7 +306,7 @@ final class SQLEntity extends StoreMapping
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof SQLEntity) {
-            return $this->entityDescription->isEqual($other->entityDescription);
+            return $this->isKindOfSQLEntity($other);
         }
         return false;
     }
