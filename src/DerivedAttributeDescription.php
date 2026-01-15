@@ -44,11 +44,11 @@ final class DerivedAttributeDescription extends AttributeDescription
         get => $this->compatibility && $this->compatibility->isDeterministic;
     }
     /** @internal */
-    public bool $usesKVC {
+    public bool $usesKeyValueCoding {
         get => $this->compatibility && $this->compatibility->usesKeyValueCoding;
     }
     /** @internal */
-    public bool $usesKVO {
+    public bool $usesKeyValueOperator {
         get => $this->compatibility && $this->compatibility->usesKeyValueOperator;
     }
     /** @internal */

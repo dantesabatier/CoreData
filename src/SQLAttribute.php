@@ -39,11 +39,11 @@ final class SQLAttribute extends SQLColumn
     public bool $isDeterministic {
         get => $this->attributeDescription instanceof DerivedAttributeDescription && $this->attributeDescription->isDeterministic;
     }
-    public bool $usesKVC {
-        get => $this->attributeDescription instanceof DerivedAttributeDescription && $this->attributeDescription->usesKVC;
+    public bool $usesKeyValueCoding {
+        get => $this->attributeDescription instanceof DerivedAttributeDescription && $this->attributeDescription->usesKeyValueCoding;
     }
-    public bool $usesKVO {
-        get => $this->attributeDescription instanceof DerivedAttributeDescription && $this->attributeDescription->usesKVO;
+    public bool $usesKeyValueOperator {
+        get => $this->attributeDescription instanceof DerivedAttributeDescription && $this->attributeDescription->usesKeyValueOperator;
     }
     public bool $isRuntimeOnly {
         get => $this->attributeDescription instanceof DerivedAttributeDescription && $this->attributeDescription->isRuntimeOnly;
