@@ -357,7 +357,7 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
      * @throws Exception
      * @internal
      */
-    public static function newModel(string $data): ?ManagedObjectModel
+    public static function newModel(string $data): ManagedObjectModel
     {
         /** @var Dictionary<string> $dictionary */
         $dictionary = KeyedUnarchiver::unarchiveTopLevelObjectWithData($data);

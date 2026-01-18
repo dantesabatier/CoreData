@@ -375,7 +375,7 @@ final class SQLGenerator extends ObjectClass
             }
             $properties->appendContentsOf($keys->filter(fn(string $key): bool => $request->entity->attributesByName->contains(fn(AttributeDescription $attribute): bool => !$attribute->isTransient && $attribute->name === $key)));
             /** @psalm-suppress InvalidArgument */
-            $columnNames->formUnion($properties->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => is_string($property) ? $entity->attributes->first(fn(SQLAttribute $attribute): bool => !$attribute->isCompositeAttribute && !$attribute->isTransient && $attribute->name === $property)?->attributeDescription : (($property instanceof AttributeDescription && !$property instanceof CompositeAttributeDescription) || $property instanceof ExpressionDescription ? $property : null))->map(function (PropertyDescription $property) use ($entity): string {
+            $columnNames->formUnion($properties->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => is_string($property) ? $entity->attributes->first(fn(SQLAttribute $attribute): bool => !$attribute->isCompositeAttribute && !$attribute->isTransient && $attribute->name === $property)?->attributeDescription : (($property instanceof AttributeDescription && !$property instanceof CompositeAttributeDescription) || $property instanceof ExpressionDescription ? $property : null))->map(function (PropertyDescription $property): string {
                 if ($property instanceof AttributeDescription) {
                     if ($property instanceof DerivedAttributeDescription && $property->isRuntimeOnly) {
                         return "{$this->buildDerivationExpression($property->derivationExpression)} AS $property->name";

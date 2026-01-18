@@ -187,6 +187,6 @@ final class FetchedResultsController extends ObjectClass
      */
     public function sectionIndexTitle(string $sectionName): ?string
     {
-        return capitalize($sectionName);
+        return $sectionName === "" ? null : capitalize($sectionName);
     }
 }

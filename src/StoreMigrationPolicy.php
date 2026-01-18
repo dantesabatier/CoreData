@@ -29,7 +29,7 @@ final class StoreMigrationPolicy
     public ?URL $sourceURL = null;
     public ?PersistentStoreCoordinator $persistentStoreCoordinator = null;
 
-    public function createMigrationManager(ManagedObjectModel $sourceModel, ManagedObjectModel $destinationModel): ?MigrationManager
+    public function createMigrationManager(ManagedObjectModel $sourceModel, ManagedObjectModel $destinationModel): MigrationManager
     {
         return new MigrationManager($sourceModel, $destinationModel);
     }
@@ -37,7 +37,7 @@ final class StoreMigrationPolicy
     /**
      * @throws Exception
      */
-    public function sourceModelForStoreAtURL(URL $storeURL, Dictionary $metadata): ?ManagedObjectModel
+    public function sourceModelForStoreAtURL(URL $storeURL, Dictionary $metadata): ManagedObjectModel
     {
         /** @var string $storeType */
         $storeType = $metadata[StoreTypeKey];
@@ -49,7 +49,7 @@ final class StoreMigrationPolicy
     /**
      * @throws Exception
      */
-    public function addMigratedStoreToCoordinator(PersistentStoreCoordinator $coordinator, PersistentStoreType $storeType, ?string $configuration, URL $storeURL, ?Dictionary $options = null): ?PersistentStore
+    public function addMigratedStoreToCoordinator(PersistentStoreCoordinator $coordinator, PersistentStoreType $storeType, ?string $configuration, URL $storeURL, ?Dictionary $options = null): PersistentStore
     {
         return $coordinator->addPersistentStoreWithType($storeType, $configuration, $storeURL, $options);
     }

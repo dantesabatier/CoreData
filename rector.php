@@ -12,6 +12,7 @@ use Rector\Config\RectorConfig;
 use Rector\DeadCode\Rector\ClassMethod\RemoveEmptyClassMethodRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPrivateMethodParameterRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPrivateMethodRector;
+use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPublicMethodParameterRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessParamTagRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessReturnTagRector;
 use Rector\DeadCode\Rector\If_\RemoveAlwaysTrueIfConditionRector;
@@ -62,9 +63,8 @@ try {
                 __DIR__ . "/src/SQLGenerator.php",
             ],
             IssetOnPropertyObjectToPropertyExistsRector::class,
-            RemoveEmptyClassMethodRector::class => [
-                __DIR__ . "/src/SQLCore.php",
-            ],
+            RemoveEmptyClassMethodRector::class,
+            RemoveUnusedPublicMethodParameterRector::class
         ])->withPreparedSets(deadCode: true, codeQuality: true, earlyReturn: true);
 } catch (InvalidConfigurationException $e) {
     error_log($e->getMessage());
