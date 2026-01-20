@@ -910,6 +910,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         AttributeType::string, AttributeType::binaryData => is_string($value) || $value instanceof BackedEnum,
                         AttributeType::boolean => is_bool($value) || is_int($value) || $value instanceof Number,
                         AttributeType::transformable => true,
+                        AttributeType::compositeAttributeType => $value instanceof CompositeAttributeDescription || $value instanceof Dictionary,
                         default => false,
                     } && !$property->isOptional) {
                     fatal_error(sprintf("Invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $type->name, typeof($value)));

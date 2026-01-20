@@ -270,7 +270,7 @@ final class SQLStoreMigrator
                         } elseif (($source->sqlType !== $destination->sqlType || $source->isOptional !== $destination->isOptional || $source->isUnique !== $destination->isUnique || $source->minValue !== $destination->minValue || $source->maxValue !== $destination->maxValue || $source->defaultValue !== $destination->defaultValue || ($source->isDerivedAttribute !== $destination->isDerivedAttribute) || ($source->isDerivedAttribute && $destination->isDerivedAttribute && (string)$source->derivationExpression !== (string)$destination->derivationExpression))) {
                             if ($destination->isDerivedAttribute && ($statement = $this->adapter->newCreateColumnStatement($destination, $destinationEntity->columnAfter($destination)))) {
                                 $this->connection->execute($statement);
-                            } elseif ($statement = $this->adapter->newModifyColumnStatement($source, $destination)) {
+                            } elseif ($statement = $this->adapter->newModifyColumnStatement($source, $destinationEntity->columnAfter($destination))) {
                                 $this->connection->execute($statement);
                             }
                         }

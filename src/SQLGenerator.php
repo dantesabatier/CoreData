@@ -1362,16 +1362,19 @@ final class SQLGenerator extends ObjectClass
                         if ($property instanceof SQLToOne) {
                             $key = $property->foreignKey->columnName;
                         }
-                        $columnNames->insert($key);
+                        if ($property instanceof SQLAttribute && $property->isCompositeAttribute) {
+                            $columnNames->formUnion($entity->byMappingByCompositeNameAssociationTable[$property->name]?->values?->map(fn(SQLAttribute $attribute): string => $attribute->columnName) ?? []);
+                        } else {
+                            $columnNames->insert($key);
+                        }
                     }
                 }
             }
         }
         $this->string = "UPDATE `$entity->tableName` SET {$columnNames->map(fn(string $columnName): string => "`$columnName` = (CASE {$updatedObjects->map(function(ManagedObject $object) use ($entity, $columnName, &$arguments): string {
-            /** @var SQLAttribute|SQLForeignKey $property */
-            $property = $entity->propertiesByName[$columnName];
+            $property = $entity->propertiesByName[$columnName] ?? $entity->compositeAttributeNameToSQLProperty[$columnName] ?? fatal_error("Invalid argument: \"$entity\" does not contains a property named \"$columnName\"");
             if ($property instanceof SQLAttribute) {
-                $value = $this->coercedValue($object, $property->attributeDescription);
+                $value = $property->isCompositeAttribute ? $object->valueForKeyPath("$property->name.$columnName"): $this->coercedValue($object, $property->attributeDescription);
             } else {
                 $value = $object->valueForKeyPath("$property->name.{$entity->primaryKey->name}");
             }
