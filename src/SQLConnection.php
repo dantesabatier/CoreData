@@ -458,7 +458,7 @@ final class SQLConnection extends ObjectClass
     /**
      * @throws Exception
      */
-    private function decompressedModelWithData(string $compressedData): ?ManagedObjectModel
+    private function decompressedModelWithData(string $compressedData): ManagedObjectModel
     {
         return ManagedObjectModel::newModel($compressedData);
     }

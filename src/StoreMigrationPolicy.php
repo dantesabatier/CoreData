@@ -37,7 +37,7 @@ final class StoreMigrationPolicy
     /**
      * @throws Exception
      */
-    public function sourceModelForStoreAtURL(URL $storeURL, Dictionary $metadata): ManagedObjectModel
+    public function sourceModelForStoreAtURL(URL $storeURL, Dictionary $metadata): ?ManagedObjectModel
     {
         /** @var string $storeType */
         $storeType = $metadata[StoreTypeKey];

@@ -286,13 +286,15 @@ final class SQLEntity extends StoreMapping
         $this->properties->sort($by);
     }
 
-    public function columnAfter(SQLColumn $column): ?SQLColumn
+    public function columnAfter(SQLColumn $column): SQLColumn
     {
         /** @var ArrayClass<SQLProperty> $properties */
         $properties = $this->persistentProperties;
         $index = $properties->indexBefore($properties->indexOf($column) ?? $properties->endIndex);
         if ($index >= $properties->startIndex) {
-            return $properties[$index];
+            $property = $properties[$index];
+            assert($property instanceof SQLColumn);
+            return $property;
         }
         return $this->entityKey;
     }

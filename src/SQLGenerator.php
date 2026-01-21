@@ -1372,6 +1372,7 @@ final class SQLGenerator extends ObjectClass
             }
         }
         $this->string = "UPDATE `$entity->tableName` SET {$columnNames->map(fn(string $columnName): string => "`$columnName` = (CASE {$updatedObjects->map(function(ManagedObject $object) use ($entity, $columnName, &$arguments): string {
+            /** @var SQLProperty $property */
             $property = $entity->propertiesByName[$columnName] ?? $entity->compositeAttributeNameToSQLProperty[$columnName] ?? fatal_error("Invalid argument: \"$entity\" does not contains a property named \"$columnName\"");
             if ($property instanceof SQLAttribute) {
                 $value = $property->isCompositeAttribute ? $object->valueForKeyPath("$property->name.$columnName"): $this->coercedValue($object, $property->attributeDescription);
