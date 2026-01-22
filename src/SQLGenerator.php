@@ -412,7 +412,6 @@ final class SQLGenerator extends ObjectClass
         $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
         $this->raisesForNotApplicableKeys = false;
         $expressions = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate());
-        error_log("***********$expressions**********");
         foreach ($expressions as $expression) {
             $this->appendJoinsForRelationships($this->relationshipsFromKeyPathExpression($expression));
         }
