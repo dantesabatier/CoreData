@@ -31,6 +31,7 @@ use Sabatier\Foundation\Predicates\ExpressionType;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\Predicates\PredicateOperatorSymbol;
 use Sabatier\Foundation\Predicates\PredicateOperatorType;
+use Sabatier\Foundation\Predicates\PredicateVisitorFlags;
 use Sabatier\Foundation\Sequence;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\SortDescriptor;
@@ -411,6 +412,7 @@ final class SQLGenerator extends ObjectClass
         $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
         $this->raisesForNotApplicableKeys = false;
         $expressions = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate());
+        error_log("***********$expressions**********");
         foreach ($expressions as $expression) {
             $this->appendJoinsForRelationships($this->relationshipsFromKeyPathExpression($expression));
         }
@@ -635,11 +637,15 @@ final class SQLGenerator extends ObjectClass
         $expressions = new Set();
         $predicate ??= $this->request->predicate;
         if ($predicate instanceof ComparisonPredicate) {
-            if ($predicate->leftExpression->expressionType === ExpressionType::keyPath) {
-                $expressions->insert($predicate->leftExpression);
+            $analyser = new SQLPredicateAnalyser();
+            $predicate->leftExpression->accept($analyser, PredicateVisitorFlags::all);
+            if (!$analyser->keyPathExpressions->isEmpty) {
+                $expressions->formUnion($analyser->keyPathExpressions);
             }
-            if ($predicate->rightExpression->expressionType === ExpressionType::keyPath) {
-                $expressions->insert($predicate->rightExpression);
+            $analyser = new SQLPredicateAnalyser();
+            $predicate->leftExpression->accept($analyser, PredicateVisitorFlags::all);
+            if (!$analyser->keyPathExpressions->isEmpty) {
+                $expressions->formUnion($analyser->keyPathExpressions);
             }
         } elseif ($predicate instanceof CompoundPredicate) {
             foreach ($predicate->subpredicates as $subpredicate) {

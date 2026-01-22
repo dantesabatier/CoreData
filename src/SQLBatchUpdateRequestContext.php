@@ -23,9 +23,9 @@ final class SQLBatchUpdateRequestContext extends SQLBatchOperationRequestContext
                 $fetchRequest = new FetchRequest();
                 $fetchRequest->entity = $this->request->entity;
                 $fetchRequest->predicate = $this->request->predicate;
+                $fetchRequest->propertiesToFetch = $this->request->propertiesToUpdate->keys;
                 $fetchRequest->includesSubentities = $this->request->includesSubentities;
                 $fetchRequest->resultType = FetchRequestResultType::managedObjectIDResultType;
-                $fetchRequest->includesPropertyValues = false;
                 $this->fetchContext = new SQLFetchRequestContext($fetchRequest, $this->context, $this->sqlCore);
             }
             return $this->fetchContext;
