@@ -386,8 +386,8 @@ final class SQLGenerator extends ObjectClass
                 }
                 return "$this->tableReference.$property->name";
             }));
+            $columnNames->formUnion($entity->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary): ArrayClass => $dictionary->values->map(fn(SQLAttribute $attribute): string => "$this->tableReference.$attribute->name")));
         }
-        $columnNames->formUnion($entity->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary): ArrayClass => $dictionary->values->map(fn(SQLAttribute $attribute): string => "$this->tableReference.$attribute->name")));
         $this->selectList .= $columnNames->join(", ");
     }
 
