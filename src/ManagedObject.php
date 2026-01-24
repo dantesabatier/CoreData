@@ -283,20 +283,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     }
 
     /**
-     * @return Dictionary<mixed>
-     * @internal
-     */
-    public function newCommittedSnapshotValues(): Dictionary
-    {
-        if ($lastSnapshot = $this->lastSnapshot) {
-            $committed = clone $lastSnapshot;
-            $committed->merge($this->changedValues);
-            return $committed;
-        }
-        return new Dictionary();
-    }
-
-    /**
      * @param Dictionary<mixed> $snapshot
      */
     private function genericUpdateFromSnapshot(Dictionary $snapshot): void
@@ -305,6 +291,15 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $snapshot = $snapshot->merging($this->changedValuesForCurrentEvent);
         }
         $this->setValuesForKeys($snapshot);
+    }
+
+    /**
+     * @param Dictionary<mixed> $snapshot
+     * @param bool $includingTransients
+     * @internal
+     */
+    public function updateFromUndoSnapshot(Dictionary $snapshot, bool $includingTransients): void
+    {
     }
 
     /**

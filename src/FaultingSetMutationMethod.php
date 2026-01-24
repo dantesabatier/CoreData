@@ -15,18 +15,20 @@ final readonly class FaultingSetMutationMethod
     public static function addObjectMethod(ManagedObject $obj, string $key): FaultingSetMutationMethod
     {
         return new FaultingSetMutationMethod(sprintf("add%sObject", ucfirst($key)), function (ManagedObject $object) use ($obj, $key): void {
-            $mutableSet = $obj->valueForKey($key);
-            $mutableSet->insert($object);
-            $obj->setValueForKey($mutableSet, $key);
+            /** @var Set<ManagedObject> $set */
+            $set = $obj->valueForKey($key);
+            $set->insert($object);
+            $obj->setValueForKey($set, $key);
         });
     }
 
     public static function removeObjectMethod(ManagedObject $obj, string $key): FaultingSetMutationMethod
     {
         return new FaultingSetMutationMethod(sprintf("remove%sObject", ucfirst($key)), function (ManagedObject $object) use ($obj, $key): void {
-            $mutableSet = $obj->valueForKey($key);
-            $mutableSet->remove($object);
-            $obj->setValueForKey($mutableSet, $key);
+            /** @var Set<ManagedObject> $set */
+            $set = $obj->valueForKey($key);
+            $set->remove($object);
+            $obj->setValueForKey($set, $key);
         });
     }
 
@@ -34,40 +36,56 @@ final readonly class FaultingSetMutationMethod
     {
         return new FaultingSetMutationMethod(sprintf("add%s", ucfirst($key)),
             /**
-             * @param Set<ManagedObject> $set
+             * @param Set<ManagedObject> $newSet
              */
-            function (Set $set) use ($obj, $key): void {
-                $mutableSet = $obj->valueForKey($key);
-                $mutableSet->formUnion($set);
-                $obj->setValueForKey($mutableSet, $key);
+            function (Set $newSet) use ($obj, $key): void {
+                /** @var Set<ManagedObject> $set */
+                $set = $obj->valueForKey($key);
+                $set->formUnion($newSet);
+                $obj->setValueForKey($set, $key);
             });
     }
 
     public static function removeMethod(ManagedObject $obj, string $key): FaultingSetMutationMethod
     {
-        return new FaultingSetMutationMethod(sprintf("remove%s", ucfirst($key)), function (Set $set) use ($obj, $key): void {
-            $mutableSet = $obj->valueForKey($key);
-            $mutableSet->removeAll($set->containsElement(...));
-            $obj->setValueForKey($mutableSet, $key);
-        });
+        return new FaultingSetMutationMethod(sprintf("remove%s", ucfirst($key)),
+            /**
+             * @param Set<ManagedObject> $newSet
+             */
+            function (Set $newSet) use ($obj, $key): void {
+                /** @var Set<ManagedObject> $set */
+                $set = $obj->valueForKey($key);
+                $set->removeAll($newSet->containsElement(...));
+                $obj->setValueForKey($set, $key);
+            });
     }
 
     public static function intersectMethod(ManagedObject $obj, string $key): FaultingSetMutationMethod
     {
-        return new FaultingSetMutationMethod(sprintf("intersect%s", ucfirst($key)), function (Set $set) use ($obj, $key): Set {
-            $mutableSet = $obj->valueForKey($key);
-            $mutableSet->formIntersection($set);
-            $obj->setValueForKey($mutableSet, $key);
-            return $mutableSet;
-        });
+        return new FaultingSetMutationMethod(sprintf("intersect%s", ucfirst($key)),
+            /**
+             * @param Set<ManagedObject> $newSet
+             */
+            function (Set $newSet) use ($obj, $key): Set {
+                /** @var Set<ManagedObject> $set */
+                $set = $obj->valueForKey($key);
+                $set->formIntersection($newSet);
+                $obj->setValueForKey($set, $key);
+                return $set;
+            });
     }
 
     public static function setMethod(ManagedObject $obj, string $key): FaultingSetMutationMethod
     {
-        return new FaultingSetMutationMethod("set" . ucfirst($key), function (Set $set) use ($obj, $key): void {
-            $mutableSet = $obj->valueForKey($key);
-            $mutableSet->setSet($set);
-            $obj->setValueForKey($mutableSet, $key);
-        });
+        return new FaultingSetMutationMethod("set" . ucfirst($key),
+            /**
+             * @param Set<ManagedObject> $newSet
+             */
+            function (Set $newSet) use ($obj, $key): void {
+                /** @var Set<ManagedObject> $set */
+                $set = $obj->valueForKey($key);
+                $set->setSet($newSet);
+                $obj->setValueForKey($set, $key);
+            });
     }
 }
