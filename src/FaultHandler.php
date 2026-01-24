@@ -15,17 +15,17 @@ final readonly class FaultHandler
     public function fulfillFault(ManagedObject $object, ?ManagedObjectContext $context = null): void
     {
         $context ??= $object->managedObjectContext;
-        /** @var IncrementalStoreNode|AtomicStoreCacheNode|null $newValues */
-        $newValues = $this->persistentStore->newValuesForObjectWithID($object->objectID, $context);
-        if ($newValues === null) {
+        /** @var IncrementalStoreNode|AtomicStoreCacheNode|null $snapshot */
+        $snapshot = $this->persistentStore->newValuesForObjectWithID($object->objectID, $context);
+        if ($snapshot === null) {
             return;
         }
-        $newValues = $newValues instanceof AtomicStoreCacheNode ? $newValues->propertyCache : $newValues->values;
-        $newValues["isInserted"] = true;
-        $newValues["isFault"] = false;
-        $newValues["faultingState"] = 0;
+        $snapshot = $snapshot instanceof AtomicStoreCacheNode ? $snapshot->propertyCache : $snapshot->values;
+        $snapshot["isInserted"] = true;
+        $snapshot["isFault"] = false;
+        $snapshot["faultingState"] = 0;
         $object->isSuppressingKVO = true;
-        $object->setValuesForKeys($newValues);
+        $object->updateFromRefreshSnapshot($snapshot);
         $object->isSuppressingKVO = false;
         if (!$object->isAwakeFromFetch) {
             $object->isAwakeFromFetch = true;

@@ -8,12 +8,12 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Set;
-use Sabatier\Foundation\Slice;
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\pluralize;
+use function Sabatier\Foundation\substring_to_index;
 
 /** @internal */
 class SQLFetchRequestContext extends SQLStoreRequestContext
@@ -56,44 +56,16 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
      */
     private function split(string $pattern): ArrayClass
     {
-        $keys = new ArrayClass(explode("_", $pattern));
-        if ($keys->count >= 3) {
-            $keys->removeAt(0);
+        /** @var array<string, ArrayClass<string>> $cache */
+        static $cache = [];
+        if (isset($cache[$pattern])) {
+            return clone $cache[$pattern];
         }
-        return $keys;
-    }
-
-    /**
-     * @param Slice<string> $propertyKeys
-     * @param SQLEntity $currentEntity
-     * @param array<string, mixed> $rowData
-     * @return array{int|null, int|null}
-     */
-    private function buildRelationalIDSets(Slice $propertyKeys, SQLEntity $currentEntity, array $rowData): array
-    {
-        /** @var ArrayClass<string> $childrenKeys */
-        $childrenKeys = new ArrayClass();
-        if (!$propertyKeys->isEmpty) {
-            $childrenKeys->append($currentEntity->tableName);
-            $childrenKeys->appendContentsOf($propertyKeys);
-            $childrenKeys->append($currentEntity->primaryKey->columnName);
+        $parts = explode("_", $pattern);
+        if (count($parts) >= 3) {
+            array_shift($parts);
         }
-        /** @var ArrayClass<string> $parentKeys */
-        $parentKeys = new ArrayClass();
-        if (!$propertyKeys->isEmpty) {
-            $parentKeys->appendContentsOf(new ArrayClass($propertyKeys)->dropLast(1));
-            if (!$parentKeys->isEmpty) {
-                $parentKeys->insertAt($currentEntity->tableName, 0);
-                $parentKeys->append($currentEntity->primaryKey->columnName);
-            }
-        }
-        $currentKey = $currentEntity->primaryKey->columnName;
-        $currentID = $rowData[$currentKey] ?? null;
-        $childrenKey = $childrenKeys->join("_");
-        $childrenID = $rowData[$childrenKey] ?? null;
-        $parentKey = $parentKeys->join("_");
-        $parentID = $rowData[$parentKey] ?? $currentID;
-        return [$childrenID, $parentID];
+        return $cache[$pattern] = new ArrayClass($parts);
     }
 
     /**
@@ -106,23 +78,22 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         $byRootIDResult = new Dictionary();
         /** @var Set<string> $nullPropertyPrefixes */
         $nullPropertyPrefixes = new Set();
+        $isNonDictionaryResultType = ($this->request->resultType !== FetchRequestResultType::dictionaryResultType);
         do {
             /** @var array<string, mixed> $row */
             while ($row = $statement->fetch()) {
                 $entityNameFromRow = $row[SQLEntity::entityKeyName] ?? $this->request->entity->name;
                 /** @var SQLEntity $entity */
-                $entity = $this->sqlModel->entitiesByName[$entityNameFromRow] ?? fatal_error("Entity \"$entityNameFromRow\" does exists");
+                $entity = $this->sqlModel->entitiesByName[$entityNameFromRow] ?? fatal_error("Entity \"$entityNameFromRow\" does not exist");
                 $cursorEntity = $entity;
                 $rootID = (string)$row[$entity->primaryKey->columnName];
                 /** @var Dictionary<mixed> $root */
                 $root = $byRootIDResult[$rootID] ?? new Dictionary();
-                $isNonDictionaryResultType = ($this->request->resultType !== FetchRequestResultType::dictionaryResultType);
                 foreach ($row as $pattern => $value) {
                     $value ??= Nil::nil();
                     $keyPathComponents = $this->split($pattern);
                     $propertyKeyPathComponents = $keyPathComponents->dropLast(1);
                     $primaryKeyName = $cursorEntity->primaryKey->columnName;
-                    $entityKeyName = $cursorEntity->entityKey->columnName;
                     if ($keyPathComponents[$keyPathComponents->indexBefore($keyPathComponents->endIndex)] === $primaryKeyName) {
                         $propertyKeyPath = $propertyKeyPathComponents->join(".");
                         if ($value instanceof Nil) {
@@ -132,18 +103,30 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         }
                     }
                     $keyPath = $keyPathComponents->join(".");
-                    $hasNullifiedPrefix = $nullPropertyPrefixes->contains(fn(string $prefix): bool => str_starts_with($keyPath, $prefix));
-                    if ($hasNullifiedPrefix) {
+                    if ($nullPropertyPrefixes->contains(fn(string $prefix): bool => $keyPath === $prefix || str_starts_with($keyPath, "$prefix."))) {
                         continue;
                     }
-                    $relationship = null;
                     $cursor = &$root;
-                    [$childrenID, $parentID] = $this->buildRelationalIDSets($propertyKeyPathComponents, $cursorEntity, $row);
+                    $lastUnderscorePos = strrpos($pattern, "_");
+                    $basePathPrefix = substring_to_index($pattern, $lastUnderscorePos);
+                    $childIDKey = "{$basePathPrefix}_$primaryKeyName";
+                    $childrenID = $row[$childIDKey] ?? null;
+                    $secondLastUnderscorePos = strrpos($basePathPrefix, "_");
+                    if ($secondLastUnderscorePos !== false) {
+                        $parentPathPrefix = substring_to_index($basePathPrefix, $secondLastUnderscorePos);
+                        $parentIDKey = "{$parentPathPrefix}_$primaryKeyName";
+                        $parentID = $row[$parentIDKey] ?? null;
+                    } else {
+                        $parentID = $rootID;
+                    }
+                    $isInsideCompositeAttribute = false;
                     foreach ($keyPathComponents as $key) {
                         $property = $cursorEntity->propertiesByName[$key] ?? $cursorEntity->compositeAttributeNameToSQLProperty[$key];
                         /** @var PropertyDescription|null $propertyDescription */
                         $propertyDescription = $property?->propertyDescription ?? $this->request->propertiesToFetch?->first(fn(string|PropertyDescription $p): bool => $p instanceof PropertyDescription ? $p->name === $key : $p === $key);
-                        $isNavigational = ($property instanceof SQLRelationship) || ($property instanceof SQLAttribute && $property->isCompositeAttribute);
+                        $isRelationship = $property instanceof SQLRelationship;
+                        $isCompositeAttribute = ($property instanceof SQLAttribute && $property->isCompositeAttribute);
+                        $isNavigational = ($isRelationship || $isCompositeAttribute);
                         if ($isNavigational) {
                             if ($cursor instanceof ArrayClass) {
                                 $element = $cursor->first(fn(Dictionary $dictionary): bool => $dictionary[$primaryKeyName] === $parentID);
@@ -151,7 +134,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     $last = $cursor->last;
                                     if ($last instanceof Dictionary) {
                                         $lastID = $last[$primaryKeyName];
-                                        $lastValue = $last->valueForKey($key);
+                                        $lastValue = $last[$key];
                                         if ($lastValue instanceof ArrayClass) {
                                             $last[$key] = $lastValue->filter(fn(Dictionary $dictionary): bool => $dictionary["parentID"] === $lastID);
                                         } elseif ($lastValue instanceof Dictionary) {
@@ -165,18 +148,26 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 $cursor = &$element;
                             }
                             if ($cursor instanceof Dictionary) {
-                                if ($property instanceof SQLToOne || $property instanceof SQLAttribute) {
-                                    $cursor[$key] ??= new Dictionary();
-                                } else {
-                                    $cursor[$key] ??= new ArrayClass();
+                                if ($isRelationship) {
+                                    /** @var SQLRelationship $relationship */
+                                    $relationship = $property;
+                                    if ($relationship instanceof SQLToOne) {
+                                        $cursor[$key] ??= new Dictionary();
+                                    } else {
+                                        $cursor[$key] ??= new ArrayClass();
+                                    }
+                                    $cursor = &$cursor[$key];
+                                    $cursorEntity = $relationship->destinationEntity;
+                                    $primaryKeyName = $cursorEntity->primaryKey->columnName;
+                                    $isInsideCompositeAttribute = false;
+                                } elseif ($isCompositeAttribute) {
+                                    /** @var SQLAttribute $attribute */
+                                    $attribute = $property;
+                                    $name = $attribute->name;
+                                    $cursor[$name] ??= new Dictionary();
+                                    $cursor = &$cursor[$name];
+                                    $isInsideCompositeAttribute = true;
                                 }
-                                $cursor = &$cursor[$key];
-                            }
-                            if ($property instanceof SQLRelationship) {
-                                $relationship = $property;
-                                $cursorEntity = $relationship->destinationEntity;
-                                $primaryKeyName = $cursorEntity->primaryKey->columnName;
-                                $entityKeyName = $cursorEntity->entityKey->columnName;
                             }
                         }
                         $isTerminalValue = $property instanceof SQLColumn || $propertyDescription instanceof ExpressionDescription;
@@ -189,21 +180,16 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 $cursor = &$element;
                             }
                             if ($cursor instanceof Dictionary && $propertyDescription instanceof PropertyDescription) {
-                                $value = $this->coerceExpressionValueIfNeeded($value, $propertyDescription);
-                                if ($key === $primaryKeyName || $key === $entityKeyName) {
-                                    if ($isNonDictionaryResultType) {
-                                        $cursor[$key] = $value;
+                                $cursor[$key] = $this->coerceExpressionValueIfNeeded($value, $propertyDescription);
+                                if (!$isInsideCompositeAttribute && !$propertyDescription instanceof CompositeAttributeDescription) {
+                                    if ($cursor !== $root) {
+                                        $cursor["parentID"] = $parentID;
                                     }
-                                } else {
-                                    $cursor[$key] = $value;
-                                }
-                                if ($cursor !== $root) {
-                                    $cursor["parentID"] = $parentID;
-                                }
-                                if (!$propertyDescription instanceof CompositeAttributeDescription && $isNonDictionaryResultType) {
-                                    $cursor["isInserted"] = true;
-                                    $cursor["isFault"] = false;
-                                    $cursor["faultingState"] = 0;
+                                    if ($isNonDictionaryResultType) {
+                                        $cursor["isInserted"] = true;
+                                        $cursor["isFault"] = false;
+                                        $cursor["faultingState"] = 0;
+                                    }
                                 }
                             }
                         }
@@ -224,21 +210,21 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     }
 
     /**
-     * @param ArrayClass<Dictionary<mixed>> $dictionaries
+     * @param ArrayClass<Dictionary<mixed>> $snapshots
      * @return ArrayClass<ManagedObject>
      */
-    private function managedObjects(ArrayClass $dictionaries): ArrayClass
+    private function managedObjects(ArrayClass $snapshots): ArrayClass
     {
-        return $dictionaries->map(function (Dictionary $dictionary): ManagedObject {
+        return $snapshots->map(function (Dictionary $snapshot): ManagedObject {
             /** @var SQLEntity $entity */
-            $entity = $this->sqlModel->entitiesByName[$dictionary[$this->sqlEntityForFetchRequest->entityKey->columnName]];
-            $object = $this->context->object($this->sqlCore->objectID($entity->entityDescription, $dictionary[$entity->primaryKey->columnName]));
+            $entity = $this->sqlModel->entitiesByName[$snapshot[$this->sqlEntityForFetchRequest->entityKey->columnName]];
+            $object = $this->context->object($this->sqlCore->objectID($entity->entityDescription, $snapshot[$entity->primaryKey->columnName]));
             if ($this->request->includesPendingChanges && $object->isAwakeFromFetch && !$object->isFault) {
                 return $object->serialized($this->request->serialization);
             }
             $object->isSuppressingChangeNotifications = true;
             $object->isSuppressingKVO = true;
-            $object->setValuesForKeys($dictionary);
+            $object->updateFromSnapshot($snapshot);
             $object->isSuppressingKVO = false;
             if (!$object->isAwakeFromFetch) {
                 $object->isAwakeFromFetch = true;
@@ -251,31 +237,31 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     }
 
     /**
-     * @param ArrayClass<Dictionary<mixed>> $dictionaries
+     * @param ArrayClass<Dictionary<mixed>> $snapshots
      * @return ArrayClass<ManagedObjectID>
      */
-    private function managedObjectIDs(ArrayClass $dictionaries): ArrayClass
+    private function managedObjectIDs(ArrayClass $snapshots): ArrayClass
     {
-        return $dictionaries->map(fn(Dictionary $dictionary): ManagedObjectID => $this->sqlCore->objectID($this->sqlEntityForFetchRequest->entityDescription, $dictionary[$this->sqlEntityForFetchRequest->primaryKey->columnName]));
+        return $snapshots->map(fn(Dictionary $snapshot): ManagedObjectID => $this->sqlCore->objectID($this->sqlEntityForFetchRequest->entityDescription, $snapshot[$this->sqlEntityForFetchRequest->primaryKey->columnName]));
     }
 
     /**
-     * @param ArrayClass<Dictionary<mixed>> $dictionaries
+     * @param ArrayClass<Dictionary<mixed>> $snapshots
      * @return ArrayClass<ManagedObject>|ArrayClass<ManagedObjectID>
      */
-    private function managedResults(ArrayClass $dictionaries): ArrayClass
+    private function managedResults(ArrayClass $snapshots): ArrayClass
     {
         if ($this->request->includesPropertyValues) {
-            $managedObjects = $this->managedObjects($dictionaries);
+            $managedObjects = $this->managedObjects($snapshots);
             if ($this->request->resultType === FetchRequestResultType::managedObjectIDResultType) {
                 return $managedObjects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID);
             }
             return $managedObjects;
         }
         if ($this->request->resultType === FetchRequestResultType::managedObjectResultType) {
-            return $this->managedObjects($dictionaries);
+            return $this->managedObjects($snapshots);
         }
-        return $this->managedObjectIDs($dictionaries);
+        return $this->managedObjectIDs($snapshots);
     }
 
     #[Override]

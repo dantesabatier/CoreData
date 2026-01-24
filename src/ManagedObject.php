@@ -168,6 +168,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     final public string $description {
         get => sprintf("<%s %s> (entity: %s; id: %s %s; data: %s)", $this->class, $this->hash, $this->entity->name, $this->objectID->hash, $this->objectID->description, $this->isFault ? "<fault>" : $this->dictionaryWithValues($this->serializationKeys->filter(fn(string $key): bool => !$this->isPropertyForKeyFault($key)))->description);
     }
+    private ?Dictionary $originalSnapshot = null;
+    private ?Dictionary $lastSnapshot = null;
 
     /**
      * Initializes a managed object from an entity description and inserts it into the specified managed object context.
@@ -278,6 +280,50 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             }
             $this->setPrimitiveValueForKey($value, $key);
         }
+    }
+
+    /**
+     * @return Dictionary<mixed>
+     * @internal
+     */
+    public function newCommittedSnapshotValues(): Dictionary
+    {
+        $committed = clone $this->lastSnapshot;
+        $committed->merge($this->changedValues);
+        return $committed;
+    }
+
+    /**
+     * @param Dictionary<mixed> $snapshot
+     */
+    private function genericUpdateFromSnapshot(Dictionary $snapshot): void
+    {
+        if (!$this->changedValuesForCurrentEvent->isEmpty) {
+            $snapshot = $snapshot->merging($this->changedValuesForCurrentEvent);
+        }
+        $this->setValuesForKeys($snapshot);
+    }
+
+    /**
+     * @param Dictionary<mixed> $snapshot
+     * @internal
+     */
+    public function updateFromRefreshSnapshot(Dictionary $snapshot): void
+    {
+        $this->genericUpdateFromSnapshot($snapshot);
+        $this->lastSnapshot = $snapshot;
+
+    }
+
+    /**
+     * @param Dictionary<mixed> $snapshot
+     * @internal
+     */
+    public function updateFromSnapshot(Dictionary $snapshot): void
+    {
+        $this->originalSnapshot ??= $snapshot;
+        $this->genericUpdateFromSnapshot($snapshot);
+        $this->lastSnapshot = $snapshot;
     }
 
     /**
@@ -910,7 +956,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         AttributeType::string, AttributeType::binaryData => is_string($value) || $value instanceof BackedEnum,
                         AttributeType::boolean => is_bool($value) || is_int($value) || $value instanceof Number,
                         AttributeType::transformable => true,
-                        AttributeType::compositeAttributeType => $value instanceof CompositeAttributeDescription || $value instanceof Dictionary,
+                        AttributeType::compositeAttributeType => $value instanceof Dictionary,
                         default => false,
                     } && !$property->isOptional) {
                     fatal_error(sprintf("Invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $type->name, typeof($value)));
