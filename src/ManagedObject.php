@@ -154,19 +154,13 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     private(set) ArrayClass $transientProperties {
         get => $this->transientProperties ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property->isTransient);
     }
-    /**
-     * @var ArrayClass<AttributeDescription>
-     * @internal
-     */
-    private(set) ArrayClass $attributes {
-        get => $this->attributes ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
+    /** @var ArrayClass<AttributeDescription> */
+    private ArrayClass $modeledAttributes {
+        get => $this->modeledAttributes ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
     }
-    /**
-     * @var ArrayClass<RelationshipDescription>
-     * @internal
-     */
-    private(set) ArrayClass $relationships {
-        get => $this->relationships ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
+    /** @var ArrayClass<RelationshipDescription> */
+    private ArrayClass $modeledRelationships {
+        get => $this->modeledRelationships ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
     }
     /** @internal */
     public bool $isSuppressingKVO = false;
@@ -273,7 +267,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     private function hydrateAttributes(bool $shouldValidate): void
     {
-        foreach ($this->attributes as $attribute) {
+        foreach ($this->modeledAttributes as $attribute) {
             if ($attribute instanceof DerivedAttributeDescription) {
                 continue;
             }
@@ -286,7 +280,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     private function hydrateRelationships(bool $enableMutators): void
     {
-        foreach ($this->relationships as $relationship) {
+        foreach ($this->modeledRelationships as $relationship) {
             $this->setupRelationshipDynamicMethods($relationship, $enableMutators);
         }
     }
