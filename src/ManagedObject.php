@@ -154,6 +154,20 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     private(set) ArrayClass $transientProperties {
         get => $this->transientProperties ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property->isTransient);
     }
+    /**
+     * @var ArrayClass<AttributeDescription>
+     * @internal
+     */
+    private(set) ArrayClass $attributes {
+        get => $this->attributes ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
+    }
+    /**
+     * @var ArrayClass<RelationshipDescription>
+     * @internal
+     */
+    private(set) ArrayClass $relationships {
+        get => $this->relationships ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
+    }
     /** @internal */
     public bool $isSuppressingKVO = false;
     /** @internal */
@@ -253,15 +267,27 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     private function hydrateProperties(): void
     {
         $isManagedObjectSubclass = $this->isSubclass(ManagedObject::class);
-        foreach ($this->modeledProperties as $property) {
-            $key = $property->name;
-            $currentValue = $this->primitiveValueForKey($key);
-            if ($property instanceof AttributeDescription && !$property instanceof DerivedAttributeDescription) {
-                $currentValue = $this->resolveInitialAttributeValue($property, $currentValue, $isManagedObjectSubclass);
-            } elseif ($property instanceof RelationshipDescription) {
-                $this->setupRelationshipDynamicMethods($property, $isManagedObjectSubclass);
+        $this->hydrateRelationships($isManagedObjectSubclass);
+        $this->hydrateAttributes($isManagedObjectSubclass);
+    }
+
+    private function hydrateAttributes(bool $shouldValidate): void
+    {
+        foreach ($this->attributes as $attribute) {
+            if ($attribute instanceof DerivedAttributeDescription) {
+                continue;
             }
-            $this->setPrimitiveValueForKey($currentValue, $key);
+            $key = $attribute->name;
+            $value = $this->primitiveValueForKey($key);
+            $value = $this->resolveInitialAttributeValue($attribute, $value, $shouldValidate);
+            $this->setPrimitiveValueForKey($value, $key);
+        }
+    }
+
+    private function hydrateRelationships(bool $enableMutators): void
+    {
+        foreach ($this->relationships as $relationship) {
+            $this->setupRelationshipDynamicMethods($relationship, $enableMutators);
         }
     }
 
@@ -285,7 +311,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         };
     }
 
-    private function dispatchValidationHook(string $key, mixed $value): void
+    private function dispatchValidationHook(string $key, mixed &$value): void
     {
         $method = "validate" . ucfirst($key);
         if (method_exists($this, $method)) {
