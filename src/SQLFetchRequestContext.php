@@ -42,7 +42,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         parent::__construct($request, $context, $sqlCore);
     }
 
-    private function coerceExpressionValueIfNeeded(mixed $value, PropertyDescription $description): mixed
+    private function coerceExpressionValue(mixed $value, PropertyDescription $description): mixed
     {
         if ($description instanceof ExpressionDescription) {
             return ManagedObject::coercedValue($value, $description->resultType, isOptional: $description->isOptional);
@@ -54,7 +54,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
      * @param string $pattern
      * @return ArrayClass<string>
      */
-    private function split(string $pattern): ArrayClass
+    private function splitKeyPathPattern(string $pattern): ArrayClass
     {
         /** @var array<string, ArrayClass<string>> $cache */
         static $cache = [];
@@ -72,7 +72,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
      * @param PDOStatement $statement
      * @return ArrayClass<Dictionary<mixed>>
      */
-    private function dictionaryResults(PDOStatement $statement): ArrayClass
+    private function fetchSnapshotsFromStatement(PDOStatement $statement): ArrayClass
     {
         /** @var Dictionary<Dictionary<mixed>> $byRootIDResult */
         $byRootIDResult = new Dictionary();
@@ -91,7 +91,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                 $root = $byRootIDResult[$rootID] ?? new Dictionary();
                 foreach ($row as $pattern => $value) {
                     $value ??= Nil::nil();
-                    $keyPathComponents = $this->split($pattern);
+                    $keyPathComponents = $this->splitKeyPathPattern($pattern);
                     $propertyKeyPathComponents = $keyPathComponents->dropLast(1);
                     $primaryKeyName = $cursorEntity->primaryKey->columnName;
                     if ($keyPathComponents[$keyPathComponents->indexBefore($keyPathComponents->endIndex)] === $primaryKeyName) {
@@ -180,7 +180,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 $cursor = &$element;
                             }
                             if ($cursor instanceof Dictionary && $propertyDescription instanceof PropertyDescription) {
-                                $cursor[$key] = $this->coerceExpressionValueIfNeeded($value, $propertyDescription);
+                                $cursor[$key] = $this->coerceExpressionValue($value, $propertyDescription);
                                 if (!$isInsideCompositeAttribute && !$propertyDescription instanceof CompositeAttributeDescription) {
                                     if ($cursor !== $root) {
                                         $cursor["parentID"] = $parentID;
@@ -213,7 +213,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
      * @param ArrayClass<Dictionary<mixed>> $snapshots
      * @return ArrayClass<ManagedObject>
      */
-    private function managedObjects(ArrayClass $snapshots): ArrayClass
+    private function managedObjectsFromSnapshots(ArrayClass $snapshots): ArrayClass
     {
         return $snapshots->map(function (Dictionary $snapshot): ManagedObject {
             /** @var SQLEntity $entity */
@@ -240,7 +240,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
      * @param ArrayClass<Dictionary<mixed>> $snapshots
      * @return ArrayClass<ManagedObjectID>
      */
-    private function managedObjectIDs(ArrayClass $snapshots): ArrayClass
+    private function managedObjectIDsFromSnapshots(ArrayClass $snapshots): ArrayClass
     {
         return $snapshots->map(fn(Dictionary $snapshot): ManagedObjectID => $this->sqlCore->objectID($this->sqlEntityForFetchRequest->entityDescription, $snapshot[$this->sqlEntityForFetchRequest->primaryKey->columnName]));
     }
@@ -249,19 +249,19 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
      * @param ArrayClass<Dictionary<mixed>> $snapshots
      * @return ArrayClass<ManagedObject>|ArrayClass<ManagedObjectID>
      */
-    private function managedResults(ArrayClass $snapshots): ArrayClass
+    private function mapSnapshotsToResult(ArrayClass $snapshots): ArrayClass
     {
         if ($this->request->includesPropertyValues) {
-            $managedObjects = $this->managedObjects($snapshots);
+            $managedObjects = $this->managedObjectsFromSnapshots($snapshots);
             if ($this->request->resultType === FetchRequestResultType::managedObjectIDResultType) {
                 return $managedObjects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID);
             }
             return $managedObjects;
         }
         if ($this->request->resultType === FetchRequestResultType::managedObjectResultType) {
-            return $this->managedObjects($snapshots);
+            return $this->managedObjectsFromSnapshots($snapshots);
         }
-        return $this->managedObjectIDs($snapshots);
+        return $this->managedObjectIDsFromSnapshots($snapshots);
     }
 
     #[Override]
@@ -274,8 +274,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     protected function executeRequestCore(): bool
     {
         $this->result = match ($this->request->resultType) {
-            FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType => $this->managedResults($this->dictionaryResults($this->queryStatement)),
-            FetchRequestResultType::dictionaryResultType => $this->dictionaryResults($this->queryStatement),
+            FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType => $this->mapSnapshotsToResult($this->fetchSnapshotsFromStatement($this->queryStatement)),
+            FetchRequestResultType::dictionaryResultType => $this->fetchSnapshotsFromStatement($this->queryStatement),
             FetchRequestResultType::countResultType => fatal_error(sprintf("CoreData: annotation: invalid result type: %s", human_readable_value($this->request->resultType))),
         };
         return true;
