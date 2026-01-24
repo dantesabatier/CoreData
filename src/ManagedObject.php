@@ -6,7 +6,6 @@ use BackedEnum;
 use Exception;
 use JetBrains\PhpStorm\ExpectedValues;
 use Override;
-use ReflectionClass;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\ComparisonResult;
 use Sabatier\Foundation\Date;
@@ -186,6 +185,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         $this->entity = $entity ?? fatal_error("Invalid argument: entity cannot be null");
         $this->managedObjectContext = $managedObjectContext;
         $this->managedObjectContext->insert($this);
+        $this->hydrateProperties();
     }
 
     public function __get(string $name)
@@ -248,37 +248,55 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function awakeFromInsert(): void
     {
+    }
+
+    private function hydrateProperties(): void
+    {
+        $isManagedObjectSubclass = $this->isSubclass(ManagedObject::class);
         foreach ($this->modeledProperties as $property) {
             $key = $property->name;
-            $value = $this->primitiveValueForKey($key);
+            $currentValue = $this->primitiveValueForKey($key);
             if ($property instanceof AttributeDescription && !$property instanceof DerivedAttributeDescription) {
-                $value ??= $property->defaultValue;
-                if ($value === null && !$property->isOptional) {
-                    $value = match ($property->type) {
-                        AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float, AttributeType::string, AttributeType::boolean => self::coercedValue($value, $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional),
-                        default => null
-                    };
-                }
-                if ($this->isSubclass(ManagedObject::class)) {
-                    $method = sprintf("validate%s", ucfirst($key));
-                    if (method_exists($this, $method)) {
-                        $this->$method($value);
-                    } else {
-                        try {
-                            $methodReflection = new ReflectionClass($this)->getMethod($method);
-                            if ($methodReflection->class === static::class) {
-                                $this->$method($value);
-                            }
-                        } catch (Exception) {
-                        }
-                    }
-                }
+                $currentValue = $this->resolveInitialAttributeValue($property, $currentValue, $isManagedObjectSubclass);
             } elseif ($property instanceof RelationshipDescription) {
-                if ($property->isToMany && $this->isSubclass(ManagedObject::class)) {
-                    $this->createMutationMethods($key);
-                }
+                $this->setupRelationshipDynamicMethods($property, $isManagedObjectSubclass);
             }
-            $this->setPrimitiveValueForKey($value, $key);
+            $this->setPrimitiveValueForKey($currentValue, $key);
+        }
+    }
+
+    private function resolveInitialAttributeValue(AttributeDescription $attribute, mixed $value, bool $shouldValidate): mixed
+    {
+        $value ??= $attribute->defaultValue;
+        if ($value === null && !$attribute->isOptional) {
+            $value = $this->applyTypeCoercionFallback($attribute, $value);
+        }
+        if ($shouldValidate) {
+            $this->dispatchValidationHook($attribute->name, $value);
+        }
+        return $value;
+    }
+
+    private function applyTypeCoercionFallback(AttributeDescription $attribute, mixed $value): mixed
+    {
+        return match ($attribute->type) {
+            AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float, AttributeType::string, AttributeType::boolean => self::coercedValue($value, $attribute->type, $attribute->attributeValueClassName, $attribute->valueTransformerName, $attribute->isOptional),
+            default => null
+        };
+    }
+
+    private function dispatchValidationHook(string $key, mixed $value): void
+    {
+        $method = "validate" . ucfirst($key);
+        if (method_exists($this, $method)) {
+            $this->$method($value);
+        }
+    }
+
+    private function setupRelationshipDynamicMethods(RelationshipDescription $relationship, bool $enableMutators): void
+    {
+        if ($relationship->isToMany && $enableMutators) {
+            $this->createMutationMethods($relationship->name);
         }
     }
 
@@ -785,12 +803,15 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 continue;
             }
             if (!$value instanceof Nil) {
+                $debugDefault = SQLCore::$debugLevel;
+                SQLCore::$debugLevel = SQLDebugLevel::none;
                 /** @var FetchRequest<ManagedObject> $fetchRequest */
                 $fetchRequest = new FetchRequest();
                 $fetchRequest->entity = $foreignKeyColumn->toOneRelationship->destinationEntity->entityDescription;
                 $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue((int)$value));
                 /** @noinspection PhpUnhandledExceptionInspection */
                 $value = $this->managedObjectContext->fetch($fetchRequest)->first;
+                SQLCore::$debugLevel = $debugDefault;
             }
             $representation[$foreignKeyColumn->toOneRelationship->name] = $value;
             $representation->removeValueForKey($key);
