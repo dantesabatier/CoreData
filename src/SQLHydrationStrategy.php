@@ -23,7 +23,7 @@ readonly class SQLHydrationStrategy extends HydrationStrategy
      * @throws Exception
      */
     #[Override]
-    protected function resolveStoreSpecificAttributes(ManagedObject $object, Dictionary $representation, Dictionary $snapshot): void
+    protected function resolveStoreSpecificAttributes(ManagedObject $object, Dictionary $mappedValues, Dictionary $snapshot): void
     {
         $store = $this->store;
         assert($store instanceof SQLCore);
@@ -43,8 +43,8 @@ readonly class SQLHydrationStrategy extends HydrationStrategy
                 $value = $this->context->fetch($fetchRequest)->first;
                 SQLCore::$debugLevel = $debugDefault;
             }
-            $representation[$foreignKeyColumn->toOneRelationship->name] = $value;
-            $representation->removeValueForKey($key);
+            $mappedValues[$foreignKeyColumn->toOneRelationship->name] = $value;
+            $mappedValues->removeValueForKey($key);
         }
     }
 }

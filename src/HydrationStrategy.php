@@ -20,26 +20,26 @@ abstract readonly class HydrationStrategy
     final public function mapValues(ManagedObject $object, Dictionary $snapshot): Dictionary
     {
         $this->pruneStoreMetadata($snapshot);
-        $representation = clone $snapshot;
-        if ($representation[SQLEntity::primaryKeyName]) {
-            $representation[SQLEntity::primaryKeyName] = $this->resolveManagedObjectID($object->entity, $representation);
+        $mappedValues = clone $snapshot;
+        if ($mappedValues[SQLEntity::primaryKeyName]) {
+            $mappedValues[SQLEntity::primaryKeyName] = $this->resolveManagedObjectID($object->entity, $mappedValues);
         }
-        $this->resolveStoreSpecificAttributes($object, $representation, $snapshot);
+        $this->resolveStoreSpecificAttributes($object, $mappedValues, $snapshot);
         $entity = $object->entity;
         foreach ($snapshot as $key => $value) {
             $property = $entity->propertiesByName[$key];
             if ($property instanceof RelationshipDescription) {
-                $this->processRelationship($object, $representation, $key, $value, $property);
+                $this->processRelationship($object, $mappedValues, $key, $value, $property);
             }
         }
-        return $representation;
+        return $mappedValues;
     }
 
     protected function pruneStoreMetadata(Dictionary $snapshot): void
     {
     }
 
-    abstract protected function resolveStoreSpecificAttributes(ManagedObject $object, Dictionary $representation, Dictionary $snapshot): void;
+    abstract protected function resolveStoreSpecificAttributes(ManagedObject $object, Dictionary $mappedValues, Dictionary $snapshot): void;
 
     protected function resolveManagedObjectID(EntityDescription $entity, Dictionary $object): ?ManagedObjectID
     {
@@ -81,19 +81,19 @@ abstract readonly class HydrationStrategy
         return $targetObject;
     }
 
-    protected function processRelationship(ManagedObject $contextObject, Dictionary $representation, string $key, mixed $value, RelationshipDescription $relationship): void
+    protected function processRelationship(ManagedObject $contextObject, Dictionary $mappedValues, string $key, mixed $value, RelationshipDescription $relationship): void
     {
         $destinationEntity = $relationship->destinationEntity;
         if ($value instanceof ArrayClass || $value instanceof Set) {
             if ($relationship->isToMany) {
-                $representation[$key] = $value->compactMap(fn(ManagedObject|ManagedObjectID|Dictionary $object): ?ManagedObject => $this->resolveManagedObject($destinationEntity, $object));
+                $mappedValues[$key] = $value->compactMap(fn(ManagedObject|ManagedObjectID|Dictionary $object): ?ManagedObject => $this->resolveManagedObject($destinationEntity, $object));
             } elseif (!$value->isEmpty) {
                 fatal_error(sprintf("%s: Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", $contextObject->entity->name, typeof($value), $key));
             }
         } elseif ($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value instanceof Dictionary) {
-            $representation[$key] = $this->resolveManagedObject($destinationEntity, $value);
+            $mappedValues[$key] = $this->resolveManagedObject($destinationEntity, $value);
         } elseif ($value instanceof Nil) {
-            $representation[$key] = $value;
+            $mappedValues[$key] = $value;
         } else {
             fatal_error(sprintf("%s: Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", $contextObject->entity->name, typeof($value), $key));
         }

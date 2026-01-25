@@ -9,7 +9,7 @@ use Sabatier\Foundation\Dictionary;
 readonly class StandardHydrationStrategy extends HydrationStrategy
 {
     #[Override]
-    protected function resolveStoreSpecificAttributes(ManagedObject $object, Dictionary $representation, Dictionary $snapshot): void
+    protected function resolveStoreSpecificAttributes(ManagedObject $object, Dictionary $mappedValues, Dictionary $snapshot): void
     {
     }
 }
