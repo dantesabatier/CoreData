@@ -72,7 +72,7 @@ abstract readonly class SnapshotMappingStrategy
             $targetObject = $this->context->object($object);
         } elseif ($objectID = $this->resolveManagedObjectID($entity, $object)) {
             $targetObject = $this->context->object($objectID);
-            $targetObject->setValuesForKeys($object);
+            $targetObject->updateFromSnapshot($object);
         }
         if ($targetObject && !$targetObject->isAwakeFromFetch) {
             $targetObject->isAwakeFromFetch = true;

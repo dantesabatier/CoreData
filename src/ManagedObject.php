@@ -331,7 +331,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if (!$this->changedValuesForCurrentEvent->isEmpty) {
             $snapshot = $snapshot->merging($this->changedValuesForCurrentEvent);
         }
-        $this->setValuesForKeys($snapshot);
+        $this->setValuesForKeys($this->snapshotMapper->mapSnapshot($this, $snapshot));
     }
 
     /**
@@ -706,7 +706,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     /** @var ManagedObject $managedObject */
                     foreach ($change as $managedObject) {
                         if ($member = $value->member($managedObject)) {
-                            $managedObject->setValuesForKeys($member->dictionaryWithValues($member->serializationKeys));
+                            $managedObject->updateFromSnapshot($member->dictionaryWithValues($member->serializationKeys));
                         }
                     }
                 }
@@ -771,12 +771,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         } else {
             parent::setValueForKey($value, $key);
         }
-    }
-
-    #[Override]
-    final public function setValuesForKeys(Dictionary $keyedValues): void
-    {
-        parent::setValuesForKeys($this->snapshotMapper->mapSnapshot($this, $keyedValues));
     }
 
     #[Override]

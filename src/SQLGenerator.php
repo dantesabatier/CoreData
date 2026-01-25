@@ -1409,14 +1409,13 @@ final class SQLGenerator extends ObjectClass
             $objectsToInsert = $insertObjects;
         } elseif ($dictionaryHandler = $request->dictionaryHandler) {
             while (true) {
-                $keyedValues = new Dictionary();
-                $ok = $dictionaryHandler($keyedValues);
-                $managedObject = EntityDescription::insertNewObject($entity->tableName, $requestContext->context);
-                $managedObject->setValuesForKeys($keyedValues);
-                if (!$ok) {
+                $snapshot = new Dictionary();
+                if (!$dictionaryHandler($snapshot)) {
                     break;
                 }
-                $objectsToInsert[] = $managedObject;
+                $managedObject = EntityDescription::insertNewObject($entity->tableName, $requestContext->context);
+                $managedObject->updateFromSnapshot($snapshot);
+                $objectsToInsert->append($managedObject);
             }
         } elseif ($managedObjectHandler = $request->managedObjectHandler) {
             /** @var ArrayClass<ManagedObject> $objectsToInsert */
@@ -1426,7 +1425,7 @@ final class SQLGenerator extends ObjectClass
                 if (!$managedObjectHandler($managedObject)) {
                     break;
                 }
-                $objectsToInsert[] = $managedObject;
+                $objectsToInsert->append($managedObject);
             }
         }
         /** @var ArrayClass<string> $columnNames */

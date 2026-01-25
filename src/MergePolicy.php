@@ -163,14 +163,15 @@ final class MergePolicy extends ObjectClass
     {
         if ($this->mergeType === MergePolicyType::errorMergePolicyType) {
             $conflictList->append($conflict);
-        } elseif ($this->mergeType === MergePolicyType::mergeByPropertyStoreTrumpMergePolicyType) {
-            $sourceObject->setValuesForKeys($cachedSnapshot->merging($persistedSnapshot));
-        } elseif ($this->mergeType === MergePolicyType::mergeByPropertyObjectTrumpMergePolicyType) {
-            $sourceObject->setValuesForKeys($persistedSnapshot->merging($cachedSnapshot));
-        } elseif ($this->mergeType === MergePolicyType::overwriteMergePolicyType) {
-            $sourceObject->setValuesForKeys($cachedSnapshot);
-        } else {
-            $sourceObject->setValuesForKeys($persistedSnapshot);
+            return;
         }
+        $snapshot = match ($this->mergeType) {
+            MergePolicyType::mergeByPropertyStoreTrumpMergePolicyType => $cachedSnapshot->merging($persistedSnapshot),
+            MergePolicyType::mergeByPropertyObjectTrumpMergePolicyType => $persistedSnapshot->merging($cachedSnapshot),
+            MergePolicyType::overwriteMergePolicyType => $cachedSnapshot,
+            default => $persistedSnapshot
+        };
+        $sourceObject->updateFromSnapshot($snapshot);
+        $sourceObject->awakeFromSnapshotEvents(SnapshotEventType::mergePolicy);
     }
 }
