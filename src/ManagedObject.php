@@ -177,8 +177,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     }
     private ?Dictionary $originalSnapshot = null;
     private ?Dictionary $lastSnapshot = null;
-    private HydrationStrategyService $hydrationStrategyService {
-        get => $this->hydrationStrategyService ??= new HydrationStrategyService($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null"), $this->managedObjectContext);
+    private SnapshotValueMapper $snapshotMapper {
+        get => $this->snapshotMapper ??= new SnapshotValueMapper($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null"), $this->managedObjectContext);
     }
 
     /**
@@ -776,7 +776,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     #[Override]
     final public function setValuesForKeys(Dictionary $keyedValues): void
     {
-        parent::setValuesForKeys($this->hydrationStrategyService->transform($this, $keyedValues));
+        parent::setValuesForKeys($this->snapshotMapper->mapSnapshot($this, $keyedValues));
     }
 
     #[Override]

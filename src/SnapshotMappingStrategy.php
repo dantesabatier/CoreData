@@ -11,7 +11,7 @@ use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\typeof;
 
 /** @internal */
-abstract readonly class HydrationStrategy
+abstract readonly class SnapshotMappingStrategy
 {
     public function __construct(public PersistentStore $store, public ManagedObjectContext $context)
     {

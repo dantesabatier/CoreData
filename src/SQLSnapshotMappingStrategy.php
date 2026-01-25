@@ -10,7 +10,7 @@ use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 
 /** @internal */
-readonly class SQLHydrationStrategy extends HydrationStrategy
+final readonly class SQLSnapshotMappingStrategy extends SnapshotMappingStrategy
 {
 
     #[Override]

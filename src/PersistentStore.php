@@ -278,9 +278,14 @@ abstract class PersistentStore extends ObjectClass
         return MigrationManager::class;
     }
 
-    public static function hydrationStrategyClass(): string
+    /**
+     * Returns the class name of the standard snapshot mapping strategy.
+     *
+     * @return string The fully qualified class name of the snapshot mapping strategy.
+     */
+    public static function snapshotMappingStrategyClass(): string
     {
-        return StandardHydrationStrategy::class;
+        return StandardSnapshotMappingStrategy::class;
     }
 
     /**
