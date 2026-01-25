@@ -12,6 +12,13 @@ use Sabatier\Foundation\Predicates\Expression;
 /** @internal */
 readonly class SQLHydrationStrategy extends HydrationStrategy
 {
+
+    #[Override]
+    protected function pruneStoreMetadata(Dictionary $snapshot): void
+    {
+        $snapshot->removeValueForKey("parentID");
+    }
+
     /**
      * @throws Exception
      */

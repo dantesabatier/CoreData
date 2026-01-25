@@ -19,7 +19,7 @@ abstract readonly class HydrationStrategy
 
     final public function mapValues(ManagedObject $object, Dictionary $snapshot): Dictionary
     {
-        $snapshot->removeValueForKey("parentID");
+        $this->pruneStoreMetadata($snapshot);
         $representation = clone $snapshot;
         if ($representation[SQLEntity::primaryKeyName]) {
             $representation[SQLEntity::primaryKeyName] = $this->resolveManagedObjectID($object->entity, $representation);
@@ -33,6 +33,10 @@ abstract readonly class HydrationStrategy
             }
         }
         return $representation;
+    }
+
+    protected function pruneStoreMetadata(Dictionary $snapshot): void
+    {
     }
 
     abstract protected function resolveStoreSpecificAttributes(ManagedObject $object, Dictionary $representation, Dictionary $snapshot): void;
