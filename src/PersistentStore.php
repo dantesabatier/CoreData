@@ -278,6 +278,11 @@ abstract class PersistentStore extends ObjectClass
         return MigrationManager::class;
     }
 
+    public static function hydrationStrategyClass(): string
+    {
+        return StandardHydrationStrategy::class;
+    }
+
     /**
      * @throws Exception
      */

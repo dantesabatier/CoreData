@@ -62,6 +62,12 @@ final class SQLCore extends IncrementalStore
         return SQLInPlaceMigrationManager::class;
     }
 
+    #[Override]
+    public static function hydrationStrategyClass(): string
+    {
+        return SQLHydrationStrategy::class;
+    }
+
     /**
      * @throws Exception
      */

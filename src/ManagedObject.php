@@ -177,6 +177,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     }
     private ?Dictionary $originalSnapshot = null;
     private ?Dictionary $lastSnapshot = null;
+    private HydrationStrategyService $hydrationStrategyService {
+        get => $this->hydrationStrategyService ??= new HydrationStrategyService($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null"), $this->managedObjectContext);
+    }
 
     /**
      * Initializes a managed object from an entity description and inserts it into the specified managed object context.
@@ -770,110 +773,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         }
     }
 
-    private function resolveManagedObjectID(EntityDescription $entity, Dictionary $object, PersistentStore $store): ?ManagedObjectID
-    {
-        $objectID = $object[SQLEntity::primaryKeyName];
-        if ($objectID instanceof ManagedObjectID) {
-            return $objectID;
-        }
-        if ($objectID instanceof Nil) {
-            return null;
-        }
-        if (($entityName = $object[SQLEntity::entityKeyName]) && is_string($entityName) && ($entityDescription = $this->managedObjectContext->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[$entityName])) {
-            $entity = $entityDescription;
-        }
-        if ($objectID) {
-            return $store->objectID($entity, $objectID);
-        }
-        if (!$object->isEmpty) {
-            return $store->objectID($entity, new UUID()->uuidString);
-        }
-        return null;
-    }
-
-    private function resolveManagedObject(EntityDescription $entity, ManagedObject|ManagedObjectID|Dictionary $object, PersistentStore $store): ?ManagedObject
-    {
-        if ($object instanceof ManagedObject) {
-            return $object;
-        }
-        $targetObject = null;
-        if ($object instanceof ManagedObjectID) {
-            $targetObject = $this->managedObjectContext->object($object);
-        } elseif ($objectID = $this->resolveManagedObjectID($entity, $object, $store)) {
-            $targetObject = $this->managedObjectContext->object($objectID);
-            $targetObject->setValuesForKeys($object);
-        }
-        if ($targetObject && !$targetObject->isAwakeFromFetch) {
-            $targetObject->isAwakeFromFetch = true;
-            $targetObject->awakeFromFetch();
-        }
-        return $targetObject;
-    }
-
-    private function resolveForeignKeys(Dictionary $representation, Dictionary $keyedValues, PersistentStore $store): void
-    {
-        if (!$store instanceof SQLCore) {
-            return;
-        }
-        /** @var SQLEntity $entity */
-        $entity = $store->model->entitiesByName[$this->entity->name];
-        foreach ($entity->foreignKeyColumns as $foreignKeyColumn) {
-            $key = $foreignKeyColumn->columnName;
-            if (!($value = $keyedValues[$key])) {
-                continue;
-            }
-            if (!$value instanceof Nil) {
-                $debugDefault = SQLCore::$debugLevel;
-                SQLCore::$debugLevel = SQLDebugLevel::none;
-                /** @var FetchRequest<ManagedObject> $fetchRequest */
-                $fetchRequest = new FetchRequest();
-                $fetchRequest->entity = $foreignKeyColumn->toOneRelationship->destinationEntity->entityDescription;
-                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue((int)$value));
-                /** @noinspection PhpUnhandledExceptionInspection */
-                $value = $this->managedObjectContext->fetch($fetchRequest)->first;
-                SQLCore::$debugLevel = $debugDefault;
-            }
-            $representation[$foreignKeyColumn->toOneRelationship->name] = $value;
-            $representation->removeValueForKey($key);
-        }
-    }
-
-    private function processRelationship(Dictionary $representation, string $key, mixed $value, RelationshipDescription $relationship, PersistentStore $store): void
-    {
-        $destinationEntity = $relationship->destinationEntity;
-        if ($value instanceof ArrayClass || $value instanceof Set) {
-            if ($relationship->isToMany) {
-                $representation[$key] = $value->compactMap(fn(ManagedObject|ManagedObjectID|Dictionary $object): ?ManagedObject => $this->resolveManagedObject($destinationEntity, $object, $store));
-            } elseif (!$value->isEmpty) {
-                fatal_error(sprintf("%s: Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", $this->entity->name, typeof($value), $key));
-            }
-        } elseif ($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value instanceof Dictionary) {
-            $representation[$key] = $this->resolveManagedObject($destinationEntity, $value, $store);
-        } elseif ($value instanceof Nil) {
-            $representation[$key] = $value;
-        } else {
-            fatal_error(sprintf("%s: Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", $this->entity->name, typeof($value), $key));
-        }
-    }
-
     #[Override]
     final public function setValuesForKeys(Dictionary $keyedValues): void
     {
-        $keyedValues->removeValueForKey("parentID");
-        $representation = clone $keyedValues;
-        $store = $this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null");
-        if ($representation[SQLEntity::primaryKeyName]) {
-            $representation[SQLEntity::primaryKeyName] = $this->resolveManagedObjectID($this->entity, $representation, $store);
-        }
-        $this->resolveForeignKeys($representation, $keyedValues, $store);
-        $entity = $this->entity;
-        foreach ($keyedValues as $key => $value) {
-            $property = $entity->propertiesByName[$key];
-            if ($property instanceof RelationshipDescription) {
-                $this->processRelationship($representation, $key, $value, $property, $store);
-            }
-        }
-        parent::setValuesForKeys($representation);
+        parent::setValuesForKeys($this->hydrationStrategyService->transform($this, $keyedValues));
     }
 
     #[Override]
@@ -881,17 +784,18 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     {
         return $keys->reduce(new Dictionary(),
             /**
-             * @param Dictionary<mixed> $initial
+             * @param Dictionary<mixed> $initialResult
              * @param string $key
              * @return Dictionary<mixed>
              */
-            function (Dictionary $initial, string $key): Dictionary {
+            function (Dictionary $initialResult, string $key): Dictionary {
                 $value = $this->valueForKey($key);
-                if ($this->entity->propertiesByName[$key]?->isSensitive) {
+                $property = $this->entity->propertiesByName[$key];
+                if ($property?->isSensitive) {
                     $value = new SensitiveValue($value);
                 }
-                $initial[$key] = $value;
-                return $initial;
+                $initialResult[$key] = $value;
+                return $initialResult;
             });
     }
 
