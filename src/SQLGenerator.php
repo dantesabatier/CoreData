@@ -677,7 +677,7 @@ final class SQLGenerator extends ObjectClass
             if ($property) {
                 if ($property instanceof SQLAttribute && $property->isCompositeAttribute) {
                     if ($predicate($property)) {
-                        $properties[] = $entity->byMappingByCompositeNameAssociationTable->valueForKeyPath($expression->keyPath);
+                        $properties->append($entity->byMappingByCompositeNameAssociationTable->valueForKeyPath($expression->keyPath));
                     }
                     break;
                 }
@@ -685,7 +685,7 @@ final class SQLGenerator extends ObjectClass
                     $entity = $property->destinationEntity;
                 }
                 if ($predicate($property)) {
-                    $properties[] = $property;
+                    $properties->append($property);
                 }
                 continue;
             }
@@ -789,7 +789,7 @@ final class SQLGenerator extends ObjectClass
         }
     }
 
-    private function buildConstantValueExpression(Expression $expression, ArrayClass &$arguments, string $prefix = "", string $suffix = ""): mixed
+    private function buildConstantValueExpression(Expression $expression, ArrayClass $arguments, string $prefix = "", string $suffix = ""): mixed
     {
         $constantValue = $expression->constantValue;
         if (is_string($constantValue)) {
@@ -806,11 +806,11 @@ final class SQLGenerator extends ObjectClass
                 $constantValue = "?";
             }
         }
-        $arguments[] = $argument;
+        $arguments->append($argument);
         return $constantValue;
     }
 
-    private function buildComparisonExpression(Expression $expression, ArrayClass &$arguments, string $prefix = "", string $suffix = ""): mixed
+    private function buildComparisonExpression(Expression $expression, ArrayClass $arguments, string $prefix = "", string $suffix = ""): mixed
     {
         if ($expression->expressionType === ExpressionType::constantValue) {
             return $this->buildConstantValueExpression($expression, $arguments, $prefix, $suffix);
@@ -1472,7 +1472,7 @@ final class SQLGenerator extends ObjectClass
                     };
                     return "$this->tableReference.$key = $value";
                 }
-                $arguments[] = $value;
+                $arguments->append($value);
                 return "$this->tableReference.$key = ?";
             })->join(", ")}";
         $this->arguments = $arguments;
