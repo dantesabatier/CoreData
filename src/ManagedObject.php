@@ -329,7 +329,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     private function genericUpdateFromSnapshot(Dictionary $snapshot): void
     {
         if (!$this->changedValuesForCurrentEvent->isEmpty) {
-            $snapshot = $snapshot->merging($this->changedValuesForCurrentEvent);
+            $snapshot = $snapshot->merging($this->changedValuesForCurrentEvent->filter(fn(mixed $value, string $key): bool => $this->entity->attributesByName->offsetExists($key)));
         }
         $this->setValuesForKeys($this->snapshotMapper->mapSnapshot($this, $snapshot));
     }
@@ -360,8 +360,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function updateFromSnapshot(Dictionary $snapshot): void
     {
-        $this->originalSnapshot ??= $snapshot;
         $this->genericUpdateFromSnapshot($snapshot);
+        $this->originalSnapshot ??= $snapshot;
         $this->lastSnapshot = $snapshot;
     }
 
