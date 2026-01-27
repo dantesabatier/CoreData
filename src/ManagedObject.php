@@ -175,8 +175,16 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     final public string $description {
         get => sprintf("<%s %s> (entity: %s; id: %s %s; data: %s)", $this->class, $this->hash, $this->entity->name, $this->objectID->hash, $this->objectID->description, $this->isFault ? "<fault>" : $this->dictionaryWithValues($this->serializationKeys->filter(fn(string $key): bool => !$this->isPropertyForKeyFault($key)))->description);
     }
-    private ?Dictionary $originalSnapshot = null;
-    private ?Dictionary $lastSnapshot = null;
+    /**
+     * @var Dictionary<mixed>|null
+     * @internal
+     */
+    public ?Dictionary $originalSnapshot = null;
+    /**
+     * @var Dictionary<mixed>|null
+     * @internal
+     */
+    public ?Dictionary $lastSnapshot = null;
     private SnapshotValueMapper $snapshotMapper {
         get => $this->snapshotMapper ??= new SnapshotValueMapper($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null"), $this->managedObjectContext);
     }
@@ -329,7 +337,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     private function genericUpdateFromSnapshot(Dictionary $snapshot): void
     {
         if (!$this->changedValuesForCurrentEvent->isEmpty) {
-            $snapshot = $snapshot->merging($this->changedValuesForCurrentEvent->filter(fn(mixed $value, string $key): bool => $this->entity->attributesByName->offsetExists($key)));
+            $snapshot = $snapshot->merging($this->changedValuesForCurrentEvent->filter(fn(mixed $value, string $key): bool => !$value instanceof Nil && $this->entity->attributesByName->offsetExists($key)));
         }
         $this->setValuesForKeys($this->snapshotMapper->mapSnapshot($this, $snapshot));
     }
