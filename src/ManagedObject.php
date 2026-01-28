@@ -336,9 +336,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     private function genericUpdateFromSnapshot(Dictionary $snapshot): void
     {
-        if (!$this->changedValuesForCurrentEvent->isEmpty) {
-            $snapshot = $snapshot->merging($this->changedValuesForCurrentEvent->filter(fn(mixed $value, string $key): bool => $this->entity->attributesByName->offsetExists($key))->mapValues(fn(mixed $value): mixed => $value instanceof Nil ? null : $value));
-        }
         $this->setValuesForKeys($this->snapshotMapper->mapSnapshot($this, $snapshot));
     }
 
@@ -697,8 +694,13 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->changedValuesForCurrentEvent[$key] = $value ?? Nil::nil();
         }
         if ($property instanceof AttributeDescription || $property instanceof FetchedPropertyDescription) {
+            $localChange = $this->changedValuesForCurrentEvent[$key];
+            $newValue = $localChange !== null ? $localChange : $value;
+            if ($newValue instanceof Nil) {
+                $newValue = $newValue->value;
+            }
             $this->willChangeValueForKey($key, changedValue: $value);
-            $this->setPrimitiveValueForKey($value, $key);
+            $this->setPrimitiveValueForKey($newValue, $key);
             $this->didChangeValueForKey($key, changedValue: $value);
         } elseif ($property instanceof RelationshipDescription) {
             $inverseRelationship = $property->inverseRelationship;
