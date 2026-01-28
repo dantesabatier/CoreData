@@ -716,7 +716,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     /** @var ManagedObject $managedObject */
                     foreach ($change as $managedObject) {
                         if ($member = $value->member($managedObject)) {
-                            $managedObject->updateFromSnapshot($member->dictionaryWithValues($member->serializationKeys));
+                            $managedObject->setValuesForKeys($member->dictionaryWithValues($member->serializationKeys));
                         }
                     }
                 }
