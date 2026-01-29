@@ -710,20 +710,15 @@ final class ManagedObjectContext extends ObjectClass
             }
         }
         foreach ($this->unprocessedChanges as $unprocessedChange) {
-            $attributesChanged = false;
             $object = $this->object($unprocessedChange->objectID);
             foreach ($object->persistentProperties as $persistentProperty) {
                 if ($value = $unprocessedChange->valueForProperty($persistentProperty)) {
                     if ($persistentProperty instanceof RelationshipDescription) {
                         $this->processPendingUpdates($value, $persistentProperty, $object);
-                    } else {
-                        $attributesChanged = true;
                     }
                 }
             }
-            if ($attributesChanged) {
-                $this->updatedObjects->insert($object);
-            }
+            $this->updatedObjects->insert($object);
         }
         $this->resetAllChanges();
         NotificationCenter::default()->postNotificationName(self::didChangeObjectsNotification, $this, new Dictionary([InsertedObjectsKey => $this->insertedObjects, UpdatedObjectsKey => $this->updatedObjects, DeletedObjectsKey => $this->deletedObjects]));
@@ -737,13 +732,14 @@ final class ManagedObjectContext extends ObjectClass
             parent::observeValue($keyPath, $object, $change, $context);
             return;
         }
-        if ($this->processingChanges || !($value = $change->newValue) || !$object instanceof ManagedObject || $object->isSuppressingKVO || $object->isSuppressingChangeNotifications) {
+        if ($this->processingChanges || !$object instanceof ManagedObject || $object->isSuppressingKVO || $object->isSuppressingChangeNotifications) {
             return;
         }
         if (!($property = $object->entity->propertiesByName[$keyPath])) {
             return;
         }
-        if ($property instanceof RelationshipDescription) {
+        $value = $change->newValue;
+        if ($property instanceof RelationshipDescription && $value !== null) {
             assert($value instanceof Set || $value instanceof ManagedObject || $value instanceof ManagedObjectID, sprintf("invalid argument: %s->%s expecting \"%s|%s|%s\", \"%s\" given", $object->entity->name, $keyPath, Set::class, ManagedObject::class, ManagedObjectID::class, typeof($value)));
             if (!$value instanceof Set) {
                 if ($value instanceof ManagedObjectID) {
