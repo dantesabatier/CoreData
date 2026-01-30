@@ -822,6 +822,61 @@ final class ManagedObjectContext extends ObjectClass
     }
 
     /**
+     * Attempts to commit unsaved changes to registered objects to the context's parent store.
+     *
+     * If there were multiple errors (for example, several edited objects had validation failures), the description of Error returned indicates that there were multiple errors, and its userInfo dictionary contains the key DetailedErrors. The value associated with the DetailedErrors key is an array that contains the individual Error objects.
+     * If a context's parent store is a persistent store coordinator, then changes are committed to the external store. If a context's parent store is another managed object context, then {@see save()} only updates managed objects in that parent store. To commit changes to the external store, you must save changes in the chain of contexts up to and including the context whose parent is the persistent store coordinator.
+     * Always verify that the context has uncommitted changes (using the {@see hasChanges} property) before invoking the save: method. Otherwise, Core Data may perform unnecessary work.
+     * @return bool true if the save succeeds, otherwise false.
+     * @throws Exception
+     */
+    public function save(): bool
+    {
+        if ($this->savingInProgress) {
+            return true;
+        }
+        $this->savingInProgress = true;
+        $this->stabilizeDomainState();
+        if (!$this->hasPendingChanges()) {
+            $this->savingInProgress = false;
+            return true;
+        }
+        $changesRequest = $this->createSaveChangesRequest();
+        NotificationCenter::default()->postNotificationName(self::willSaveObjectsNotification, $this);
+        $this->execute($changesRequest);
+        $this->notifyObjectsDidSave($changesRequest);
+        NotificationCenter::default()->postNotificationName(self::didSaveObjectsNotification, $this, new Dictionary([InsertedObjectsKey => $changesRequest->insertedObjects, UpdatedObjectsKey => $changesRequest->updatedObjects, DeletedObjectsKey => $changesRequest->deletedObjects]));
+        $this->resetState();
+        $this->savingInProgress = false;
+        return true;
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function stabilizeDomainState(): void
+    {
+        $this->notifyObjectsWillSave();
+        $this->performSaveOperations();
+    }
+
+    private function notifyObjectsWillSave(): void
+    {
+        $insertedObjects = clone $this->insertedObjects;
+        foreach ($insertedObjects as $insertedObject) {
+            $insertedObject->willSave();
+        }
+        $updatedObjects = clone $this->updatedObjects;
+        foreach ($updatedObjects as $updatedObject) {
+            $updatedObject->willSave();
+        }
+        $deletedObjects = clone $this->deletedObjects;
+        foreach ($deletedObjects as $deletedObject) {
+            $deletedObject->prepareForDeletion();
+        }
+    }
+
+    /**
      * @throws Exception
      */
     private function performSaveOperations(): void
@@ -856,26 +911,22 @@ final class ManagedObjectContext extends ObjectClass
         }
     }
 
-    private function notifyObjectsWillSave(): void
+    private function notifyObjectsDidSave(SaveChangesRequest $request): void
     {
-        foreach ($this->insertedObjects as $insertedObject) {
-            $insertedObject->willSave();
+        if ($insertedObjects = $request->insertedObjects) {
+            foreach ($insertedObjects as $object) {
+                $object->didSave();
+            }
         }
-        foreach ($this->updatedObjects as $updatedObject) {
-            $updatedObject->willSave();
+        if ($updatedObjects = $request->updatedObjects) {
+            foreach ($updatedObjects as $object) {
+                $object->didSave();
+            }
         }
-        foreach ($this->deletedObjects as $deletedObject) {
-            $deletedObject->prepareForDeletion();
-        }
-    }
-
-    private function notifyObjectsDidSave(): void
-    {
-        foreach ($this->insertedObjects as $insertedObject) {
-            $insertedObject->didSave();
-        }
-        foreach ($this->updatedObjects as $updatedObject) {
-            $updatedObject->didSave();
+        if ($deletedObjects = $request->deletedObjects) {
+            foreach ($deletedObjects as $object) {
+                $object->didSave();
+            }
         }
     }
 
@@ -895,46 +946,6 @@ final class ManagedObjectContext extends ObjectClass
     private function hasPendingChanges(): bool
     {
         return !$this->insertedObjects->isEmpty || !$this->updatedObjects->isEmpty || !$this->deletedObjects->isEmpty;
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function newSaveRequestForCurrentState(): ?SaveChangesRequest
-    {
-        $this->performSaveOperations();
-        $this->notifyObjectsWillSave();
-        $this->performSaveOperations();
-        $this->notifyObjectsDidSave();
-        if (!$this->hasPendingChanges()) {
-            return null;
-        }
-        return $this->createSaveChangesRequest();
-    }
-
-    /**
-     * Attempts to commit unsaved changes to registered objects to the context's parent store.
-     *
-     * If there were multiple errors (for example, several edited objects had validation failures), the description of Error returned indicates that there were multiple errors, and its userInfo dictionary contains the key DetailedErrors. The value associated with the DetailedErrors key is an array that contains the individual Error objects.
-     * If a context's parent store is a persistent store coordinator, then changes are committed to the external store. If a context's parent store is another managed object context, then {@see save()} only updates managed objects in that parent store. To commit changes to the external store, you must save changes in the chain of contexts up to and including the context whose parent is the persistent store coordinator.
-     * Always verify that the context has uncommitted changes (using the {@see hasChanges} property) before invoking the save: method. Otherwise, Core Data may perform unnecessary work.
-     * @return bool true if the save succeeds, otherwise false.
-     * @throws Exception
-     */
-    public function save(): bool
-    {
-        if ($this->savingInProgress) {
-            return true;
-        }
-        $this->savingInProgress = true;
-        if ($changesRequest = $this->newSaveRequestForCurrentState()) {
-            NotificationCenter::default()->postNotificationName(self::willSaveObjectsNotification, $this);
-            $this->execute($changesRequest);
-            NotificationCenter::default()->postNotificationName(self::didSaveObjectsNotification, $this, new Dictionary([InsertedObjectsKey => $changesRequest->insertedObjects, UpdatedObjectsKey => $changesRequest->updatedObjects, DeletedObjectsKey => $changesRequest->deletedObjects]));
-        }
-        $this->resetState();
-        $this->savingInProgress = false;
-        return true;
     }
 
     /**
