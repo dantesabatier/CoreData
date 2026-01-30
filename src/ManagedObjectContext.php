@@ -858,8 +858,87 @@ final class ManagedObjectContext extends ObjectClass
      */
     private function stabilizeDomainState(): void
     {
+        $this->prepareObjectsForSave();
         $this->notifyObjectsWillSave();
-        $this->performSaveOperations();
+        $this->prepareObjectsForSave();
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function prepareObjectsForSave(): void
+    {
+        $this->processPendingChanges();
+        $this->obtainPermanentIDsForInsertedObjects();
+        $this->normalizeInsertedObjects();
+        $this->normalizeUpdatedObjects();
+        $this->validateInsertedObjects();
+        $this->validateUpdatedObjects();
+        $this->validateDeletedObjects();
+    }
+
+    private function obtainPermanentIDsForInsertedObjects(): void
+    {
+        $this->obtainPermanentIDs(new ArrayClass($this->insertedObjects));
+    }
+
+    private function normalizeInsertedObjects(): void
+    {
+        $insertedObjects = clone $this->insertedObjects;
+        foreach ($insertedObjects as $insertedObject) {
+            if ($insertedObject->isInserted) {
+                $this->insertedObjects->remove($insertedObject);
+                if ($insertedObject->isUpdated) {
+                    $this->updatedObjects->insert($insertedObject);
+                }
+            }
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function validateInsertedObjects(): void
+    {
+        $insertedObjects = clone $this->insertedObjects;
+        foreach ($insertedObjects as $insertedObject) {
+            $insertedObject->validateForInsert();
+            $this->doPreSaveConstraintChecksForObject($insertedObject);
+        }
+    }
+
+    private function normalizeUpdatedObjects(): void
+    {
+        $updatedObjects = clone $this->updatedObjects;
+        foreach ($updatedObjects as $updatedObject) {
+            if (!$updatedObject->isUpdated) {
+                $this->updatedObjects->remove($updatedObject);
+            }
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function validateUpdatedObjects(): void
+    {
+        $updatedObjects = clone $this->updatedObjects;
+        foreach ($updatedObjects as $updatedObject) {
+            $updatedObject->validateForUpdate();
+            $this->detectConflicts($updatedObject);
+            $this->doPreSaveConstraintChecksForObject($updatedObject);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function validateDeletedObjects(): void
+    {
+        foreach ($this->deletedObjects as $deletedObject) {
+            $deletedObject->validateForDelete();
+            $this->detectConflicts($deletedObject);
+        }
     }
 
     private function notifyObjectsWillSave(): void
@@ -875,41 +954,6 @@ final class ManagedObjectContext extends ObjectClass
         $deletedObjects = clone $this->deletedObjects;
         foreach ($deletedObjects as $deletedObject) {
             $deletedObject->prepareForDeletion();
-        }
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function performSaveOperations(): void
-    {
-        $this->processPendingChanges();
-        $this->obtainPermanentIDs(new ArrayClass($this->insertedObjects));
-        $insertedObjects = clone $this->insertedObjects;
-        foreach ($insertedObjects as $insertedObject) {
-            if ($insertedObject->isInserted) {
-                $this->insertedObjects->remove($insertedObject);
-                if ($insertedObject->isUpdated) {
-                    $this->updatedObjects->insert($insertedObject);
-                }
-                continue;
-            }
-            $insertedObject->validateForInsert();
-            $this->doPreSaveConstraintChecksForObject($insertedObject);
-        }
-        $updatedObjects = clone $this->updatedObjects;
-        foreach ($updatedObjects as $updatedObject) {
-            if (!$updatedObject->isUpdated) {
-                $this->updatedObjects->remove($updatedObject);
-                continue;
-            }
-            $updatedObject->validateForUpdate();
-            $this->detectConflicts($updatedObject);
-            $this->doPreSaveConstraintChecksForObject($updatedObject);
-        }
-        foreach ($this->deletedObjects as $deletedObject) {
-            $deletedObject->validateForDelete();
-            $this->detectConflicts($deletedObject);
         }
     }
 
