@@ -712,11 +712,13 @@ final class ManagedObjectContext extends ObjectClass
         foreach ($this->unprocessedChanges as $unprocessedChange) {
             $object = $this->object($unprocessedChange->objectID);
             foreach ($object->persistentProperties as $persistentProperty) {
-                if ($value = $unprocessedChange->valueForProperty($persistentProperty)) {
-                    if ($persistentProperty instanceof RelationshipDescription) {
-                        $this->processPendingUpdates($value, $persistentProperty, $object);
-                    }
+                if (!$persistentProperty instanceof RelationshipDescription) {
+                    continue;
                 }
+                if (!($value = $unprocessedChange->valueForProperty($persistentProperty))) {
+                    continue;
+                }
+                $this->processPendingUpdates($value, $persistentProperty, $object);
             }
             $this->updatedObjects->insert($object);
         }

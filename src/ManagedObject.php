@@ -694,8 +694,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->changedValuesForCurrentEvent[$key] = $value ?? Nil::nil();
         }
         if ($property instanceof AttributeDescription || $property instanceof FetchedPropertyDescription) {
-            $localChange = $this->changedValuesForCurrentEvent[$key];
-            $newValue = $localChange !== null ? $localChange : $value;
+            $newValue = $this->changedValuesForCurrentEvent[$key] ?? $value;
             if ($newValue instanceof Nil) {
                 $newValue = $newValue->value;
             }
