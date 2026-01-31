@@ -496,25 +496,50 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function detectConflicts(ManagedObject $object): void
     {
+        if ($object->objectID->isTemporaryID) {
+            return;
+        }
+        $snapshotKeys = $object->originalSnapshot?->keys ?? $object->persistentProperties->map(fn(PropertyDescription $property): string => $property->name);
+        /** @var Dictionary<mixed> $baselineSnapshot */
+        $baselineSnapshot = $object->originalSnapshot ?? $object->dictionaryWithValues($snapshotKeys);
         if ($object->isDeleted) {
             /** @psalm-suppress InvalidArgument */
-            $this->mergePolicy->resolveConflicts($object->entity->relationshipsByName->compactMap(function (RelationshipDescription $relationship) use ($object): ?MergeConflict {
+            $this->mergePolicy->resolveConflicts($object->entity->relationshipsByName->compactMap(function (RelationshipDescription $relationship) use ($object, $snapshotKeys, $baselineSnapshot): ?MergeConflict {
                 if ($relationship->inverseRelationship->deleteRule === DeleteRule::denyDeleteRule) {
-                    /** @var FetchRequest<ManagedObject> $fetchRequest */
-                    $fetchRequest = new FetchRequest();
-                    $fetchRequest->entity = $object->entity;
+                    /** @var FetchRequest<Dictionary> $fetchRequest */
+                    $fetchRequest = $object::fetchRequest();
                     $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($object->objectID));
+                    $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
                     if ($store = $object->objectID->persistentStore) {
                         $fetchRequest->affectedStores = new ArrayClass([$store]);
                     }
-                    $persistedObjects = $this->fetch($fetchRequest);
-                    if ($persistedObject = $persistedObjects->first) {
-                        $persistentPropertyKeys = $object->persistentProperties->map(fn(PropertyDescription $property): string => $property->name);
-                        return new MergeConflict($object, 0, 1, $object->dictionaryWithValues($persistentPropertyKeys), $persistedObject->dictionaryWithValues($persistentPropertyKeys));
+                    /** @var ArrayClass<Dictionary<mixed>> $storeSnapshots */
+                    $storeSnapshots = $this->fetch($fetchRequest);
+                    if ($storeSnapshot = $storeSnapshots->first) {
+                        if (!$baselineSnapshot->isEqual($storeSnapshot)) {
+                            return new MergeConflict($object, 0, 1, $baselineSnapshot, $storeSnapshot);
+                        }
                     }
                 }
                 return null;
             }));
+            return;
+        }
+        if ($object->isUpdated) {
+            /** @var FetchRequest<Dictionary> $fetchRequest */
+            $fetchRequest = $object::fetchRequest();
+            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($object->objectID));
+            $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
+            if ($affectedStore = $object->objectID->persistentStore) {
+                $fetchRequest->affectedStores = new ArrayClass([$affectedStore]);
+            }
+            /** @var ArrayClass<Dictionary<mixed>> $storeSnapshots */
+            $storeSnapshots = $this->fetch($fetchRequest);
+            if ($storeSnapshot = $storeSnapshots->first) {
+                if (!$baselineSnapshot->isEqual($storeSnapshot)) {
+                    $this->mergePolicy->resolveConflicts(new ArrayClass([new MergeConflict($object, 0, 1, $baselineSnapshot, $storeSnapshot)]));
+                }
+            }
         }
     }
 
