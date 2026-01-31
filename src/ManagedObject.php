@@ -181,11 +181,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public ?Dictionary $originalSnapshot = null {
         set {
-            $value?->removeAll(fn(mixed $value, string $key): bool => match ($key) {
-                "isInserted", "isFault", "faultingState" => true,
-                default => false,
+            $this->originalSnapshot = $value?->filter(fn(mixed $value, string $key): bool => match ($key) {
+                "isInserted", "isFault", "faultingState" => false,
+                default => true,
             });
-            $this->originalSnapshot = $value;
         }
     }
     /**
@@ -194,11 +193,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public ?Dictionary $lastSnapshot = null {
         set {
-            $value?->removeAll(fn(mixed $value, string $key): bool => match ($key) {
-                "isInserted", "isFault", "faultingState" => true,
-                default => false,
+            $this->lastSnapshot = $value?->filter(fn(mixed $value, string $key): bool => match ($key) {
+                "isInserted", "isFault", "faultingState" => false,
+                default => true,
             });
-            $this->lastSnapshot = $value;
         }
     }
     private SnapshotValueMapper $snapshotMapper {
@@ -362,6 +360,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function updateFromUndoSnapshot(Dictionary $snapshot, bool $includingTransients): void
     {
+        if (!$includingTransients) {
+            $snapshot = $snapshot->filter(fn(mixed $value, string $key): bool => !$this->transientProperties->offsetExists($key));
+        }
+        $this->genericUpdateFromSnapshot($snapshot);
+        $this->lastSnapshot = $snapshot;
     }
 
     /**
