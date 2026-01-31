@@ -26,7 +26,7 @@ final class MergeConflict extends ObjectClass
 {
     /** @var Dictionary<mixed> A dictionary containing the values of the source object. */
     private(set) Dictionary $objectSnapshot {
-        get => $this->objectSnapshot ??= $this->sourceObject->dictionaryWithValues($this->sourceObject->persistentProperties->map(fn(PropertyDescription $property): string => $property->name));
+        get => $this->objectSnapshot ??= $this->sourceObject->dictionaryWithValues($this->sourceObject->persistentProperties->keys);
     }
     public string $description {
         get => sprintf("%s (%s) for %s (%s) with objectID %s with oldVersion = %s and newVersion = %s and old object snapshot %s", $this->class, $this->hash, $this->sourceObject::class, $this->sourceObject->hash, $this->sourceObject->objectID->description, $this->oldVersionNumber, $this->newVersionNumber, human_readable_value($this->cachedSnapshot));

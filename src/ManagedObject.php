@@ -127,39 +127,39 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         get => $this->faultHandler ??= ($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null"))->faultHandler;
     }
     /**
-     * @var ArrayClass<PropertyDescription>
+     * @var Dictionary<PropertyDescription>
      * @internal
      */
-    private(set) ArrayClass $allProperties {
-        get => $this->allProperties ??= $this->entity->properties;
+    private(set) Dictionary $allProperties {
+        get => $this->allProperties ??= $this->entity->propertiesByName;
     }
     /**
-     * @var ArrayClass<PropertyDescription>
+     * @var Dictionary<PropertyDescription>
      * @internal
      */
-    private ArrayClass $modeledProperties {
+    private Dictionary $modeledProperties {
         get => $this->allProperties;
     }
     /**
-     * @var ArrayClass<PropertyDescription>
+     * @var Dictionary<PropertyDescription>
      * @internal
      */
-    private(set) ArrayClass $persistentProperties {
+    private(set) Dictionary $persistentProperties {
         get => $this->persistentProperties ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => !$property->isTransient && ($property instanceof DerivedAttributeDescription ? !$property->isRuntimeOnly : !$property instanceof FetchedPropertyDescription));
     }
     /**
-     * @var ArrayClass<PropertyDescription>
+     * @var Dictionary<PropertyDescription>
      * @internal
      */
-    private(set) ArrayClass $transientProperties {
+    private(set) Dictionary $transientProperties {
         get => $this->transientProperties ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property->isTransient);
     }
-    /** @var ArrayClass<AttributeDescription> */
-    private ArrayClass $modeledAttributes {
+    /** @var Dictionary<AttributeDescription> */
+    private Dictionary $modeledAttributes {
         get => $this->modeledAttributes ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
     }
-    /** @var ArrayClass<RelationshipDescription> */
-    private ArrayClass $modeledRelationships {
+    /** @var Dictionary<RelationshipDescription> */
+    private Dictionary $modeledRelationships {
         get => $this->modeledRelationships ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
     }
     /** @internal */
@@ -408,8 +408,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function changedValues(): Dictionary
     {
-        $keys = $this->persistentProperties->map(fn(PropertyDescription $property): string => $property->name);
-        return $this->changedValues->filter(fn(mixed $value, string $key): bool => $keys->containsElement($key));
+        return $this->changedValues->filter(fn(mixed $value, string $key): bool => $this->persistentProperties->offsetExists($key));
     }
 
     /**

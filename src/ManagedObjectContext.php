@@ -499,7 +499,7 @@ final class ManagedObjectContext extends ObjectClass
         if ($object->objectID->isTemporaryID) {
             return;
         }
-        $snapshotKeys = $object->originalSnapshot?->keys ?? $object->persistentProperties->map(fn(PropertyDescription $property): string => $property->name);
+        $snapshotKeys = $object->originalSnapshot?->keys ?? $object->persistentProperties->keys;
         /** @var Dictionary<mixed> $baselineSnapshot */
         $baselineSnapshot = $object->originalSnapshot ?? $object->dictionaryWithValues($snapshotKeys);
         if ($object->isDeleted) {
@@ -554,21 +554,22 @@ final class ManagedObjectContext extends ObjectClass
         $this->mergePolicy->resolveConstraintConflicts($committedValues->compactMap(function (mixed $value, string $key) use ($object): ?ConstraintConflict {
             if ($object->entity->indexes->contains(fn(FetchIndexDescription $index): bool => $index->name === $key && $index->isUnique)) {
                 $attributeKeys = $object->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute instanceof DerivedAttributeDescription)->keys;
-                /** @var FetchRequest<ManagedObject> $fetchRequest */
-                $fetchRequest = new FetchRequest();
-                $fetchRequest->entity = $object->entity;
+                $baselineSnapshot = $object->originalSnapshot?->filter(fn(mixed $v, string $k): bool => $attributeKeys->containsElement($k)) ?? $object->dictionaryWithValues($attributeKeys);
+                /** @var FetchRequest<Dictionary> $fetchRequest */
+                $fetchRequest = $object::fetchRequest();
                 $fetchRequest->predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([new ComparisonPredicate(Expression::expressionForKeyPath($key), Expression::expressionForConstantValue($value), match ($object->entity->attributesByName[$key]?->type) {
                     AttributeType::string => PredicateOperatorType::like,
                     default => PredicateOperatorType::equalTo,
                 }), new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($object->objectID), PredicateOperatorType::notEqualTo)]));
                 $fetchRequest->propertiesToFetch = $attributeKeys;
+                $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
                 if ($store = $object->objectID->persistentStore) {
                     $fetchRequest->affectedStores = new ArrayClass([$store]);
                 }
-                $databaseObjects = $this->fetch($fetchRequest);
-                if ($databaseObject = $databaseObjects->first) {
-                    $databaseSnapshot = $databaseObject->dictionaryWithValues($attributeKeys);
-                    return new ConstraintConflict(new ArrayClass([$key]), $databaseObject, $databaseSnapshot, new ArrayClass([$object, $databaseObject]), new ArrayClass([$object->changedValues(), $databaseSnapshot]));
+                /** @var ArrayClass<Dictionary<mixed>> $databaseSnapshots */
+                $databaseSnapshots = $this->fetch($fetchRequest);
+                if ($databaseSnapshot = $databaseSnapshots->first) {
+                    return new ConstraintConflict(new ArrayClass([$key]), null, $databaseSnapshot, new ArrayClass([$object]), new ArrayClass([$baselineSnapshot, $databaseSnapshot]));
                 }
             }
             return null;
@@ -720,30 +721,30 @@ final class ManagedObjectContext extends ObjectClass
         $this->processingChanges = true;
         foreach ($this->unprocessedInserts as $unprocessedInsert) {
             $object = $this->object($unprocessedInsert->objectID);
-            foreach ($object->persistentProperties as $persistentProperty) {
-                if (($value = $unprocessedInsert->valueForProperty($persistentProperty)) && $persistentProperty instanceof RelationshipDescription) {
-                    $this->processPendingInsertions($value, $persistentProperty, $object);
+            foreach ($object->persistentProperties as $property) {
+                if (($value = $unprocessedInsert->valueForProperty($property)) && $property instanceof RelationshipDescription) {
+                    $this->processPendingInsertions($value, $property, $object);
                 }
             }
         }
         foreach ($this->unprocessedDeletes as $unprocessedDelete) {
             $object = $this->object($unprocessedDelete->objectID);
-            foreach ($object->persistentProperties as $persistentProperty) {
-                if (($value = $unprocessedDelete->valueForProperty($persistentProperty)) && $persistentProperty instanceof RelationshipDescription) {
-                    $this->processPendingDeletions($value, $persistentProperty, $object);
+            foreach ($object->persistentProperties as $property) {
+                if (($value = $unprocessedDelete->valueForProperty($property)) && $property instanceof RelationshipDescription) {
+                    $this->processPendingDeletions($value, $property, $object);
                 }
             }
         }
         foreach ($this->unprocessedChanges as $unprocessedChange) {
             $object = $this->object($unprocessedChange->objectID);
-            foreach ($object->persistentProperties as $persistentProperty) {
-                if (!$persistentProperty instanceof RelationshipDescription) {
+            foreach ($object->persistentProperties as $property) {
+                if (!$property instanceof RelationshipDescription) {
                     continue;
                 }
-                if (!($value = $unprocessedChange->valueForProperty($persistentProperty))) {
+                if (!($value = $unprocessedChange->valueForProperty($property))) {
                     continue;
                 }
-                $this->processPendingUpdates($value, $persistentProperty, $object);
+                $this->processPendingUpdates($value, $property, $object);
             }
             $this->updatedObjects->insert($object);
         }
