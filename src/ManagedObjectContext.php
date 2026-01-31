@@ -877,6 +877,51 @@ final class ManagedObjectContext extends ObjectClass
         $this->validateDeletedObjects();
     }
 
+    private function notifyObjectsWillSave(): void
+    {
+        $insertedObjects = clone $this->insertedObjects;
+        foreach ($insertedObjects as $insertedObject) {
+            $insertedObject->willSave();
+        }
+        $updatedObjects = clone $this->updatedObjects;
+        foreach ($updatedObjects as $updatedObject) {
+            $updatedObject->willSave();
+        }
+        $deletedObjects = clone $this->deletedObjects;
+        foreach ($deletedObjects as $deletedObject) {
+            $deletedObject->prepareForDeletion();
+        }
+    }
+
+    private function notifyObjectsDidSave(SaveChangesRequest $request): void
+    {
+        if ($insertedObjects = $request->insertedObjects) {
+            foreach ($insertedObjects as $object) {
+                $object->didSave();
+            }
+        }
+        if ($updatedObjects = $request->updatedObjects) {
+            foreach ($updatedObjects as $object) {
+                $object->didSave();
+            }
+        }
+        if ($deletedObjects = $request->deletedObjects) {
+            foreach ($deletedObjects as $object) {
+                $object->didSave();
+            }
+        }
+    }
+
+    private function hasPendingChanges(): bool
+    {
+        return !$this->insertedObjects->isEmpty || !$this->updatedObjects->isEmpty || !$this->deletedObjects->isEmpty;
+    }
+
+    private function createSaveChangesRequest(): SaveChangesRequest
+    {
+        return new SaveChangesRequest(...new ArrayClass([$this->insertedObjects, $this->updatedObjects, $this->deletedObjects])->map(fn(Set $set): ?Set => $set->isEmpty ? null : $set)->array);
+    }
+
     private function obtainPermanentIDsForInsertedObjects(): void
     {
         $this->obtainPermanentIDs(new ArrayClass($this->insertedObjects));
@@ -941,57 +986,12 @@ final class ManagedObjectContext extends ObjectClass
         }
     }
 
-    private function notifyObjectsWillSave(): void
-    {
-        $insertedObjects = clone $this->insertedObjects;
-        foreach ($insertedObjects as $insertedObject) {
-            $insertedObject->willSave();
-        }
-        $updatedObjects = clone $this->updatedObjects;
-        foreach ($updatedObjects as $updatedObject) {
-            $updatedObject->willSave();
-        }
-        $deletedObjects = clone $this->deletedObjects;
-        foreach ($deletedObjects as $deletedObject) {
-            $deletedObject->prepareForDeletion();
-        }
-    }
-
-    private function notifyObjectsDidSave(SaveChangesRequest $request): void
-    {
-        if ($insertedObjects = $request->insertedObjects) {
-            foreach ($insertedObjects as $object) {
-                $object->didSave();
-            }
-        }
-        if ($updatedObjects = $request->updatedObjects) {
-            foreach ($updatedObjects as $object) {
-                $object->didSave();
-            }
-        }
-        if ($deletedObjects = $request->deletedObjects) {
-            foreach ($deletedObjects as $object) {
-                $object->didSave();
-            }
-        }
-    }
-
     private function resetState(): void
     {
         $this->insertedObjects->removeAll();
         $this->updatedObjects->removeAll();
         $this->deletedObjects->removeAll();
         $this->hasChanges = false;
-    }
-
-    private function createSaveChangesRequest(): SaveChangesRequest
-    {
-        return new SaveChangesRequest(...new ArrayClass([$this->insertedObjects, $this->updatedObjects, $this->deletedObjects])->map(fn(Set $set): ?Set => $set->isEmpty ? null : $set)->array);
-    }
-
-    private function hasPendingChanges(): bool
-    {
-        return !$this->insertedObjects->isEmpty || !$this->updatedObjects->isEmpty || !$this->deletedObjects->isEmpty;
     }
 
     /**
