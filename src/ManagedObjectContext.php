@@ -510,8 +510,8 @@ final class ManagedObjectContext extends ObjectClass
                     $fetchRequest = $object::fetchRequest();
                     $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($object->objectID));
                     $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
-                    if ($store = $object->objectID->persistentStore) {
-                        $fetchRequest->affectedStores = new ArrayClass([$store]);
+                    if ($affectedStore = $object->objectID->persistentStore) {
+                        $fetchRequest->affectedStores = new ArrayClass([$affectedStore]);
                     }
                     /** @var ArrayClass<Dictionary<mixed>> $storeSnapshots */
                     $storeSnapshots = $this->fetch($fetchRequest);
