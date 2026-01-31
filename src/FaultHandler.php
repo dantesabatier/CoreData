@@ -27,10 +27,6 @@ final readonly class FaultHandler
         $object->isSuppressingKVO = true;
         $object->updateFromRefreshSnapshot($snapshot);
         $object->isSuppressingKVO = false;
-        if (!$object->isAwakeFromFetch) {
-            $object->isAwakeFromFetch = true;
-            $object->awakeFromFetch();
-        }
     }
 
     public function turnObjectIntoFault(/** @noinspection PhpUnusedParameterInspection */ ManagedObject $object, ?ManagedObjectContext $context = null): void
