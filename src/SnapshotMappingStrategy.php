@@ -21,8 +21,8 @@ abstract readonly class SnapshotMappingStrategy
     {
         $this->pruneStoreMetadata($snapshot);
         $mappedValues = clone $snapshot;
-        if ($mappedValues[SQLEntity::primaryKeyName]) {
-            $mappedValues[SQLEntity::primaryKeyName] = $this->resolveManagedObjectID($object->entity, $mappedValues);
+        if ($mappedValues[ManagedObjectObjectIDKey]) {
+            $mappedValues[ManagedObjectObjectIDKey] = $this->resolveManagedObjectID($object->entity, $mappedValues);
         }
         $this->resolveStoreSpecificAttributes($object, $mappedValues, $snapshot);
         $entity = $object->entity;
@@ -43,14 +43,14 @@ abstract readonly class SnapshotMappingStrategy
 
     protected function resolveManagedObjectID(EntityDescription $entity, Dictionary $object): ?ManagedObjectID
     {
-        $objectID = $object[SQLEntity::primaryKeyName];
+        $objectID = $object[ManagedObjectObjectIDKey];
         if ($objectID instanceof ManagedObjectID) {
             return $objectID;
         }
         if ($objectID instanceof Nil) {
             return null;
         }
-        if (($entityName = $object[SQLEntity::entityKeyName]) && is_string($entityName) && ($entityDescription = $this->context->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[$entityName])) {
+        if (($entityName = $object[ManagedObjectEntityNameKey]) && is_string($entityName) && ($entityDescription = $this->context->persistentStoreCoordinator?->managedObjectModel?->entitiesByName[$entityName])) {
             $entity = $entityDescription;
         }
         if ($objectID) {

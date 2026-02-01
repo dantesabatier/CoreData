@@ -85,7 +85,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         do {
             /** @var array<string, mixed> $row */
             while ($row = $statement->fetch()) {
-                $entityNameFromRow = $row[SQLEntity::entityKeyName] ?? $this->request->entity->name;
+                $entityNameFromRow = $row[ManagedObjectEntityNameKey] ?? $this->request->entity->name;
                 /** @var SQLEntity $entity */
                 $entity = $this->sqlModel->entitiesByName[$entityNameFromRow] ?? fatal_error("Entity \"$entityNameFromRow\" does not exist");
                 $cursorEntity = $entity;

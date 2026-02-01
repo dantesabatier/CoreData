@@ -353,7 +353,7 @@ final class ManagedObjectContext extends ObjectClass
             /** @var FetchRequest<ManagedObject> $fetchRequest */
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $objectID->entity;
-            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($objectID));
+            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($objectID));
             $object = $this->fetch($fetchRequest)->first;
         }
         return $object;
@@ -498,7 +498,7 @@ final class ManagedObjectContext extends ObjectClass
             return;
         }
         $baselineSnapshot = $originalSnapshot->filter(fn(mixed $value, string $key): bool => match ($key) {
-            SQLEntity::primaryKeyName, SQLEntity::entityKeyName => true,
+            ManagedObjectObjectIDKey, ManagedObjectEntityNameKey => true,
             default => $object->entity->attributesByName->offsetExists($key),
         });
         $snapshotKeys = $baselineSnapshot->keys;
@@ -507,7 +507,7 @@ final class ManagedObjectContext extends ObjectClass
                 if ($relationship->inverseRelationship->deleteRule === DeleteRule::denyDeleteRule) {
                     /** @var FetchRequest<Dictionary> $fetchRequest */
                     $fetchRequest = $object::fetchRequest();
-                    $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($object->objectID));
+                    $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($object->objectID));
                     $fetchRequest->propertiesToFetch = $snapshotKeys;
                     $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
                     if ($affectedStore = $object->objectID->persistentStore) {
@@ -526,7 +526,7 @@ final class ManagedObjectContext extends ObjectClass
         if ($object->isUpdated) {
             /** @var FetchRequest<Dictionary> $fetchRequest */
             $fetchRequest = $object::fetchRequest();
-            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($object->objectID));
+            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($object->objectID));
             $fetchRequest->propertiesToFetch = $snapshotKeys;
             $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
             if ($affectedStore = $object->objectID->persistentStore) {
@@ -556,7 +556,7 @@ final class ManagedObjectContext extends ObjectClass
                 $fetchRequest->predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([new ComparisonPredicate(Expression::expressionForKeyPath($key), Expression::expressionForConstantValue($value), match ($object->entity->attributesByName[$key]?->type) {
                     AttributeType::string => PredicateOperatorType::like,
                     default => PredicateOperatorType::equalTo,
-                }), new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($object->objectID), PredicateOperatorType::notEqualTo)]));
+                }), new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($object->objectID), PredicateOperatorType::notEqualTo)]));
                 $fetchRequest->propertiesToFetch = $attributeKeys;
                 $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
                 if ($store = $object->objectID->persistentStore) {

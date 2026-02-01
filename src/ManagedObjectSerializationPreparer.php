@@ -24,8 +24,8 @@ final class ManagedObjectSerializationPreparer
         if ($serializationKeys->isEmpty) {
             return;
         }
-        $serializationKeys->insertAt(SQLEntity::primaryKeyName, 0);
-        $serializationKeys->insertAt(SQLEntity::entityKeyName, 1);
+        $serializationKeys->insertAt(ManagedObjectObjectIDKey, 0);
+        $serializationKeys->insertAt(ManagedObjectEntityNameKey, 1);
         $object->serializationRule = SerializationRule::custom;
         $object->serializationKeys = $serializationKeys;
     }

@@ -255,7 +255,7 @@ final class SQLGenerator extends ObjectClass
             }
             if ($request->resultType !== FetchRequestResultType::countResultType) {
                 $this->buildOrderByClause($request->sortDescriptors?->filter(fn(SortDescriptor $descriptor): bool => match ($descriptor->key) {
-                    SQLEntity::entityKeyName, SQLEntity::primaryKeyName => true,
+                    ManagedObjectEntityNameKey, ManagedObjectObjectIDKey => true,
                     default => !$entity->propertiesByName[$descriptor->key]?->isTransient
                 }) ?? new ArrayClass());
                 $this->appendSQL($this->orderByClause);

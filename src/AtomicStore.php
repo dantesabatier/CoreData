@@ -107,7 +107,7 @@ abstract class AtomicStore extends PersistentStore
     {
         if ($predicate instanceof ComparisonPredicate) {
             $expressions = new ArrayClass([$predicate->rightExpression, $predicate->leftExpression]);
-            if (($keyPathExpression = $expressions->first(fn(Expression $expression): bool => $expression->expressionType === ExpressionType::keyPath && str_ends_with($expression->keyPath, SQLEntity::primaryKeyName))) && ($constantValueExpression = $expressions->first(fn(Expression $expression): bool => !$expression->isEqual($keyPathExpression))) && !$constantValueExpression->constantValue instanceof ManagedObjectID) {
+            if (($keyPathExpression = $expressions->first(fn(Expression $expression): bool => $expression->expressionType === ExpressionType::keyPath && str_ends_with($expression->keyPath, ManagedObjectObjectIDKey))) && ($constantValueExpression = $expressions->first(fn(Expression $expression): bool => !$expression->isEqual($keyPathExpression))) && !$constantValueExpression->constantValue instanceof ManagedObjectID) {
                 $expressionForConstantValue = Expression::expressionForConstantValue($this->objectID($entity, $constantValueExpression->constantValue));
                 $rightExpression = $keyPathExpression === $predicate->rightExpression ? $keyPathExpression : $expressionForConstantValue;
                 $leftExpression = $constantValueExpression === $predicate->leftExpression ? $expressionForConstantValue : $keyPathExpression;
@@ -204,8 +204,8 @@ abstract class AtomicStore extends PersistentStore
                     }
                 }
                 $keys = $propertiesToFetch->map(fn(PropertyDescription|string $property): string => $property instanceof PropertyDescription ? $property->name : $property);
-                $keys->insertAt(SQLEntity::primaryKeyName, 0);
-                $keys->insertAt(SQLEntity::entityKeyName, 1);
+                $keys->insertAt(ManagedObjectObjectIDKey, 0);
+                $keys->insertAt(ManagedObjectEntityNameKey, 1);
                 foreach ($objects as $object) {
                     foreach ($object->keys as $key) {
                         if ($keys->containsElement($key)) {
@@ -233,7 +233,7 @@ abstract class AtomicStore extends PersistentStore
             if (!$objects->isEmpty && ($entity = $this->persistentStoreCoordinator->managedObjectModel->entitiesByName[$key])) {
                 $fetchRequest = new FetchRequest();
                 $fetchRequest->entity = $entity;
-                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($objects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID)), PredicateOperatorType::in);
+                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($objects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID)), PredicateOperatorType::in);
                 $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
                 return $this->executeFetchRequest($fetchRequest, $context);
             }

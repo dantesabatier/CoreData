@@ -39,7 +39,7 @@ final readonly class SQLSnapshotMappingStrategy extends SnapshotMappingStrategy
                 SQLCore::$debugLevel = SQLDebugLevel::none;
                 $fetchRequest = new FetchRequest();
                 $fetchRequest->entity = $foreignKeyColumn->toOneRelationship->destinationEntity->entityDescription;
-                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue((int)$value));
+                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue((int)$value));
                 $value = $this->context->fetch($fetchRequest)->first;
                 SQLCore::$debugLevel = $debugDefault;
             }

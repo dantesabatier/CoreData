@@ -62,7 +62,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         SQLCore::$debugLevel = SQLDebugLevel::none;
                         /** @var FetchRequest<Number> $fetchRequest */
                         $fetchRequest = $this::fetchRequest();
-                        $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($this->objectID));
+                        $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($this->objectID));
                         $fetchRequest->affectedStores = new ArrayClass([$persistentStore]);
                         $this->isInserted = (bool)$this->managedObjectContext->count($fetchRequest);
                         SQLCore::$debugLevel = $debugDefault;
@@ -115,8 +115,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     })->keys,
                     default => new ArrayClass(),
                 };
-                $serializationKeys->insertAt(SQLEntity::primaryKeyName, 0);
-                $serializationKeys->insertAt(SQLEntity::entityKeyName, 1);
+                $serializationKeys->insertAt(ManagedObjectObjectIDKey, 0);
+                $serializationKeys->insertAt(ManagedObjectEntityNameKey, 1);
                 $this->serializationKeys = $serializationKeys;
             }
             return $this->serializationKeys;
@@ -973,7 +973,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             return self::coerceValue($value, $property);
         }
         if (property_exists($this, $key)) {
-            if ($key === SQLEntity::primaryKeyName && (is_int($value) || is_string($value))) {
+            if ($key === ManagedObjectObjectIDKey && (is_int($value) || is_string($value))) {
                 $this->objectID->referenceObject = $value;
                 return false;
             }
@@ -985,7 +985,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $entity = $store->model->entitiesByName[$this->entity->name];
             if ($entity->propertiesByName[$key]) {
                 return match ($key) {
-                    SQLEntity::entityKeyName => false,
+                    ManagedObjectEntityNameKey => false,
                     default => true
                 };
             }

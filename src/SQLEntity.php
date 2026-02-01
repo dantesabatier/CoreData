@@ -11,8 +11,8 @@ use Sabatier\Foundation\Dictionary;
 /** @internal */
 final class SQLEntity extends StoreMapping
 {
-    final public const string primaryKeyName = "objectID";
-    final public const string entityKeyName = "entityName";
+    final public const string primaryKeyName = ManagedObjectObjectIDKey;
+    final public const string entityKeyName = ManagedObjectEntityNameKey;
     private(set) string $tableName {
         get {
             if (!isset($this->tableName)) {

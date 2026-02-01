@@ -20,7 +20,7 @@ final class SQLForeignOrderKey extends SQLColumn
         }
     }
     public string $columnName {
-        get => $this->columnName ??= $this->relationshipDescription->destinationEntity->attributesByName->first?->name ?? SQLEntity::primaryKeyName;
+        get => $this->columnName ??= $this->relationshipDescription->destinationEntity->attributesByName->first?->name ?? ManagedObjectObjectIDKey;
     }
     public readonly SQLForeignKey $foreignKey;
     public SQLToOne $toOneRelationship {
