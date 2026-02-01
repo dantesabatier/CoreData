@@ -498,7 +498,7 @@ final class ManagedObjectContext extends ObjectClass
         /** @var Dictionary<mixed> $baselineSnapshot */
         $baselineSnapshot = $object->originalSnapshot ?? $object->dictionaryWithValues($snapshotKeys);
         if ($object->isDeleted) {
-            $this->mergePolicy->resolveConflicts($object->entity->relationshipsByName->compactMap(function (RelationshipDescription $relationship) use ($object, $snapshotKeys, $baselineSnapshot): ?MergeConflict {
+            $this->mergePolicy->resolveConflicts($object->entity->relationshipsByName->compactMap(function (RelationshipDescription $relationship) use ($object, $baselineSnapshot): ?MergeConflict {
                 if ($relationship->inverseRelationship->deleteRule === DeleteRule::denyDeleteRule) {
                     /** @var FetchRequest<Dictionary> $fetchRequest */
                     $fetchRequest = $object::fetchRequest();
@@ -509,10 +509,8 @@ final class ManagedObjectContext extends ObjectClass
                     }
                     /** @var ArrayClass<Dictionary<mixed>> $storeSnapshots */
                     $storeSnapshots = $this->fetch($fetchRequest);
-                    if ($storeSnapshot = $storeSnapshots->first) {
-                        if (!$baselineSnapshot->isEqual($storeSnapshot)) {
-                            return new MergeConflict($object, 0, 1, $baselineSnapshot, $storeSnapshot);
-                        }
+                    if (($storeSnapshot = $storeSnapshots->first) && !$baselineSnapshot->isEqual($storeSnapshot)) {
+                        return new MergeConflict($object, 0, 1, $baselineSnapshot, $storeSnapshot);
                     }
                 }
                 return null;
@@ -529,10 +527,8 @@ final class ManagedObjectContext extends ObjectClass
             }
             /** @var ArrayClass<Dictionary<mixed>> $storeSnapshots */
             $storeSnapshots = $this->fetch($fetchRequest);
-            if ($storeSnapshot = $storeSnapshots->first) {
-                if (!$baselineSnapshot->isEqual($storeSnapshot)) {
-                    $this->mergePolicy->resolveConflicts(new ArrayClass([new MergeConflict($object, 0, 1, $baselineSnapshot, $storeSnapshot)]));
-                }
+            if (($storeSnapshot = $storeSnapshots->first) && !$baselineSnapshot->isEqual($storeSnapshot)) {
+                $this->mergePolicy->resolveConflicts(new ArrayClass([new MergeConflict($object, 0, 1, $baselineSnapshot, $storeSnapshot)]));
             }
         }
     }
