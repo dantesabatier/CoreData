@@ -999,7 +999,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     private function validateChangedValues(): void
     {
         !$this->changedValues->isEmpty ?: fatal_error("invalid state: changed values is empty");
-        /** @var Set<PropertyDescription> $properties */
         $properties = new Set($this->changedValues->keys->compactMap(fn(string $key): ?PropertyDescription => $this->entity->propertiesByName[$key]));
         $properties->formUnion($this->persistentProperties->filter(fn(PropertyDescription $property): bool => !$property->isOptional));
         foreach ($properties as $property) {

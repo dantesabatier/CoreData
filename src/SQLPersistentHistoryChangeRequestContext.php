@@ -82,7 +82,7 @@ final class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestCont
         $transactionKey = $fetchRequest->entity->isKindOf($persistentHistoryTransactionEntityDescription) ? "" : "transaction.";
         if ($request->isFetchTransactionForToken) {
             $token = $request->token ?? new PersistentHistoryToken(new Dictionary([$this->sqlCore->identifier => $transactionNumber ?? new Number(0)]));
-            /** @psalm-suppress InvalidArgument, ReservedWord */
+            /** @psalm-suppress ReservedWord */
             $predicate = CompoundPredicate::andPredicateWithSubpredicates($token->storeTokens->reduce(new Dictionary(), function (Dictionary $result, Number $value, string $key) use ($transactionKey): Dictionary {
                 $result["{$transactionKey}storeID"] = $key;
                 $result["{$transactionKey}transactionID"] = $value;

@@ -67,11 +67,6 @@
                 <file name="src/FaultingSet.php"/>
             </errorLevel>
         </PossiblyInvalidArgument>
-        <InvalidArgument>
-            <errorLevel type="suppress">
-                <file name="src/FaultingSet.php"/>
-            </errorLevel>
-        </InvalidArgument>
         <InvalidReturnType>
             <errorLevel type="suppress">
                 <file name="src/FaultingSet.php"/>
@@ -84,4 +79,7 @@
             </errorLevel>
         </InvalidReturnStatement>
     </issueHandlers>
+    <plugins>
+        <pluginClass class="Sabatier\Foundation\Plugins\Plugin"/>
+    </plugins>
 </psalm>

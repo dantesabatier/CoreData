@@ -345,9 +345,7 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
                 /** @var ArrayClass<string>|null $entityNames */
                 $entityNames = $configuration["entities"];
                 if ($configurationName && $entityNames) {
-                    /** @var ArrayClass<EntityDescription> $entities */
-                    $entities = $entityNames->compactMap(fn(string $entityName): ?EntityDescription => $this->entitiesByName[$entityName]);
-                    $this->setEntities($entities, $configurationName);
+                    $this->setEntities($entityNames->compactMap(fn(string $entityName): ?EntityDescription => $this->entitiesByName[$entityName]), $configurationName);
                 }
             }
         }
@@ -376,9 +374,7 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
      */
     public static function mergedModel(ArrayClass $bundles, Dictionary $metadata): ?ManagedObjectModel
     {
-        /** @var ArrayClass<ManagedObjectModel> $compacted */
-        $compacted = $bundles->compactMap(fn(Bundle $bundle): ?ManagedObjectModel => (($name = $bundle->object(kCFBundleNameKey)) && ($url = $bundle->url($name, "plist"))) ? new ManagedObjectModel($url) : null);
-        return ManagedObjectModel::merging($compacted, $metadata);
+        return ManagedObjectModel::merging($bundles->compactMap(fn(Bundle $bundle): ?ManagedObjectModel => (($name = $bundle->object(kCFBundleNameKey)) && ($url = $bundle->url($name, "plist"))) ? new ManagedObjectModel($url) : null), $metadata);
     }
 
     /**

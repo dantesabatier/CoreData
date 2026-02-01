@@ -135,7 +135,6 @@ final class SQLCore extends IncrementalStore
             $entityDescription = new EntityDescription();
             $entityDescription->name = "PersistentHistoryTransaction";
             $entityDescription->isPersistentHistoryEntity = true;
-            /** @psalm-suppress InvalidPropertyAssignmentValue */
             $entityDescription->properties = new ArrayClass($reflectionClass->getProperties())->compactMap(function (ReflectionProperty $property) use ($entityDescription): ?PropertyDescription {
                 if ($property->isStatic()) {
                     return null;
@@ -184,7 +183,6 @@ final class SQLCore extends IncrementalStore
             $entityDescription = new EntityDescription();
             $entityDescription->name = "PersistentHistoryChange";
             $entityDescription->isPersistentHistoryEntity = true;
-            /** @psalm-suppress InvalidPropertyAssignmentValue */
             $entityDescription->properties = new ArrayClass($reflectionClass->getProperties())->compactMap(function (ReflectionProperty $property) use ($entityDescription): ?PropertyDescription {
                 if ($property->isStatic()) {
                     return null;
@@ -286,7 +284,6 @@ final class SQLCore extends IncrementalStore
                 }
             } elseif ($requestContext instanceof SQLSaveChangesRequestContext) {
                 if (($deletedObjects = $requestContext->request->deletedObjects) && !$deletedObjects->isEmpty) {
-                    /** @psalm-suppress InvalidArgument */
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass($deletedObjects->compactMap(fn(ManagedObject $object): ?SQLEntity => $this->model->entitiesByName[$object->entity->name])));
                 }
             }
