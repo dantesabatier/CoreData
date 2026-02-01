@@ -494,15 +494,21 @@ final class ManagedObjectContext extends ObjectClass
         if ($object->objectID->isTemporaryID) {
             return;
         }
-        $snapshotKeys = $object->originalSnapshot?->keys ?? $object->persistentProperties->keys;
-        /** @var Dictionary<mixed> $baselineSnapshot */
-        $baselineSnapshot = $object->originalSnapshot ?? $object->dictionaryWithValues($snapshotKeys);
+        if (!($originalSnapshot = $object->originalSnapshot)) {
+            return;
+        }
+        $baselineSnapshot = $originalSnapshot->filter(fn(mixed $value, string $key): bool => match ($key) {
+            SQLEntity::primaryKeyName, SQLEntity::entityKeyName => true,
+            default => $object->entity->attributesByName->offsetExists($key),
+        });
+        $snapshotKeys = $baselineSnapshot->keys;
         if ($object->isDeleted) {
-            $this->mergePolicy->resolveConflicts($object->entity->relationshipsByName->compactMap(function (RelationshipDescription $relationship) use ($object, $baselineSnapshot): ?MergeConflict {
+            $this->mergePolicy->resolveConflicts($object->entity->relationshipsByName->compactMap(function (RelationshipDescription $relationship) use ($snapshotKeys, $object, $baselineSnapshot): ?MergeConflict {
                 if ($relationship->inverseRelationship->deleteRule === DeleteRule::denyDeleteRule) {
                     /** @var FetchRequest<Dictionary> $fetchRequest */
                     $fetchRequest = $object::fetchRequest();
                     $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($object->objectID));
+                    $fetchRequest->propertiesToFetch = $snapshotKeys;
                     $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
                     if ($affectedStore = $object->objectID->persistentStore) {
                         $fetchRequest->affectedStores = new ArrayClass([$affectedStore]);
@@ -521,6 +527,7 @@ final class ManagedObjectContext extends ObjectClass
             /** @var FetchRequest<Dictionary> $fetchRequest */
             $fetchRequest = $object::fetchRequest();
             $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(SQLEntity::primaryKeyName), Expression::expressionForConstantValue($object->objectID));
+            $fetchRequest->propertiesToFetch = $snapshotKeys;
             $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
             if ($affectedStore = $object->objectID->persistentStore) {
                 $fetchRequest->affectedStores = new ArrayClass([$affectedStore]);
