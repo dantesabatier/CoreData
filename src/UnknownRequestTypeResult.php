@@ -17,9 +17,9 @@ use Sabatier\Foundation\Number;
 final class UnknownRequestTypeResult extends PersistentStoreResult
 {
     /**
-     * @param ArrayClass<ArrayClass<ManagedObject|ManagedObjectID|Dictionary<mixed>|Number>> $subresults
+     * @param ArrayClass<ArrayClass<ManagedObject|ManagedObjectID|Dictionary<mixed>|Number>>|BatchFaultingArray $subresults
      */
-    public function __construct(public readonly ArrayClass $subresults)
+    public function __construct(public readonly ArrayClass|BatchFaultingArray $subresults)
     {
     }
 }

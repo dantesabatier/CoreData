@@ -331,7 +331,13 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
      */
     private function uniquenessConstraintsAsFetchIndexes(): Dictionary
     {
-        return $this->uniquenessConstraints->reduce(new Dictionary(), function (Dictionary $initial, ArrayClass $constraint): Dictionary {
+        return $this->uniquenessConstraints->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<FetchIndexDescription> $initial
+             * @param ArrayClass<AttributeDescription|string> $constraint
+             * @return Dictionary<FetchIndexDescription>
+             */
+            function (Dictionary $initial, ArrayClass $constraint): Dictionary {
             if ($index = $this->constraintAsIndex($constraint)) {
                 $initial[$index->name] = $index;
             }
