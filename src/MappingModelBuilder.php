@@ -79,9 +79,7 @@ final class MappingModelBuilder
                 $relationshipMappings = $destinationEntity->relationshipsByName->map(fn(RelationshipDescription $relationship): PropertyMapping => new PropertyMapping($relationship->name));
             }
         }
-        /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
         $mapping->attributeMappings = $attributeMappings;
-        /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
         $mapping->relationshipMappings = $relationshipMappings;
         return true;
     }
@@ -117,7 +115,6 @@ final class MappingModelBuilder
         $destinationEntities = $this->destinationModel->entitiesByName->filter(fn(EntityDescription $entity): bool => $entity->isRootEntity);
         /** @var ArrayClass<EntityMapping> $entityMappings */
         $entityMappings = $sourceEntities->compactMap(fn(EntityDescription $sourceEntity): ?EntityMapping => ($entityMapping = $this->newEntityMapping($sourceEntity, $this->destinationModel->entitiesByName->first(fn(EntityDescription $e): bool => $e->renamingIdentifier === $sourceEntity->renamingIdentifier))) && $this->inferPropertyMappingsForEntityMapping($entityMapping) ? $entityMapping : null);
-        /** @psalm-suppress InvalidArgument */
         $entityMappings->appendContentsOf($destinationEntities->compactMap(fn(EntityDescription $destinationEntity): ?EntityMapping => !$sourceEntities->contains(fn(EntityDescription $sourceEntity): bool => $destinationEntity->renamingIdentifier === $sourceEntity->renamingIdentifier) && ($entityMapping = $this->newEntityMapping(null, $destinationEntity)) && $this->inferPropertyMappingsForEntityMapping($entityMapping) ? $entityMapping : null));
         $mappingModel = new MappingModel();
         $mappingModel->entityMappings = $entityMappings;

@@ -102,7 +102,6 @@ abstract class PersistentStore extends ObjectClass
      * @param ManagedObjectContext $context The managed object context used to execute $request.
      * @return ArrayClass<ManagedObject|ManagedObjectID|Dictionary|Number> A value as appropriate for $request.
      * @throws Exception If an error occurs, upon return contains an error object that describes the problem.
-     * @psalm-suppress InvalidReturnType
      */
     public function execute(PersistentStoreRequest $request, ManagedObjectContext $context): ArrayClass
     {

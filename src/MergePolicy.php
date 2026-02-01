@@ -59,7 +59,6 @@ final class MergePolicy extends ObjectClass
             $sourceObject = $mergeConflict->sourceObject;
             $cachedSnapshot = $mergeConflict->cachedSnapshot ?? $mergeConflict->objectSnapshot;
             $persistedSnapshot = $mergeConflict->persistedSnapshot ?? new Dictionary();
-            /** @psalm-suppress InvalidArgument */
             $this->process($conflictList, $mergeConflict, $sourceObject, $cachedSnapshot, $persistedSnapshot);
         }
         if (!$conflictList->isEmpty) {
@@ -80,7 +79,6 @@ final class MergePolicy extends ObjectClass
             $object = $constraintConflict->conflictingObjects[0];
             $objectSnapshot = $constraintConflict->conflictingSnapshots[0];
             $databaseSnapshot = $constraintConflict->databaseSnapshot ?? $constraintConflict->conflictingSnapshots[1];
-            /** @psalm-suppress InvalidArgument */
             $this->process($conflictList, $constraintConflict, $object, $objectSnapshot, $databaseSnapshot);
             if ($databaseObject = $constraintConflict->databaseObject) {
                 $object->objectID->referenceObject = $databaseObject->objectID->referenceObject;

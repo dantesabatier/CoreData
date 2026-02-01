@@ -179,7 +179,6 @@ final class ManagedObjectContext extends ObjectClass
      */
     private function executeFetchRequest(FetchRequest $request): UnknownRequestTypeResult
     {
-        /** @psalm-suppress InvalidArgument */
         return $request->fetchBatchSize ? match ($request->resultType) {
             FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType => new UnknownRequestTypeResult(new BatchFaultingArray($request, $this)),
             FetchRequestResultType::dictionaryResultType, FetchRequestResultType::countResultType => $this->executePersistentStoreRequest($request),
@@ -211,25 +210,21 @@ final class ManagedObjectContext extends ObjectClass
 
     private function executeBatchInsertRequest(BatchInsertRequest $request): BatchInsertResult
     {
-        /** @psalm-suppress InvalidArgument */
         return new BatchInsertResult($this->executePersistentStoreRequest($request)->subresults, $request->resultType);
     }
 
     private function executeBatchUpdateRequest(BatchUpdateRequest $request): BatchUpdateResult
     {
-        /** @psalm-suppress InvalidArgument */
         return new BatchUpdateResult($this->executePersistentStoreRequest($request)->subresults, $request->resultType);
     }
 
     private function executeBatchDeleteRequest(BatchDeleteRequest $request): BatchDeleteResult
     {
-        /** @psalm-suppress InvalidArgument */
         return new BatchDeleteResult($this->executePersistentStoreRequest($request)->subresults, $request->resultType);
     }
 
     private function executePersistentHistoryChangeRequest(PersistentHistoryChangeRequest $request): PersistentHistoryResult
     {
-        /** @psalm-suppress InvalidArgument */
         return new PersistentHistoryResult($this->executePersistentStoreRequest($request)->subresults, $request->resultType);
     }
 
