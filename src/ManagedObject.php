@@ -145,7 +145,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * @internal
      */
     private(set) Dictionary $persistentProperties {
-        get => $this->persistentProperties ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => !$property->isTransient && ($property instanceof DerivedAttributeDescription ? !$property->isRuntimeOnly : !$property instanceof FetchedPropertyDescription));
+        get => $this->persistentProperties ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property->isPersistent);
     }
     /**
      * @var Dictionary<PropertyDescription>
@@ -708,7 +708,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         }
         /** @var PropertyDescription|null $property */
         $property = $this->entity->propertiesByName[$key];
-        if ($property instanceof PropertyDescription && !$property->isTransient && !$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription && !$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications) {
+        if ($property?->isPersistent && !$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications) {
             $this->changedValuesForCurrentEvent[$key] = $value ?? Nil::nil();
         }
         if ($property instanceof AttributeDescription || $property instanceof FetchedPropertyDescription) {
@@ -1002,9 +1002,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         $properties = new Set($this->changedValues->keys->compactMap(fn(string $key): ?PropertyDescription => $this->entity->propertiesByName[$key]));
         $properties->formUnion($this->persistentProperties->filter(fn(PropertyDescription $property): bool => !$property->isOptional));
         foreach ($properties as $property) {
-            if ($property->isTransient) {
-                continue;
-            }
             $key = $property->name;
             $value = $this->changedValues[$key];
             if ($value instanceof Nil) {

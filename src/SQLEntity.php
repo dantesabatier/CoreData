@@ -122,7 +122,7 @@ final class SQLEntity extends StoreMapping
     }
     /** @var ArrayClass<SQLProperty> */
     private(set) ArrayClass $persistentProperties {
-        get => $this->persistentProperties ??= $this->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient && ((!$property instanceof SQLAttribute || !$property->isDerivedAttribute || !$property->isRuntimeOnly)));
+        get => $this->persistentProperties ??= $this->properties->filter(fn(SQLProperty $property): bool => $property->isPersistent);
     }
     /** @var ArrayClass<SQLAttribute> */
     private(set) ArrayClass $attributes {
@@ -130,7 +130,7 @@ final class SQLEntity extends StoreMapping
     }
     /** @var ArrayClass<SQLAttribute> */
     private(set) ArrayClass $derivedAttributes {
-        get => $this->derivedAttributes ??= $this->attributes->filter(fn(SQLAttribute $attribute): bool => $attribute->attributeDescription instanceof DerivedAttributeDescription);
+        get => $this->derivedAttributes ??= $this->attributes->filter(fn(SQLAttribute $attribute): bool => $attribute->isDerivedAttribute);
     }
     /** @var ArrayClass<ArrayClass<SQLAttribute>> */
     private(set) ArrayClass $multiColumnUniquenessConstraints {

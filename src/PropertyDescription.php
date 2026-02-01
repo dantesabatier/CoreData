@@ -77,6 +77,10 @@ abstract class PropertyDescription extends ObjectClass
     /** @internal */
     public bool $isReadOnly = false;
     /** @internal */
+    public bool $isPersistent {
+        get => !$this->isTransient && ($this instanceof DerivedAttributeDescription ? !$this->isRuntimeOnly : !$this instanceof FetchedPropertyDescription);
+    }
+    /** @internal */
     public mixed $minValue = null;
     /** @internal */
     public mixed $maxValue = null;

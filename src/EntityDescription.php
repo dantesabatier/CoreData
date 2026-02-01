@@ -82,7 +82,6 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
                 if ($this->isEditable) {
                     fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
                 }
-                /** @psalm-suppress PropertyTypeCoercion */
                 $this->attributesByName = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
             }
             return $this->attributesByName;
@@ -95,7 +94,6 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
                 if ($this->isEditable) {
                     fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
                 }
-                /** @psalm-suppress PropertyTypeCoercion */
                 $this->relationshipsByName = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
             }
             return $this->relationshipsByName;
