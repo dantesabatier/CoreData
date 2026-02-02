@@ -9,6 +9,7 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
+use Sabatier\Foundation\Set;
 
 /** @internal */
 final class SQLAdapter extends ObjectClass
@@ -287,6 +288,20 @@ final class SQLAdapter extends ObjectClass
         return null;
     }
 
+    /**
+     * @param string $sourceDatabaseName
+     * @param string $destinationDatabaseName
+     * @param Set<string> $tableNames
+     * @return SQLStatement`
+     */
+    public function newRenameTablesStatement(string $sourceDatabaseName, string $destinationDatabaseName, Set $tableNames): ?SQLStatement
+    {
+        if ($tableNames->isEmpty) {
+            return null;
+        }
+        return new SQLStatement("RENAME TABLE {$tableNames->map(fn(string $tableName): string => "`$sourceDatabaseName`.`$tableName` TO `$destinationDatabaseName`.`$tableName`")->join(", ")}");
+    }
+
     public function newRenameTableStatement(SQLEntity $sourceEntity, SQLEntity $destinationEntity): SQLStatement
     {
         return new SQLStatement("RENAME TABLE IF EXISTS `$sourceEntity->tableName` TO `$destinationEntity->tableName`");
@@ -301,5 +316,20 @@ final class SQLAdapter extends ObjectClass
     public function newCreateTableStatement(SQLEntity $entity): SQLStatement
     {
         return new SQLStatement("CREATE TABLE IF NOT EXISTS `$entity->tableName` ({$entity->columnsToCreate->compactMap($this->typeStringForColumn(...))->join(", ")}, CONSTRAINT PK_{$entity->primaryKey->columnName} PRIMARY KEY (`{$entity->primaryKey->columnName}`) USING BTREE) ENGINE={$this->sqlCore->schemaValidationConnection->schema->engine} DEFAULT CHARSET={$this->sqlCore->schemaValidationConnection->schema->charset} COLLATE={$this->sqlCore->schemaValidationConnection->schema->collation}");
+    }
+
+    public function newDropDatabaseStatement(string $databaseName): SQLStatement
+    {
+        return new SQLStatement("DROP DATABASE IF EXISTS `$databaseName`");
+    }
+
+    public function newUseDatabaseStatement(string $databaseName): SQLStatement
+    {
+        return new SQLStatement("USE `$databaseName`");
+    }
+
+    public function newCreateDatabaseStatement(string $databaseName): SQLStatement
+    {
+        return new SQLStatement("CREATE DATABASE IF NOT EXISTS `$databaseName` DEFAULT CHARACTER SET {$this->sqlCore->schemaValidationConnection->schema->charset} COLLATE {$this->sqlCore->schemaValidationConnection->schema->collation}");
     }
 }

@@ -81,12 +81,21 @@ final class SQLCore extends IncrementalStore
         return null;
     }
 
+    /**
+     * @param URL $url
+     * @param Dictionary<mixed>|null $options
+     * @return bool
+     * @throws Exception
+     */
     #[Override]
     public static function destroyPersistentStoreAtURL(URL $url, ?Dictionary $options = null): bool
     {
         return SQLConnection::destroyPersistentStoreAtURL($url, $options);
     }
 
+    /**
+     * @throws Exception
+     */
     #[Override]
     public static function replacePersistentStoreAtURL(URL $destinationURL, ?Dictionary $destinationOptions, URL $sourceURL, ?Dictionary $sourceOptions): bool
     {

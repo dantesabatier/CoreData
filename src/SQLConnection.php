@@ -41,6 +41,29 @@ final class SQLConnection extends ObjectClass
     public ?SQLCore $sqlCore {
         get => $this->adapter?->sqlCore;
     }
+    private SQLModel $model {
+        get => $this->model ??= $this->sqlCore?->model ?? fatal_error("invalid argument: model cannot be null");
+    }
+    /** @var ArrayClass<SQLEntity> */
+    private ArrayClass $rootSchemaEntities {
+        get => $this->rootSchemaEntities ??= $this->model->entities->filter(fn(SQLEntity $entity): bool => $entity->isRootEntity && !$entity->entityDescription->isPersistentHistoryEntity);
+    }
+    /** @var ArrayClass<SQLEntity> */
+    private ArrayClass $persistentHistoryEntities {
+        get => $this->persistentHistoryEntities ??= $this->model->entities->filter(fn(SQLEntity $entity): bool => $entity->entityDescription->isPersistentHistoryEntity);
+    }
+    /** @var ArrayClass<string> */
+    private ArrayClass $rootTableNames {
+        get => $this->rootTableNames ??= $this->rootSchemaEntities->map(fn(SQLEntity $entity): string => $entity->tableName);
+    }
+    /** @var Set<string> */
+    private Set $correlationTableNames {
+        get => $this->correlationTableNames ??= new Set($this->rootSchemaEntities->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->manyToManyRelationships)->map(fn(SQLManyToMany $manyToMany): string => $manyToMany->correlationTableName));
+    }
+    /** @var Set<string> */
+    private Set $allSchemaTableNames {
+        get => $this->allSchemaTableNames ??= new Set($this->rootTableNames)->union($this->correlationTableNames);
+    }
     private(set) bool $hasMetadataTable {
         /**
          * @throws Exception
@@ -92,18 +115,43 @@ final class SQLConnection extends ObjectClass
         $this->disconnect();
     }
 
+    /**
+     * @throws Exception
+     */
     public static function destroyPersistentStoreAtURL(URL $url, ?Dictionary $options = null): bool
     {
         !$options?->valueForKey(ReadOnlyPersistentStoreOption) ?: fatal_error("Cannot destroy a read only persistent store");
         $connection = new SQLConnection();
         $connection->schema = SQLSchema::schema($url->host);
-        /** @noinspection PhpUnhandledExceptionInspection */
         return $connection->destroySchema();
     }
 
-    public static function replacePersistentStoreAtURL(/** @noinspection PhpUnusedParameterInspection */ URL $destinationURL, ?Dictionary $destinationOptions, URL $sourceURL, ?Dictionary $sourceOptions): bool
+    /**
+     * @param URL $destinationURL
+     * @param Dictionary<mixed>|null $destinationOptions
+     * @param URL $sourceURL
+     * @param Dictionary<mixed>|null $sourceOptions
+     * @return bool
+     * @throws Exception
+     */
+    public static function replacePersistentStoreAtURL(URL $destinationURL, ?Dictionary $destinationOptions, URL $sourceURL, ?Dictionary $sourceOptions): bool
     {
-        return true;
+        $destinationURL->scheme === "sql" ?: fatal_error("Cannot replace a persistent store with a non sql destination");
+        $destinationDatabaseName = $destinationURL->host ?? fatal_error("Cannot replace a persistent store without a destination database name");
+        $sourceURL->scheme === "sql" ?: fatal_error("Cannot replace a persistent store with a non sql source");
+        $sourceDatabaseName = $sourceURL->host ?? fatal_error("Cannot replace a persistent store without a source database name");
+        !$destinationOptions?->valueForKey(ReadOnlyPersistentStoreOption) ?: fatal_error("Cannot replace a read only persistent store");
+        $modelURL = $destinationOptions?->valueForKey("modelURL") ?? fatal_error("Cannot replace a persistent store without a model URL");
+        $managedObjectModel = new ManagedObjectModel($modelURL);
+        $coordinator = new PersistentStoreCoordinator($managedObjectModel);
+        $core = new SQLCore($coordinator, $destinationDatabaseName, $destinationURL, $destinationOptions);
+        $connection = $core->schemaValidationConnection;
+        $tableNames = $connection->allSchemaTableNames;
+        $connection->createDatabase($destinationDatabaseName);
+        $connection->moveTables($sourceDatabaseName, $destinationDatabaseName, $tableNames);
+        $connection->useDatabase($destinationDatabaseName);
+        $connection->saveCachedModel($connection->model);
+        return self::destroyPersistentStoreAtURL($sourceURL, $sourceOptions);
     }
 
     private function mysql(): Mysql
@@ -374,13 +422,9 @@ final class SQLConnection extends ObjectClass
     private function createHistoryTrackingTables(): void
     {
         if (!$this->hasPersistentHistoryTables) {
-            $entities = $this->sqlCore?->model?->entities?->filter(fn(SQLEntity $entity): bool => $entity->entityDescription->isPersistentHistoryEntity) ?? fatal_error();
-            foreach ($entities as $entity) {
-                $this->createTableForEntity($entity);
-            }
-            foreach ($entities as $entity) {
-                $this->createIndexesForEntity($entity);
-            }
+            $entities = $this->persistentHistoryEntities;
+            $this->createEntityTables($entities);
+            $this->applyConstraints($entities);
         }
     }
 
@@ -389,17 +433,18 @@ final class SQLConnection extends ObjectClass
      */
     public function dropHistoryTrackingTables(): void
     {
-        if ($this->hasPersistentHistoryTables) {
-            $entities = $this->sqlCore?->model?->entities?->filter(fn(SQLEntity $entity): bool => $entity->entityDescription->isPersistentHistoryEntity) ?? fatal_error();
-            foreach ($entities as $entity) {
-                if ($statement = $this->adapter?->newDropIndexesStatement($entity)) {
-                    $this->execute($statement);
-                }
+        if (!$this->hasPersistentHistoryTables) {
+            return;
+        }
+        $entities = $this->persistentHistoryEntities;
+        foreach ($entities as $entity) {
+            if ($statement = $this->adapter?->newDropIndexesStatement($entity)) {
+                $this->execute($statement);
             }
-            foreach ($entities as $entity) {
-                if ($statement = $this->adapter?->newDropTableStatement($entity)) {
-                    $this->execute($statement);
-                }
+        }
+        foreach ($entities as $entity) {
+            if ($statement = $this->adapter?->newDropTableStatement($entity)) {
+                $this->execute($statement);
             }
         }
     }
@@ -430,7 +475,7 @@ final class SQLConnection extends ObjectClass
      */
     public function fetchMaxPrimaryKey(string $entityName): int
     {
-        $entity = $this->sqlCore?->model?->entitiesByName?->valueForKey($entityName) ?? fatal_error("Invalid argument: entity \"$entityName\" does not exists");
+        $entity = $this->model->entitiesByName[$entityName] ?? fatal_error("Invalid argument: entity \"$entityName\" does not exists");
         return (int)$this->execute(new SQLStatement("SELECT MAX({$entity->primaryKey->columnName}) FROM `$entity->tableName`"))->fetchColumn();
     }
 
@@ -525,6 +570,73 @@ final class SQLConnection extends ObjectClass
     /**
      * @throws Exception
      */
+    public function createSchema(): bool
+    {
+        $time = absolute_time_get_current();
+        $database = $this->schema->name;
+        $model = $this->model;
+        $entities = $this->rootSchemaEntities;
+        if (SQLCore::$debugLevel->value) {
+            error_log("CoreData: annotation: creating database \"$database\"");
+        }
+        $this->createDatabase($database);
+        $this->useDatabase($database);
+        $this->createEntityTables($entities);
+        $this->applyConstraints($entities);
+        $this->createPivotTables($entities);
+        $this->saveCachedModel($model);
+        if (SQLCore::$debugLevel->value) {
+            error_log("CoreData: annotation: database \"$database\" created, total execution time: " . human_readable_time(absolute_time_get_current() - $time));
+        }
+        return true;
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function createDatabase(string $database): void
+    {
+        if ($statement = $this->adapter?->newCreateDatabaseStatement($database)) {
+            $this->execute($statement);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function useDatabase(string $database): void
+    {
+        if ($statement = $this->adapter?->newUseDatabaseStatement($database)) {
+            $this->execute($statement);
+        }
+    }
+
+    /**
+     * @param ArrayClass<SQLEntity> $entities
+     * @throws Exception
+     */
+    private function createEntityTables(ArrayClass $entities): void
+    {
+        foreach ($entities as $entity) {
+            $this->createTableForEntity($entity);
+        }
+    }
+
+    /**
+     * @param ArrayClass<SQLEntity> $entities
+     * @throws Exception
+     */
+    public function applyConstraints(ArrayClass $entities): void
+    {
+
+        foreach ($entities as $entity) {
+            $this->createIndexesForEntity($entity);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
     private function createTableForEntity(SQLEntity $entity): void
     {
         if ($statement = $this->adapter?->newCreateTableStatement($entity)) {
@@ -546,18 +658,32 @@ final class SQLConnection extends ObjectClass
      * @param ArrayClass<SQLEntity> $entities
      * @throws Exception
      */
-    private function createManyToManyTablesForEntities(ArrayClass $entities): void
+    private function createPivotTables(ArrayClass $entities): void
     {
         $adapter = $this->adapter ?? fatal_error();
+        $manyToManyRelationships = new Set($entities)->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->manyToManyRelationships);
         /** @var Set<SQLStatement> $statements */
-        $statements = new Set($entities)->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->manyToManyRelationships)->map($adapter->newCreateTableStatementForManyToMany(...));
+        $statements = $manyToManyRelationships->map($adapter->newCreateTableStatementForManyToMany(...));
         if (!$statements->isEmpty) {
             $this->execute(SQLStatement::merging(new ArrayClass($statements)));
         }
         /** @var Set<SQLStatement> $statements */
-        $statements = new Set($entities)->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->manyToManyRelationships)->map($adapter->newCreateIndexesStatementForManyToMany(...));
+        $statements = $manyToManyRelationships->map($adapter->newCreateIndexesStatementForManyToMany(...));
         if (!$statements->isEmpty) {
             $this->execute(SQLStatement::merging(new ArrayClass($statements)));
+        }
+    }
+
+    /**
+     * @param string $sourceDatabaseName
+     * @param string $destinationDatabaseName
+     * @param Set<string> $tableNames
+     * @throws Exception
+     */
+    private function moveTables(string $sourceDatabaseName, string $destinationDatabaseName, Set $tableNames): void
+    {
+        if (!$tableNames->isEmpty && ($statement = $this->adapter?->newRenameTablesStatement($sourceDatabaseName, $destinationDatabaseName, $tableNames))) {
+            $this->execute($statement);
         }
     }
 
@@ -568,34 +694,6 @@ final class SQLConnection extends ObjectClass
     {
         /** @noinspection SqlShadowingAlias */
         return (bool)$this->execute(new SQLStatement("SELECT COUNT(*) schema_name FROM information_schema.schemata WHERE schema_name = ?", new ArrayClass([$this->schema->name])))->fetchColumn();
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function createSchema(): bool
-    {
-        $time = absolute_time_get_current();
-        $model = $this->sqlCore?->model ?? fatal_error("invalid argument: model cannot be null");
-        $database = $this->schema->name;
-        if (SQLCore::$debugLevel->value) {
-            error_log("CoreData: annotation: creating database \"$database\"");
-        }
-        $this->execute(new SQLStatement("CREATE DATABASE `$database`"));
-        $this->execute(new SQLStatement("USE `$database`"));
-        $entities = $model->entities->filter(fn(SQLEntity $entity): bool => $entity->isRootEntity && !$entity->entityDescription->isPersistentHistoryEntity);
-        foreach ($entities as $entity) {
-            $this->createTableForEntity($entity);
-        }
-        foreach ($entities as $entity) {
-            $this->createIndexesForEntity($entity);
-        }
-        $this->createManyToManyTablesForEntities($entities);
-        $this->saveCachedModel($model);
-        if (SQLCore::$debugLevel->value) {
-            error_log("CoreData: annotation: database \"$database\" created, total execution time: " . human_readable_time(absolute_time_get_current() - $time));
-        }
-        return true;
     }
 
     /**

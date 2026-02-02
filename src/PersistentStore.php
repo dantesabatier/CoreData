@@ -62,6 +62,9 @@ abstract class PersistentStore extends ObjectClass
     }
 
     /**
+     * @param URL $url
+     * @param Dictionary<mixed>|null $options
+     * @return ManagedObjectModel|null
      * @internal
      */
     public static function cachedModelForPersistentStoreWithURL(/** @noinspection PhpUnusedParameterInspection */ URL $url, ?Dictionary $options = null): ?ManagedObjectModel
@@ -70,6 +73,10 @@ abstract class PersistentStore extends ObjectClass
     }
 
     /**
+     * @param URL $url
+     * @param Dictionary<mixed>|null $options
+     * @return bool
+     * @throws Exception
      * @internal
      */
     public static function destroyPersistentStoreAtURL(URL $url, ?Dictionary $options = null): bool
@@ -77,23 +84,21 @@ abstract class PersistentStore extends ObjectClass
         if (!FileManager::default()->fileExists($url->path)) {
             return true;
         }
-        try {
-            return FileManager::default()->removeItem($url);
-        } catch (Exception) {
-            return false;
-        }
+        return FileManager::default()->removeItem($url);
     }
 
     /**
+     * @param URL $destinationURL
+     * @param Dictionary<mixed>|null $destinationOptions
+     * @param URL $sourceURL
+     * @param Dictionary<mixed>|null $sourceOptions
+     * @return bool
+     * @throws Exception
      * @internal
      */
     public static function replacePersistentStoreAtURL(URL $destinationURL, ?Dictionary $destinationOptions, URL $sourceURL, ?Dictionary $sourceOptions): bool
     {
-        try {
-            return FileManager::default()->moveItem($sourceURL, $destinationURL);
-        } catch (Exception) {
-            return false;
-        }
+        return FileManager::default()->moveItem($sourceURL, $destinationURL);
     }
 
     /**

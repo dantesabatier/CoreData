@@ -99,7 +99,7 @@ final class PersistentStoreCoordinator extends ObjectClass
      */
     public function setURL(URL $url, PersistentStore $store): bool
     {
-        $ok = $store::replacePersistentStoreAtURL($store->url, null, $url, $store->options);
+        $ok = $store::replacePersistentStoreAtURL($store->url, $store->options, $url, $store->options);
         $store->url = $url;
         return $ok;
     }

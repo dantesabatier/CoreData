@@ -33,7 +33,7 @@ const UpdatedObjectIDsKey = "UpdatedObjectIDsKey";
 
 // Persistent Store Metadata Keys
 
-/** @var string A key that indicates a persistent store posts a remote change notification for every write to the store, including writes by other processes. */
+/** @var string A key that indicates a persistent store posts a remote change notification for every `write` to the store, including writes by other processes. */
 const PersistentStoreRemoteChangeNotificationPostOptionKey = "PersistentStoreRemoteChangeNotificationPostOption";
 
 // Persistent Store Coordinator Constants
@@ -43,7 +43,7 @@ const StoreTypeKey = "StoreType";
 /**
  * @var string The key in the metadata dictionary to identify the store UUID.
  * The store UUID is useful to identify stores through URI representations, but it is not guaranteed to be unique.
- * The UUID generated for new stores is unique—users can freely copy files and thus the UUID stored inside so if you track or reference stores explicitly you need to be aware of duplicate UUIDs and potentially override the UUID when a new store is added to the list of known stores in your application.
+ * The UUID generated for new stores is unique—users can freely copy files and thus the UUID stored inside, so if you track or reference stores explicitly, you need to be aware of duplicate UUIDs and potentially override the UUID when a new store is added to the list of known stores in your application.
  */
 const StoreUUIDKey = "StoreUUID";
 /**
@@ -79,8 +79,7 @@ const ManagedObjectContextWillSave = "ManagedObjectContextWillSave";
  * The notification object is the managed object context. The userInfo dictionary contains the following keys:
  * {@see InsertedObjectsKey}, {@see UpdatedObjectsKey}, and {@see DeletedObjectsKey}.
  * You can only use the managed objects in this notification on the same thread on which it was posted.
- * You can pass the notification object to mergeChangesFromContextDidSaveNotification() on another thread,
- * however you must not use the managed object in the user info dictionary directly on another thread.
+ * You can pass the notification object to mergeChangesFromContextDidSaveNotification() on another thread, however, you must not use the managed object in the user info dictionary directly on another thread.
  */
 const ManagedObjectContextDidSave = "ManagedObjectContextDidSave";
 /** @var string A notification that posts when the context saves changes. */
@@ -102,8 +101,19 @@ const ValidationObjectErrorKey = "ValidationObjectErrorKey";
 const ValidationPredicateErrorKey = "ValidationPredicateErrorKey";
 /** @var string The error key for the value that failed to validate. */
 const ValidationValueErrorKey = "ValidationValueErrorKey";
-
 const ConflictListErrorKey = "conflictList";
+
+// Environment Variables
+
+const SQLSchemaName = "SQL_SCHEMA_NAME";
+const SQLSchemaHost = "SQL_SCHEMA_HOST";
+const SQLSchemaCredentialUser = "SQL_SCHEMA_CREDENTIAL_USER";
+const SQLSchemaCredentialPassword = "SQL_SCHEMA_CREDENTIAL_PASSWORD";
+
+// Environment Defaults
+
+const SQLSchemaHostDefault = "127.0.0.1";
+const SQLSchemaCredentialUserDefault = "root";
 
 // Other
 
