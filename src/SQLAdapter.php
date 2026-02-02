@@ -292,7 +292,7 @@ final class SQLAdapter extends ObjectClass
      * @param string $sourceDatabaseName
      * @param string $destinationDatabaseName
      * @param Set<string> $tableNames
-     * @return SQLStatement`
+     * @return SQLStatement|null `
      */
     public function newRenameTablesStatement(string $sourceDatabaseName, string $destinationDatabaseName, Set $tableNames): ?SQLStatement
     {
