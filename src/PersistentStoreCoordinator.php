@@ -308,6 +308,7 @@ final class PersistentStoreCoordinator extends ObjectClass
      * @param URL $sourceURL A URL object that specifies the location of a persistent store.
      * @param Dictionary<mixed>|null $sourceOptions A dictionary.
      * @param PersistentStoreType $storeType The store type of the replacement store.
+     * @throws Exception
      */
     public function replacePersistentStore(URL $destinationURL, ?Dictionary $destinationOptions, URL $sourceURL, ?Dictionary $sourceOptions, PersistentStoreType $storeType): void
     {
