@@ -475,6 +475,7 @@ final class SQLConnection extends ObjectClass
      */
     public function fetchMaxPrimaryKey(string $entityName): int
     {
+        /** @var SQLEntity $entity */
         $entity = $this->model->entitiesByName[$entityName] ?? fatal_error("Invalid argument: entity \"$entityName\" does not exists");
         return (int)$this->execute(new SQLStatement("SELECT MAX({$entity->primaryKey->columnName}) FROM `$entity->tableName`"))->fetchColumn();
     }
