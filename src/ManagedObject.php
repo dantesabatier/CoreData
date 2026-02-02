@@ -145,7 +145,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * @internal
      */
     private(set) Dictionary $persistentProperties {
-        get => $this->persistentProperties ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property->isPersistent);
+        get => $this->persistentProperties ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => !$property->isTransient && ($property instanceof DerivedAttributeDescription ? !$property->isRuntimeOnly : !$property instanceof FetchedPropertyDescription));
     }
     /**
      * @var Dictionary<PropertyDescription>
@@ -437,7 +437,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public function committedValues(?ArrayClass $keys): Dictionary
     {
         /** @var Dictionary<mixed> $committedValues */
-        $committedValues = $this->lastSnapshot ?? new Dictionary();
+        $committedValues = $this->originalSnapshot ?? new Dictionary();
         return $keys === null ? $committedValues : $committedValues->filter(fn(mixed $value, string $key): bool => $keys->containsElement($key));
     }
 
@@ -710,7 +710,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         }
         /** @var PropertyDescription|null $property */
         $property = $this->entity->propertiesByName[$key];
-        if ($property?->isPersistent && !$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications) {
+        if ($property && !$property->isTransient && !$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription && !$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications) {
             $this->changedValuesForCurrentEvent[$key] = $value ?? Nil::nil();
         }
         if ($property instanceof AttributeDescription || $property instanceof FetchedPropertyDescription) {

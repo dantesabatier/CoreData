@@ -25,9 +25,6 @@ abstract class SQLProperty extends ObjectClass
     protected(set) bool $isTransient {
         get => $this->isTransient ??= $this->propertyDescription->isTransient;
     }
-    protected(set) bool $isPersistent {
-        get => $this->isPersistent ??= $this->propertyDescription->isPersistent;
-    }
     protected(set) bool $isUnique {
         get => $this->isUnique ??= $this->entity->indexes->contains(fn(SQLIndex $index, string $key): bool => $index->isUnique && $key === $this->name);
     }
