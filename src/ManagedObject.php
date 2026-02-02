@@ -437,7 +437,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public function committedValues(?ArrayClass $keys): Dictionary
     {
         /** @var Dictionary<mixed> $committedValues */
-        $committedValues = $this->originalSnapshot ?? new Dictionary();
+        $committedValues = new Dictionary($this->originalSnapshot ?? []);
         return $keys === null ? $committedValues : $committedValues->filter(fn(mixed $value, string $key): bool => $keys->containsElement($key));
     }
 
