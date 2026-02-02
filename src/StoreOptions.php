@@ -8,3 +8,5 @@ const ReadOnlyPersistentStoreOption = "ReadOnlyPersistentStoreOption";
 const ValidateXMLStoreOption = "ValidateXMLStoreOption";
 /** @var string Options key that specifies the connection timeout for Core Data stores. The corresponding value is a number object that represents the duration in seconds that Core Data will wait while attempting to create a connection to a persistent store. If a connection is cannot be made within that timeframe, the operation is aborted and an error is returned. */
 const PersistentStoreTimeoutOption = "PersistentStoreTimeoutOption";
+
+const ModelURLOption = "ModelURLOption";

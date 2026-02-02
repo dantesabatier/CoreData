@@ -141,7 +141,7 @@ final class SQLConnection extends ObjectClass
         $sourceURL->scheme === "sql" ?: fatal_error("Cannot replace a persistent store with a non sql source");
         $sourceDatabaseName = $sourceURL->host ?? fatal_error("Cannot replace a persistent store without a source database name");
         !$destinationOptions?->valueForKey(ReadOnlyPersistentStoreOption) ?: fatal_error("Cannot replace a read only persistent store");
-        $modelURL = $destinationOptions?->valueForKey("modelURL") ?? fatal_error("Cannot replace a persistent store without a model URL");
+        $modelURL = $destinationOptions?->valueForKey(ModelURLOption) ?? fatal_error("Cannot replace a persistent store without a model URL");
         $managedObjectModel = new ManagedObjectModel($modelURL);
         $coordinator = new PersistentStoreCoordinator($managedObjectModel);
         $core = new SQLCore($coordinator, $destinationDatabaseName, $destinationURL, $destinationOptions);
