@@ -434,9 +434,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * @param ArrayClass<string>|null $keys An array containing names of properties, or null.
      * @return Dictionary<mixed> A dictionary containing the last fetched or saved values of the receiver for the properties specified by keys.
      */
-    public function committedValuesForKeys(?ArrayClass $keys): Dictionary
+    public function committedValues(?ArrayClass $keys): Dictionary
     {
-        return $keys === null ? $this->changedValuesForCurrentEvent : $this->changedValuesForCurrentEvent->filter(fn(mixed $value, string $key): bool => $keys->containsElement($key));
+        /** @var Dictionary<mixed> $committedValues */
+        $committedValues = $this->lastSnapshot ?? new Dictionary();
+        return $keys === null ? $committedValues : $committedValues->filter(fn(mixed $value, string $key): bool => $keys->containsElement($key));
     }
 
     /**

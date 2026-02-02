@@ -545,9 +545,9 @@ final class ManagedObjectContext extends ObjectClass
      */
     private function doPreSaveConstraintChecksForObject(ManagedObject $object): void
     {
-        $committedValues = $object->committedValuesForKeys(null);
-        !$committedValues->isEmpty ?: fatal_error("Attempting to save an object with no changes $object");
-        $this->mergePolicy->resolveConstraintConflicts($committedValues->compactMap(function (mixed $value, string $key) use ($object): ?ConstraintConflict {
+        $changedValuesForCurrentEvent = $object->changedValuesForCurrentEvent();
+        !$changedValuesForCurrentEvent->isEmpty ?: fatal_error("Attempting to save an object with no changes $object");
+        $this->mergePolicy->resolveConstraintConflicts($changedValuesForCurrentEvent->compactMap(function (mixed $value, string $key) use ($object): ?ConstraintConflict {
             if ($object->entity->indexes->contains(fn(FetchIndexDescription $index): bool => $index->name === $key && $index->isUnique)) {
                 $attributeKeys = $object->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute instanceof DerivedAttributeDescription)->keys;
                 $baselineSnapshot = $object->originalSnapshot?->filter(fn(mixed $v, string $k): bool => $attributeKeys->containsElement($k)) ?? $object->dictionaryWithValues($attributeKeys);
