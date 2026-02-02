@@ -136,17 +136,19 @@ final class SQLConnection extends ObjectClass
      */
     public static function replacePersistentStoreAtURL(URL $destinationURL, ?Dictionary $destinationOptions, URL $sourceURL, ?Dictionary $sourceOptions): bool
     {
-        $destinationURL->scheme === "sql" ?: fatal_error("Cannot replace a persistent store with a non sql destination");
         $destinationDatabaseName = $destinationURL->host ?? fatal_error("Cannot replace a persistent store without a destination database name");
-        $sourceURL->scheme === "sql" ?: fatal_error("Cannot replace a persistent store with a non sql source");
         $sourceDatabaseName = $sourceURL->host ?? fatal_error("Cannot replace a persistent store without a source database name");
+        $destinationDatabaseName !== $sourceDatabaseName ?: fatal_error("Cannot replace a persistent store with itself");
+        $destinationURL->scheme === "sql" ?: fatal_error("Cannot replace a persistent store with a non sql destination");
         !$destinationOptions?->valueForKey(ReadOnlyPersistentStoreOption) ?: fatal_error("Cannot replace a read only persistent store");
+        $sourceURL->scheme === "sql" ?: fatal_error("Cannot replace a persistent store with a non sql source");
         $modelURL = $destinationOptions?->valueForKey(ModelURLOption) ?? fatal_error("Cannot replace a persistent store without a model URL");
         $managedObjectModel = new ManagedObjectModel($modelURL);
         $coordinator = new PersistentStoreCoordinator($managedObjectModel);
         $core = new SQLCore($coordinator, $destinationDatabaseName, $destinationURL, $destinationOptions);
         $connection = $core->schemaValidationConnection;
         $tableNames = $connection->allSchemaTableNames;
+        $connection->dropDatabase($destinationDatabaseName);
         $connection->createDatabase($destinationDatabaseName);
         $connection->moveTables($sourceDatabaseName, $destinationDatabaseName, $tableNames);
         $connection->useDatabase($destinationDatabaseName);
@@ -608,6 +610,16 @@ final class SQLConnection extends ObjectClass
     private function useDatabase(string $database): void
     {
         if ($statement = $this->adapter?->newUseDatabaseStatement($database)) {
+            $this->execute($statement);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function dropDatabase(string $database): void
+    {
+        if ($statement = $this->adapter?->newDropDatabaseStatement($database)) {
             $this->execute($statement);
         }
     }
