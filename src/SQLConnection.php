@@ -62,7 +62,17 @@ final class SQLConnection extends ObjectClass
     }
     /** @var Set<string> */
     private Set $allSchemaTableNames {
-        get => $this->allSchemaTableNames ??= new Set($this->rootTableNames)->union($this->correlationTableNames);
+        get {
+            if (!isset($this->allSchemaTableNames)) {
+                $allSchemaTableNames = new Set($this->rootTableNames);
+                $allSchemaTableNames->formUnion($this->correlationTableNames);
+                if ($this->hasPersistentHistoryTables) {
+                    $allSchemaTableNames->formUnion($this->persistentHistoryEntities->map(fn(SQLEntity $entity): string => $entity->tableName));
+                }
+                $this->allSchemaTableNames = $allSchemaTableNames;
+            }
+            return $this->allSchemaTableNames;
+        }
     }
     private(set) bool $hasMetadataTable {
         /**
@@ -427,6 +437,7 @@ final class SQLConnection extends ObjectClass
             $entities = $this->persistentHistoryEntities;
             $this->createEntityTables($entities);
             $this->applyConstraints($entities);
+            $this->hasPersistentHistoryTables = true;
         }
     }
 
@@ -449,6 +460,7 @@ final class SQLConnection extends ObjectClass
                 $this->execute($statement);
             }
         }
+        $this->hasPersistentHistoryTables = false;
     }
 
     /**
@@ -518,6 +530,7 @@ final class SQLConnection extends ObjectClass
     {
         if (!$this->hasCachedModelTable) {
             $this->execute(new SQLStatement("CREATE TABLE IF NOT EXISTS `ManagedObjectModel` (`modelID` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT, `data` LONGBLOB NOT NULL, PRIMARY KEY (`modelID`)) ENGINE={$this->schema->engine} DEFAULT CHARSET={$this->schema->charset} COLLATE={$this->schema->collation}"));
+            $this->hasCachedModelTable = true;
         }
     }
 
@@ -528,6 +541,7 @@ final class SQLConnection extends ObjectClass
     {
         if (!$this->hasMetadataTable) {
             $this->execute(new SQLStatement("CREATE TABLE IF NOT EXISTS `PersistentStoreMetadata` (`metadataID` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT, `data` LONGBLOB NOT NULL, PRIMARY KEY (`metadataID`)) ENGINE={$this->schema->engine} DEFAULT CHARSET={$this->schema->charset} COLLATE={$this->schema->collation}"));
+            $this->hasMetadataTable = true;
         }
     }
 
