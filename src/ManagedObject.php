@@ -154,12 +154,18 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     private(set) Dictionary $transientProperties {
         get => $this->transientProperties ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property->isTransient);
     }
-    /** @var Dictionary<AttributeDescription> */
-    private Dictionary $modeledAttributes {
+    /**
+     * @var Dictionary<AttributeDescription>
+     * @internal
+     */
+    public Dictionary $modeledAttributes {
         get => $this->modeledAttributes ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
     }
-    /** @var Dictionary<RelationshipDescription> */
-    private Dictionary $modeledRelationships {
+    /**
+     * @var Dictionary<RelationshipDescription>
+     * @internal
+     */
+    public Dictionary $modeledRelationships {
         get => $this->modeledRelationships ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
     }
     /** @internal */

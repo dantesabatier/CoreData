@@ -499,44 +499,34 @@ final class ManagedObjectContext extends ObjectClass
         }
         $baselineSnapshot = $originalSnapshot->filter(fn(mixed $value, string $key): bool => match ($key) {
             ManagedObjectObjectIDKey, ManagedObjectEntityNameKey => true,
-            default => $object->entity->attributesByName->offsetExists($key),
+            default => $object->modeledAttributes->offsetExists($key) && !$object->transientProperties->offsetExists($key),
         });
         $snapshotKeys = $baselineSnapshot->keys;
         if ($object->isDeleted) {
             $this->mergePolicy->resolveConflicts($object->entity->relationshipsByName->compactMap(function (RelationshipDescription $relationship) use ($snapshotKeys, $object, $baselineSnapshot): ?MergeConflict {
                 if ($relationship->inverseRelationship->deleteRule === DeleteRule::denyDeleteRule) {
-                    /** @var FetchRequest<Dictionary> $fetchRequest */
+                    $expressionDescription = new ExpressionDescription();
+                    $expressionDescription->entity = $object->entity;
+                    $expressionDescription->name = "computedValue";
+                    $expressionDescription->expression = Expression::expressionWithFormat("%K", new ArrayClass(["$relationship->name.@count"]));
+                    $expressionDescription->resultType = AttributeType::integer32;
+                    $propertiesToFetch = new ArrayClass([...$snapshotKeys, $expressionDescription]);
                     $fetchRequest = $object::fetchRequest();
                     $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($object->objectID));
-                    $fetchRequest->propertiesToFetch = $snapshotKeys;
+                    $fetchRequest->propertiesToFetch = $propertiesToFetch;
                     $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
                     if ($affectedStore = $object->objectID->persistentStore) {
                         $fetchRequest->affectedStores = new ArrayClass([$affectedStore]);
                     }
                     /** @var ArrayClass<Dictionary<mixed>> $storeSnapshots */
                     $storeSnapshots = $this->fetch($fetchRequest);
-                    if (($storeSnapshot = $storeSnapshots->first) && !$baselineSnapshot->isEqual($storeSnapshot)) {
+                    if (($storeSnapshot = $storeSnapshots->first) && $storeSnapshot["computedValue"] > 0) {
+                        $storeSnapshot->removeValueForKey("computedValue");
                         return new MergeConflict($object, 0, 1, $baselineSnapshot, $storeSnapshot);
                     }
                 }
                 return null;
             }));
-            return;
-        }
-        if ($object->isUpdated) {
-            /** @var FetchRequest<Dictionary> $fetchRequest */
-            $fetchRequest = $object::fetchRequest();
-            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($object->objectID));
-            $fetchRequest->propertiesToFetch = $snapshotKeys;
-            $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
-            if ($affectedStore = $object->objectID->persistentStore) {
-                $fetchRequest->affectedStores = new ArrayClass([$affectedStore]);
-            }
-            /** @var ArrayClass<Dictionary<mixed>> $storeSnapshots */
-            $storeSnapshots = $this->fetch($fetchRequest);
-            if (($storeSnapshot = $storeSnapshots->first) && !$baselineSnapshot->isEqual($storeSnapshot)) {
-                $this->mergePolicy->resolveConflicts(new ArrayClass([new MergeConflict($object, 0, 1, $baselineSnapshot, $storeSnapshot)]));
-            }
         }
     }
 
@@ -558,10 +548,10 @@ final class ManagedObjectContext extends ObjectClass
                     default => PredicateOperatorType::equalTo,
                 }), new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($object->objectID), PredicateOperatorType::notEqualTo)]));
                 $fetchRequest->propertiesToFetch = $attributeKeys;
-                $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
                 if ($store = $object->objectID->persistentStore) {
                     $fetchRequest->affectedStores = new ArrayClass([$store]);
                 }
+                $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
                 /** @var ArrayClass<Dictionary<mixed>> $databaseSnapshots */
                 $databaseSnapshots = $this->fetch($fetchRequest);
                 if ($databaseSnapshot = $databaseSnapshots->first) {
