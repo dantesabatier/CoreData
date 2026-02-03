@@ -62,17 +62,7 @@ final class SQLConnection extends ObjectClass
     }
     /** @var Set<string> */
     private Set $allSchemaTableNames {
-        get {
-            if (!isset($this->allSchemaTableNames)) {
-                $allSchemaTableNames = new Set($this->rootTableNames);
-                $allSchemaTableNames->formUnion($this->correlationTableNames);
-                if ($this->hasPersistentHistoryTables) {
-                    $allSchemaTableNames->formUnion($this->persistentHistoryEntities->map(fn(SQLEntity $entity): string => $entity->tableName));
-                }
-                $this->allSchemaTableNames = $allSchemaTableNames;
-            }
-            return $this->allSchemaTableNames;
-        }
+        get => $this->allSchemaTableNames ??= new Set($this->rootTableNames)->union($this->correlationTableNames)->union($this->hasPersistentHistoryTables ? $this->persistentHistoryEntities->map(fn(SQLEntity $entity): string => $entity->tableName) : []);
     }
     private(set) bool $hasMetadataTable {
         /**
