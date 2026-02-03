@@ -538,8 +538,8 @@ final class ManagedObjectContext extends ObjectClass
         $changedValuesForCurrentEvent = $object->changedValuesForCurrentEvent();
         !$changedValuesForCurrentEvent->isEmpty ?: fatal_error("Attempting to save an object with no changes $object");
         $this->mergePolicy->resolveConstraintConflicts($changedValuesForCurrentEvent->compactMap(function (mixed $value, string $key) use ($object): ?ConstraintConflict {
-            if ($object->entity->indexes->contains(fn(FetchIndexDescription $index): bool => $index->name === $key && $index->isUnique)) {
-                $attributeKeys = $object->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute instanceof DerivedAttributeDescription)->keys;
+            if ($object->entity->indexes->contains(fn(FetchIndexDescription $index): bool => $index->isUnique && $index->elements->contains(fn(FetchIndexElementDescription $element): bool => $element->property->name === $key))) {
+                $attributeKeys = $object->modeledAttributes->filter(fn(AttributeDescription $attribute): bool => !$attribute instanceof DerivedAttributeDescription)->keys;
                 $baselineSnapshot = $object->originalSnapshot?->filter(fn(mixed $v, string $k): bool => $attributeKeys->containsElement($k)) ?? $object->dictionaryWithValues($attributeKeys);
                 /** @var FetchRequest<Dictionary> $fetchRequest */
                 $fetchRequest = $object::fetchRequest();
