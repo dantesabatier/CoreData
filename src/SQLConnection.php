@@ -60,7 +60,7 @@ final class SQLConnection extends ObjectClass
     private Set $correlationTableNames {
         get => $this->correlationTableNames ??= new Set($this->rootSchemaEntities->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->manyToManyRelationships)->map(fn(SQLManyToMany $manyToMany): string => $manyToMany->correlationTableName));
     }
-    /** @var Set<string> */
+    /** @var ArrayClass<string> */
     private ArrayClass $persistentHistoryTableNames {
         get => $this->persistentHistoryTableNames ??= $this->persistentHistoryEntities->map(fn(SQLEntity $entity): string => $entity->tableName);
     }
