@@ -362,7 +362,7 @@ final class SQLGenerator extends ObjectClass
         }
         if ($appendInferredColumnNames) {
             if (!$entity->entityDescription->isPersistentHistoryEntity && $request->resultType !== FetchRequestResultType::countResultType) {
-                $columnNames->insert("$this->tableReference.{$entity->entityKey->columnName}");
+                $columnNames->formUnion(["$this->tableReference.{$entity->entityKey->columnName}", "$this->tableReference.{$entity->optLockKey->columnName}"]);
             }
             $keys = $request->serialization->keys->filter(function (string $key) use ($entity): bool {
                 /** @var SQLProperty $property */
@@ -1296,10 +1296,10 @@ final class SQLGenerator extends ObjectClass
         $arguments = new ArrayClass();
         /** @var Set<string> $columnNames */
         $columnNames = new Set();
-        $columnNames->formUnion([$entity->primaryKey->columnName, $entity->entityKey->columnName]);
+        $columnNames->formUnion([$entity->primaryKey->columnName, $entity->entityKey->columnName, $entity->optLockKey->columnName]);
         foreach ($insertedObjects as $insertedObject) {
             foreach ($entity->properties as $property) {
-                if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey) {
+                if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLOptLockKey) {
                     $columnNames->insert($property->name);
                 } elseif ($property instanceof SQLAttribute) {
                     if ($insertedObject->changedValuesForCurrentEvent()->offsetExists($property->name)) {
@@ -1325,6 +1325,8 @@ final class SQLGenerator extends ObjectClass
                     $arguments->append($insertedObject->objectID->referenceObject);
                 } elseif ($property instanceof SQLEntityKey) {
                     $arguments->append($insertedObject->entity->name);
+                } elseif ($property instanceof SQLOptLockKey) {
+                    $arguments->append($insertedObject->version);
                 } elseif ($property instanceof SQLAttribute) {
                     $arguments->append($this->coercedValue($insertedObject, $property->attributeDescription));
                 } elseif ($property instanceof SQLForeignKey) {
@@ -1356,8 +1358,10 @@ final class SQLGenerator extends ObjectClass
         $columnNames = new Set();
         foreach ($updatedObjects as $updatedObject) {
             foreach ($entity->properties as $property) {
-                if ($property instanceof SQLAttribute || $property instanceof SQLToOne) {
-                    $key = $property->name;
+                $key = $property->name;
+                if ($property instanceof SQLOptLockKey) {
+                    $columnNames->insert($key);
+                } elseif ($property instanceof SQLAttribute || $property instanceof SQLToOne) {
                     $exist = $updatedObject->changedValuesForCurrentEvent()->offsetExists($key);
                     if ($property instanceof SQLToOne) {
                         $exist = $updatedObject->changedValues()->offsetExists($key);
@@ -1378,11 +1382,13 @@ final class SQLGenerator extends ObjectClass
         $this->string = "UPDATE `$entity->tableName` SET {$columnNames->map(fn(string $columnName): string => "`$columnName` = (CASE {$updatedObjects->map(function(ManagedObject $object) use ($entity, $columnName, &$arguments): string {
             /** @var SQLProperty $property */
             $property = $entity->propertiesByName[$columnName] ?? $entity->compositeAttributeNameToSQLProperty[$columnName] ?? fatal_error("Invalid argument: \"$entity\" does not contains a property named \"$columnName\"");
-            if ($property instanceof SQLAttribute) {
+            if ($property instanceof SQLOptLockKey) {
+                $value = $object->valueForKey($entity->optLockKey->name);
+            }else {if ($property instanceof SQLAttribute) {
                 $value = $property->isCompositeAttribute ? $object->valueForKeyPath("$property->name.$columnName"): $this->coercedValue($object, $property->attributeDescription);
             } else {
                 $value = $object->valueForKeyPath("$property->name.{$entity->primaryKey->name}");
-            }
+            }}
             $arguments->appendContentsOf([$object->objectID->referenceObject, $value]);
             return "WHEN `{$entity->primaryKey->columnName}` = ? THEN ?";
         })->join(" ")} ELSE `$columnName` END)")->join(", ")} WHERE `{$entity->primaryKey->columnName}` IN (" . ArrayClass::repeating("?", $updatedObjects->count)->join(",") . ")";

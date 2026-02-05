@@ -26,6 +26,7 @@ final class ManagedObjectSerializationPreparer
         }
         $serializationKeys->insertAt(ManagedObjectObjectIDKey, 0);
         $serializationKeys->insertAt(ManagedObjectEntityNameKey, 1);
+        $serializationKeys->insertAt(ManagedObjectVersionKey, 2);
         $object->serializationRule = SerializationRule::custom;
         $object->serializationKeys = $serializationKeys;
     }

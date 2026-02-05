@@ -12,4 +12,10 @@ namespace Sabatier\CoreData;
 /** @internal */
 final class SQLOptLockKey extends SQLColumn
 {
+    public PropertyDescriptionType $propertyType {
+        get => PropertyDescriptionType::private;
+    }
+    public SQLType $sqlType {
+        get => SQLType::int;
+    }
 }

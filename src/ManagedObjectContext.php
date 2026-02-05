@@ -32,6 +32,7 @@ use Sabatier\Foundation\UndoManager;
 use Sabatier\Foundation\URL;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\typeof;
+use const Sabatier\Foundation\NotFound;
 
 /**
  * An object space that you use to manipulate and track changes to managed objects.
@@ -498,7 +499,7 @@ final class ManagedObjectContext extends ObjectClass
             return;
         }
         $baselineSnapshot = $originalSnapshot->filter(fn(mixed $value, string $key): bool => match ($key) {
-            ManagedObjectObjectIDKey, ManagedObjectEntityNameKey => true,
+            ManagedObjectObjectIDKey, ManagedObjectEntityNameKey, ManagedObjectVersionKey => true,
             default => $object->modeledAttributes->offsetExists($key) && !$object->transientProperties->offsetExists($key),
         });
         $snapshotKeys = $baselineSnapshot->keys;
@@ -522,11 +523,28 @@ final class ManagedObjectContext extends ObjectClass
                     $storeSnapshots = $this->fetch($fetchRequest);
                     if (($storeSnapshot = $storeSnapshots->first) && $storeSnapshot["computedValue"] > 0) {
                         $storeSnapshot->removeValueForKey("computedValue");
-                        return new MergeConflict($object, 0, 1, $baselineSnapshot, $storeSnapshot);
+                        return new MergeConflict($object, $storeSnapshot[ManagedObjectVersionKey] ?? NotFound, $baselineSnapshot[ManagedObjectVersionKey] ?? NotFound, $baselineSnapshot, $storeSnapshot);
                     }
                 }
                 return null;
             }));
+            return;
+        }
+        if ($baselineSnapshot->offsetExists(ManagedObjectVersionKey) && $object->isUpdated) {
+            /** @var FetchRequest<Dictionary> $fetchRequest */
+            $fetchRequest = $object::fetchRequest();
+            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($object->objectID));
+            $fetchRequest->propertiesToFetch = $snapshotKeys;
+            $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
+            if ($affectedStore = $object->objectID->persistentStore) {
+                $fetchRequest->affectedStores = new ArrayClass([$affectedStore]);
+            }
+            /** @var ArrayClass<Dictionary<mixed>> $storeSnapshots */
+            $storeSnapshots = $this->fetch($fetchRequest);
+            if (($storeSnapshot = $storeSnapshots->first) && $storeSnapshot[ManagedObjectVersionKey] !== $baselineSnapshot[ManagedObjectVersionKey]) {
+                error_log("$baselineSnapshot != $storeSnapshot");
+                $this->mergePolicy->resolveConflicts(new ArrayClass([new MergeConflict($object, $storeSnapshot[ManagedObjectVersionKey] ?? NotFound, $baselineSnapshot[ManagedObjectVersionKey] ?? NotFound, $baselineSnapshot, $storeSnapshot)]));
+            }
         }
     }
 

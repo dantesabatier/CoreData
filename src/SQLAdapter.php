@@ -47,6 +47,9 @@ final class SQLAdapter extends ObjectClass
             }
             return $string;
         }
+        if ($column instanceof SQLOptLockKey) {
+            return "`$column->columnName` $dataType($length) UNSIGNED NOT NULL DEFAULT $column->defaultValue";
+        }
         if ($column instanceof SQLForeignKey) {
             return "`$column->columnName` $dataType($length) UNSIGNED";
         }

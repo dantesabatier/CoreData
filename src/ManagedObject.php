@@ -52,6 +52,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public ManagedObjectID $objectID {
         get => $this->objectID ??= new ManagedObjectID($this->entity, new UUID()->uuidString);
     }
+    /** @var int Object version used for optimistic locking. The default value is 1. */
+    public int $version = 0;
     /** @var bool A Boolean value that indicates whether the managed object has been inserted in a managed object context. */
     public bool $isInserted {
         get {
@@ -76,7 +78,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     }
     /** @var bool A Boolean value that indicates whether the managed object has unsaved changes. */
     public bool $isUpdated {
-        get => $this->isUpdated ??= $this->isInserted && !$this->changedValuesForCurrentEvent->isEmpty;
+        get => $this->isUpdated ??= !$this->changedValuesForCurrentEvent->isEmpty && $this->isInserted;
     }
     /** @var bool A Boolean value that indicates whether the managed object will be deleted during the next save. */
     public bool $isDeleted {
@@ -117,6 +119,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 };
                 $serializationKeys->insertAt(ManagedObjectObjectIDKey, 0);
                 $serializationKeys->insertAt(ManagedObjectEntityNameKey, 1);
+                $serializationKeys->insertAt(ManagedObjectVersionKey, 2);
                 $this->serializationKeys = $serializationKeys;
             }
             return $this->serializationKeys;

@@ -16,3 +16,4 @@ const SS_COREDATA_DISABLE_FOREIGN_KEY_CHECKS = true;
 const SS_COREDATA_USES_RELATIONSHIPS_SORT_DESCRIPTORS = true;
 const ManagedObjectObjectIDKey = "objectID";
 const ManagedObjectEntityNameKey = "entityName";
+const ManagedObjectVersionKey = "version";

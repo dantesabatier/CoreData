@@ -75,7 +75,7 @@ final class SQLCore extends IncrementalStore
     public static function cachedModelForPersistentStoreWithURL(URL $url, ?Dictionary $options = null): ?ManagedObjectModel
     {
         $connection = new SQLConnection();
-        if ($connection->hasMetadataTable) {
+        if ($connection->hasCachedModelTable) {
             return $connection->cachedModel;
         }
         return null;

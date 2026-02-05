@@ -13,6 +13,7 @@ final class SQLEntity extends StoreMapping
 {
     final public const string primaryKeyName = ManagedObjectObjectIDKey;
     final public const string entityKeyName = ManagedObjectEntityNameKey;
+    final public const string optimisticLockingKeyName = ManagedObjectVersionKey;
     private(set) string $tableName {
         get {
             if (!isset($this->tableName)) {
@@ -33,7 +34,7 @@ final class SQLEntity extends StoreMapping
                     "PersistentHistoryChange" => "changeID",
                     default => self::primaryKeyName,
                 };
-                $attribute->type = AttributeType::integer32;
+                $attribute->type = AttributeType::integer64;
                 $attribute->isOptional = false;
                 $this->primaryKey = new SQLPrimaryKey($this, $attribute);
             }
@@ -48,10 +49,22 @@ final class SQLEntity extends StoreMapping
                 $attribute->name = self::entityKeyName;
                 $attribute->type = AttributeType::string;
                 $attribute->isOptional = false;
-                $attribute->defaultValue = $this->entityDescription->name;
                 $this->entityKey = new SQLEntityKey($this, $attribute);
             }
             return $this->entityKey;
+        }
+    }
+    public SQLOptLockKey $optLockKey {
+        get {
+            if (!isset($this->optLockKey)) {
+                $attribute = new AttributeDescription();
+                $attribute->entity = $this->entityDescription;
+                $attribute->name = self::optimisticLockingKeyName;
+                $attribute->type = AttributeType::integer64;
+                $attribute->isOptional = false;
+                $this->optLockKey = new SQLOptLockKey($this, $attribute);
+            }
+            return $this->optLockKey;
         }
     }
     /** @var ArrayClass<SQLEntity> */
@@ -168,10 +181,6 @@ final class SQLEntity extends StoreMapping
     private(set) Dictionary $rTreeIndexes {
         get => $this->rTreeIndexes ??= $this->indexes->filter(fn(SQLIndex $index): bool => $index instanceof SQLRTreeIndex);
     }
-    // TODO: implement optimistic locking
-    public ?SQLOptLockKey $optLockKey {
-        get => null;
-    }
     /** @var ArrayClass<SQLForeignKey> */
     private(set) ArrayClass $foreignKeyColumns {
         get => $this->foreignKeyColumns ??= $this->properties->filter(fn(SQLProperty $property): bool => $property instanceof SQLRelationship)->compactMap(fn(SQLRelationship $relationship): ?SQLForeignKey => $relationship instanceof SQLToOne ? $relationship->foreignKey : null);
@@ -271,6 +280,7 @@ final class SQLEntity extends StoreMapping
         $propertiesByName = $this->propertiesByName;
         $propertiesByName[$this->primaryKey->columnName] = $this->primaryKey;
         if (!$this->entityDescription->isPersistentHistoryEntity) {
+            $propertiesByName[$this->optLockKey->columnName] = $this->optLockKey;
             $propertiesByName[$this->entityKey->columnName] = $this->entityKey;
         }
         foreach ($this->foreignKeyColumns as $foreignKeyColumn) {

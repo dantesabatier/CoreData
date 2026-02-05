@@ -45,27 +45,27 @@ final class SQLConnection extends ObjectClass
         get => $this->model ??= $this->sqlCore?->model ?? fatal_error("invalid argument: model cannot be null");
     }
     /** @var ArrayClass<SQLEntity> */
-    private ArrayClass $rootSchemaEntities {
+    private(set) ArrayClass $rootSchemaEntities {
         get => $this->rootSchemaEntities ??= $this->model->entities->filter(fn(SQLEntity $entity): bool => $entity->isRootEntity && !$entity->entityDescription->isPersistentHistoryEntity);
     }
     /** @var ArrayClass<SQLEntity> */
-    private ArrayClass $persistentHistoryEntities {
+    private(set) ArrayClass $persistentHistoryEntities {
         get => $this->persistentHistoryEntities ??= $this->model->entities->filter(fn(SQLEntity $entity): bool => $entity->entityDescription->isPersistentHistoryEntity);
     }
     /** @var ArrayClass<string> */
-    private ArrayClass $rootTableNames {
+    private(set) ArrayClass $rootTableNames {
         get => $this->rootTableNames ??= $this->rootSchemaEntities->map(fn(SQLEntity $entity): string => $entity->tableName);
     }
     /** @var Set<string> */
-    private Set $correlationTableNames {
+    private(set) Set $correlationTableNames {
         get => $this->correlationTableNames ??= new Set($this->rootSchemaEntities->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->manyToManyRelationships)->map(fn(SQLManyToMany $manyToMany): string => $manyToMany->correlationTableName));
     }
     /** @var ArrayClass<string> */
-    private ArrayClass $persistentHistoryTableNames {
+    private(set) ArrayClass $persistentHistoryTableNames {
         get => $this->persistentHistoryTableNames ??= $this->persistentHistoryEntities->map(fn(SQLEntity $entity): string => $entity->tableName);
     }
     /** @var Set<string> */
-    private Set $allSchemaTableNames {
+    private(set) Set $allSchemaTableNames {
         get => $this->allSchemaTableNames ??= new Set($this->rootTableNames)->union($this->correlationTableNames)->union($this->hasPersistentHistoryTables ? $this->persistentHistoryTableNames : []);
     }
     private(set) bool $hasMetadataTable {
