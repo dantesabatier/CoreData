@@ -436,10 +436,45 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function delete(ManagedObject $object): void
     {
+        if ($this->deletedObjects->containsElement($object)) {
+            return;
+        }
+        $this->transitionToDeletedState($object);
+        $this->processCascadeDeletions($object);
+    }
+
+    private function transitionToDeletedState(ManagedObject $object): void
+    {
         $this->hasChanges = true;
-        $this->deletedObjects->insert($object);
         $this->insertedObjects->remove($object);
         $this->updatedObjects->remove($object);
+        $this->deletedObjects->insert($object);
+    }
+
+    private function processCascadeDeletions(ManagedObject $object): void
+    {
+        foreach ($object->modeledRelationships as $modeledRelationship) {
+            if ($modeledRelationship->deleteRule !== DeleteRule::cascadeDeleteRule) {
+                continue;
+            }
+            $value = $object->valueForKey($modeledRelationship->name);
+            if ($value !== null) {
+                $this->applyDeleteToValue($value);
+            }
+        }
+    }
+
+    private function applyDeleteToValue(mixed $value): void
+    {
+        if ($value instanceof Set) {
+            foreach ($value as $item) {
+                if ($item instanceof ManagedObject) {
+                    $this->delete($item);
+                }
+            }
+        } elseif ($value instanceof ManagedObject) {
+            $this->delete($value);
+        }
     }
 
     /**
