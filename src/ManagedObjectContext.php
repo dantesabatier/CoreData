@@ -530,7 +530,7 @@ final class ManagedObjectContext extends ObjectClass
             }));
             return;
         }
-        if ($baselineSnapshot->offsetExists(ManagedObjectVersionKey) && $object->isUpdated) {
+        if ($object->isUpdated) {
             /** @var FetchRequest<Dictionary> $fetchRequest */
             $fetchRequest = $object::fetchRequest();
             $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($object->objectID));
@@ -542,7 +542,6 @@ final class ManagedObjectContext extends ObjectClass
             /** @var ArrayClass<Dictionary<mixed>> $storeSnapshots */
             $storeSnapshots = $this->fetch($fetchRequest);
             if (($storeSnapshot = $storeSnapshots->first) && $storeSnapshot[ManagedObjectVersionKey] !== $baselineSnapshot[ManagedObjectVersionKey]) {
-                error_log("$baselineSnapshot != $storeSnapshot");
                 $this->mergePolicy->resolveConflicts(new ArrayClass([new MergeConflict($object, $storeSnapshot[ManagedObjectVersionKey] ?? NotFound, $baselineSnapshot[ManagedObjectVersionKey] ?? NotFound, $baselineSnapshot, $storeSnapshot)]));
             }
         }

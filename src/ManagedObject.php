@@ -393,6 +393,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function updateFromSnapshot(Dictionary $snapshot): void
     {
+        $snapshot[ManagedObjectVersionKey] ??= $this->version;
         $this->genericUpdateFromSnapshot($snapshot);
         $this->originalSnapshot ??= $snapshot;
         $this->lastSnapshot = $snapshot;
