@@ -566,7 +566,6 @@ final class ManagedObjectContext extends ObjectClass
                         if ($affectedStore = $object->objectID->persistentStore) {
                             $fetchRequest->affectedStores = new ArrayClass([$affectedStore]);
                         }
-                        $fetchRequest->fetchLimit = 1;
                         $fetchRequest->propertiesToFetch = $snapshotKeys;
                         /** @var ArrayClass<Dictionary<mixed>> $storeSnapshots */
                         $storeSnapshots = $this->fetch($fetchRequest);
@@ -583,11 +582,11 @@ final class ManagedObjectContext extends ObjectClass
             /** @var FetchRequest<Dictionary> $fetchRequest */
             $fetchRequest = $object::fetchRequest();
             $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($object->objectID));
-            $fetchRequest->propertiesToFetch = $snapshotKeys;
             $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
             if ($affectedStore = $object->objectID->persistentStore) {
                 $fetchRequest->affectedStores = new ArrayClass([$affectedStore]);
             }
+            $fetchRequest->propertiesToFetch = $snapshotKeys;
             /** @var ArrayClass<Dictionary<mixed>> $storeSnapshots */
             $storeSnapshots = $this->fetch($fetchRequest);
             if (($storeSnapshot = $storeSnapshots->first) && $storeSnapshot[ManagedObjectVersionKey] !== $baselineSnapshot[ManagedObjectVersionKey]) {
