@@ -32,7 +32,6 @@ use Sabatier\Foundation\UndoManager;
 use Sabatier\Foundation\URL;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\typeof;
-use const Sabatier\Foundation\NotFound;
 
 /**
  * An object space that you use to manipulate and track changes to managed objects.

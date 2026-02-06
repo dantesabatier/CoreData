@@ -520,14 +520,19 @@ final class SQLGenerator extends ObjectClass
             if (!$serializationKeys->containsElement($currentEntity->primaryKey->columnName)) {
                 $serializationKeys->insertAt($currentEntity->primaryKey->columnName, 0);
             }
-            if (!$currentEntity->entityDescription->isPersistentHistoryEntity && !$serializationKeys->containsElement($currentEntity->entityKey->columnName)) {
-                $serializationKeys->insertAt($currentEntity->entityKey->columnName, 1);
+            if (!$currentEntity->entityDescription->isPersistentHistoryEntity) {
+                if (!$serializationKeys->containsElement($currentEntity->entityKey->columnName)) {
+                    $serializationKeys->insertAt($currentEntity->entityKey->columnName, 1);
+                }
+                if (!$serializationKeys->containsElement($currentEntity->optLockKey->columnName)) {
+                    $serializationKeys->insertAt($currentEntity->optLockKey->columnName, 2);
+                }
             }
             /** @var ArrayClass<string> $columnNames */
             $columnNames = $serializationKeys->compactMap(function (string $key) use ($currentEntity, $joinedTableAlias): ?string {
                 /** @var SQLProperty|null $property */
                 $property = $currentEntity->propertiesByName[$key];
-                if ($property instanceof SQLEntityKey || $property instanceof SQLPrimaryKey) {
+                if ($property instanceof SQLEntityKey || $property instanceof SQLPrimaryKey || $property instanceof SQLOptLockKey) {
                     return "$joinedTableAlias.$property->columnName AS {$joinedTableAlias}_$property->columnName";
                 }
                 if ($property instanceof SQLAttribute) {

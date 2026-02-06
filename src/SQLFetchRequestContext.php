@@ -188,7 +188,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     if ($cursor !== $root) {
                                         $cursor["parentID"] = $parentID;
                                     }
-                                    if ($isNonDictionaryResultType) {
+                                    if ($isNonDictionaryResultType && $cursor[ManagedObjectObjectIDKey] && $cursor[ManagedObjectEntityNameKey] && $cursor[ManagedObjectVersionKey]) {
                                         $cursor["isInserted"] = true;
                                         $cursor["isFault"] = false;
                                         $cursor["faultingState"] = 0;
@@ -201,7 +201,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                     $cursorEntity = $entity;
                 }
                 assert($root instanceof Dictionary);
-                if ($isNonDictionaryResultType) {
+                if ($isNonDictionaryResultType && $root[ManagedObjectObjectIDKey] && $root[ManagedObjectEntityNameKey] && $root[ManagedObjectVersionKey]) {
                     $root["isInserted"] = true;
                     $root["faultingState"] = 0;
                     $root["isFault"] = $this->request->returnsObjectsAsFaults;
