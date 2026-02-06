@@ -548,11 +548,11 @@ final class ManagedObjectContext extends ObjectClass
                         $expressionDescription->resultType = AttributeType::integer32;
                         $fetchRequest = $object::fetchRequest();
                         $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($object->objectID));
-                        $fetchRequest->propertiesToFetch = new ArrayClass([...$snapshotKeys, $expressionDescription]);
                         $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
                         if ($affectedStore = $object->objectID->persistentStore) {
                             $fetchRequest->affectedStores = new ArrayClass([$affectedStore]);
                         }
+                        $fetchRequest->propertiesToFetch = new ArrayClass([...$snapshotKeys, $expressionDescription]);
                         /** @var ArrayClass<Dictionary<mixed>> $storeSnapshots */
                         $storeSnapshots = $this->fetch($fetchRequest);
                         if (($storeSnapshot = $storeSnapshots->first) && $storeSnapshot["computedValue"] > 0) {
@@ -562,15 +562,14 @@ final class ManagedObjectContext extends ObjectClass
                     } else {
                         $fetchRequest = $object::fetchRequest();
                         $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($object->objectID));
-                        $fetchRequest->propertiesToFetch = $snapshotKeys;
                         $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
-                        $fetchRequest->fetchLimit = 1;
                         if ($affectedStore = $object->objectID->persistentStore) {
                             $fetchRequest->affectedStores = new ArrayClass([$affectedStore]);
                         }
+                        $fetchRequest->propertiesToFetch = $snapshotKeys;
                         /** @var ArrayClass<Dictionary<mixed>> $storeSnapshots */
                         $storeSnapshots = $this->fetch($fetchRequest);
-                        if (($storeSnapshot = $storeSnapshots->first)) {
+                        if ($storeSnapshot = $storeSnapshots->first) {
                             $this->mergePolicy->resolveConflicts(new ArrayClass([new MergeConflict($object, $storeSnapshot[ManagedObjectVersionKey], $baselineSnapshot[ManagedObjectVersionKey], $baselineSnapshot, $storeSnapshot)]));
                         }
                     }
