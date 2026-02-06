@@ -939,6 +939,7 @@ final class ManagedObjectContext extends ObjectClass
         $this->validateInsertedObjects();
         $this->validateUpdatedObjects();
         $this->validateDeletedObjects();
+        $this->updateObjectVersions();
     }
 
     private function notifyObjectsWillSave(): void
@@ -1047,6 +1048,13 @@ final class ManagedObjectContext extends ObjectClass
         foreach ($this->deletedObjects as $deletedObject) {
             $deletedObject->validateForDelete();
             $this->detectConflicts($deletedObject);
+        }
+    }
+
+    private function updateObjectVersions(): void
+    {
+        foreach ($this->updatedObjects as $updatedObject) {
+            $updatedObject->version += 1;
         }
     }
 
