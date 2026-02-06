@@ -546,10 +546,9 @@ final class ManagedObjectContext extends ObjectClass
                         $expressionDescription->name = "computedValue";
                         $expressionDescription->expression = Expression::expressionWithFormat("%K", new ArrayClass(["$relationship->name.@count"]));
                         $expressionDescription->resultType = AttributeType::integer32;
-                        $propertiesToFetch = new ArrayClass([...$snapshotKeys, $expressionDescription]);
                         $fetchRequest = $object::fetchRequest();
                         $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($object->objectID));
-                        $fetchRequest->propertiesToFetch = $propertiesToFetch;
+                        $fetchRequest->propertiesToFetch = new ArrayClass([...$snapshotKeys, $expressionDescription]);
                         $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
                         if ($affectedStore = $object->objectID->persistentStore) {
                             $fetchRequest->affectedStores = new ArrayClass([$affectedStore]);
