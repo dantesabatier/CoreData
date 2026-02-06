@@ -566,6 +566,7 @@ final class ManagedObjectContext extends ObjectClass
                         if ($affectedStore = $object->objectID->persistentStore) {
                             $fetchRequest->affectedStores = new ArrayClass([$affectedStore]);
                         }
+                        $fetchRequest->fetchLimit = 1;
                         $fetchRequest->propertiesToFetch = $snapshotKeys;
                         /** @var ArrayClass<Dictionary<mixed>> $storeSnapshots */
                         $storeSnapshots = $this->fetch($fetchRequest);
