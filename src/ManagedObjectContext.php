@@ -558,7 +558,7 @@ final class ManagedObjectContext extends ObjectClass
                     $storeSnapshots = $this->fetch($fetchRequest);
                     if (($storeSnapshot = $storeSnapshots->first) && $storeSnapshot["computedValue"] > 0) {
                         $storeSnapshot->removeValueForKey("computedValue");
-                        return new MergeConflict($object, $storeSnapshot[ManagedObjectVersionKey] ?? NotFound, $baselineSnapshot[ManagedObjectVersionKey] ?? NotFound, $baselineSnapshot, $storeSnapshot);
+                        return new MergeConflict($object, $storeSnapshot[ManagedObjectVersionKey], $baselineSnapshot[ManagedObjectVersionKey], $baselineSnapshot, $storeSnapshot);
                     }
                 }
                 return null;
@@ -577,7 +577,7 @@ final class ManagedObjectContext extends ObjectClass
             /** @var ArrayClass<Dictionary<mixed>> $storeSnapshots */
             $storeSnapshots = $this->fetch($fetchRequest);
             if (($storeSnapshot = $storeSnapshots->first) && $storeSnapshot[ManagedObjectVersionKey] !== $baselineSnapshot[ManagedObjectVersionKey]) {
-                $this->mergePolicy->resolveConflicts(new ArrayClass([new MergeConflict($object, $storeSnapshot[ManagedObjectVersionKey] ?? NotFound, $baselineSnapshot[ManagedObjectVersionKey] ?? NotFound, $baselineSnapshot, $storeSnapshot)]));
+                $this->mergePolicy->resolveConflicts(new ArrayClass([new MergeConflict($object, $storeSnapshot[ManagedObjectVersionKey], $baselineSnapshot[ManagedObjectVersionKey], $baselineSnapshot, $storeSnapshot)]));
             }
         }
     }

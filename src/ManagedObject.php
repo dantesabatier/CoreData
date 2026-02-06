@@ -53,7 +53,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         get => $this->objectID ??= new ManagedObjectID($this->entity, new UUID()->uuidString);
     }
     /** @var int Object version used for optimistic locking. The default value is 1. */
-    public int $version = 1;
+    public int $version = 0;
     /** @var bool A Boolean value that indicates whether the managed object has been inserted in a managed object context. */
     public bool $isInserted {
         get {
