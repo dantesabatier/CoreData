@@ -1384,11 +1384,11 @@ final class SQLGenerator extends ObjectClass
             $property = $entity->propertiesByName[$columnName] ?? $entity->compositeAttributeNameToSQLProperty[$columnName] ?? fatal_error("Invalid argument: \"$entity\" does not contains a property named \"$columnName\"");
             if ($property instanceof SQLOptLockKey) {
                 $value = $object->valueForKey($entity->optLockKey->name);
-            }else {if ($property instanceof SQLAttribute) {
+            } elseif ($property instanceof SQLAttribute) {
                 $value = $property->isCompositeAttribute ? $object->valueForKeyPath("$property->name.$columnName"): $this->coercedValue($object, $property->attributeDescription);
             } else {
                 $value = $object->valueForKeyPath("$property->name.{$entity->primaryKey->name}");
-            }}
+            }
             $arguments->appendContentsOf([$object->objectID->referenceObject, $value]);
             return "WHEN `{$entity->primaryKey->columnName}` = ? THEN ?";
         })->join(" ")} ELSE `$columnName` END)")->join(", ")} WHERE `{$entity->primaryKey->columnName}` IN (" . ArrayClass::repeating("?", $updatedObjects->count)->join(",") . ")";
