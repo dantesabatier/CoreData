@@ -19,7 +19,7 @@ interface SnapshotProvider
      * @param ManagedObject $object
      * @param ArrayClass<string> $properties
      * @param ArrayClass<ExpressionDescription> $expressions
-     * @return Dictionary<string>|null
+     * @return Dictionary<mixed>|null
      */
     public function snapshotWithExpressions(ManagedObject $object, ArrayClass $properties, ArrayClass $expressions): ?Dictionary;
 }

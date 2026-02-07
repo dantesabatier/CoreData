@@ -3,6 +3,7 @@
 namespace Sabatier\CoreData;
 
 use Exception;
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
@@ -21,6 +22,7 @@ final readonly class PersistentStoreSnapshotProvider implements SnapshotProvider
      * @return Dictionary<mixed>|null
      * @throws Exception
      */
+    #[Override]
     public function snapshot(ManagedObject $object, ArrayClass $properties): ?Dictionary
     {
         return $this->executeFetch($object, $properties, null);
@@ -33,6 +35,7 @@ final readonly class PersistentStoreSnapshotProvider implements SnapshotProvider
      * @return Dictionary<mixed>|null
      * @throws Exception
      */
+    #[Override]
     public function snapshotWithExpressions(ManagedObject $object, ArrayClass $properties, ArrayClass $expressions): ?Dictionary
     {
         return $this->executeFetch($object, $properties, $expressions);
@@ -47,16 +50,14 @@ final readonly class PersistentStoreSnapshotProvider implements SnapshotProvider
      */
     private function executeFetch(ManagedObject $object, ArrayClass $properties, ?ArrayClass $expressions): ?Dictionary
     {
+        /** @var FetchRequest<Dictionary<mixed>> $fetchRequest */
         $fetchRequest = $object::fetchRequest();
         $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($object->objectID));
         $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
         if ($store = $object->objectID->persistentStore) {
             $fetchRequest->affectedStores = new ArrayClass([$store]);
         }
-        $fetchRequest->propertiesToFetch = $expressions
-            ? new ArrayClass([...$properties, ...$expressions])
-            : $properties;
-
+        $fetchRequest->propertiesToFetch = $expressions ? new ArrayClass([...$properties, ...$expressions]) : $properties;
         return $this->context->fetch($fetchRequest)->first;
     }
 }

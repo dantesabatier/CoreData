@@ -2,7 +2,15 @@
 
 namespace Sabatier\CoreData;
 
-class StoreTrumpStrategy
-{
+use Override;
+use Sabatier\Foundation\Dictionary;
 
+/** @internal */
+final class StoreTrumpStrategy implements MergeStrategy
+{
+    #[Override]
+    public function merge(Dictionary $cachedSnapshot, Dictionary $persistedSnapshot): Dictionary
+    {
+        return $cachedSnapshot->merging($persistedSnapshot);
+    }
 }

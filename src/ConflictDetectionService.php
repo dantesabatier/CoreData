@@ -19,10 +19,10 @@ final readonly class ConflictDetectionService
      */
     private function baselineSnapshotFor(ManagedObject $object): Dictionary
     {
-        return $object->originalSnapshot->filter(fn(mixed $value, string $key): bool => match ($key) {
+        return $object->originalSnapshot?->filter(fn(mixed $value, string $key): bool => match ($key) {
             ManagedObjectObjectIDKey, ManagedObjectEntityNameKey, ManagedObjectVersionKey => true,
             default => $object->modeledAttributes->offsetExists($key) && !$object->transientProperties->offsetExists($key),
-        });
+        }) ?? new Dictionary();
     }
 
     /**

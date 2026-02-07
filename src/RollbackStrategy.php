@@ -2,7 +2,15 @@
 
 namespace Sabatier\CoreData;
 
-class RollbackStrategy
-{
+use Override;
+use Sabatier\Foundation\Dictionary;
 
+/** @internal */
+final class RollbackStrategy implements MergeStrategy
+{
+    #[Override]
+    public function merge(Dictionary $cachedSnapshot, Dictionary $persistedSnapshot): Dictionary
+    {
+        return $persistedSnapshot;
+    }
 }

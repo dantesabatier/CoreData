@@ -174,12 +174,13 @@ final class MergePolicy extends ObjectClass
             $conflictList->append($conflict);
             return;
         }
-        $snapshot = match ($this->mergeType) {
-            MergePolicyType::mergeByPropertyStoreTrumpMergePolicyType => $cachedSnapshot->merging($persistedSnapshot),
-            MergePolicyType::mergeByPropertyObjectTrumpMergePolicyType => $persistedSnapshot->merging($cachedSnapshot),
-            MergePolicyType::overwriteMergePolicyType => $cachedSnapshot,
-            default => $persistedSnapshot
+        $strategy = match ($this->mergeType) {
+            MergePolicyType::mergeByPropertyStoreTrumpMergePolicyType => new StoreTrumpStrategy(),
+            MergePolicyType::mergeByPropertyObjectTrumpMergePolicyType => new ObjectTrumpStrategy(),
+            MergePolicyType::overwriteMergePolicyType => new OverwriteStrategy(),
+            default => new RollbackStrategy()
         };
+        $snapshot = $strategy->merge($cachedSnapshot, $persistedSnapshot);
         $sourceObject->updateFromSnapshot($snapshot);
         $sourceObject->awakeFromSnapshotEvents(SnapshotEventType::mergePolicy);
     }
