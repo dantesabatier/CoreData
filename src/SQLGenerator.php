@@ -181,7 +181,6 @@ final class SQLGenerator extends ObjectClass
         if ($statements->isEmpty) {
             return null;
         }
-        /** @psalm-suppress RedundantCondition */
         if (SS_COREDATA_DISABLE_FOREIGN_KEY_CHECKS) :
             if ($statements->contains(fn(SQLStatement $statement): bool => str_starts_with($statement->string, "INSERT"))) {
                 $statements->insertAt(new SQLStatement("/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */"), 0);
@@ -568,7 +567,6 @@ final class SQLGenerator extends ObjectClass
                 }
             }
         }
-        /** @psalm-suppress RedundantCondition */
         if (!$columnNames->isEmpty) {
             $this->selectList .= ", ";
             $this->selectList .= $columnNames->join(", ");
@@ -1254,7 +1252,6 @@ final class SQLGenerator extends ObjectClass
     {
         $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
         $this->raisesForNotApplicableKeys = false;
-        /** @psalm-suppress RedundantCondition */
         if (SS_COREDATA_USES_RELATIONSHIPS_SORT_DESCRIPTORS):
             /** @var Set<SQLToMany> $toManyRelationships */
             $toManyRelationships = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->flatMap(fn(Expression $expression): ArrayClass => $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLForeignKey || $property instanceof SQLToMany)->compactMap(function (SQLProperty $property): ?SQLProperty {

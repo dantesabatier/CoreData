@@ -78,6 +78,11 @@
                 <file name="src/FaultingSet.php"/>
             </errorLevel>
         </InvalidReturnStatement>
+        <RedundantCondition>
+            <errorLevel type="suppress">
+                <file name="src/SQLGenerator.php"/>
+            </errorLevel>
+        </RedundantCondition>
     </issueHandlers>
     <plugins>
         <pluginClass class="Sabatier\Foundation\Plugins\Psalm\Plugin"/>

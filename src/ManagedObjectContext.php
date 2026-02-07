@@ -980,11 +980,11 @@ final class ManagedObjectContext extends ObjectClass
 
     private function updateObjectVersions(): void
     {
-        foreach ($this->updatedObjects as $updatedObject) {
-            $updatedObject->version += 1;
-        }
         foreach ($this->insertedObjects as $insertedObject) {
             $insertedObject->version = 1;
+        }
+        foreach ($this->updatedObjects as $updatedObject) {
+            $updatedObject->version += 1;
         }
     }
 
