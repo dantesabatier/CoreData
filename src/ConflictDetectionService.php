@@ -43,7 +43,7 @@ final readonly class ConflictDetectionService
         if ($object->isUpdated) {
             $storeSnapshot = $this->snapshotProvider->snapshot($object, $snapshotKeys);
             if ($storeSnapshot && $this->versioningStrategy->hasConflict($baselineSnapshot, $storeSnapshot)) {
-                $this->mergePolicy->resolveConflicts(new ArrayClass([new MergeConflict($object, $storeSnapshot[ManagedObjectVersionKey], $baselineSnapshot[ManagedObjectVersionKey], $baselineSnapshot, $storeSnapshot)]));
+                $this->mergePolicy->resolveOptimisticLockingVersionConflicts(new ArrayClass([new MergeConflict($object, $storeSnapshot[ManagedObjectVersionKey], $baselineSnapshot[ManagedObjectVersionKey], $baselineSnapshot, $storeSnapshot)]));
             }
         }
     }

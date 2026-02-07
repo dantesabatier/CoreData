@@ -100,7 +100,15 @@ final class MergePolicy extends ObjectClass
      */
     public function resolveOptimisticLockingVersionConflicts(ArrayClass $list): void
     {
+        if ($list->isEmpty) {
+            return;
+        }
+        if ($this->mergeType !== MergePolicyType::errorMergePolicyType) {
+            throw new InternalInconsistencyException(error: new Error(CoreDataErrorDomain, ManagedObjectMergeError, new Dictionary([LocalizedDescriptionKey => localized_string("Optimistic locking conflict"), LocalizedFailureReasonErrorKey => localized_string("The object has been modified in the persistent store since it was last fetched."), ConflictListErrorKey => $list])));
+        }
+        $this->resolveConflicts($list);
     }
+
 
     /**
      * Default policy for all managed object contexts.
