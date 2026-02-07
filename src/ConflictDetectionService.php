@@ -87,7 +87,7 @@ final readonly class ConflictDetectionService
      * @param string $key
      * @param mixed $value
      * @param ArrayClass<string> $attributeKeys
-     * @return FetchRequest
+     * @return FetchRequest<Dictionary<mixed>>
      */
     private function constraintFetchRequestFor(ManagedObject $object, string $key, mixed $value, ArrayClass $attributeKeys
     ): FetchRequest
