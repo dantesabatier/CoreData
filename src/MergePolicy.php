@@ -53,6 +53,9 @@ final class MergePolicy extends ObjectClass
      */
     public function resolveConflicts(ArrayClass $list): void
     {
+        if ($list->isEmpty) {
+            return;
+        }
         /** @var ArrayClass<MergeConflict> $conflictList */
         $conflictList = new ArrayClass();
         foreach ($list as $mergeConflict) {
