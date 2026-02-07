@@ -983,6 +983,9 @@ final class ManagedObjectContext extends ObjectClass
         foreach ($this->updatedObjects as $updatedObject) {
             $updatedObject->version += 1;
         }
+        foreach ($this->insertedObjects as $insertedObject) {
+            $insertedObject->version = 1;
+        }
     }
 
     private function resetState(): void
