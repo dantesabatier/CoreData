@@ -24,9 +24,7 @@ use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\OperationQueue;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
-use Sabatier\Foundation\Predicates\CompoundPredicate;
 use Sabatier\Foundation\Predicates\Expression;
-use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\UndoManager;
 use Sabatier\Foundation\URL;
@@ -540,31 +538,7 @@ final class ManagedObjectContext extends ObjectClass
      */
     private function doPreSaveConstraintChecksForObject(ManagedObject $object): void
     {
-        $changedValuesForCurrentEvent = $object->changedValuesForCurrentEvent();
-        !$changedValuesForCurrentEvent->isEmpty ?: fatal_error("Attempting to save an object with no changes $object");
-        $this->mergePolicy->resolveConstraintConflicts($changedValuesForCurrentEvent->compactMap(function (mixed $value, string $key) use ($object): ?ConstraintConflict {
-            if ($object->entity->indexes->contains(fn(FetchIndexDescription $index): bool => $index->isUnique && $index->elements->contains(fn(FetchIndexElementDescription $element): bool => $element->property->name === $key))) {
-                $attributeKeys = $object->modeledAttributes->filter(fn(AttributeDescription $attribute): bool => !$attribute instanceof DerivedAttributeDescription)->keys;
-                $baselineSnapshot = $object->originalSnapshot?->filter(fn(mixed $v, string $k): bool => $attributeKeys->containsElement($k)) ?? $object->dictionaryWithValues($attributeKeys);
-                /** @var FetchRequest<Dictionary> $fetchRequest */
-                $fetchRequest = $object::fetchRequest();
-                $fetchRequest->predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([new ComparisonPredicate(Expression::expressionForKeyPath($key), Expression::expressionForConstantValue($value), match ($object->entity->attributesByName[$key]?->type) {
-                    AttributeType::string => PredicateOperatorType::like,
-                    default => PredicateOperatorType::equalTo,
-                }), new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($object->objectID), PredicateOperatorType::notEqualTo)]));
-                $fetchRequest->propertiesToFetch = $attributeKeys;
-                if ($store = $object->objectID->persistentStore) {
-                    $fetchRequest->affectedStores = new ArrayClass([$store]);
-                }
-                $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
-                /** @var ArrayClass<Dictionary<mixed>> $databaseSnapshots */
-                $databaseSnapshots = $this->fetch($fetchRequest);
-                if ($databaseSnapshot = $databaseSnapshots->first) {
-                    return new ConstraintConflict(new ArrayClass([$key]), null, $databaseSnapshot, new ArrayClass([$object]), new ArrayClass([$baselineSnapshot, $databaseSnapshot]));
-                }
-            }
-            return null;
-        }));
+        $this->conflictDetectionService->detectConstraintConflicts($object);
     }
 
     /**

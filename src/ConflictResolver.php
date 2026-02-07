@@ -5,9 +5,9 @@ namespace Sabatier\CoreData;
 use Sabatier\Foundation\Dictionary;
 
 /** @internal */
-final class MergeExecutor
+final class ConflictResolver
 {
-    public function execute(MergeStrategy $strategy, MergeConflict|ConstraintConflict $conflict): void
+    public function resolve(MergeConflict|ConstraintConflict $conflict, MergeStrategy $strategy): void
     {
         [$object, $cachedSnapshot, $persistedSnapshot] = $this->snapshotsFor($conflict);
         $snapshot = $strategy->merge($cachedSnapshot, $persistedSnapshot);

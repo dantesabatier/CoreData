@@ -31,6 +31,15 @@ use const Sabatier\Foundation\LocalizedFailureReasonErrorKey;
  */
 final class MergePolicy extends ObjectClass
 {
+    private MergeStrategy $strategy {
+        get => $this->strategy ??= match ($this->mergeType) {
+            MergePolicyType::mergeByPropertyStoreTrumpMergePolicyType => new StoreTrumpStrategy(),
+            MergePolicyType::mergeByPropertyObjectTrumpMergePolicyType => new ObjectTrumpStrategy(),
+            MergePolicyType::overwriteMergePolicyType => new OverwriteStrategy(),
+            default => new RollbackStrategy()
+        };
+    }
+
     /**
      * Returns a merge policy initialized with a given policy type.
      *
@@ -53,21 +62,12 @@ final class MergePolicy extends ObjectClass
      */
     public function resolveConflicts(ArrayClass $list): void
     {
-        if ($list->isEmpty) {
+        if ($this->tryResolveConflicts($list)) {
             return;
         }
-        /** @var ArrayClass<MergeConflict> $conflictList */
-        $conflictList = new ArrayClass();
-        foreach ($list as $mergeConflict) {
-            $sourceObject = $mergeConflict->sourceObject;
-            $cachedSnapshot = $mergeConflict->cachedSnapshot ?? $mergeConflict->objectSnapshot;
-            $persistedSnapshot = $mergeConflict->persistedSnapshot ?? new Dictionary();
-            $this->process($conflictList, $mergeConflict, $sourceObject, $cachedSnapshot, $persistedSnapshot);
-        }
-        if (!$conflictList->isEmpty) {
-            throw new InternalInconsistencyException(error: new Error(CoreDataErrorDomain, ManagedObjectConstraintMergeError, new Dictionary([LocalizedDescriptionKey => localized_string("Instance Merge Conflict"), LocalizedFailureReasonErrorKey => localized_string("The system encountered an inconsistency while attempting to merge multiple instances of the managed object."), ConflictListErrorKey => $conflictList])));
-        }
+        throw new InternalInconsistencyException(error: new Error(CoreDataErrorDomain, ManagedObjectConstraintMergeError, new Dictionary([LocalizedDescriptionKey => localized_string("Instance Merge Conflict"), LocalizedFailureReasonErrorKey => localized_string("The system encountered an inconsistency while attempting to merge multiple instances of the managed object."), ConflictListErrorKey => $list])));
     }
+
 
     /**
      * Resolves the conflicts in a given list.
@@ -76,21 +76,10 @@ final class MergePolicy extends ObjectClass
      */
     public function resolveConstraintConflicts(ArrayClass $list): void
     {
-        /** @var ArrayClass<ConstraintConflict> $conflictList */
-        $conflictList = new ArrayClass();
-        foreach ($list as $constraintConflict) {
-            $object = $constraintConflict->conflictingObjects[0];
-            $objectSnapshot = $constraintConflict->conflictingSnapshots[0];
-            $databaseSnapshot = $constraintConflict->databaseSnapshot ?? $constraintConflict->conflictingSnapshots[1];
-            $this->process($conflictList, $constraintConflict, $object, $objectSnapshot, $databaseSnapshot);
-            if ($databaseObject = $constraintConflict->databaseObject) {
-                $object->objectID->referenceObject = $databaseObject->objectID->referenceObject;
-                $object->objectID->persistentStore = $databaseObject->objectID->persistentStore;
-            }
+        if ($this->tryResolveConflicts($list)) {
+            return;
         }
-        if (!$conflictList->isEmpty) {
-            throw new InternalInconsistencyException(error: new Error(CoreDataErrorDomain, ManagedObjectConstraintValidationError, new Dictionary([LocalizedDescriptionKey => localized_string("Uniqueness constraint conflict"), LocalizedFailureReasonErrorKey => localized_string("The save operation failed because one or more managed objects violated a unique constraint defined in the data model."), ConflictListErrorKey => $conflictList])));
-        }
+        throw new InternalInconsistencyException(error: new Error(CoreDataErrorDomain, ManagedObjectConstraintValidationError, new Dictionary([LocalizedDescriptionKey => localized_string("Uniqueness constraint conflict"), LocalizedFailureReasonErrorKey => localized_string("The save operation failed because one or more managed objects violated a unique constraint defined in the data model."), ConflictListErrorKey => $list])));
     }
 
     /**
@@ -100,13 +89,30 @@ final class MergePolicy extends ObjectClass
      */
     public function resolveOptimisticLockingVersionConflicts(ArrayClass $list): void
     {
-        if ($list->isEmpty) {
+        if ($this->tryResolveConflicts($list)) {
             return;
         }
-        if ($this->mergeType !== MergePolicyType::errorMergePolicyType) {
-            throw new InternalInconsistencyException(error: new Error(CoreDataErrorDomain, ManagedObjectMergeError, new Dictionary([LocalizedDescriptionKey => localized_string("Optimistic locking conflict"), LocalizedFailureReasonErrorKey => localized_string("The object has been modified in the persistent store since it was last fetched."), ConflictListErrorKey => $list])));
+        throw new InternalInconsistencyException(error: new Error(CoreDataErrorDomain, ManagedObjectMergeError, new Dictionary([LocalizedDescriptionKey => localized_string("Optimistic locking conflict"), LocalizedFailureReasonErrorKey => localized_string("The object has been modified in the persistent store since it was last fetched."), ConflictListErrorKey => $list])));
+    }
+
+    /**
+     * @param ArrayClass<MergeConflict|ConstraintConflict> $list
+     * @return bool
+     */
+    private function tryResolveConflicts(ArrayClass $list): bool
+    {
+        if ($this->mergeType === MergePolicyType::errorMergePolicyType) {
+            return false;
         }
-        $this->resolveConflicts($list);
+        if ($list->isEmpty) {
+            return true;
+        }
+        $resolver = new ConflictResolver();
+        $strategy = $this->strategy;
+        foreach ($list as $conflict) {
+            $resolver->resolve($conflict, $strategy);
+        }
+        return true;
     }
 
 
@@ -158,30 +164,5 @@ final class MergePolicy extends ObjectClass
     public static function rollback(): MergePolicy
     {
         return new MergePolicy(MergePolicyType::rollbackMergePolicyType);
-    }
-
-    /**
-     * @param ArrayClass<MergeConflict|ConstraintConflict> $conflictList
-     * @param MergeConflict|ConstraintConflict $conflict
-     * @param ManagedObject $sourceObject
-     * @param Dictionary<mixed> $cachedSnapshot
-     * @param Dictionary<mixed> $persistedSnapshot
-     * @return void
-     */
-    private function process(ArrayClass $conflictList, MergeConflict|ConstraintConflict $conflict, ManagedObject $sourceObject, Dictionary $cachedSnapshot, Dictionary $persistedSnapshot): void
-    {
-        if ($this->mergeType === MergePolicyType::errorMergePolicyType) {
-            $conflictList->append($conflict);
-            return;
-        }
-        $strategy = match ($this->mergeType) {
-            MergePolicyType::mergeByPropertyStoreTrumpMergePolicyType => new StoreTrumpStrategy(),
-            MergePolicyType::mergeByPropertyObjectTrumpMergePolicyType => new ObjectTrumpStrategy(),
-            MergePolicyType::overwriteMergePolicyType => new OverwriteStrategy(),
-            default => new RollbackStrategy()
-        };
-        $snapshot = $strategy->merge($cachedSnapshot, $persistedSnapshot);
-        $sourceObject->updateFromSnapshot($snapshot);
-        $sourceObject->awakeFromSnapshotEvents(SnapshotEventType::mergePolicy);
     }
 }
