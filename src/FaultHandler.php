@@ -24,9 +24,12 @@ final readonly class FaultHandler
         $snapshot["isInserted"] = true;
         $snapshot["isFault"] = false;
         $snapshot["faultingState"] = 0;
+        $object->isSuppressingChangeNotifications = true;
         $object->isSuppressingKVO = true;
         $object->updateFromRefreshSnapshot($snapshot);
         $object->isSuppressingKVO = false;
+        $object->awakeFromSnapshotEvents(SnapshotEventType::refresh);
+        $object->isSuppressingChangeNotifications = false;
     }
 
     public function turnObjectIntoFault(/** @noinspection PhpUnusedParameterInspection */ ManagedObject $object, ?ManagedObjectContext $context = null): void

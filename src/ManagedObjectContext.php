@@ -1040,7 +1040,6 @@ final class ManagedObjectContext extends ObjectClass
         $updatedObjects = new Set($this->updatedObjects);
         foreach ($updatedObjects as $updatedObject) {
             $this->refault($updatedObject);
-            $updatedObject->awakeFromSnapshotEvents(SnapshotEventType::rollback | SnapshotEventType::refresh);
         }
         $this->resetState();
     }
