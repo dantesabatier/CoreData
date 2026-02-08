@@ -972,7 +972,8 @@ final class ManagedObjectContext extends ObjectClass
      */
     private function validateDeletedObjects(): void
     {
-        foreach ($this->deletedObjects as $deletedObject) {
+        $deletedObjects = clone $this->deletedObjects;
+        foreach ($deletedObjects as $deletedObject) {
             $deletedObject->validateForDelete();
             $this->detectConflicts($deletedObject);
         }
@@ -980,10 +981,12 @@ final class ManagedObjectContext extends ObjectClass
 
     private function updateObjectVersions(): void
     {
-        foreach ($this->insertedObjects as $insertedObject) {
+        $insertedObjects = clone $this->insertedObjects;
+        foreach ($insertedObjects as $insertedObject) {
             $insertedObject->version = 1;
         }
-        foreach ($this->updatedObjects as $updatedObject) {
+        $updatedObjects = clone $this->updatedObjects;
+        foreach ($updatedObjects as $updatedObject) {
             $updatedObject->version += 1;
         }
     }
