@@ -1421,7 +1421,9 @@ final class SQLGenerator extends ObjectClass
                     break;
                 }
                 $managedObject = EntityDescription::insertNewObject($entity->tableName, $requestContext->context);
+                $managedObject->isSuppressingKVO = true;
                 $managedObject->updateFromSnapshot($snapshot);
+                $managedObject->isSuppressingKVO = false;
                 $objectsToInsert->append($managedObject);
             }
         } elseif ($managedObjectHandler = $request->managedObjectHandler) {
