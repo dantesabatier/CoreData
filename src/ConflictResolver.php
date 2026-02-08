@@ -11,10 +11,18 @@ final class ConflictResolver
     {
         [$object, $cachedSnapshot, $persistedSnapshot] = $this->snapshotsFor($conflict);
         $snapshot = $strategy->merge($cachedSnapshot, $persistedSnapshot);
+        $object->isSuppressingChangeNotifications = true;
+        $object->isSuppressingKVO = true;
         $object->updateFromSnapshot($snapshot);
+        $object->isSuppressingKVO = false;
         $object->awakeFromSnapshotEvents(SnapshotEventType::mergePolicy);
+        $object->isSuppressingChangeNotifications = false;
     }
 
+    /**
+     * @param MergeConflict|ConstraintConflict $conflict
+     * @return array{ManagedObject, Dictionary<mixed>, Dictionary<mixed>}
+     */
     private function snapshotsFor(MergeConflict|ConstraintConflict $conflict): array
     {
         if ($conflict instanceof MergeConflict) {
