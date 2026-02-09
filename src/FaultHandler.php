@@ -15,12 +15,12 @@ final readonly class FaultHandler
     public function fulfillFault(ManagedObject $object, ?ManagedObjectContext $context = null): void
     {
         $context ??= $object->managedObjectContext;
-        /** @var IncrementalStoreNode|AtomicStoreCacheNode|null $snapshot */
-        $snapshot = $this->persistentStore->newValuesForObjectWithID($object->objectID, $context);
-        if ($snapshot === null) {
+        /** @var IncrementalStoreNode|AtomicStoreCacheNode|null $node */
+        $node = $this->persistentStore->newValuesForObjectWithID($object->objectID, $context);
+        if ($node === null) {
             return;
         }
-        $snapshot = $snapshot instanceof AtomicStoreCacheNode ? $snapshot->propertyCache : $snapshot->values;
+        $snapshot = $node instanceof AtomicStoreCacheNode ? $node->propertyCache : $node->values;
         $snapshot["isInserted"] = true;
         $snapshot["isFault"] = false;
         $snapshot["faultingState"] = 0;
