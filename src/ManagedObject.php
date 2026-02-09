@@ -190,10 +190,15 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public ?Dictionary $originalSnapshot = null {
         set {
-            $this->originalSnapshot = $value?->filter(fn(mixed $value, string $key): bool => match ($key) {
-                "isInserted", "isFault", "faultingState" => false,
-                default => true,
-            });
+            if ($value) {
+                $value = $value->filter(fn(mixed $value, string $key): bool => match ($key) {
+                    "isInserted", "isFault", "faultingState" => false,
+                    default => true,
+                });
+                $value[ManagedObjectEntityNameKey] ??= $this->entityName;
+                $value[ManagedObjectVersionKey] ??= $this->version;
+            }
+            $this->originalSnapshot = $value;
         }
     }
     /**
