@@ -41,11 +41,8 @@ abstract readonly class SnapshotMappingStrategy
 
     abstract protected function resolveStoreSpecificAttributes(ManagedObject $object, Dictionary $mappedValues, Dictionary $snapshot): void;
 
-    protected function resolveManagedObjectID(EntityDescription $entity, ManagedObjectID|Dictionary $object): ?ManagedObjectID
+    protected function resolveManagedObjectID(EntityDescription $entity, Dictionary $object): ?ManagedObjectID
     {
-        if ($object instanceof ManagedObjectID) {
-            return $object;
-        }
         $objectID = $object[ManagedObjectObjectIDKey];
         if ($objectID instanceof ManagedObjectID) {
             return $objectID;
@@ -70,21 +67,17 @@ abstract readonly class SnapshotMappingStrategy
         if ($object instanceof ManagedObject) {
             return $object;
         }
-        if (!($objectID = $this->resolveManagedObjectID($entity, $object))) {
-            return null;
-        }
-        $targetObject = $this->context->object($objectID);
-        $targetObject->isSuppressingChangeNotifications = true;
-        if ($object instanceof Dictionary) {
-            $targetObject->isSuppressingKVO = true;
+        $targetObject = null;
+        if ($object instanceof ManagedObjectID) {
+            $targetObject = $this->context->object($object);
+        } elseif ($objectID = $this->resolveManagedObjectID($entity, $object)) {
+            $targetObject = $this->context->object($objectID);
             $targetObject->updateFromSnapshot($object);
-            $targetObject->isSuppressingKVO = false;
         }
-        if (!$targetObject->isAwakeFromFetch) {
+        if ($targetObject && !$targetObject->isAwakeFromFetch) {
             $targetObject->isAwakeFromFetch = true;
             $targetObject->awakeFromFetch();
         }
-        $targetObject->isSuppressingChangeNotifications = false;
         return $targetObject;
     }
 

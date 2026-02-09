@@ -101,11 +101,11 @@ final class MergePolicy extends ObjectClass
      */
     private function tryResolveConflicts(ArrayClass $list): bool
     {
-        if ($this->mergeType === MergePolicyType::errorMergePolicyType) {
-            return false;
-        }
         if ($list->isEmpty) {
             return true;
+        }
+        if ($this->mergeType === MergePolicyType::errorMergePolicyType) {
+            return false;
         }
         $resolver = new ConflictResolver();
         $strategy = $this->strategy;
