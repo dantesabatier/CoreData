@@ -848,8 +848,8 @@ final class ManagedObjectContext extends ObjectClass
     private function stabilizeDomainState(): void
     {
         $this->prepareObjectsForSave();
-        $this->updateObjectVersions();
         $this->notifyObjectsWillSave();
+        $this->updateObjectVersions();
         $this->prepareObjectsForSave();
     }
 
