@@ -460,23 +460,21 @@ final class ManagedObjectContext extends ObjectClass
             if ($modeledRelationship->deleteRule !== DeleteRule::cascadeDeleteRule) {
                 continue;
             }
-            $value = $object->valueForKey($modeledRelationship->name);
-            if ($value !== null) {
-                $this->applyDeleteToValue($value);
+            if (!($value = $object->valueForKey($modeledRelationship->name))) {
+                continue;
             }
+            $set = $value instanceof Set ? $value : new Set([$value]);
+            $this->applyDeleteToValue($set);
         }
     }
 
-    private function applyDeleteToValue(mixed $value): void
+    /**
+     * @param Set<ManagedObject> $set
+     */
+    private function applyDeleteToValue(Set $set): void
     {
-        if ($value instanceof Set) {
-            foreach ($value as $item) {
-                if ($item instanceof ManagedObject) {
-                    $this->delete($item);
-                }
-            }
-        } elseif ($value instanceof ManagedObject) {
-            $this->delete($value);
+        foreach (clone $set as $item) {
+            $this->delete($item);
         }
     }
 
