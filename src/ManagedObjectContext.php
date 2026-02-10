@@ -848,6 +848,7 @@ final class ManagedObjectContext extends ObjectClass
     private function stabilizeDomainState(): void
     {
         $this->prepareObjectsForSave();
+        $this->updateObjectVersions();
         $this->notifyObjectsWillSave();
         $this->prepareObjectsForSave();
     }
@@ -864,7 +865,6 @@ final class ManagedObjectContext extends ObjectClass
         $this->validateInsertedObjects();
         $this->validateUpdatedObjects();
         $this->validateDeletedObjects();
-        $this->updateObjectVersions();
     }
 
     private function notifyObjectsWillSave(): void
