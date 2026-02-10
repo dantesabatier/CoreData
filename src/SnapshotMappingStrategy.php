@@ -78,7 +78,7 @@ abstract readonly class SnapshotMappingStrategy
             $targetObject->updateFromSnapshot($object);
             $targetObject->isSuppressingKVO = false;
         }
-        if ($targetObject) {
+        if ($targetObject instanceof ManagedObject) {
             if (!$targetObject->isAwakeFromFetch) {
                 $targetObject->isAwakeFromFetch = true;
                 $targetObject->awakeFromFetch();
