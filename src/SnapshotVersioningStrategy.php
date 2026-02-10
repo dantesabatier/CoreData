@@ -16,6 +16,12 @@ final class SnapshotVersioningStrategy implements VersioningStrategy
     #[Override]
     public function hasConflict(Dictionary $baseline, Dictionary $store): bool
     {
+        if (!$baseline->offsetExists(ManagedObjectVersionKey)) {
+            return false;
+        }
+        if (!$store->offsetExists(ManagedObjectVersionKey)) {
+            return false;
+        }
         return $store[ManagedObjectVersionKey] !== $baseline[ManagedObjectVersionKey];
     }
 }

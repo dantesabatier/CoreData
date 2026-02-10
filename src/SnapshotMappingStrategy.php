@@ -70,13 +70,20 @@ abstract readonly class SnapshotMappingStrategy
         $targetObject = null;
         if ($object instanceof ManagedObjectID) {
             $targetObject = $this->context->object($object);
+            $targetObject->isSuppressingChangeNotifications = true;
         } elseif ($objectID = $this->resolveManagedObjectID($entity, $object)) {
             $targetObject = $this->context->object($objectID);
+            $targetObject->isSuppressingChangeNotifications = true;
+            $targetObject->isSuppressingKVO = true;
             $targetObject->updateFromSnapshot($object);
+            $targetObject->isSuppressingKVO = false;
         }
-        if ($targetObject && !$targetObject->isAwakeFromFetch) {
-            $targetObject->isAwakeFromFetch = true;
-            $targetObject->awakeFromFetch();
+        if ($targetObject) {
+            if (!$targetObject->isAwakeFromFetch) {
+                $targetObject->isAwakeFromFetch = true;
+                $targetObject->awakeFromFetch();
+            }
+            $targetObject->isSuppressingChangeNotifications = false;
         }
         return $targetObject;
     }
