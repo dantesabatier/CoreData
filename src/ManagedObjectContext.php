@@ -29,8 +29,6 @@ use Sabatier\Foundation\Set;
 use Sabatier\Foundation\UndoManager;
 use Sabatier\Foundation\URL;
 use function Sabatier\Foundation\fatal_error;
-use function Sabatier\Foundation\get_calling_class;
-use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\typeof;
 
 /**
@@ -732,7 +730,6 @@ final class ManagedObjectContext extends ObjectClass
             return;
         }
         $value = $change->newValue;
-        error_log("*$object->entityName*$keyPath*" . human_readable_value($value) . "*" . human_readable_value(get_calling_class()));
         if ($property instanceof RelationshipDescription && $value !== null) {
             assert($value instanceof Set || $value instanceof ManagedObject || $value instanceof ManagedObjectID, sprintf("invalid argument: %s->%s expecting \"%s|%s|%s\", \"%s\" given", $object->entity->name, $keyPath, Set::class, ManagedObject::class, ManagedObjectID::class, typeof($value)));
             if (!$value instanceof Set) {
