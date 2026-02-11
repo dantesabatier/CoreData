@@ -17,3 +17,7 @@ const SS_COREDATA_USES_RELATIONSHIPS_SORT_DESCRIPTORS = true;
 const ManagedObjectObjectIDKey = "objectID";
 const ManagedObjectEntityNameKey = "entityName";
 const ManagedObjectVersionKey = "version";
+const ManagedObjectIsInsertedKey = "isInserted";
+const ManagedObjectIsFaultKey = "isFault";
+const ManagedObjectFaultingStateKey = "faultingState";
+const ManagedObjectParentIDKey = "parentID";

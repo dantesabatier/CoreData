@@ -230,7 +230,13 @@ final class SQLGenerator extends ObjectClass
             }
             $this->useDistinct = $request->returnsDistinctResults;
             if (!$this->useDistinct && $this->autoDistinct) {
-                $this->useDistinct = ($request->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $entity->propertiesByName[$property])?->contains(fn(?PropertyDescription $property): bool => $property instanceof RelationshipDescription)) || ($request->serialization->contains(fn(mixed $e): bool => $e instanceof Dictionary));
+                $hasToManyRelationship = $request->propertiesToFetch?->contains(function($property) use ($entity) {
+                    $propertyName = $property instanceof PropertyDescription ? $property->name : $property;
+                    $sqlProperty = $this->entity->propertiesByName[$propertyName];
+                    return $sqlProperty instanceof SQLToMany || $sqlProperty instanceof SQLManyToMany;
+                }) ?? false;
+                $hasComplexSerialization = $request->serialization->contains(fn(mixed $value): bool => $value instanceof Dictionary);
+                $this->useDistinct = $hasToManyRelationship || $hasComplexSerialization;
             }
             $this->prepareSelectStatementWithFetchRequest($request);
             $this->prepareJoinStatementsForPredicateAndRelationships();
@@ -1031,7 +1037,10 @@ final class SQLGenerator extends ObjectClass
     {
         $inverseRelationship = $relationship->inverseRelationship;
         /** @var ArrayClass<string|PropertyDescription> $propertiesToFetch */
-        $propertiesToFetch = new ArrayClass([$inverseRelationship->relationshipDescription]);
+        $propertiesToFetch = new ArrayClass();
+        if ($relationship instanceof SQLManyToMany) {
+            $propertiesToFetch->append($inverseRelationship->relationshipDescription);
+        }
         if ($keyPathToProperty && $collectionOperator !== KeyValueOperator::countKeyValueOperator) {
             $propertiesToFetch->append($keyPathToProperty);
         }

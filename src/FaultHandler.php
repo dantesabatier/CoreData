@@ -21,9 +21,9 @@ final readonly class FaultHandler
             return;
         }
         $snapshot = $node instanceof AtomicStoreCacheNode ? $node->propertyCache : $node->values;
-        $snapshot["isInserted"] = true;
-        $snapshot["isFault"] = false;
-        $snapshot["faultingState"] = 0;
+        $snapshot[ManagedObjectIsInsertedKey] = true;
+        $snapshot[ManagedObjectIsFaultKey] = false;
+        $snapshot[ManagedObjectFaultingStateKey] = 0;
         $object->isSuppressingChangeNotifications = true;
         $object->isSuppressingKVO = true;
         $object->updateFromRefreshSnapshot($snapshot);

@@ -16,7 +16,7 @@ final readonly class SQLSnapshotMappingStrategy extends SnapshotMappingStrategy
     #[Override]
     protected function pruneStoreMetadata(Dictionary $snapshot): void
     {
-        $snapshot->removeValueForKey("parentID");
+        $snapshot->removeValueForKey(ManagedObjectParentIDKey);
     }
 
     /**

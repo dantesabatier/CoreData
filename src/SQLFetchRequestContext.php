@@ -139,9 +139,9 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         $lastID = $last[$primaryKeyName];
                                         $lastValue = $last[$key];
                                         if ($lastValue instanceof ArrayClass) {
-                                            $last[$key] = $lastValue->filter(fn(Dictionary $dictionary): bool => $dictionary["parentID"] === $lastID);
+                                            $last[$key] = $lastValue->filter(fn(Dictionary $dictionary): bool => $dictionary[ManagedObjectParentIDKey] === $lastID);
                                         } elseif ($lastValue instanceof Dictionary) {
-                                            if ($lastValue["parentID"] !== $lastID) {
+                                            if ($lastValue[ManagedObjectParentIDKey] !== $lastID) {
                                                 $last->removeValueForKey($key);
                                             }
                                         }
@@ -186,12 +186,12 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                 $cursor[$key] = $this->coerceExpressionValue($value, $propertyDescription);
                                 if (!$isInsideCompositeAttribute && !$propertyDescription instanceof CompositeAttributeDescription) {
                                     if ($cursor !== $root) {
-                                        $cursor["parentID"] = $parentID;
+                                        $cursor[ManagedObjectParentIDKey] = $parentID;
                                     }
                                     if ($isNonDictionaryResultType && $cursor[ManagedObjectObjectIDKey] && $cursor[ManagedObjectEntityNameKey] && $cursor[ManagedObjectVersionKey]) {
-                                        $cursor["isInserted"] = true;
-                                        $cursor["isFault"] = false;
-                                        $cursor["faultingState"] = 0;
+                                        $cursor[ManagedObjectIsInsertedKey] = true;
+                                        $cursor[ManagedObjectIsFaultKey] = false;
+                                        $cursor[ManagedObjectFaultingStateKey] = 0;
                                     }
                                 }
                             }
@@ -202,9 +202,9 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                 }
                 assert($root instanceof Dictionary);
                 if ($isNonDictionaryResultType && $root[ManagedObjectObjectIDKey] && $root[ManagedObjectEntityNameKey] && $root[ManagedObjectVersionKey]) {
-                    $root["isInserted"] = true;
-                    $root["faultingState"] = 0;
-                    $root["isFault"] = $this->request->returnsObjectsAsFaults;
+                    $root[ManagedObjectIsInsertedKey] = true;
+                    $root[ManagedObjectFaultingStateKey] = 0;
+                    $root[ManagedObjectIsFaultKey] = $this->request->returnsObjectsAsFaults;
                 }
                 $byRootIDResult[$rootID] = $root;
             }

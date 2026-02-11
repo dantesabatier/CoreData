@@ -68,18 +68,20 @@ abstract readonly class SnapshotMappingStrategy
             return $object;
         }
         $targetObject = null;
+        $isFullyInitialized = false;
         if ($object instanceof ManagedObjectID) {
             $targetObject = $this->context->object($object);
-            $targetObject->isSuppressingChangeNotifications = $targetObject->isAwakeFromFetch;
+            $targetObject->isSuppressingChangeNotifications = $targetObject->faultingState === 0;
         } elseif ($objectID = $this->resolveManagedObjectID($entity, $object)) {
+            $isFullyInitialized = $object[ManagedObjectFaultingStateKey] === 0;
             $targetObject = $this->context->object($objectID);
-            $targetObject->isSuppressingChangeNotifications = $targetObject->isAwakeFromFetch;
-            $targetObject->isSuppressingKVO = $targetObject->isAwakeFromFetch;
+            $targetObject->isSuppressingChangeNotifications = $isFullyInitialized;
+            $targetObject->isSuppressingKVO = $isFullyInitialized;
             $targetObject->updateFromSnapshot($object);
             $targetObject->isSuppressingKVO = false;
         }
         if ($targetObject instanceof ManagedObject) {
-            if (!$targetObject->isAwakeFromFetch) {
+            if (!$targetObject->isAwakeFromFetch && $isFullyInitialized) {
                 $targetObject->isAwakeFromFetch = true;
                 $targetObject->awakeFromFetch();
             }

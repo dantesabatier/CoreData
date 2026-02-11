@@ -191,7 +191,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public ?Dictionary $originalSnapshot = null {
         set {
             $this->originalSnapshot = $value?->filter(fn(mixed $value, string $key): bool => match ($key) {
-                "isInserted", "isFault", "faultingState" => false,
+                ManagedObjectIsInsertedKey, ManagedObjectIsFaultKey, ManagedObjectFaultingStateKey => false,
                 default => true,
             });
         }
@@ -203,7 +203,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public ?Dictionary $lastSnapshot = null {
         set {
             $this->lastSnapshot = $value?->filter(fn(mixed $value, string $key): bool => match ($key) {
-                "isInserted", "isFault", "faultingState" => false,
+                ManagedObjectIsInsertedKey, ManagedObjectIsFaultKey, ManagedObjectFaultingStateKey => false,
                 default => true,
             });
         }
