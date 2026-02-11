@@ -230,7 +230,7 @@ final class SQLGenerator extends ObjectClass
             }
             $this->useDistinct = $request->returnsDistinctResults;
             if (!$this->useDistinct && $this->autoDistinct) {
-                $hasToManyRelationship = $request->propertiesToFetch?->contains(function($property) use ($entity) {
+                $hasToManyRelationship = $request->propertiesToFetch?->contains(function($property) {
                     $propertyName = $property instanceof PropertyDescription ? $property->name : $property;
                     $sqlProperty = $this->entity->propertiesByName[$propertyName];
                     return $sqlProperty instanceof SQLToMany || $sqlProperty instanceof SQLManyToMany;

@@ -71,9 +71,10 @@ abstract readonly class SnapshotMappingStrategy
         $isFullyInitialized = false;
         if ($object instanceof ManagedObjectID) {
             $targetObject = $this->context->object($object);
-            $targetObject->isSuppressingChangeNotifications = $targetObject->faultingState === 0;
+            $isFullyInitialized = $targetObject->faultingState === ManagedObjectFaultingStateStable;
+            $targetObject->isSuppressingChangeNotifications = $isFullyInitialized;
         } elseif ($objectID = $this->resolveManagedObjectID($entity, $object)) {
-            $isFullyInitialized = $object[ManagedObjectFaultingStateKey] === 0;
+            $isFullyInitialized = $object[ManagedObjectFaultingStateKey] === ManagedObjectFaultingStateStable;
             $targetObject = $this->context->object($objectID);
             $targetObject->isSuppressingChangeNotifications = $isFullyInitialized;
             $targetObject->isSuppressingKVO = $isFullyInitialized;

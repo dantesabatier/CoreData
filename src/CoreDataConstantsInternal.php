@@ -20,4 +20,5 @@ const ManagedObjectVersionKey = "version";
 const ManagedObjectIsInsertedKey = "isInserted";
 const ManagedObjectIsFaultKey = "isFault";
 const ManagedObjectFaultingStateKey = "faultingState";
+const ManagedObjectFaultingStateStable = 0;
 const ManagedObjectParentIDKey = "parentID";
