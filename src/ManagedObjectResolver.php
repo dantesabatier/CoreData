@@ -4,12 +4,18 @@ namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\Dictionary;
 
+/** @internal */
 final readonly class ManagedObjectResolver
 {
     public function __construct(private ManagedObjectContext $context, private ManagedObjectIDResolver $idResolver)
     {
     }
 
+    /**
+     * @param EntityDescription $entity
+     * @param ManagedObject|ManagedObjectID|Dictionary<mixed> $object
+     * @return ManagedObject|null
+     */
     public function resolve(EntityDescription $entity, ManagedObject|ManagedObjectID|Dictionary $object): ?ManagedObject
     {
         if ($object instanceof ManagedObject) {

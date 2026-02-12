@@ -5,9 +5,10 @@ namespace Sabatier\CoreData;
 use Override;
 use Sabatier\Foundation\Dictionary;
 
-final readonly class StandardStoreAttributeMapper implements StoreAttributeMapper
+/** @internal */
+final readonly class StandardStoreAttributeMapper extends StoreAttributeMapper
 {
-	#[Override]
+    #[Override]
     public function map(ManagedObject $object, Dictionary $mappedValues, Dictionary $snapshot): void
     {
     }

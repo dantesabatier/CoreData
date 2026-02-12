@@ -2,17 +2,42 @@
 
 namespace Sabatier\CoreData;
 
+use Exception;
 use Override;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Nil;
+use Sabatier\Foundation\Predicates\ComparisonPredicate;
+use Sabatier\Foundation\Predicates\Expression;
 
-final readonly class SQLStoreAttributeMapper implements StoreAttributeMapper
+/** @internal */
+final readonly class SQLStoreAttributeMapper extends StoreAttributeMapper
 {
-    public function __construct(private PersistentStore $store, private ManagedObjectContext $context)
-    {
-    }
-	
-	#[Override]
+    /**
+     * @throws Exception
+     */
+    #[Override]
     public function map(ManagedObject $object, Dictionary $mappedValues, Dictionary $snapshot): void
     {
+        $store = $this->store;
+        assert($store instanceof SQLCore);
+        /** @var SQLEntity $entity */
+        $entity = $store->model->entitiesByName[$object->entity->name];
+        foreach ($entity->foreignKeyColumns as $foreignKeyColumn) {
+            $key = $foreignKeyColumn->columnName;
+            if (!($value = $snapshot[$key])) {
+                continue;
+            }
+            if (!$value instanceof Nil) {
+                $debugDefault = SQLCore::$debugLevel;
+                SQLCore::$debugLevel = SQLDebugLevel::none;
+                $fetchRequest = new FetchRequest();
+                $fetchRequest->entity = $foreignKeyColumn->toOneRelationship->destinationEntity->entityDescription;
+                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue((int)$value));
+                $value = $this->context->fetch($fetchRequest)->first;
+                SQLCore::$debugLevel = $debugDefault;
+            }
+            $mappedValues[$foreignKeyColumn->toOneRelationship->name] = $value;
+            $mappedValues->removeValueForKey($key);
+        }
     }
 }

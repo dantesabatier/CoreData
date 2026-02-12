@@ -63,9 +63,9 @@ final class SQLCore extends IncrementalStore
     }
 
     #[Override]
-    public static function snapshotMappingStrategyClass(): string
+    public static function snapshotMapperClass(): string
     {
-        return SQLSnapshotMappingStrategy::class;
+        return SQLSnapshotMapper::class;
     }
 
     /**

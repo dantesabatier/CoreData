@@ -6,12 +6,18 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\UUID;
 
+/** @internal */
 final readonly class ManagedObjectIDResolver
 {
     public function __construct(private PersistentStore $store, private ManagedObjectContext $context)
     {
     }
 
+    /**
+     * @param EntityDescription $entity
+     * @param Dictionary<mixed> $object
+     * @return ManagedObjectID|null
+     */
     public function resolve(EntityDescription $entity, Dictionary $object): ?ManagedObjectID
     {
         $objectID = $object[ManagedObjectObjectIDKey];

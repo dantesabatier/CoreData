@@ -12,7 +12,6 @@ final class SnapshotMapperResolver
     private Dictionary $cache {
         get => $this->cache ??= new Dictionary();
     }
-
     public SnapshotMapper $mapper {
         get {
             $mapperClass = $this->store::snapshotMapperClass();
@@ -27,6 +26,7 @@ final class SnapshotMapperResolver
         }
     }
 
-    public function __construct(private readonly PersistentStore $store, private readonly ManagedObjectContext $context) {
+    public function __construct(private readonly PersistentStore $store, private readonly ManagedObjectContext $context)
+    {
     }
 }

@@ -283,13 +283,13 @@ abstract class PersistentStore extends ObjectClass
     }
 
     /**
-     * Returns the class name of the standard snapshot mapping strategy.
+     * Returns the class name of the standard snapshot mapper.
      *
-     * @return string The fully qualified class name of the snapshot mapping strategy.
+     * @return string The fully qualified class name of the snapshot mapper.
      */
-    public static function snapshotMappingStrategyClass(): string
+    public static function snapshotMapperClass(): string
     {
-        return StandardSnapshotMappingStrategy::class;
+        return StandardSnapshotMapper::class;
     }
 
     /**

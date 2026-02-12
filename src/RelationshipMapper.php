@@ -9,12 +9,20 @@ use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\typeof;
 
+/** @internal */
 final readonly class RelationshipMapper
 {
     public function __construct(private ManagedObjectResolver $objectResolver)
     {
     }
 
+    /**
+     * @param ManagedObject $contextObject
+     * @param Dictionary<mixed> $mappedValues
+     * @param string $key
+     * @param mixed $value
+     * @param RelationshipDescription $relationship
+     */
     public function process(ManagedObject $contextObject, Dictionary $mappedValues, string $key, mixed $value, RelationshipDescription $relationship): void
     {
         $destinationEntity = $relationship->destinationEntity;

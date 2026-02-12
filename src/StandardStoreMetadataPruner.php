@@ -5,9 +5,10 @@ namespace Sabatier\CoreData;
 use Override;
 use Sabatier\Foundation\Dictionary;
 
-final readonly class StandardStoreMetadataPruner implements StoreMetadataPruner
+/** @internal */
+final class StandardStoreMetadataPruner implements StoreMetadataPruner
 {
-	#[Override]
+    #[Override]
     public function prune(Dictionary $snapshot): void
     {
     }

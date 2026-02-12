@@ -2,14 +2,13 @@
 
 namespace Sabatier\CoreData;
 
-use Exception;
 use Sabatier\Foundation\Dictionary;
 
 /** @internal */
 abstract class SnapshotMapper
 {
     protected StoreMetadataPruner $metadataPruner {
-        get => $this->metadataPruner ??= new StoreMetadataPruner();
+        get => $this->metadataPruner ??= new StandardStoreMetadataPruner();
     }
     protected ManagedObjectIDResolver $idResolver {
         get => $this->idResolver ??= new ManagedObjectIDResolver($this->store, $this->context);
@@ -21,7 +20,7 @@ abstract class SnapshotMapper
         get => $this->relationshipMapper ??= new RelationshipMapper($this->objectResolver);
     }
     protected StoreAttributeMapper $storeAttributeMapper {
-        get => $this->storeAttributeMapper ??= new StoreAttributeMapper($this->store, $this->context);
+        get => $this->storeAttributeMapper ??= new StandardStoreAttributeMapper($this->store, $this->context);
     }
 
     public function __construct(protected PersistentStore $store, protected ManagedObjectContext $context)
@@ -29,7 +28,9 @@ abstract class SnapshotMapper
     }
 
     /**
-     * @throws Exception
+     * @param ManagedObject $object
+     * @param Dictionary<mixed> $snapshot
+     * @return Dictionary<mixed>
      */
     final public function map(ManagedObject $object, Dictionary $snapshot): Dictionary
     {

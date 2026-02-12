@@ -4,7 +4,17 @@ namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\Dictionary;
 
-interface StoreAttributeMapper
+/** @internal */
+abstract readonly class StoreAttributeMapper
 {
-    public function map(ManagedObject $object, Dictionary $mappedValues, Dictionary $snapshot): void;
+    public function __construct(protected PersistentStore $store, protected ManagedObjectContext $context)
+    {
+    }
+
+    /**
+     * @param ManagedObject $object
+     * @param Dictionary<mixed> $mappedValues
+     * @param Dictionary<mixed> $snapshot
+     */
+    abstract public function map(ManagedObject $object, Dictionary $mappedValues, Dictionary $snapshot): void;
 }
