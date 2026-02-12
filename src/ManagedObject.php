@@ -208,8 +208,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             });
         }
     }
-    private SnapshotValueMapper $snapshotMapper {
-        get => $this->snapshotMapper ??= new SnapshotValueMapper($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null"), $this->managedObjectContext);
+    private SnapshotValueMapper $snapshotValueMapper {
+        get => $this->snapshotValueMapper ??= new SnapshotValueMapper($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null"), $this->managedObjectContext);
     }
 
     /**
@@ -359,7 +359,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     private function genericUpdateFromSnapshot(Dictionary $snapshot): void
     {
-        $this->setValuesForKeys($this->snapshotMapper->mapSnapshot($this, $snapshot));
+        $this->setValuesForKeys($this->snapshotValueMapper->mapSnapshot($this, $snapshot));
     }
 
     /**
