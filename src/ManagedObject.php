@@ -208,7 +208,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
              */
             function (Dictionary $initialResult, mixed $value, string $key): Dictionary {
                 if ($relationship = $this->modeledRelationships[$key]) {
-                    $value = $this->managedObjectContext->newValueForRelationship($relationship, $this->objectID);
+                    $context = $this->managedObjectContext;
+                    $value = $context->newValueForRelationship($relationship, $this->objectID);
+                    if ($value instanceof ManagedObjectID) {
+                        $value = $context->object($value);
+                    }
                 }
                 $initialResult[$key] = $value;
                 return $initialResult;
