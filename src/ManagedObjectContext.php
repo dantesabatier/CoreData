@@ -25,10 +25,12 @@ use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\OperationQueue;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
+use Sabatier\Foundation\Sequence;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\UndoManager;
 use Sabatier\Foundation\URL;
 use function Sabatier\Foundation\fatal_error;
+use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\typeof;
 
 /**
@@ -156,6 +158,29 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function __construct(public readonly ManagedObjectContextConcurrencyType $concurrencyType = ManagedObjectContextConcurrencyType::mainQueueConcurrencyType)
     {
+    }
+
+    /**
+     * @param RelationshipDescription $relationship
+     * @param ManagedObjectID $objectID
+     * @return FaultingSet|ManagedObject|ManagedObjectID|null
+     * @throws Exception
+     */
+    public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID): FaultingSet|ManagedObject|ManagedObjectID|null
+    {
+        $newValue = $this->persistentStoreCoordinator?->persistentStoreForObjectID($objectID)->newValueForRelationship($relationship, $objectID, $this);
+        if ($relationship->isToMany) {
+            assert($newValue instanceof Sequence, sprintf("invalid argument: expecting \"%s\", (%s)%s given", Sequence::class, typeof($newValue), human_readable_value($newValue)));
+            $value = new FaultingSet($this->object($objectID), $relationship);
+            $value->setSet(new Set($newValue));
+        } else {
+            if ($newValue instanceof Nil) {
+                $newValue = $newValue->value;
+            }
+            $value = $newValue;
+            assert($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null, sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $objectID->entityName, $relationship->name, ManagedObject::class, ManagedObjectID::class, typeof($value)));
+        }
+        return $value;
     }
 
     private function executePersistentStoreRequest(PersistentStoreRequest $request): UnknownRequestTypeResult

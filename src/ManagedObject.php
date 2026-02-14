@@ -22,7 +22,6 @@ use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\ExpressionType;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\SensitiveValue;
-use Sabatier\Foundation\Sequence;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
@@ -194,6 +193,28 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * @internal
      */
     public ?Dictionary $lastSnapshot = null;
+    /** @var Dictionary<mixed> */
+    private Dictionary $committedValues {
+        /**
+         * @throws Exception
+         */
+        get => $this->committedValues ??= $this->originalSnapshot?->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<mixed> $initialResult
+             * @param mixed $value
+             * @param string $key
+             * @return Dictionary<mixed>
+             * @throws Exception
+             */
+            function (Dictionary $initialResult, mixed $value, string $key): Dictionary {
+                $property = $this->modeledProperties[$key];
+                if ($property instanceof RelationshipDescription) {
+                    $value = $this->managedObjectContext->newValueForRelationship($property, $this->objectID);
+                }
+                $initialResult[$key] = $value;
+                return $initialResult;
+            }) ?? new Dictionary();
+    }
     private SnapshotValueMapper $snapshotValueMapper {
         get => $this->snapshotValueMapper ??= new SnapshotValueMapper($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null"), $this->managedObjectContext);
     }
@@ -435,9 +456,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function committedValues(?ArrayClass $keys): Dictionary
     {
-        /** @var Dictionary<mixed> $committedValues */
-        $committedValues = new Dictionary($this->originalSnapshot ?? []);
-        return $keys === null ? $committedValues : $committedValues->filter(fn(mixed $value, string $key): bool => $keys->containsElement($key));
+        return $keys === null ? $this->committedValues : $this->committedValues->filter(fn(mixed $value, string $key): bool => $keys->containsElement($key));
     }
 
     /**
@@ -664,19 +683,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
             if (!$this->isSuppressingKVO && $this->isInserted && $this->isPropertyForKeyFault($key)) {
-                $store = $context->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null");
-                $newValue = $store->newValueForRelationship($property, $this->objectID, $context);
-                if ($property->isToMany) {
-                    assert($newValue instanceof Sequence, sprintf("invalid argument: expecting \"%s\", (%s)%s given", Sequence::class, typeof($newValue), human_readable_value($newValue)));
-                    $value ??= new FaultingSet($this, $property);
-                    $value->setSet(new Set($newValue));
-                } else {
-                    if ($newValue instanceof Nil) {
-                        $newValue = $newValue->value;
-                    }
-                    $value = $newValue;
-                    assert($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null, sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $this->entity->name, $key, ManagedObject::class, ManagedObjectID::class, typeof($value)));
-                }
+                $value = $context->newValueForRelationship($property, $this->objectID);
                 $this->setPrimitiveValueForKey($value, $key);
             }
             if ($value instanceof FaultingArray || $value instanceof FaultingSet || $value instanceof ManagedObject) {
