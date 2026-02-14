@@ -168,7 +168,7 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID): FaultingSet|ManagedObject|ManagedObjectID|null
     {
-        $newValue = $this->persistentStoreCoordinator?->persistentStoreForObjectID($objectID)->newValueForRelationship($relationship, $objectID, $this);
+        $newValue = $this->persistentStoreCoordinator?->persistentStoreForObjectID($objectID)?->newValueForRelationship($relationship, $objectID, $this);
         if ($relationship->isToMany) {
             assert($newValue instanceof Sequence, sprintf("invalid argument: expecting \"%s\", (%s)%s given", Sequence::class, typeof($newValue), human_readable_value($newValue)));
             $value = new FaultingSet($this->object($objectID), $relationship);
