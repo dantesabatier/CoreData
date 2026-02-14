@@ -188,28 +188,18 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * @var Dictionary<mixed>|null
      * @internal
      */
-    public ?Dictionary $originalSnapshot = null {
-        set {
-            $this->originalSnapshot = $value?->filter(fn(mixed $value, string $key): bool => match ($key) {
-                ManagedObjectIsInsertedKey, ManagedObjectIsFaultKey, ManagedObjectFaultingStateKey => false,
-                default => true,
-            });
-        }
-    }
+    public ?Dictionary $originalSnapshot = null;
     /**
      * @var Dictionary<mixed>|null
      * @internal
      */
-    public ?Dictionary $lastSnapshot = null {
-        set {
-            $this->lastSnapshot = $value?->filter(fn(mixed $value, string $key): bool => match ($key) {
-                ManagedObjectIsInsertedKey, ManagedObjectIsFaultKey, ManagedObjectFaultingStateKey => false,
-                default => true,
-            });
-        }
-    }
+    public ?Dictionary $lastSnapshot = null;
     private SnapshotValueMapper $snapshotValueMapper {
         get => $this->snapshotValueMapper ??= new SnapshotValueMapper($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null"), $this->managedObjectContext);
+    }
+    /** @internal */
+    public bool $isStable {
+        get => $this->faultingState === ManagedObjectFaultingStateStable;
     }
 
     /**

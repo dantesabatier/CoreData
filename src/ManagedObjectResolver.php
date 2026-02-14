@@ -22,21 +22,18 @@ final readonly class ManagedObjectResolver
             return $object;
         }
         $targetObject = null;
-        $isFullyInitialized = false;
         if ($object instanceof ManagedObjectID) {
             $targetObject = $this->context->object($object);
-            $isFullyInitialized = $targetObject->faultingState === ManagedObjectFaultingStateStable;
-            $targetObject->isSuppressingChangeNotifications = $isFullyInitialized;
+            $targetObject->isSuppressingChangeNotifications = $targetObject->isStable;
         } elseif ($objectID = $this->idResolver->resolve($entity, $object)) {
-            $isFullyInitialized = $object[ManagedObjectFaultingStateKey] === ManagedObjectFaultingStateStable;
             $targetObject = $this->context->object($objectID);
-            $targetObject->isSuppressingChangeNotifications = $isFullyInitialized;
-            $targetObject->isSuppressingKVO = $isFullyInitialized;
+            $targetObject->isSuppressingChangeNotifications = $targetObject->isStable;
+            $targetObject->isSuppressingKVO = $targetObject->isStable;
             $targetObject->updateFromSnapshot($object);
             $targetObject->isSuppressingKVO = false;
         }
         if ($targetObject instanceof ManagedObject) {
-            if (!$targetObject->isAwakeFromFetch && $isFullyInitialized) {
+            if ($targetObject->isStable && !$targetObject->isAwakeFromFetch) {
                 $targetObject->isAwakeFromFetch = true;
                 $targetObject->awakeFromFetch();
             }
