@@ -822,15 +822,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if (!$property instanceof PropertyDescription || $property instanceof DerivedAttributeDescription) {
             return;
         }
-        if ($this->isInserted && !$this->isStable) {
-            return;
-        }
-        $finalValue = $newValue ?? Nil::nil();
-        $committed = $this->committedValues[$propertyName];
-        if (is_equal($committed, $finalValue)) {
-            return;
-        }
-        $this->changedValuesForCurrentEvent[$propertyName] = $finalValue;
+        $this->changedValuesForCurrentEvent[$propertyName] = $newValue ?? Nil::nil();
     }
 
     #[Override]
