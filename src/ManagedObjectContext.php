@@ -165,6 +165,7 @@ final class ManagedObjectContext extends ObjectClass
      * @param ManagedObjectID $objectID
      * @return FaultingSet|ManagedObject|ManagedObjectID|null
      * @throws Exception
+     * @internal
      */
     public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID): FaultingSet|ManagedObject|ManagedObjectID|null
     {
