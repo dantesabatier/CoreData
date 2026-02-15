@@ -719,7 +719,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             return;
         }
         $this->updateDirtyState($value, $key);
-        /** @var PropertyDescription|null $property */
         $property = $this->entity->propertiesByName[$key];
         if ($property instanceof AttributeDescription) {
             $value = $this->changedValuesForCurrentEvent[$key] ?? $value;
