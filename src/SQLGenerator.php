@@ -230,13 +230,22 @@ final class SQLGenerator extends ObjectClass
             }
             $this->useDistinct = $request->returnsDistinctResults;
             if (!$this->useDistinct && $this->autoDistinct) {
-                $this->useDistinct = $request->serialization->contains(function (mixed $value, string $key): bool {
-                    if ($value instanceof Dictionary) {
-                        $sqlProperty = $this->entity->propertiesByName[$key];
-                        return $sqlProperty instanceof SQLToMany || $sqlProperty instanceof SQLManyToMany;
-                    }
-                    return false;
-                });
+                $needsDistinct = function (Dictionary $dictionary, EntityDescription $entity) use (&$needsDistinct): bool {
+                    return $dictionary->contains(function (mixed $value, string $key) use ($entity, &$needsDistinct): bool {
+                        if (!$value instanceof Dictionary) {
+                            return false;
+                        }
+                        $property = $entity->propertiesByName[$key];
+                        if (!$property instanceof RelationshipDescription) {
+                            return false;
+                        }
+                        if ($property->isToMany) {
+                            return true;
+                        }
+                        return $needsDistinct($value, $property->destinationEntity);
+                    });
+                };
+                $this->useDistinct = $needsDistinct($request->serialization, $entity);
             }
             $this->prepareSelectStatementWithFetchRequest($request);
             $this->prepareJoinStatementsForPredicateAndRelationships();
