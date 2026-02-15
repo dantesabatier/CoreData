@@ -235,14 +235,13 @@ final class SQLGenerator extends ObjectClass
                         if (!$value instanceof Dictionary) {
                             return false;
                         }
-                        $property = $entity->propertiesByName[$key];
-                        if (!$property instanceof RelationshipDescription) {
+                        if (!($relationship = $entity->relationshipsByName[$key])) {
                             return false;
                         }
-                        if ($property->isToMany) {
+                        if ($relationship->isToMany) {
                             return true;
                         }
-                        return $needsDistinct($value, $property->destinationEntity);
+                        return $needsDistinct($value, $relationship->destinationEntity);
                     });
                 };
                 $this->useDistinct = $needsDistinct($request->serialization, $entity);
@@ -1002,6 +1001,7 @@ final class SQLGenerator extends ObjectClass
         $keyPath = $this->buildKeyPathExpression($expression);
         [$entityAlias, $columnName] = explode(".", $keyPath);
         $relationship = (function () use ($expression): ?SQLRelationship {
+            /** @var SQLRelationship|null $relationship */
             $relationship = null;
             $entity = $this->entity;
             $keys = new Set(explode(".", $expression->keyPath));
@@ -1009,6 +1009,7 @@ final class SQLGenerator extends ObjectClass
                 $property = $entity->propertiesByName[$key];
                 if ($property instanceof SQLRelationship) {
                     $entity = $property->destinationEntity;
+                    /** @var SQLRelationship $relationship */
                     $relationship = $property;
                 }
             }
