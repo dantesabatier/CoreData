@@ -1009,7 +1009,6 @@ final class SQLGenerator extends ObjectClass
                 $property = $entity->propertiesByName[$key];
                 if ($property instanceof SQLRelationship) {
                     $entity = $property->destinationEntity;
-                    /** @var SQLRelationship $relationship */
                     $relationship = $property;
                 }
             }

@@ -29,6 +29,7 @@ use Sabatier\Foundation\Value;
 use Sabatier\Foundation\ValueTransformer;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
+use function Sabatier\Foundation\is_equal;
 use function Sabatier\Foundation\localized_string;
 use function Sabatier\Foundation\typeof;
 use const Sabatier\Foundation\LocalizedDescriptionKey;
@@ -717,18 +718,20 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if (!$this->validateValueForKey($value, $key)) {
             return;
         }
+        $this->updateDirtyState($value, $key);
         /** @var PropertyDescription|null $property */
         $property = $this->entity->propertiesByName[$key];
-        if ($property && !$property->isTransient && !$property instanceof DerivedAttributeDescription && !$property instanceof FetchedPropertyDescription && !$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications) {
-            $this->changedValuesForCurrentEvent[$key] = $value ?? Nil::nil();
-        }
-        if ($property instanceof AttributeDescription || $property instanceof FetchedPropertyDescription) {
-            $newValue = $this->changedValuesForCurrentEvent[$key] ?? $value;
-            if ($newValue instanceof Nil) {
-                $newValue = $newValue->value;
+        if ($property instanceof AttributeDescription) {
+            $value = $this->changedValuesForCurrentEvent[$key] ?? $value;
+            if ($value instanceof Nil) {
+                $value = $value->value;
             }
             $this->willChangeValueForKey($key, changedValue: $value);
-            $this->setPrimitiveValueForKey($newValue, $key);
+            $this->setPrimitiveValueForKey($value, $key);
+            $this->didChangeValueForKey($key, changedValue: $value);
+        } elseif ($property instanceof FetchedPropertyDescription) {
+            $this->willChangeValueForKey($key, changedValue: $value);
+            $this->setPrimitiveValueForKey($value, $key);
             $this->didChangeValueForKey($key, changedValue: $value);
         } elseif ($property instanceof RelationshipDescription) {
             $inverseRelationship = $property->inverseRelationship;
@@ -809,6 +812,24 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         } else {
             parent::setValueForKey($value, $key);
         }
+    }
+
+    private function updateDirtyState(mixed $newValue, string $propertyName): void
+    {
+        if ($this->isSuppressingKVO || $this->isSuppressingChangeNotifications) {
+            return;
+        }
+        $property = $this->persistentProperties[$propertyName];
+        if (!$property instanceof PropertyDescription || $property instanceof DerivedAttributeDescription) {
+            return;
+        }
+        $finalValue = $newValue ?? Nil::nil();
+        $committed = $this->committedValues[$propertyName];
+        if (is_equal($committed, $finalValue)) {
+            $this->changedValuesForCurrentEvent->removeValueForKey($propertyName);
+            return;
+        }
+        $this->changedValuesForCurrentEvent[$propertyName] = $finalValue;
     }
 
     #[Override]
