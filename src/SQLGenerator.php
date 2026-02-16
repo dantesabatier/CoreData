@@ -1493,13 +1493,9 @@ final class SQLGenerator extends ObjectClass
                     if ($this->entity->attributes->contains(fn(SQLAttribute $attribute): bool => $value === $attribute->name)) {
                         return "`$key` = $value";
                     }
-                    $expression = Expression::expressionWithFormat($value) ?? fatal_error("Unable to create expression \"$value\"");
-                    if ($expression->expressionType === ExpressionType::keyPath && !$this->entity->propertiesByName->offsetExists($expression->keyPath)) {
-                        $expression = Expression::expressionForConstantValue($expression->keyPath);
-                    }
                     $value = match($value) {
                         "UUID()", "CURRENT_TIMESTAMP" => $value,
-                        default => $this->buildExpression($expression),
+                        default => $this->compileExpressionString($value),
                     };
                     return "$this->tableReference.$key = $value";
                 }
@@ -1507,6 +1503,16 @@ final class SQLGenerator extends ObjectClass
                 return "$this->tableReference.$key = ?";
             })->join(", ")}";
         $this->arguments = $arguments;
+    }
+
+    private function compileExpressionString(string $format): string
+    {
+        $expression = Expression::expressionWithFormat($format) ?? fatal_error("Unable to create expression \"$format\"");
+        if ($expression->expressionType === ExpressionType::keyPath && !$this->entity->propertiesByName->offsetExists($expression->keyPath)) {
+            $expression = Expression::expressionForConstantValue($expression->keyPath);
+        }
+        $isDeterministic = new DerivationSchemaCompatibility($expression)->isDeterministic;
+        return $this->buildExpression($expression, $isDeterministic);
     }
 
     private function prepareStatementForBatchDeleteRequest(BatchDeleteRequest $request): void
