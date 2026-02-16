@@ -20,7 +20,6 @@ use Sabatier\Foundation\URL;
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
-use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\typeof;
 
 /**
