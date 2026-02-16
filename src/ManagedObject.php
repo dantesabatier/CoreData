@@ -29,6 +29,7 @@ use Sabatier\Foundation\Value;
 use Sabatier\Foundation\ValueTransformer;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
+use function Sabatier\Foundation\is_equal;
 use function Sabatier\Foundation\localized_string;
 use function Sabatier\Foundation\typeof;
 use const Sabatier\Foundation\LocalizedDescriptionKey;
@@ -207,9 +208,14 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
              * @throws Exception
              */
             function (Dictionary $initialResult, mixed $value, string $key): Dictionary {
-                if ($relationship = $this->modeledRelationships[$key]) {
+                $property = $this->modeledProperties[$key];
+                if ($property instanceof AttributeDescription) {
+                    if ($this->isSubclass(ManagedObject::class)) {
+                        $this->dispatchValidationHook($key, $value);
+                    }
+                } elseif ($property instanceof RelationshipDescription) {
                     $context = $this->managedObjectContext;
-                    $value = $context->newValueForRelationship($relationship, $this->objectID);
+                    $value = $context->newValueForRelationship($property, $this->objectID);
                     if ($value instanceof ManagedObjectID) {
                         $value = $context->object($value);
                     }
@@ -821,7 +827,14 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if (!$property instanceof PropertyDescription || $property instanceof DerivedAttributeDescription) {
             return;
         }
-        $this->changedValuesForCurrentEvent[$propertyName] = $newValue ?? Nil::nil();
+        $finalValue = $newValue ?? Nil::nil();
+        if ($this->isStable) {
+            $committedValue = $this->committedValues[$propertyName];
+            if (is_equal($finalValue, $committedValue)) {
+                return;
+            }
+        }
+        $this->changedValuesForCurrentEvent[$propertyName] = $finalValue;
     }
 
     #[Override]
