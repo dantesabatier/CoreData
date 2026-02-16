@@ -20,6 +20,7 @@ use Sabatier\Foundation\URL;
 use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
+use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\typeof;
 
 /**
@@ -109,7 +110,7 @@ class MigrationManager extends ObjectClass
         }
         $sourceEntity = $this->sourceEntity($mapping);
         $destinationEntity = $this->destinationEntity($mapping);
-        if ($this->performedInPlaceMigration && ($mappingType === EntityMappingType::copyEntityMappingType || ($mappingType === EntityMappingType::transformEntityMappingType && $sourceEntity && $destinationEntity && $sourceEntity->isKindOf($destinationEntity)))) {
+        if ($this->performedInPlaceMigration && ($mappingType === EntityMappingType::copyEntityMappingType || ($mappingType === EntityMappingType::transformEntityMappingType && $sourceEntity && $destinationEntity && $destinationEntity->renamingIdentifier === $sourceEntity->renamingIdentifier))) {
             return true;
         }
         $sourceContext = $this->sourceContext;

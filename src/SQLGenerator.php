@@ -1493,9 +1493,13 @@ final class SQLGenerator extends ObjectClass
                     if ($this->entity->attributes->contains(fn(SQLAttribute $attribute): bool => $value === $attribute->name)) {
                         return "`$key` = $value";
                     }
+                    $expression = Expression::expressionWithFormat($value) ?? fatal_error("Unable to create expression \"$value\"");
+                    if ($expression->expressionType === ExpressionType::keyPath && !$this->entity->propertiesByName->offsetExists($expression->keyPath)) {
+                        $expression = Expression::expressionForConstantValue($expression->keyPath);
+                    }
                     $value = match($value) {
                         "UUID()", "CURRENT_TIMESTAMP" => $value,
-                        default => $this->buildExpression(Expression::expressionWithFormat($value) ?? fatal_error("Unable to create expression \"$value\"")),
+                        default => $this->buildExpression($expression),
                     };
                     return "$this->tableReference.$key = $value";
                 }
