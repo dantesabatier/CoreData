@@ -29,7 +29,6 @@ use Sabatier\Foundation\Value;
 use Sabatier\Foundation\ValueTransformer;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
-use function Sabatier\Foundation\is_equal;
 use function Sabatier\Foundation\localized_string;
 use function Sabatier\Foundation\typeof;
 use const Sabatier\Foundation\LocalizedDescriptionKey;

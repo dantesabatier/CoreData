@@ -26,9 +26,10 @@ final readonly class ManagedObjectResolver
             $targetObject = $this->context->object($object);
             $targetObject->isSuppressingChangeNotifications = $targetObject->isStable;
         } elseif ($objectID = $this->idResolver->resolve($entity, $object)) {
+            $isStable = $object[ManagedObjectFaultingStateKey] === ManagedObjectFaultingStateStable;
             $targetObject = $this->context->object($objectID);
-            $targetObject->isSuppressingChangeNotifications = $targetObject->isStable;
-            $targetObject->isSuppressingKVO = $targetObject->isStable;
+            $targetObject->isSuppressingChangeNotifications = $isStable;
+            $targetObject->isSuppressingKVO = $isStable;
             $targetObject->updateFromSnapshot($object);
             $targetObject->isSuppressingKVO = false;
         }
