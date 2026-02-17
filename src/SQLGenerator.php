@@ -1511,8 +1511,7 @@ final class SQLGenerator extends ObjectClass
         if ($expression->expressionType === ExpressionType::keyPath && !$this->entity->propertiesByName->offsetExists($expression->keyPath)) {
             $expression = Expression::expressionForConstantValue($expression->keyPath);
         }
-        $isDeterministic = new DerivationSchemaCompatibility($expression)->isDeterministic;
-        return $this->buildExpression($expression, $isDeterministic);
+        return $this->buildExpression($expression);
     }
 
     private function prepareStatementForBatchDeleteRequest(BatchDeleteRequest $request): void
