@@ -32,6 +32,7 @@ use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\Predicates\PredicateOperatorSymbol;
 use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Predicates\PredicateVisitorFlags;
+use Sabatier\Foundation\Predicates\SubqueryExpression;
 use Sabatier\Foundation\Sequence;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\SortDescriptor;
@@ -865,10 +866,14 @@ final class SQLGenerator extends ObjectClass
     {
         $leftExpression = $predicate->leftExpression;
         $rightExpression = $predicate->rightExpression;
-        $right = $rightExpression->constantValue ?? $rightExpression->collection;
-        assert($right instanceof Sequence && !$right->isEmpty, sprintf("invalid argument: the right expression of an IN operator must be an non-empty \"%s\", (%s)%s given", Sequence::class, typeof($right), human_readable_value($right)));
-        $clause .= "{$this->buildExpression($leftExpression)} IN (" . ArrayClass::repeating("?", $right->count)->join(", ") . ")";
-        $this->arguments->appendContentsOf($right->map(fn(mixed $element): mixed => $element instanceof Expression ? $element->constantValue : $element));
+        if ($rightExpression->expressionType === ExpressionType::subquery) {
+            $clause .= "{$this->buildExpression($leftExpression)} IN ({$this->buildExpression($rightExpression)})";
+            return;
+        }
+        $subqueryValues = $rightExpression->constantValue ?? $rightExpression->collection;
+        assert($subqueryValues instanceof Sequence && !$subqueryValues->isEmpty, sprintf("invalid argument: the right expression of an IN operator must be an non-empty \"%s\", (%s)%s given", Sequence::class, typeof($subqueryValues), human_readable_value($subqueryValues)));
+        $clause .= "{$this->buildExpression($leftExpression)} IN (" . ArrayClass::repeating("?", $subqueryValues->count)->join(", ") . ")";
+        $this->arguments->appendContentsOf($subqueryValues->map(fn(mixed $element): mixed => $element instanceof Expression ? $element->constantValue : $element));
     }
 
     private function prepareBetween(ComparisonPredicate $predicate, string &$clause): void
@@ -1243,6 +1248,31 @@ final class SQLGenerator extends ObjectClass
         };
     }
 
+    private function buildSubqueryExpression(Expression $expression, ?bool &$isDeterministic): string
+    {
+        assert($expression instanceof SubqueryExpression);
+        $isDeterministic = false;
+        $collectionExpression = $expression->collectionExpression;
+        $this->isKeyPathExpression($collectionExpression) ?: fatal_error("Invalid argument: invalid subquery expression $expression");
+        $keyPath = $collectionExpression->keyPath;
+        $variable = $expression->variable;
+        $predicate = $expression->predicate;
+        $relationship = $this->entity->toManyRelationships[$keyPath] ?? $this->entity->manyToManyRelationships[$keyPath] ?? fatal_error("Invalid argument: invalid subquery expression \"$expression\"");
+        $tableName = $relationship->destinationEntity->tableName;
+        $alias = str_starts_with($variable, "\$") ? substr($variable, 1) : $variable;
+        $subWhereClause = "";
+        $this->preparePredicate($predicate, $subWhereClause);
+        if ($subWhereClause) {
+            $subWhereClause = " WHERE $subWhereClause";
+        }
+        $analyzer = new SQLPredicateAnalyser();
+        $predicate->accept($analyzer, PredicateVisitorFlags::all);
+        $keyPathExpressions = $analyzer->keyPathExpressions->filter(fn(Expression $expression): bool => str_contains($expression->description, "."));
+        !$keyPathExpressions->isEmpty ?: fatal_error("Invalid argument: invalid subquery expression \"$expression\"");
+        $selectClause = $keyPathExpressions->map(fn(Expression $expression): string => str_replace($keyPath, $alias, $expression->predicateFormat))->join(", ");
+        return "SELECT $selectClause FROM $tableName AS $alias$subWhereClause";
+    }
+
     private function buildExpression(Expression $expression, ?bool &$isDeterministic = true): string
     {
         return match ($expression->expressionType) {
@@ -1251,6 +1281,7 @@ final class SQLGenerator extends ObjectClass
             ExpressionType::function => $this->buildFunctionExpression($expression, $isDeterministic),
             ExpressionType::conditional => $this->buildConditionalExpression($expression, $isDeterministic),
             ExpressionType::aggregate => $this->buildAggregateExpression($expression, $isDeterministic),
+            ExpressionType::subquery => $this->buildSubqueryExpression($expression, $isDeterministic),
             default => $expression->description,
         };
     }
