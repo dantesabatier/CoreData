@@ -1257,6 +1257,7 @@ final class SQLGenerator extends ObjectClass
         $keyPath = $collectionExpression->keyPath;
         $variable = $expression->variable;
         $predicate = $expression->predicate;
+        /** @var SQLToMany|SQLManyToMany $relationship */
         $relationship = $this->entity->propertiesByName[$keyPath] ?? fatal_error("Invalid argument: invalid subquery expression \"$expression\"");
         $relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany ?: fatal_error("Invalid argument: invalid subquery expression \"$expression\"");
         $destinationEntity = $relationship->destinationEntity;
@@ -1274,6 +1275,7 @@ final class SQLGenerator extends ObjectClass
         $selectClause = $keyPathExpressions->map(function (Expression $expression) use ($destinationEntity, $alias): string {
             $parts = explode(".", $expression->description);
             [, $propertyName] = $parts;
+            /** @var SQLColumn $property */
             $property = $destinationEntity->propertiesByName[$propertyName] ?? fatal_error("Invalid argument: invalid subquery expression \"$expression\"");
             $property instanceof SQLColumn ?: fatal_error("Invalid argument: invalid subquery expression \"$expression\"");
             return "$alias.$property->columnName";
