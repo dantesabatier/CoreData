@@ -1257,8 +1257,10 @@ final class SQLGenerator extends ObjectClass
         $keyPath = $collectionExpression->keyPath;
         $variable = $expression->variable;
         $predicate = $expression->predicate;
-        $relationship = $this->entity->toManyRelationships[$keyPath] ?? $this->entity->manyToManyRelationships[$keyPath] ?? fatal_error("Invalid argument: invalid subquery expression \"$expression\"");
-        $tableName = $relationship->destinationEntity->tableName;
+        $relationship = $this->entity->propertiesByName[$keyPath] ?? fatal_error("Invalid argument: invalid subquery expression \"$expression\"");
+        $relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany ?: fatal_error("Invalid argument: invalid subquery expression \"$expression\"");
+        $destinationEntity = $relationship->destinationEntity;
+        $tableName = $destinationEntity->tableName;
         $alias = str_starts_with($variable, "\$") ? substr($variable, 1) : $variable;
         $subWhereClause = "";
         $this->preparePredicate($predicate, $subWhereClause);
@@ -1269,7 +1271,13 @@ final class SQLGenerator extends ObjectClass
         $predicate->accept($analyzer, PredicateVisitorFlags::all);
         $keyPathExpressions = $analyzer->keyPathExpressions->filter(fn(Expression $expression): bool => str_contains($expression->description, "."));
         !$keyPathExpressions->isEmpty ?: fatal_error("Invalid argument: invalid subquery expression \"$expression\"");
-        $selectClause = $keyPathExpressions->map(fn(Expression $expression): string => str_replace($keyPath, $alias, $expression->predicateFormat))->join(", ");
+        $selectClause = $keyPathExpressions->map(function (Expression $expression) use ($destinationEntity, $alias): string {
+            $parts = explode(".", $expression->description);
+            [, $propertyName] = $parts;
+            $property = $destinationEntity->propertiesByName[$propertyName] ?? fatal_error("Invalid argument: invalid subquery expression \"$expression\"");
+            $property instanceof SQLColumn ?: fatal_error("Invalid argument: invalid subquery expression \"$expression\"");
+            return "$alias.$property->columnName";
+        })->join(", ");
         return "SELECT $selectClause FROM $tableName AS $alias$subWhereClause";
     }
 
