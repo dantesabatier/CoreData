@@ -13,7 +13,7 @@ use function Sabatier\Foundation\kvc_operator_from_key;
 /** @internal */
 final class DerivationSchemaCompatibility
 {
-    private SQLPredicateAnalyser $analyser {
+    private(set) SQLPredicateAnalyser $analyser {
         get {
             if (!isset($this->analyser)) {
                 $this->analyser = new SQLPredicateAnalyser();
