@@ -1257,30 +1257,31 @@ final class SQLGenerator extends ObjectClass
         $keyPath = $collectionExpression->keyPath;
         $variable = $expression->variable;
         $predicate = $expression->predicate;
+        $entity = $this->entity;
         /** @var SQLToMany|SQLManyToMany $relationship */
-        $relationship = $this->entity->propertiesByName[$keyPath] ?? fatal_error("Invalid argument: invalid subquery expression \"$expression\"");
-        $relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany ?: fatal_error("Invalid argument: invalid subquery expression \"$expression\"");
+        $relationship = $entity->propertiesByName[$keyPath] ?? fatal_error("Invalid argument: \"$entity\" does not contains a property named \"$keyPath\"");
+        $relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany ?: fatal_error("Invalid argument: $relationship is not a to-many relationship");
         $destinationEntity = $relationship->destinationEntity;
         $tableName = $destinationEntity->tableName;
         $alias = str_starts_with($variable, "\$") ? substr($variable, 1) : $variable;
-        $subWhereClause = "";
-        $this->preparePredicate($predicate, $subWhereClause);
-        if ($subWhereClause) {
-            $subWhereClause = " WHERE $subWhereClause";
+        $whereClause = "";
+        $this->preparePredicate($predicate, $whereClause);
+        if ($whereClause) {
+            $whereClause = " WHERE $whereClause";
         }
         $analyzer = new SQLPredicateAnalyser();
         $predicate->accept($analyzer, PredicateVisitorFlags::all);
         $keyPathExpressions = $analyzer->keyPathExpressions->filter(fn(Expression $expression): bool => str_contains($expression->description, "."));
-        !$keyPathExpressions->isEmpty ?: fatal_error("Invalid argument: invalid subquery expression \"$expression\"");
+        !$keyPathExpressions->isEmpty ?: fatal_error("Invalid argument: expected a predicate with at least one key path expression, got $predicate");
         $selectClause = $keyPathExpressions->map(function (Expression $expression) use ($destinationEntity, $alias): string {
             $parts = explode(".", $expression->description);
             [, $propertyName] = $parts;
             /** @var SQLColumn $property */
-            $property = $destinationEntity->propertiesByName[$propertyName] ?? fatal_error("Invalid argument: invalid subquery expression \"$expression\"");
-            $property instanceof SQLColumn ?: fatal_error("Invalid argument: invalid subquery expression \"$expression\"");
+            $property = $destinationEntity->propertiesByName[$propertyName] ?? fatal_error("Invalid argument: $destinationEntity does not contains a property named $propertyName");
+            $property instanceof SQLColumn ?: fatal_error("Invalid argument: $property is not a column");
             return "$alias.$property->columnName";
         })->join(", ");
-        return "SELECT $selectClause FROM $tableName AS $alias$subWhereClause";
+        return "SELECT $selectClause FROM $tableName AS $alias$whereClause";
     }
 
     private function buildExpression(Expression $expression, ?bool &$isDeterministic = true): string
