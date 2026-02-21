@@ -1259,6 +1259,7 @@ final class SQLGenerator extends ObjectClass
         $collectionExpression = $operand->collectionExpression;
         $this->isKeyPathExpression($collectionExpression) ?: fatal_error("Invalid argument: invalid subquery expression $operand");
         $keyPath = $collectionExpression->keyPath;
+        $variable = $operand->variable;
         $predicate = $operand->predicate;
         $entity = $this->entity;
         /** @var SQLToMany|SQLManyToMany $relationship */
@@ -1266,6 +1267,7 @@ final class SQLGenerator extends ObjectClass
         $relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany ?: fatal_error("Invalid argument: $relationship is not a to-many relationship");
         $destinationEntity = $relationship->destinationEntity;
         $tableName = $destinationEntity->tableName;
+        $alias = str_starts_with($variable, "\$") ? substr($variable, 1) : $variable;
         $whereClause = "";
         $this->preparePredicate($predicate, $whereClause);
         if ($whereClause) {
@@ -1273,24 +1275,24 @@ final class SQLGenerator extends ObjectClass
         }
         $compatibility = new DerivationSchemaCompatibility($expression);
         $compatibility->usesKeyValueCoding ?: fatal_error("Invalid argument: unsupported subquery expression $expression");
-        $keyPathExpressions = new Set($compatibility->analyser->keyPathExpressions)->filter(fn(Expression $keyPathExpression): bool => str_contains($keyPathExpression->operand?->expressionType === ExpressionType::keyPath ? $keyPathExpression->description : $keyPathExpression->keyPath, "."))->map(function (Expression $keyPathExpression) use ($destinationEntity, $tableName): string {
+        $keyPathExpressions = new Set($compatibility->analyser->keyPathExpressions)->filter(fn(Expression $keyPathExpression): bool => str_contains($keyPathExpression->operand?->expressionType === ExpressionType::keyPath ? $keyPathExpression->description : $keyPathExpression->keyPath, "."))->map(function (Expression $keyPathExpression) use ($destinationEntity, $alias): string {
             $parts = explode(".", $keyPathExpression->keyPath);
             [, $propertyName] = $parts;
             /** @var SQLColumn $property */
             $property = $destinationEntity->propertiesByName[$propertyName] ?? fatal_error("Invalid argument: $destinationEntity does not contains a property named \"$propertyName\"");
             $property instanceof SQLColumn ?: fatal_error("Invalid argument: $property is not a column");
-            return "$tableName.$property->columnName";
+            return "$alias.$property->columnName";
         });
         $keyPathExpressions->count === 1 ?: fatal_error("Invalid argument: unsupported subquery expression $expression");
         $selectClause = $keyPathExpressions->join(", ");
         if ($compatibility->usesKeyValueOperator) {
             [, $collectionOperator,] = kvc_components($expression->keyPath);
             $selectClause = match ($collectionOperator) {
-                KeyValueOperator::countKeyValueOperator => sprintf("%s(%s.%s)", strtoupper($collectionOperator), $tableName, $entity->primaryKey->columnName),
-                default => sprintf("%s(%s.%s)", strtoupper($collectionOperator), $tableName, $selectClause)
+                KeyValueOperator::countKeyValueOperator => sprintf("%s(%s.%s)", strtoupper($collectionOperator), $alias, $entity->primaryKey->columnName),
+                default => sprintf("%s(%s.%s)", strtoupper($collectionOperator), $alias, $selectClause)
             };
         }
-        return "SELECT $selectClause FROM $tableName$whereClause";
+        return "SELECT $selectClause FROM $tableName AS $alias$whereClause";
     }
 
     private function buildExpression(Expression $expression, ?bool &$isDeterministic = true): string
