@@ -2,7 +2,7 @@
 
 namespace Sabatier\CoreData;
 
-class SQLDerivedAttributeSQLGenerator
+/** @internal */
+final class SQLDerivedAttributeSQLGenerator
 {
-
 }
