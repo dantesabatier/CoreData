@@ -1355,7 +1355,7 @@ final class SQLGenerator extends ObjectClass
                 $expressionKeyPath = $expression->keyPath;
             }
             $components = kvc_components($expressionKeyPath);
-            if (count($components) > 0) {
+            if (count($components) > 1) {
                 $keyValueOperator = $components[1];
             }
             if ($predicate instanceof ComparisonPredicate) {
