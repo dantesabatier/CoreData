@@ -1371,11 +1371,7 @@ final class SQLGenerator extends ObjectClass
                 [, $keyPathToProperty] = explode(".", $keyPathExpression->keyPath);
             }
         }
-        $generator = $this->createSubQueryGenerator($relationship, $keyValueOperator, $keyPathToProperty, $tableAlias, $predicate);
-        $prefix = "$generator->statement";
-        $connector = $generator->whereClause ? " AND " : " WHERE ";
-        $correlationCondition = $this->buildCorrelationCondition($relationship, $entity->tableName, $tableAlias);
-        return "$prefix$connector$correlationCondition";
+        return $this->buildCorrelatedSubqueryString($this->createSubQueryGenerator($relationship, $keyValueOperator, $keyPathToProperty, $tableAlias, $predicate), $relationship, $entity->tableName, $tableAlias);
     }
 
     private function buildExpression(Expression $expression, ?bool &$isDeterministic = true): string
