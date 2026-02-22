@@ -62,6 +62,9 @@ final class SQLGenerator extends ObjectClass
     }
     private FetchRequest $request {
         get {
+            if (isset($this->request)) {
+                return $this->request;
+            }
             if ($this->requestContext instanceof SQLBatchUpdateRequestContext) {
                 return $this->request = $this->requestContext->fetchContext->request;
             }
@@ -76,6 +79,9 @@ final class SQLGenerator extends ObjectClass
     }
     private SQLEntity $entity {
         get {
+            if (isset($this->entity)) {
+                return $this->entity;
+            }
             if ($this->requestContext instanceof SQLBatchInsertRequestContext) {
                 return $this->entity = $this->requestContext->sqlEntityForInsertRequest;
             }
@@ -1023,21 +1029,25 @@ final class SQLGenerator extends ObjectClass
 
     private function prepareComparisonPredicate(ComparisonPredicate $predicate, string &$clause): void
     {
-        if ($predicate->comparisonPredicateModifier === ComparisonPredicateModifier::direct) {
-            $leftExpression = $predicate->leftExpression;
-            if ($leftExpression->expressionType === ExpressionType::subquery || ($leftExpression->expressionType === ExpressionType::keyPath && $leftExpression->operand instanceof SubqueryExpression)) {
-                $isCountGreaterThanZero = $predicate->predicateOperatorType === PredicateOperatorType::greaterThan && $predicate->rightExpression->constantValue === 0;
-                if ($isCountGreaterThanZero) {
-                    $clause .= "EXISTS ({$this->buildSubqueryExpression($leftExpression, $isDeterministic, true)})";
-                    return;
-                }
+        if ($predicate->comparisonPredicateModifier !== ComparisonPredicateModifier::direct) {
+            if ($this->isKeyPathExpression($predicate->leftExpression) || $this->isKeyPathExpression($predicate->rightExpression)) {
+                $this->buildClauseWithSelectPredicate($predicate, $clause);
+                return;
             }
-            $this->buildClauseWithSimplePredicate($predicate, $clause);
-        } elseif ($this->isKeyPathExpression($predicate->leftExpression) || $this->isKeyPathExpression($predicate->rightExpression)) {
-            $this->buildClauseWithSelectPredicate($predicate, $clause);
-        } else {
             fatal_error("Invalid argument: invalid predicate $predicate");
         }
+        $leftExpression = $predicate->leftExpression;
+        $isSubquery = $leftExpression->expressionType === ExpressionType::subquery || ($leftExpression->expressionType === ExpressionType::keyPath && $leftExpression->operand instanceof SubqueryExpression);
+        if ($isSubquery) {
+            $isCountGreaterThanZero = $predicate->predicateOperatorType === PredicateOperatorType::greaterThan && $predicate->rightExpression->constantValue === 0;
+            if ($isCountGreaterThanZero) {
+                $isDeterministic = true;
+                $subquerySql = $this->buildSubqueryExpression($leftExpression, $isDeterministic, true);
+                $clause .= "EXISTS ({$subquerySql})";
+                return;
+            }
+        }
+        $this->buildClauseWithSimplePredicate($predicate, $clause);
     }
 
     private function buildClauseWithSelectPredicate(ComparisonPredicate $predicate, string &$clause): void
