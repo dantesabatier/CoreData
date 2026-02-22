@@ -46,7 +46,7 @@ use function Sabatier\Foundation\typeof;
 /** @internal */
 final class SQLGenerator extends ObjectClass
 {
-    private string $string;
+    private(set) string $string;
     private string $selectList = "";
     private string $joinClause = "";
     private string $whereClause = "";
@@ -61,71 +61,67 @@ final class SQLGenerator extends ObjectClass
         get => $this->aliasGenerator ??= new SQLAliasGenerator();
     }
     private FetchRequest $request {
-        get => $this->request ??= $this->request();
+        get {
+            if ($this->requestContext instanceof SQLBatchUpdateRequestContext) {
+                return $this->request = $this->requestContext->fetchContext->request;
+            }
+            if ($this->requestContext instanceof SQLBatchDeleteRequestContext) {
+                return $this->request = $this->requestContext->fetchContext->request;
+            }
+            if ($this->requestContext instanceof SQLFetchRequestContext) {
+                return $this->request = $this->requestContext->request;
+            }
+            fatal_error("Invalid SQL request context");
+        }
     }
     private SQLEntity $entity {
-        get => $this->entity ??= $this->entity();
+        get {
+            if ($this->requestContext instanceof SQLBatchInsertRequestContext) {
+                return $this->entity = $this->requestContext->sqlEntityForInsertRequest;
+            }
+            if ($this->requestContext instanceof SQLBatchUpdateRequestContext) {
+                return $this->entity = $this->requestContext->fetchContext->sqlEntityForFetchRequest;
+            }
+            if ($this->requestContext instanceof SQLBatchDeleteRequestContext) {
+                return $this->entity = $this->requestContext->fetchContext->sqlEntityForFetchRequest;
+            }
+            if ($this->requestContext instanceof SQLFetchRequestContext) {
+                return $this->entity = $this->requestContext->sqlEntityForFetchRequest;
+            }
+            fatal_error("Invalid SQL request context");
+        }
     }
     private string $tableReference {
         get => $this->tableReference ??= $this->tableAlias ?? $this->entity->tableName;
     }
     /** @var ArrayClass<mixed> */
-    public ArrayClass $arguments {
+    private(set) ArrayClass $arguments {
         get => $this->arguments ??= new ArrayClass();
     }
+    private bool $isStatementResolved = false;
     public ?SQLStatement $statement {
-        get => $this->statement ??= $this->statement();
+        get {
+            if ($this->isStatementResolved) {
+                return $this->statement;
+            }
+            $this->isStatementResolved = true;
+            if ($this->requestContext instanceof SQLBatchInsertRequestContext || $this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext || $this->requestContext instanceof SQLFetchRequestContext) {
+                return $this->statement = $this->newSQLStatementForPersistentStoreRequest();
+            }
+            if ($this->requestContext instanceof SQLSaveChangesRequestContext) {
+                return $this->statement = $this->newSQLStatementForSaveChangesRequestContext();
+            }
+            return $this->statement = null;
+        }
     }
     private bool $useDistinct = false;
-    public bool $autoDistinct = true;
-    public bool $raisesForNotApplicableKeys = true;
+    private bool $autoDistinct = true;
+    private bool $raisesForNotApplicableKeys = true;
     private ?string $keyValueOperator = null;
     private bool $isSubquery = false;
 
     public function __construct(public readonly SQLStoreRequestContext $requestContext)
     {
-    }
-
-    private function request(): FetchRequest
-    {
-        if ($this->requestContext instanceof SQLBatchUpdateRequestContext) {
-            return $this->requestContext->fetchContext->request;
-        }
-        if ($this->requestContext instanceof SQLBatchDeleteRequestContext) {
-            return $this->requestContext->fetchContext->request;
-        }
-        if ($this->requestContext instanceof SQLFetchRequestContext) {
-            return $this->requestContext->request;
-        }
-        fatal_error("Invalid SQL request context");
-    }
-
-    private function entity(): SQLEntity
-    {
-        if ($this->requestContext instanceof SQLBatchInsertRequestContext) {
-            return $this->requestContext->sqlEntityForInsertRequest;
-        }
-        if ($this->requestContext instanceof SQLBatchUpdateRequestContext) {
-            return $this->requestContext->fetchContext->sqlEntityForFetchRequest;
-        }
-        if ($this->requestContext instanceof SQLBatchDeleteRequestContext) {
-            return $this->requestContext->fetchContext->sqlEntityForFetchRequest;
-        }
-        if ($this->requestContext instanceof SQLFetchRequestContext) {
-            return $this->requestContext->sqlEntityForFetchRequest;
-        }
-        fatal_error("Invalid SQL request context");
-    }
-
-    private function statement(): ?SQLStatement
-    {
-        if ($this->requestContext instanceof SQLBatchInsertRequestContext || $this->requestContext instanceof SQLBatchUpdateRequestContext || $this->requestContext instanceof SQLBatchDeleteRequestContext || $this->requestContext instanceof SQLFetchRequestContext) {
-            return $this->newSQLStatementForPersistentStoreRequest();
-        }
-        if ($this->requestContext instanceof SQLSaveChangesRequestContext) {
-            return $this->newSQLStatementForSaveChangesRequestContext();
-        }
-        return null;
     }
 
     private function newSQLStatementForPersistentStoreRequest(): SQLStatement
@@ -195,7 +191,7 @@ final class SQLGenerator extends ObjectClass
         return SQLStatement::merging($statements);
     }
 
-    private function compound(EntityDescription $entity, ?Predicate $predicate): ?Predicate
+    private function applyDiscriminatorPredicate(EntityDescription $entity, ?Predicate $predicate): ?Predicate
     {
         /** @var  EntityDescription $rootEntity */
         $rootEntity = $entity->isRootEntity ? $entity : $entity->rootEntity;
@@ -253,7 +249,7 @@ final class SQLGenerator extends ObjectClass
             }
             $this->prepareSelectStatementWithFetchRequest($request);
             $this->prepareJoinStatementsForPredicateAndRelationships();
-            $predicate = $this->compound($entity, $request->predicate);
+            $predicate = $this->applyDiscriminatorPredicate($entity, $request->predicate);
             if ($predicate) {
                 $this->appendWhereClauseToSQL();
                 $this->preparePredicate($predicate, $this->whereClause);
@@ -291,7 +287,7 @@ final class SQLGenerator extends ObjectClass
             $this->prepareJoinStatementsForPredicateAndRelationships();
             $this->appendSQL($this->joinClause);
             $this->appendSetStatementForBatchUpdateRequest($request);
-            if ($predicate = $this->compound($request->entity, $request->predicate)) {
+            if ($predicate = $this->applyDiscriminatorPredicate($request->entity, $request->predicate)) {
                 $this->appendWhereClauseToSQL();
                 $this->preparePredicate($predicate, $this->whereClause);
                 $this->appendSQL($this->whereClause);
@@ -376,8 +372,7 @@ final class SQLGenerator extends ObjectClass
         $appendBaseColumns = !$this->isSubquery && !$request->returnsObjectsAsFaults && $request->includesPropertyValues && !($request->resultType === FetchRequestResultType::countResultType && $this->keyValueOperator === KeyValueOperator::countKeyValueOperator);
         if ($appendBaseColumns) {
             if (!$entity->entityDescription->isPersistentHistoryEntity && $request->resultType !== FetchRequestResultType::countResultType) {
-                $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
-                $columnNames->formUnion(["$this->tableReference.{$entity->entityKey->columnName}", "$this->tableReference.{$entity->optLockKey->columnName}"]);
+                $columnNames->formUnion(array_map(fn(SQLColumn $column): string => "$this->tableReference.$column->columnName", [$entity->primaryKey, $entity->entityKey, $entity->optLockKey]));
             }
             $columnNames->formUnion($entity->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary): ArrayClass => $dictionary->values->map(fn(SQLAttribute $attribute): string => "$this->tableReference.$attribute->name")));
         }

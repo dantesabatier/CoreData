@@ -24,6 +24,7 @@ use Rector\Php73\Rector\ConstFetch\SensitiveConstantNameRector;
 use Rector\Php74\Rector\Property\RestoreDefaultNullToNullableTypePropertyRector;
 use Rector\Php80\Rector\Class_\ClassPropertyAssignToConstructorPromotionRector;
 use Rector\Php81\Rector\Property\ReadOnlyPropertyRector;
+use Rector\Php85\Rector\Property\AddOverrideAttributeToOverriddenPropertiesRector;
 use Rector\Strict\Rector\Empty_\DisallowedEmptyRuleFixerRector;
 
 try {
@@ -64,7 +65,7 @@ try {
             ],
             IssetOnPropertyObjectToPropertyExistsRector::class,
             RemoveEmptyClassMethodRector::class,
-            RemoveUnusedPublicMethodParameterRector::class
+            RemoveUnusedPublicMethodParameterRector::class,
         ])->withPreparedSets(deadCode: true, codeQuality: true, earlyReturn: true);
 } catch (InvalidConfigurationException $e) {
     error_log($e->getMessage());
