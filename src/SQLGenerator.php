@@ -76,7 +76,7 @@ final class SQLGenerator extends ObjectClass
     private bool $useDistinct = false;
     public bool $autoDistinct = true;
     public bool $raisesForNotApplicableKeys = true;
-    private ?string $keyValueOperator = null;
+    private string $keyValueOperator = KeyValueOperator::countKeyValueOperator;
     private bool $isSubquery = false;
 
     public function __construct(public readonly SQLStoreRequestContext $requestContext)
@@ -368,7 +368,7 @@ final class SQLGenerator extends ObjectClass
         $entity = $this->entity;
         /** @var Set<string> $columnNames */
         $columnNames = new Set();
-        if (!$this->isSubquery || $this->keyValueOperator) {
+        if (!$this->isSubquery || $this->keyValueOperator === KeyValueOperator::countKeyValueOperator || $this->keyValueOperator === KeyValueOperator::sumKeyValueOperator) {
             $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
         }
         $appendInferredColumnNames = true;
@@ -505,13 +505,13 @@ final class SQLGenerator extends ObjectClass
             $sourcePath = $sourceEntity->tableName;
         }
         $correlationTableAlias = "{$sourcePath}_$correlationTableName";
-        $destinationEntity = $manyToMany->destinationEntity;
         $this->appendJoinClauseToSQL();
         $this->joinClause .= "`$correlationTableName` AS $correlationTableAlias";
         $this->joinClause .= " ON ";
         $this->joinClause .= "$correlationTableAlias.$manyToMany->inverseColumnName";
         $this->joinClause .= " = ";
         $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
+        $destinationEntity = $manyToMany->destinationEntity;
         $this->appendJoinClauseToSQL();
         $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $correlationTableAlias.$manyToMany->columnName = $destinationPath.{$destinationEntity->primaryKey->columnName}";
         $this->appendJoinDestinationEntity($destinationEntity, $destinationPath);
@@ -786,7 +786,7 @@ final class SQLGenerator extends ObjectClass
                 }
             }
         }
-        if ($keyPath === $tableName) {
+        if ($this->raisesForNotApplicableKeys && $keyPath === $tableName) {
             fatal_error("Failed to generate an alias for entity \"$tableName\", invalid key path \"$description\"");
         }
         return $keyPath;
@@ -1093,7 +1093,9 @@ final class SQLGenerator extends ObjectClass
         $generator->tableAlias = $tableAlias;
         $generator->autoDistinct = false;
         $generator->raisesForNotApplicableKeys = false;
-        $generator->keyValueOperator = $keyValueOperator;
+        if ($keyValueOperator) {
+            $generator->keyValueOperator = $keyValueOperator;
+        }
         return $generator;
     }
 
