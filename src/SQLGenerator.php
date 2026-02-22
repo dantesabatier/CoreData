@@ -422,7 +422,7 @@ final class SQLGenerator extends ObjectClass
         $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
         $this->raisesForNotApplicableKeys = false;
         $expressions = $this->keyPathExpressionsForFetchRequestSerialization();
-        if (($predicate = $this->request->predicate) && $this->predicateRequiresJoins($predicate)) {
+        if (($predicate = $this->request->predicate) && $this->predicateTraversesRelationships($predicate)) {
             $expressions->formUnion($this->keyPathExpressionsForFetchRequestPredicate());
         }
         foreach ($expressions as $expression) {
@@ -432,7 +432,7 @@ final class SQLGenerator extends ObjectClass
         $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
     }
 
-    private function predicateRequiresJoins(Predicate $predicate): bool
+    private function predicateTraversesRelationships(Predicate $predicate): bool
     {
         if ($predicate instanceof ComparisonPredicate) {
             if ($predicate->comparisonPredicateModifier !== ComparisonPredicateModifier::direct) {
@@ -451,7 +451,7 @@ final class SQLGenerator extends ObjectClass
             }
         } elseif ($predicate instanceof CompoundPredicate) {
             foreach ($predicate->subpredicates as $subpredicate) {
-                if ($this->predicateRequiresJoins($subpredicate)) {
+                if ($this->predicateTraversesRelationships($subpredicate)) {
                     return true;
                 }
             }
@@ -1407,8 +1407,12 @@ final class SQLGenerator extends ObjectClass
         $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
         $this->raisesForNotApplicableKeys = false;
         if (SS_COREDATA_USES_RELATIONSHIPS_SORT_DESCRIPTORS):
+            $expressions = $this->keyPathExpressionsForFetchRequestSerialization();
+            if (($predicate = $this->request->predicate) && $this->predicateTraversesRelationships($predicate)) {
+                $expressions->formUnion($this->keyPathExpressionsForFetchRequestPredicate());
+            }
             /** @var Set<SQLToMany> $toManyRelationships */
-            $toManyRelationships = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->flatMap(fn(Expression $expression): ArrayClass => $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLForeignKey || $property instanceof SQLToMany)->compactMap(function (SQLProperty $property): ?SQLProperty {
+            $toManyRelationships = $expressions->flatMap(fn(Expression $expression): ArrayClass => $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLForeignKey || $property instanceof SQLToMany)->compactMap(function (SQLProperty $property): ?SQLProperty {
                 $toMany = null;
                 if ($property instanceof SQLForeignKey) {
                     $toMany = $property->toOneRelationship->inverseRelationship;
