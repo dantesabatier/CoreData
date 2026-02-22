@@ -384,7 +384,7 @@ final class SQLGenerator extends ObjectClass
         if ($this->keyValueOperator !== KeyValueOperator::countKeyValueOperator) {
             $columnNames->formUnion($request->serialization->keys->compactMap(function (string $key) use ($entity): ?string {
                 $property = $entity->propertiesByName[$key];
-                if ($property instanceof SQLAttribute && !$property->isTransient) {
+                if ($property instanceof SQLAttribute && !$property->isTransient && !$property->isCompositeAttribute) {
                     if ($property->isDerivedAttribute && $property->isRuntimeOnly) {
                         return "{$this->buildDerivationExpression($property->derivationExpression)} AS $property->name";
                     }
@@ -444,7 +444,7 @@ final class SQLGenerator extends ObjectClass
                     return false;
                 }
                 $keyPath = $keyPathExpression->description;
-                if (str_contains($keyPath, ".") && $this->keyPathTraversesRelationship($keyPath)) {
+                if ($this->keyPathTraversesRelationship($keyPath)) {
                     return true;
                 }
             }
