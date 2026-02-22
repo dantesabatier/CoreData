@@ -1043,7 +1043,7 @@ final class SQLGenerator extends ObjectClass
             if ($isCountGreaterThanZero) {
                 $isDeterministic = true;
                 $subquerySql = $this->buildSubqueryExpression($leftExpression, $isDeterministic, true);
-                $clause .= "EXISTS ({$subquerySql})";
+                $clause .= "EXISTS ($subquerySql)";
                 return;
             }
         }
