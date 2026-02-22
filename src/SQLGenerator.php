@@ -1059,26 +1059,31 @@ final class SQLGenerator extends ObjectClass
         $rightExpression = $expressions->first(fn(Expression $e): bool => $e->expressionType !== ExpressionType::keyPath);
         $keyPath = $this->buildKeyPathExpression($expression);
         [, $propertyName] = explode(".", $keyPath);
-        $innerPredicate = new ComparisonPredicate(
-            Expression::expressionForKeyPath($propertyName),
-            $rightExpression,
-            $predicate->predicateOperatorType
-        );
+        $innerPredicate = new ComparisonPredicate(Expression::expressionForKeyPath($propertyName), $rightExpression, $predicate->predicateOperatorType);
         $clause .= match ($predicate->comparisonPredicateModifier) {
-            ComparisonPredicateModifier::any => (function () use ($relationship, $innerPredicate): string {
-                $alias = $this->aliasGenerator->generateTableAlias();
-                return "EXISTS " . $this->buildCorrelatedSubqueryString($this->createSubQueryGenerator($relationship, null, $this->entity->primaryKey->columnName, $alias, $innerPredicate), $relationship, $alias);
-            })(),
-            ComparisonPredicateModifier::all => (function () use ($relationship, $propertyName, $rightExpression, $predicate): string {
-                $existsAlias = $this->aliasGenerator->generateTableAlias();
-                $notExistsAlias = $this->aliasGenerator->generateTableAlias();
-                return "EXISTS " . $this->buildCorrelatedSubqueryString($this->createSubQueryGenerator($relationship, null, $this->entity->primaryKey->columnName, $existsAlias), $relationship, $existsAlias) . " AND NOT EXISTS " . $this->buildCorrelatedSubqueryString($this->createSubQueryGenerator($relationship, null, $this->entity->primaryKey->columnName, $notExistsAlias, new ComparisonPredicate(Expression::expressionForKeyPath($propertyName), $rightExpression, PredicateOperatorType::notEqualTo)), $relationship, $notExistsAlias);
-            })(),
-            ComparisonPredicateModifier::direct => (function () use ($relationship, $innerPredicate, $keyPath): string {
-                $alias = $this->aliasGenerator->generateTableAlias();
-                return "$keyPath = " . $this->buildCorrelatedSubqueryString($this->createSubQueryGenerator($relationship, null, $this->entity->primaryKey->columnName, $alias, $innerPredicate), $relationship, $alias);
-            })(),
+            ComparisonPredicateModifier::any => $this->buildAnySubquery($relationship, $innerPredicate),
+            ComparisonPredicateModifier::all => $this->buildAllSubquery($relationship, $propertyName, $rightExpression),
+            ComparisonPredicateModifier::direct => $this->buildDirectSubquery($relationship, $keyPath, $innerPredicate),
         };
+    }
+
+    private function buildAnySubquery(SQLToMany|SQLManyToMany $relationship, ComparisonPredicate $innerPredicate): string
+    {
+        $alias = $this->aliasGenerator->generateTableAlias();
+        return "EXISTS " . $this->buildCorrelatedSubqueryString($this->createSubQueryGenerator($relationship, null, $this->entity->primaryKey->columnName, $alias, $innerPredicate), $relationship, $alias);
+    }
+
+    private function buildAllSubquery(SQLToMany|SQLManyToMany $relationship, string $propertyName, Expression $rightExpression): string
+    {
+        $existsAlias = $this->aliasGenerator->generateTableAlias();
+        $notExistsAlias = $this->aliasGenerator->generateTableAlias();
+        return "EXISTS " . $this->buildCorrelatedSubqueryString($this->createSubQueryGenerator($relationship, null, $this->entity->primaryKey->columnName, $existsAlias), $relationship, $existsAlias) . " AND NOT EXISTS " . $this->buildCorrelatedSubqueryString($this->createSubQueryGenerator($relationship, null, $this->entity->primaryKey->columnName, $notExistsAlias, new ComparisonPredicate(Expression::expressionForKeyPath($propertyName), $rightExpression, PredicateOperatorType::notEqualTo)), $relationship, $notExistsAlias);
+    }
+
+    private function buildDirectSubquery(SQLToMany|SQLManyToMany $relationship, string $keyPath, ComparisonPredicate $innerPredicate): string
+    {
+        $alias = $this->aliasGenerator->generateTableAlias();
+        return "$keyPath = " . $this->buildCorrelatedSubqueryString($this->createSubQueryGenerator($relationship, null, $this->entity->primaryKey->columnName, $alias, $innerPredicate), $relationship, $alias);
     }
 
     private function buildCorrelatedSubqueryString(SQLGenerator $generator, SQLToMany|SQLManyToMany $relationship, string $tableAlias): string
