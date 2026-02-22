@@ -50,7 +50,7 @@ final class FetchRequest extends PersistentStoreRequest
     public FetchRequestResultType $resultType = FetchRequestResultType::managedObjectResultType;
     /** @var EntityDescription The entity specified for the fetch request. When a FetchRequest instance is created without {@see entityName}, it is expected that the entity property will be set. If this property is not set, the fetch request fails upon execution. */
     public EntityDescription $entity {
-        get => $this->entity ??= EntityDescription::entity($this->entityName ?? fatal_error("Invalid fetch request: expecting an entity or an entity name"), $this->context());
+        get => $this->entity ??= EntityDescription::entity($this->entityName ?? fatal_error("Invalid fetch request: expecting an entity or an entity name"), $this->context);
     }
     /** @var Predicate|null The predicate of the fetch request. The predicate instance constrains the selection of objects the FetchRequest instance is to fetch. If the predicate is empty, for example, if it is an AND predicate whose array of elements contains no predicates, the request has its predicate set to null. */
     public ?Predicate $predicate = null;
@@ -61,24 +61,39 @@ final class FetchRequest extends PersistentStoreRequest
     /** @var Dictionary<mixed> Declarative serialization shape used to control which properties are fetched from the persistent store.
      * This nested dictionary determines the exact structure to retrieve, and is later applied to the fetched objects to configure their serializationRule and serializationKeys, ensuring their serialized representation matches the requested shape. */
     public Dictionary $serialization {
-        get => $this->serialization ??= ($this->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $this->entity->propertiesByName[$property]) ?? $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient && (!$attribute instanceof DerivedAttributeDescription || $attribute->isRuntimeOnly))->values)->reduce(new Dictionary(), function (Dictionary $result, PropertyDescription $propertyDescription): Dictionary {
-            if ($propertyDescription instanceof AttributeDescription) {
-                $result[$propertyDescription->name] = $propertyDescription->type;
-            } elseif ($propertyDescription instanceof RelationshipDescription) {
-                $destinationEntity = $propertyDescription->destinationEntity;
-                $result[$propertyDescription->name] = $destinationEntity->attributesByName->reduce(new Dictionary(), function (Dictionary $result, AttributeDescription $attribute): Dictionary {
-                    if (!$attribute->isTransient && !$attribute instanceof DerivedAttributeDescription) {
-                        $result[$attribute->name] = $attribute->type;
-                    }
-                    return $result;
-                });
-            }
-            return $result;
-        });
+        get => $this->serialization ??= $this->propertiesToFetch->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $this->entity->propertiesByName[$property] ?? null) ?? $this->entity->attributesByName->filter(fn(AttributeDescription $attr) => $this->isSerializableAttribute($attr))->values->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<mixed> $result
+             * @param PropertyDescription $property
+             * @return Dictionary<mixed>
+             */
+            function (Dictionary $result, PropertyDescription $property): Dictionary {
+                if ($property instanceof AttributeDescription) {
+                    $result[$property->name] = $property->type;
+                } elseif ($property instanceof RelationshipDescription) {
+                    $result[$property->name] = $this->serializeRelationship($property);
+                }
+                return $result;
+            });
     }
+
     /** @var string|null The name of the entity to fetch. */
     public ?string $entityName {
         get => $this->entityName ??= $this->entity->name;
+    }
+    private ManagedObjectContext $context {
+        get {
+            if (isset($this->context)) {
+                return $this->context;
+            }
+            if (!($queue = OperationQueue::current())) {
+                fatal_error("Current operation queue not found");
+            }
+            if (!($context = $queue->associatedValues["managedObjectContext"])) {
+                fatal_error("Unable to find the managed object context associated with the current operation queue");
+            }
+            return $this->context = $context;
+        }
     }
 
     /**
@@ -95,6 +110,37 @@ final class FetchRequest extends PersistentStoreRequest
     }
 
     /**
+     * @param RelationshipDescription $relationship
+     * @return Dictionary<mixed>
+     */
+    private function serializeRelationship(RelationshipDescription $relationship): Dictionary
+    {
+        return $relationship->destinationEntity->attributesByName->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<mixed> $result
+             * @param AttributeDescription $attribute
+             * @return Dictionary<mixed>
+             */
+            function (Dictionary $result, AttributeDescription $attribute): Dictionary {
+                if ($this->isSerializableAttribute($attribute)) {
+                    $result[$attribute->name] = $attribute->type;
+                }
+                return $result;
+            });
+    }
+
+    private function isSerializableAttribute(AttributeDescription $attribute): bool
+    {
+        if ($attribute->isTransient) {
+            return false;
+        }
+        if ($attribute instanceof DerivedAttributeDescription) {
+            return !$attribute->isRuntimeOnly;
+        }
+        return true;
+    }
+
+    /**
      * Executes the fetch request against the managed object context that is associated with the current queue.
      *
      * Calling {@see execute()} on an FetchRequest will cause the FetchRequest to run against the managed object context ({@see ManagedObjectContext}) that is associated with the queue on which the method is called.
@@ -103,18 +149,7 @@ final class FetchRequest extends PersistentStoreRequest
      */
     public function execute(): ArrayClass
     {
-        return $this->context()->fetch($this);
-    }
-
-    private function context(): ManagedObjectContext
-    {
-        if (!($queue = OperationQueue::current())) {
-            fatal_error("Current operation queue not found");
-        }
-        if (!($context = $queue->associatedValues["managedObjectContext"])) {
-            fatal_error("Unable to find the managed object context associated with the current operation queue");
-        }
-        return $context;
+        return $this->context->fetch($this);
     }
 
     #[Override]
