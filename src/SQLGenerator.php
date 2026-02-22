@@ -369,50 +369,28 @@ final class SQLGenerator extends ObjectClass
     private function appendSelectListToSQLForRequest(FetchRequest $request): void
     {
         $entity = $this->entity;
-        /** @var Set<string> $columnNames */
         $columnNames = new Set();
-        if ($this->keyValueOperator) {
+        if ($this->keyValueOperator === KeyValueOperator::countKeyValueOperator) {
             $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
         }
-        $appendInferredColumnNames = true;
-        if ($this->isSubquery || ($request->resultType === FetchRequestResultType::countResultType && $this->keyValueOperator === KeyValueOperator::countKeyValueOperator) || $request->returnsObjectsAsFaults || !$request->includesPropertyValues) {
-            $appendInferredColumnNames = false;
-        }
-        if ($appendInferredColumnNames) {
-            $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
+        $appendBaseColumns = !$this->isSubquery && !$request->returnsObjectsAsFaults && $request->includesPropertyValues && !($request->resultType === FetchRequestResultType::countResultType && $this->keyValueOperator === KeyValueOperator::countKeyValueOperator);
+        if ($appendBaseColumns) {
             if (!$entity->entityDescription->isPersistentHistoryEntity && $request->resultType !== FetchRequestResultType::countResultType) {
+                $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
                 $columnNames->formUnion(["$this->tableReference.{$entity->entityKey->columnName}", "$this->tableReference.{$entity->optLockKey->columnName}"]);
             }
-            $keys = $request->serialization->keys->filter(function (string $key) use ($entity): bool {
-                /** @var SQLProperty $property */
-                $property = $entity->propertiesByName[$key] ?? fatal_error("$entity->tableName does not contains a property named \"$key\"");
-                return !$property->isTransient;
-            });
-            /** @var ArrayClass<string|PropertyDescription> $properties */
-            $properties = new ArrayClass();
-            if ($propertiesToFetch = $request->propertiesToFetch) {
-                $properties->appendContentsOf($propertiesToFetch->filter(fn(PropertyDescription|string $property): bool => $property instanceof PropertyDescription ? !$property->isTransient && !$keys->containsElement($property->name) : !$keys->containsElement($property)));
-            }
-            $properties->appendContentsOf($keys->filter(fn(string $key): bool => $request->entity->attributesByName->contains(fn(AttributeDescription $attribute): bool => !$attribute->isTransient && $attribute->name === $key)));
-            $columnNames->formUnion($properties->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => is_string($property) ? $entity->attributes->first(fn(SQLAttribute $attribute): bool => !$attribute->isCompositeAttribute && !$attribute->isTransient && $attribute->name === $property)?->attributeDescription : (($property instanceof AttributeDescription && !$property instanceof CompositeAttributeDescription) || $property instanceof ExpressionDescription ? $property : null))->map(function (PropertyDescription $property): string {
-                if ($property instanceof AttributeDescription) {
-                    if ($property instanceof DerivedAttributeDescription && ($expression = $property->derivationExpression) && $property->isRuntimeOnly) {
-                        return "{$this->buildDerivationExpression($expression)} AS $property->name";
-                    }
-                } elseif ($property instanceof ExpressionDescription) {
-                    return "{$this->buildExpression($property->expression ?? fatal_error("Invalid argument: invalid property $property"))} AS $property->name";
-                }
-                return "$this->tableReference.$property->name";
-            }));
             $columnNames->formUnion($entity->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary): ArrayClass => $dictionary->values->map(fn(SQLAttribute $attribute): string => "$this->tableReference.$attribute->name")));
         }
-        if ($columnNames->isEmpty && ($predicate = $request->predicate)) {
-            $analyser = new SQLPredicateAnalyser();
-            $predicate->accept($analyser, PredicateVisitorFlags::all);
-            $columnNames->formUnion($analyser->keyPathExpressions->filter(fn(Expression $keyPathExpression): bool => str_contains($keyPathExpression->keyPath, "."))->map(function (Expression $expression): string {
-                $parts = explode(".", $expression->keyPath);
-                [, $propertyName] = $parts;
-                return "$this->tableReference.$propertyName";
+        if ($this->keyValueOperator !== KeyValueOperator::countKeyValueOperator) {
+            $columnNames->formUnion($request->serialization->keys->compactMap(function (string $key) use ($entity): ?string {
+                $property = $entity->propertiesByName[$key];
+                if ($property instanceof SQLAttribute && !$property->isTransient) {
+                    if ($property->isDerivedAttribute && $property->isRuntimeOnly) {
+                        return "{$this->buildDerivationExpression($property->derivationExpression)} AS $property->name";
+                    }
+                    return "$this->tableReference.$property->name";
+                }
+                return null;
             }));
         }
         if ($columnNames->isEmpty) {
@@ -1053,6 +1031,14 @@ final class SQLGenerator extends ObjectClass
     private function prepareComparisonPredicate(ComparisonPredicate $predicate, string &$clause): void
     {
         if ($predicate->comparisonPredicateModifier === ComparisonPredicateModifier::direct) {
+            $leftExpression = $predicate->leftExpression;
+            if ($leftExpression->expressionType === ExpressionType::subquery || ($leftExpression->expressionType === ExpressionType::keyPath && $leftExpression->operand instanceof SubqueryExpression)) {
+                $isCountGreaterThanZero = $predicate->predicateOperatorType === PredicateOperatorType::greaterThan && $predicate->rightExpression->constantValue === 0;
+                if ($isCountGreaterThanZero) {
+                    $clause .= "EXISTS ({$this->buildSubqueryExpression($leftExpression, $isDeterministic, true)})";
+                    return;
+                }
+            }
             $this->buildClauseWithSimplePredicate($predicate, $clause);
         } elseif ($this->isKeyPathExpression($predicate->leftExpression) || $this->isKeyPathExpression($predicate->rightExpression)) {
             $this->buildClauseWithSelectPredicate($predicate, $clause);
@@ -1117,6 +1103,7 @@ final class SQLGenerator extends ObjectClass
         }
         return $relationship;
     }
+
     /**
      * @return array{0: SQLToMany|SQLManyToMany, 1: string, 2: string}
      */
@@ -1345,7 +1332,7 @@ final class SQLGenerator extends ObjectClass
         };
     }
 
-    private function buildSubqueryExpression(Expression $expression, ?bool &$isDeterministic): string
+    private function buildSubqueryExpression(Expression $expression, ?bool &$isDeterministic, bool $asExists = false): string
     {
         $operand = $expression->operand ?? $expression;
         assert($operand instanceof SubqueryExpression);
@@ -1360,16 +1347,25 @@ final class SQLGenerator extends ObjectClass
         $relationship = $entity->propertiesByName[$keyPath] ?? fatal_error("Invalid argument: \"$entity\" does not contains a property named \"$keyPath\"");
         $relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany ?: fatal_error("Invalid argument: $relationship is not a to-many relationship");
         $tableAlias = str_starts_with($variable, "\$") ? substr($variable, 1) : $variable;
-        $expressionKeyPath = $keyPath;
-        if ($expression->expressionType === ExpressionType::keyPath) {
-            $expressionKeyPath = $expression->keyPath;
-        }
         $keyValueOperator = null;
-        $components = kvc_components($expressionKeyPath);
-        if (count($components) > 0) {
-            $keyValueOperator = $components[1];
+        $keyPathToProperty = null;
+        if (!$asExists) {
+            $expressionKeyPath = $keyPath;
+            if ($expression->expressionType === ExpressionType::keyPath) {
+                $expressionKeyPath = $expression->keyPath;
+            }
+            $components = kvc_components($expressionKeyPath);
+            if (count($components) > 0) {
+                $keyValueOperator = $components[1];
+            }
+            if ($predicate instanceof ComparisonPredicate) {
+                $analyser = new SQLPredicateAnalyser();
+                $predicate->leftExpression->accept($analyser, PredicateVisitorFlags::all);
+                $keyPathExpression = $analyser->keyPathExpressions->first ?? fatal_error("Invalid argument: $predicate");
+                [, $keyPathToProperty] = explode(".", $keyPathExpression->keyPath);
+            }
         }
-        $generator = $this->createSubQueryGenerator($relationship, $keyValueOperator, null, $tableAlias, $predicate);
+        $generator = $this->createSubQueryGenerator($relationship, $keyValueOperator, $keyPathToProperty, $tableAlias, $predicate);
         $prefix = "$generator->statement";
         $connector = $generator->whereClause ? " AND " : " WHERE ";
         $correlationCondition = $this->buildCorrelationCondition($relationship, $entity->tableName, $tableAlias);
