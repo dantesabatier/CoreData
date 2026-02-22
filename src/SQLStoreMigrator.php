@@ -425,6 +425,7 @@ final class SQLStoreMigrator
     private function removeUnusedEntities(): void
     {
         foreach ($this->removedEntities as $entity) {
+            /** @var ArrayClass<SQLForeignKey> $foreignKeys  */
             $foreignKeys = $entity->toManyRelationships->flatMap(fn(SQLToMany $many): ArrayClass => $many->destinationEntity->foreignKeyColumns->filter(fn(SQLForeignKey $foreignKey): bool => $foreignKey->toOneRelationship->isEqual($many->inverseToOne)));
             foreach ($foreignKeys as $foreignKey) {
                 $statement = $this->adapter->newDropIndexStatementForForeignKey($foreignKey);
