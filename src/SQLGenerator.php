@@ -105,7 +105,7 @@ final class SQLGenerator extends ObjectClass
         get => $this->arguments ??= new ArrayClass();
     }
     private bool $isStatementResolved = false;
-    public ?SQLStatement $statement {
+    private(set) ?SQLStatement $statement {
         get {
             if ($this->isStatementResolved) {
                 return $this->statement;
