@@ -53,7 +53,10 @@ final class SQLGenerator extends ObjectClass
     private string $groupByClause = "";
     private string $havingClause = "";
     private string $orderByClause = "";
-    public ?string $tableAlias = null;
+    private ?string $tableAlias = null;
+    private Dictionary $byTableNameSQLEntities {
+        get => $this->byTableNameSQLEntities ??= new Dictionary();
+    }
     private SQLAliasGenerator $aliasGenerator {
         get => $this->aliasGenerator ??= new SQLAliasGenerator();
     }
@@ -76,7 +79,7 @@ final class SQLGenerator extends ObjectClass
     private bool $useDistinct = false;
     public bool $autoDistinct = true;
     public bool $raisesForNotApplicableKeys = true;
-    private string $keyValueOperator = KeyValueOperator::countKeyValueOperator;
+    private ?string $keyValueOperator = null;
     private bool $isSubquery = false;
 
     public function __construct(public readonly SQLStoreRequestContext $requestContext)
@@ -368,7 +371,7 @@ final class SQLGenerator extends ObjectClass
         $entity = $this->entity;
         /** @var Set<string> $columnNames */
         $columnNames = new Set();
-        if (!$this->isSubquery || $this->keyValueOperator === KeyValueOperator::countKeyValueOperator || $this->keyValueOperator === KeyValueOperator::sumKeyValueOperator) {
+        if ($this->keyValueOperator) {
             $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
         }
         $appendInferredColumnNames = true;
@@ -376,6 +379,7 @@ final class SQLGenerator extends ObjectClass
             $appendInferredColumnNames = false;
         }
         if ($appendInferredColumnNames) {
+            $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
             if (!$entity->entityDescription->isPersistentHistoryEntity && $request->resultType !== FetchRequestResultType::countResultType) {
                 $columnNames->formUnion(["$this->tableReference.{$entity->entityKey->columnName}", "$this->tableReference.{$entity->optLockKey->columnName}"]);
             }
@@ -411,6 +415,9 @@ final class SQLGenerator extends ObjectClass
                 return "$this->tableReference.$propertyName";
             }));
         }
+        if ($columnNames->isEmpty) {
+            $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
+        }
         $this->selectList .= $columnNames->join(", ");
     }
 
@@ -418,6 +425,7 @@ final class SQLGenerator extends ObjectClass
     {
         $this->selectList = "SELECT ";
         if ($request->resultType === FetchRequestResultType::countResultType) {
+            $this->keyValueOperator ??= KeyValueOperator::countKeyValueOperator;
             $this->selectList .= strtoupper($this->keyValueOperator);
             $this->selectList .= "(";
         }
@@ -434,7 +442,10 @@ final class SQLGenerator extends ObjectClass
     {
         $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
         $this->raisesForNotApplicableKeys = false;
-        $expressions = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate());
+        $expressions = $this->keyPathExpressionsForFetchRequestSerialization();
+        if (($predicate = $this->request->predicate) && $this->predicateRequiresJoins($predicate)) {
+            $expressions->formUnion($this->keyPathExpressionsForFetchRequestPredicate());
+        }
         foreach ($expressions as $expression) {
             $this->appendJoinsForRelationships($this->relationshipsFromKeyPathExpression($expression));
         }
@@ -442,19 +453,47 @@ final class SQLGenerator extends ObjectClass
         $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
     }
 
-    private function appendJoinDestinationEntity(SQLEntity $destinationEntity, string $destinationPath): void
+    private function predicateRequiresJoins(Predicate $predicate): bool
     {
-        if ($destinationEntity->isAbstract || $destinationPath === "") {
-            return;
+        if ($predicate instanceof ComparisonPredicate) {
+            if ($predicate->comparisonPredicateModifier !== ComparisonPredicateModifier::direct) {
+                return false;
+            }
+            $analyser = new SQLPredicateAnalyser();
+            $predicate->leftExpression->accept($analyser, PredicateVisitorFlags::all);
+            foreach ($analyser->keyPathExpressions as $keyPathExpression) {
+                if ($keyPathExpression->operand instanceof SubqueryExpression) {
+                    return false;
+                }
+                $keyPath = $keyPathExpression->description;
+                if (str_contains($keyPath, ".") && $this->keyPathTraversesRelationship($keyPath)) {
+                    return true;
+                }
+            }
+        } elseif ($predicate instanceof CompoundPredicate) {
+            foreach ($predicate->subpredicates as $subpredicate) {
+                if ($this->predicateRequiresJoins($subpredicate)) {
+                    return true;
+                }
+            }
         }
-        /** @var EntityDescription $rootEntity */
-        $rootEntity = $destinationEntity->isRootEntity ? $destinationEntity->entityDescription : $destinationEntity->rootEntity?->entityDescription;
-        $subentities = $destinationEntity->entityDescription->managedObjectModel->flatten($rootEntity->subentities);
-        if ($subentities->count <= 1) {
-            return;
+        return false;
+    }
+
+    private function keyPathTraversesRelationship(string $keyPath): bool
+    {
+        return array_any(explode(".", $keyPath), fn($component) => isset($this->entity->entityDescription->relationshipsByName[$component]));
+    }
+
+    private function addJoinForRelationship(SQLRelationship $relationship, string $parentTableAlias, string $joinedTableAlias): void
+    {
+        if ($relationship instanceof SQLToOne) {
+            $this->addJoinForToOneRelationship($relationship, $parentTableAlias, $joinedTableAlias);
+        } elseif ($relationship instanceof SQLToMany) {
+            $this->addJoinForToManyRelationship($relationship, $parentTableAlias, $joinedTableAlias);
+        } elseif ($relationship instanceof SQLManyToMany) {
+            $this->addJoinForManyToManyRelationship($relationship, $parentTableAlias, $joinedTableAlias);
         }
-        $this->joinClause .= " AND ";
-        $this->joinClause .= "$destinationPath.{$destinationEntity->entityKey->columnName} = '{$destinationEntity->entityDescription->name}'";
     }
 
     private function addJoinForToOneRelationship(SQLToOne $toOne, string $sourcePath = "", string $destinationPath = ""): void
@@ -512,20 +551,28 @@ final class SQLGenerator extends ObjectClass
         $this->joinClause .= " = ";
         $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
         $destinationEntity = $manyToMany->destinationEntity;
+        if ($this->byTableNameSQLEntities[$destinationEntity->tableName]) {
+            return;
+        }
+        $this->byTableNameSQLEntities[$destinationEntity->tableName] = $destinationEntity;
         $this->appendJoinClauseToSQL();
         $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $correlationTableAlias.$manyToMany->columnName = $destinationPath.{$destinationEntity->primaryKey->columnName}";
         $this->appendJoinDestinationEntity($destinationEntity, $destinationPath);
     }
 
-    private function addJoinForRelationship(SQLRelationship $relationship, string $parentTableAlias, string $joinedTableAlias): void
+    private function appendJoinDestinationEntity(SQLEntity $destinationEntity, string $destinationPath): void
     {
-        if ($relationship instanceof SQLToOne) {
-            $this->addJoinForToOneRelationship($relationship, $parentTableAlias, $joinedTableAlias);
-        } elseif ($relationship instanceof SQLToMany) {
-            $this->addJoinForToManyRelationship($relationship, $parentTableAlias, $joinedTableAlias);
-        } elseif ($relationship instanceof SQLManyToMany) {
-            $this->addJoinForManyToManyRelationship($relationship, $parentTableAlias, $joinedTableAlias);
+        if ($destinationEntity->isAbstract || $destinationPath === "") {
+            return;
         }
+        /** @var EntityDescription $rootEntity */
+        $rootEntity = $destinationEntity->isRootEntity ? $destinationEntity->entityDescription : $destinationEntity->rootEntity?->entityDescription;
+        $subentities = $destinationEntity->entityDescription->managedObjectModel->flatten($rootEntity->subentities);
+        if ($subentities->count <= 1) {
+            return;
+        }
+        $this->joinClause .= " AND ";
+        $this->joinClause .= "$destinationPath.{$destinationEntity->entityKey->columnName} = '{$destinationEntity->entityDescription->name}'";
     }
 
     /**
@@ -668,7 +715,7 @@ final class SQLGenerator extends ObjectClass
                 $expressions->formUnion($analyser->keyPathExpressions);
             }
             $analyser = new SQLPredicateAnalyser();
-            $predicate->leftExpression->accept($analyser, PredicateVisitorFlags::all);
+            $predicate->rightExpression->accept($analyser, PredicateVisitorFlags::all);
             if (!$analyser->keyPathExpressions->isEmpty) {
                 $expressions->formUnion($analyser->keyPathExpressions);
             }
@@ -1020,35 +1067,56 @@ final class SQLGenerator extends ObjectClass
         if (!($expression = $expressions->first(fn(Expression $expression): bool => $expression->expressionType === ExpressionType::keyPath))) {
             fatal_error();
         }
+        if (!($relationship = $this->resolveRelationshipFromKeyPath($expression))) {
+            return;
+        }
+        $rightExpression = $expressions->first(fn(Expression $e): bool => $e->expressionType !== ExpressionType::keyPath);
         $keyPath = $this->buildKeyPathExpression($expression);
-        [$entityAlias, $columnName] = explode(".", $keyPath);
-        $relationship = (function () use ($expression): ?SQLRelationship {
-            /** @var SQLRelationship|null $relationship */
-            $relationship = null;
-            $entity = $this->entity;
-            $keys = new Set(explode(".", $expression->keyPath));
-            foreach ($keys as $key) {
-                $property = $entity->propertiesByName[$key];
-                if ($property instanceof SQLRelationship) {
-                    $entity = $property->destinationEntity;
-                    $relationship = $property;
-                }
-            }
-            return $relationship;
-        })() ?? fatal_error();
-        $destinationEntity = $relationship->destinationEntity;
-        $clause .= "$keyPath = ";
+        [, $propertyName] = explode(".", $keyPath);
+        $innerPredicate = new ComparisonPredicate(
+            Expression::expressionForKeyPath($propertyName),
+            $rightExpression,
+            $predicate->predicateOperatorType
+        );
         $clause .= match ($predicate->comparisonPredicateModifier) {
-            ComparisonPredicateModifier::direct => "",
-            ComparisonPredicateModifier::all => "ALL ",
-            ComparisonPredicateModifier::any => "ANY ",
+            ComparisonPredicateModifier::any => (function () use ($relationship, $innerPredicate): string {
+                $alias = $this->aliasGenerator->generateTableAlias();
+                return "EXISTS " . $this->buildCorrelatedSubqueryString($this->createSubQueryGenerator($relationship, null, $this->entity->primaryKey->columnName, $alias, $innerPredicate), $relationship, $alias);
+            })(),
+            ComparisonPredicateModifier::all => (function () use ($relationship, $propertyName, $rightExpression, $predicate): string {
+                $existsAlias = $this->aliasGenerator->generateTableAlias();
+                $notExistsAlias = $this->aliasGenerator->generateTableAlias();
+                return "EXISTS " . $this->buildCorrelatedSubqueryString($this->createSubQueryGenerator($relationship, null, $this->entity->primaryKey->columnName, $existsAlias), $relationship, $existsAlias) . " AND NOT EXISTS " . $this->buildCorrelatedSubqueryString($this->createSubQueryGenerator($relationship, null, $this->entity->primaryKey->columnName, $notExistsAlias, new ComparisonPredicate(Expression::expressionForKeyPath($propertyName), $rightExpression, PredicateOperatorType::notEqualTo)), $relationship, $notExistsAlias);
+            })(),
+            ComparisonPredicateModifier::direct => (function () use ($relationship, $innerPredicate, $keyPath): string {
+                $alias = $this->aliasGenerator->generateTableAlias();
+                return "$keyPath = " . $this->buildCorrelatedSubqueryString($this->createSubQueryGenerator($relationship, null, $this->entity->primaryKey->columnName, $alias, $innerPredicate), $relationship, $alias);
+            })(),
         };
-        $clause .= "(";
-        $clause .= "SELECT $columnName FROM $destinationEntity->tableName AS $entityAlias WHERE ";
-        $this->buildClauseWithSimplePredicate($predicate, $clause);
-        $clause .= ")";
     }
 
+    private function buildCorrelatedSubqueryString(SQLGenerator $generator, SQLToMany|SQLManyToMany $relationship, string $tableAlias): string
+    {
+        $prefix = $generator->statement;
+        $connector = $generator->whereClause ? " AND " : " WHERE ";
+        $correlationCondition = $this->buildCorrelationCondition($relationship, $this->entity->tableName, $tableAlias);
+        $sql = "$prefix$connector$correlationCondition";
+        return "($sql)";
+    }
+
+    private function resolveRelationshipFromKeyPath(Expression $expression): SQLToMany|SQLManyToMany|null
+    {
+        $entity = $this->entity;
+        $relationship = null;
+        foreach (explode(".", $expression->keyPath) as $key) {
+            $property = $entity->propertiesByName[$key];
+            if ($property instanceof SQLToMany || $property instanceof SQLManyToMany) {
+                $entity = $property->destinationEntity;
+                $relationship = $property;
+            }
+        }
+        return $relationship;
+    }
     /**
      * @return array{0: SQLToMany|SQLManyToMany, 1: string, 2: string}
      */
@@ -1089,13 +1157,12 @@ final class SQLGenerator extends ObjectClass
         }
         $newContext = new SQLFetchRequestContext($fetchRequest, $requestContext->context, $requestContext->sqlCore);
         $generator = new SQLGenerator($newContext);
+        $generator->byTableNameSQLEntities[$this->entity->tableName] = $this->entity;
         $generator->isSubquery = true;
         $generator->tableAlias = $tableAlias;
         $generator->autoDistinct = false;
         $generator->raisesForNotApplicableKeys = false;
-        if ($keyValueOperator) {
-            $generator->keyValueOperator = $keyValueOperator;
-        }
+        $generator->keyValueOperator = $keyValueOperator;
         return $generator;
     }
 
