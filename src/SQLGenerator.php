@@ -1037,7 +1037,7 @@ final class SQLGenerator extends ObjectClass
             fatal_error("Invalid argument: invalid predicate $predicate");
         }
         $leftExpression = $predicate->leftExpression;
-        $isSubquery = $leftExpression->expressionType === ExpressionType::subquery || ($leftExpression->expressionType === ExpressionType::keyPath && $leftExpression->operand instanceof SubqueryExpression);
+        $isSubquery = $leftExpression->expressionType === ExpressionType::subquery || ($this->isKeyPathExpression($leftExpression) && $leftExpression->operand instanceof SubqueryExpression);
         if ($isSubquery) {
             $isCountGreaterThanZero = $predicate->predicateOperatorType === PredicateOperatorType::greaterThan && $predicate->rightExpression->constantValue === 0;
             if ($isCountGreaterThanZero) {
@@ -1053,7 +1053,7 @@ final class SQLGenerator extends ObjectClass
     private function buildClauseWithSelectPredicate(ComparisonPredicate $predicate, string &$clause): void
     {
         $expressions = new ArrayClass([$predicate->leftExpression, $predicate->rightExpression]);
-        if (!($expression = $expressions->first(fn(Expression $expression): bool => $expression->expressionType === ExpressionType::keyPath))) {
+        if (!($expression = $expressions->first(fn(Expression $expression): bool => $this->isKeyPathExpression($expression)))) {
             fatal_error();
         }
         if (!($relationship = $this->resolveRelationshipFromKeyPath($expression))) {
@@ -1308,13 +1308,13 @@ final class SQLGenerator extends ObjectClass
         $predicate = "";
         $this->preparePredicate($expression->predicate, $predicate);
         $true = $expression->true;
-        if ($true->expressionType === ExpressionType::keyPath) {
+        if ($this->isKeyPathExpression($true)) {
             $true = $this->buildKeyPathExpression($true, $isDeterministic);
         } elseif ($true->expressionType === ExpressionType::function) {
             $true = $this->buildFunctionExpression($true, $isDeterministic);
         }
         $false = $expression->false;
-        if ($false->expressionType === ExpressionType::keyPath) {
+        if ($this->isKeyPathExpression($false)) {
             $false = $this->buildKeyPathExpression($false, $isDeterministic);
         } elseif ($false->expressionType === ExpressionType::function) {
             $false = $this->buildFunctionExpression($false, $isDeterministic);
@@ -1357,7 +1357,7 @@ final class SQLGenerator extends ObjectClass
         $keyPathToProperty = null;
         if (!$asExists) {
             $expressionKeyPath = $keyPath;
-            if ($expression->expressionType === ExpressionType::keyPath) {
+            if ($this->isKeyPathExpression($expression)) {
                 $expressionKeyPath = $expression->keyPath;
             }
             $components = kvc_components($expressionKeyPath);
@@ -1644,7 +1644,7 @@ final class SQLGenerator extends ObjectClass
     private function compileExpressionString(string $format): string
     {
         $expression = Expression::expressionWithFormat($format) ?? fatal_error("Unable to create expression \"$format\"");
-        if ($expression->expressionType === ExpressionType::keyPath && !$this->entity->propertiesByName->offsetExists($expression->keyPath)) {
+        if ($this->isKeyPathExpression($expression) && !$this->entity->propertiesByName->offsetExists($expression->keyPath)) {
             $expression = Expression::expressionForConstantValue($expression->keyPath);
         }
         return $this->buildExpression($expression);
