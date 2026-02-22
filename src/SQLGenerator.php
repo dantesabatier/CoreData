@@ -362,6 +362,23 @@ final class SQLGenerator extends ObjectClass
         $this->appendSQL(" OFFSET $offset");
     }
 
+    private function prepareSelectStatementWithFetchRequest(FetchRequest $request): void
+    {
+        $this->selectList = "SELECT ";
+        if ($request->resultType === FetchRequestResultType::countResultType) {
+            $this->keyValueOperator ??= KeyValueOperator::countKeyValueOperator;
+            $this->selectList .= strtoupper($this->keyValueOperator);
+            $this->selectList .= "(";
+        }
+        if ($this->useDistinct) {
+            $this->selectList .= "DISTINCT ";
+        }
+        $this->appendSelectListToSQLForRequest($request);
+        if ($request->resultType === FetchRequestResultType::countResultType) {
+            $this->selectList .= ")";
+        }
+    }
+
     private function appendSelectListToSQLForRequest(FetchRequest $request): void
     {
         $entity = $this->entity;
@@ -392,23 +409,6 @@ final class SQLGenerator extends ObjectClass
             $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
         }
         $this->selectList .= $columnNames->join(", ");
-    }
-
-    private function prepareSelectStatementWithFetchRequest(FetchRequest $request): void
-    {
-        $this->selectList = "SELECT ";
-        if ($request->resultType === FetchRequestResultType::countResultType) {
-            $this->keyValueOperator ??= KeyValueOperator::countKeyValueOperator;
-            $this->selectList .= strtoupper($this->keyValueOperator);
-            $this->selectList .= "(";
-        }
-        if ($this->useDistinct) {
-            $this->selectList .= "DISTINCT ";
-        }
-        $this->appendSelectListToSQLForRequest($request);
-        if ($request->resultType === FetchRequestResultType::countResultType) {
-            $this->selectList .= ")";
-        }
     }
 
     private function prepareJoinStatementsForPredicateAndRelationships(): void
