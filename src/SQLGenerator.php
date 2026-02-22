@@ -461,7 +461,7 @@ final class SQLGenerator extends ObjectClass
 
     private function keyPathTraversesRelationship(string $keyPath): bool
     {
-        return array_any(explode(".", $keyPath), fn($component) => isset($this->entity->entityDescription->relationshipsByName[$component]));
+        return array_any(explode(".", $keyPath), fn($component) => $this->entity->entityDescription->relationshipsByName->offsetExists($component));
     }
 
     private function addJoinForRelationship(SQLRelationship $relationship, string $parentTableAlias, string $joinedTableAlias): void
