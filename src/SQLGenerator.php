@@ -1403,12 +1403,8 @@ final class SQLGenerator extends ObjectClass
         $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
         $this->raisesForNotApplicableKeys = false;
         if (SS_COREDATA_USES_RELATIONSHIPS_SORT_DESCRIPTORS):
-            $expressions = $this->keyPathExpressionsForFetchRequestSerialization();
-            if (($predicate = $this->request->predicate) && $this->predicateTraversesRelationships($predicate)) {
-                $expressions->formUnion($this->keyPathExpressionsForFetchRequestPredicate());
-            }
             /** @var Set<SQLToMany> $toManyRelationships */
-            $toManyRelationships = $expressions->flatMap(fn(Expression $expression): ArrayClass => $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLForeignKey || $property instanceof SQLToMany)->compactMap(function (SQLProperty $property): ?SQLProperty {
+            $toManyRelationships = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->flatMap(fn(Expression $expression): ArrayClass => $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLForeignKey || $property instanceof SQLToMany)->compactMap(function (SQLProperty $property): ?SQLProperty {
                 $toMany = null;
                 if ($property instanceof SQLForeignKey) {
                     $toMany = $property->toOneRelationship->inverseRelationship;
