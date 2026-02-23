@@ -930,18 +930,18 @@ final class SQLGenerator
 
     private function prepareEqual(ComparisonPredicate $predicate, string &$clause): void
     {
-        $operator = '=';
+        $operator = "=";
         if ($this->isNullExpression($predicate->leftExpression) || $this->isNullExpression($predicate->rightExpression)) {
-            $operator = 'IS';
+            $operator = "IS";
         }
         $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator);
     }
 
     private function prepareNotEqual(ComparisonPredicate $predicate, string &$clause): void
     {
-        $operator = '<>';
+        $operator = "<>";
         if ($this->isNullExpression($predicate->rightExpression) || $this->isNullExpression($predicate->leftExpression)) {
-            $operator = 'IS NOT';
+            $operator = "IS NOT";
         }
         $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator);
     }
