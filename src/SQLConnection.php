@@ -85,20 +85,22 @@ final class SQLConnection
          */
         get => $this->hasPersistentHistoryTables ??= (bool)$this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name IN (?, ?)", new ArrayClass([$this->schema->name, "PersistentHistoryTransaction", "PersistentHistoryChange"])))->fetchColumn();
     }
+    private bool $isCachedModelResolved = false;
     private(set) ?ManagedObjectModel $cachedModel {
         /**
          * @throws Exception
          */
         get {
-            if (!isset($this->cachedModel)) {
-                $this->connect();
-                $this->createCachedModelTable();
-                if ($array = $this->execute(new SQLStatement("SELECT * FROM `ManagedObjectModel`"))->fetch()) {
-                    $this->cachedModel = $this->decompressedModelWithData($array["data"]);
-                }
-                $this->cachedModel ??= null;
+            if ($this->isCachedModelResolved) {
+                return $this->cachedModel;
             }
-            return $this->cachedModel;
+            $this->isCachedModelResolved = true;
+            $this->connect();
+            $this->createCachedModelTable();
+            if ($array = $this->execute(new SQLStatement("SELECT * FROM `ManagedObjectModel`"))->fetch()) {
+                return $this->cachedModel = $this->decompressedModelWithData($array["data"]);
+            }
+            return $this->cachedModel = null;
         }
     }
     private SQLStoreRequestContext $requestContext;
