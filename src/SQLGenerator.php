@@ -36,6 +36,7 @@ use Sabatier\Foundation\Sequence;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\Value;
+use function Sabatier\Foundation\components_from_key_path;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\is_equal;
@@ -1060,8 +1061,8 @@ final class SQLGenerator
         $rightExpression = $expressions->first(fn(Expression $expression): bool => $expression->expressionType !== ExpressionType::keyPath);
         $keyPath = $this->buildKeyPathExpression($expression);
         $description = $expression->keyPath;
-        $position = strpos($description, ".");
-        $propertyName = $position !== false ? substr($description, $position + 1) : $description;
+        $components = components_from_key_path($description);
+        $propertyName = $components->remainderPath ?? $components->key;
         $innerPredicate = new ComparisonPredicate(Expression::expressionForKeyPath($propertyName), $rightExpression, $predicate->predicateOperatorType);
         $clause .= match ($predicate->comparisonPredicateModifier) {
             ComparisonPredicateModifier::any => $this->buildAnySubquery($relationship, $innerPredicate),
