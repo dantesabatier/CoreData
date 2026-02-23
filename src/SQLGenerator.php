@@ -18,7 +18,6 @@ use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\KeyValueOperator;
 use Sabatier\Foundation\Nil;
-use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\ComparisonPredicateModifier;
 use Sabatier\Foundation\Predicates\ComparisonPredicateOptions;
@@ -44,7 +43,7 @@ use function Sabatier\Foundation\kvc_components;
 use function Sabatier\Foundation\typeof;
 
 /** @internal */
-final class SQLGenerator extends ObjectClass
+final class SQLGenerator
 {
     private(set) string $string;
     private string $selectList = "";
