@@ -236,21 +236,7 @@ final class SQLGenerator
             }
             $this->useDistinct = $request->returnsDistinctResults;
             if (!$this->useDistinct && $this->autoDistinct) {
-                $needsDistinct = function (Dictionary $dictionary, EntityDescription $entity) use (&$needsDistinct): bool {
-                    return $dictionary->contains(function (mixed $value, string $key) use ($entity, &$needsDistinct): bool {
-                        if (!$value instanceof Dictionary) {
-                            return false;
-                        }
-                        if (!($relationship = $entity->relationshipsByName[$key])) {
-                            return false;
-                        }
-                        if ($relationship->isToMany) {
-                            return true;
-                        }
-                        return $needsDistinct($value, $relationship->destinationEntity);
-                    });
-                };
-                $this->useDistinct = $needsDistinct($request->serialization, $entity);
+                $this->useDistinct = $this->needsDistinct($request->serialization, $entity);
             }
             $this->prepareSelectStatementWithFetchRequest($request);
             $this->prepareJoinStatementsForPredicateAndRelationships();
@@ -308,6 +294,23 @@ final class SQLGenerator
             }
         }
         $this->endSQL();
+    }
+
+    private function needsDistinct(Dictionary $dictionary, EntityDescription $entity): bool
+    {
+        return $dictionary->contains(function (mixed $value, string $key) use ($entity): bool {
+            if (! $value instanceof Dictionary) {
+                return false;
+            }
+            $relationship = $entity->relationshipsByName[$key] ?? null;
+            if (! $relationship) {
+                return false;
+            }
+            if ($relationship->isToMany) {
+                return true;
+            }
+            return $this->needsDistinct($value, $relationship->destinationEntity);
+        });
     }
 
     private function endSQL(): void
