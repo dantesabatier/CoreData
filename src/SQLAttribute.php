@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Set;
 use function Sabatier\Foundation\fatal_error;
@@ -66,6 +67,7 @@ final class SQLAttribute extends SQLColumn
             return $this->coercedDefaultValue;
         }
     }
+    #[Override]
     public mixed $defaultValue {
         get => match ($this->sqlType) {
             SQLType::uuid => "UUID()",
@@ -73,6 +75,7 @@ final class SQLAttribute extends SQLColumn
             default => $this->coercedDefaultValue
         };
     }
+    #[Override]
     public SQLType $sqlType {
         /** @noinspection PhpVoidFunctionResultUsedInspection */
         get => $this->sqlType ??= match ($this->attributeDescription->type) {

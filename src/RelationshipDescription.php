@@ -17,6 +17,7 @@ use function Sabatier\Foundation\human_readable_value;
 final class RelationshipDescription extends PropertyDescription
 {
     /** @internal */
+    #[Override]
     public PropertyDescriptionType $propertyType = PropertyDescriptionType::relationship;
     /** @var EntityDescription The entity description of the receiver's destination. */
     private(set) EntityDescription $destinationEntity {
@@ -65,6 +66,7 @@ final class RelationshipDescription extends PropertyDescription
     public string $lazyDestinationEntityName = UnknownName;
     /** @internal */
     public string $lazyInverseRelationshipName = UnknownName;
+    #[Override]
     public string $description {
         get => sprintf("%s destinationEntityName %s InverseRelationshipName %s minCount %s maxCount %s deleteRule %s", parent::$description::get(), $this->lazyDestinationEntityName, $this->lazyInverseRelationshipName, $this->minCount, $this->maxCount, human_readable_value($this->deleteRule));
     }

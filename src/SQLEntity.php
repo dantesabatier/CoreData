@@ -1,7 +1,5 @@
 <?php
 
-/** @noinspection PhpInternalEntityUsedInspection */
-
 namespace Sabatier\CoreData;
 
 use Override;
@@ -267,6 +265,7 @@ final class SQLEntity extends StoreMapping
     private(set) int $subentityMaxID {
         get => $this->subentityMaxID ??= $this->subentities->map(fn(SQLEntity $entity): int => $entity->entityID)->max();
     }
+    #[Override]
     public string $description {
         get => sprintf("<%s %s>, name %s table %s", $this->class, $this->hash, $this->entityDescription->name, $this->tableName);
     }

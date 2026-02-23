@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ObjectClass;
 use function Sabatier\Foundation\read_random;
 
@@ -23,6 +24,7 @@ final class QueryGenerationToken extends ObjectClass
     private string $token {
         get => $this->token ??= base64_encode(read_random(16));
     }
+    #[Override]
     public string $description {
         get => $this->token;
     }

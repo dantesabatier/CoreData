@@ -152,6 +152,7 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
     private(set) ?EntityDescription $rootEntity = null;
     /** @internal */
     private(set) bool $isRootEntity = false;
+    #[Override]
     public string $description {
         get => sprintf("<%s: %s> isAbstract %s", $this->name, $this->hash, (int)$this->isAbstract);
     }

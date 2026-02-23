@@ -8,6 +8,7 @@ use Sabatier\Foundation\Dictionary;
 /** @internal */
 final class SQLObjectIDRequestContext extends SQLStoreRequestContext
 {
+    #[Override]
     public bool $isWritingRequest {
         get => true;
     }

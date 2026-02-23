@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
 
@@ -46,6 +47,7 @@ abstract class SQLRelationship extends SQLProperty
     public DeleteRule $deleteRule {
         get => $this->relationshipDescription->deleteRule;
     }
+    #[Override]
     public string $description {
         get => sprintf("%s destinationEntityName %s InverseRelationshipName %s minCount %s maxCount %s deleteRule %s", parent::$description::get(), $this->lazyDestinationEntityName, $this->lazyInverseRelationshipName, $this->minCount, $this->maxCount, human_readable_value($this->deleteRule));
     }

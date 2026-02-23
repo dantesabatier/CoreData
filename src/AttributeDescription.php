@@ -19,6 +19,7 @@ use function Sabatier\Foundation\human_readable_value;
 class AttributeDescription extends PropertyDescription
 {
     /** @internal */
+    #[Override]
     public PropertyDescriptionType $propertyType = PropertyDescriptionType::attribute;
 
     /** @var AttributeType The attribute's type. */
@@ -57,6 +58,7 @@ class AttributeDescription extends PropertyDescription
     public bool $allowsExternalBinaryDataStorage = false;
     /** @var bool A Boolean value that indicates whether the attribute records its value in the persistent history transaction for a managed object's deletion. */
     public bool $preservesValueInHistoryOnDeletion = false;
+    #[Override]
     public string $description {
         get => sprintf("%s, type %s", parent::$description::get(), human_readable_value($this->type));
     }

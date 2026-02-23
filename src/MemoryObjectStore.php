@@ -9,9 +9,12 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
+
 /** @internal */
 final class MemoryObjectStore extends MappedObjectStore
 {
+    #[Override]
     public string $type {
         get => InMemoryStoreType;
     }

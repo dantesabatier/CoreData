@@ -59,6 +59,7 @@ class SQLColumn extends SQLProperty
             SQLType::unknown => null
         };
     }
+    #[Override]
     public string $description {
         get => sprintf("%s, precision %s, scale %s, length %s", parent::$description::get(), $this->precision, $this->scale, $this->length);
     }

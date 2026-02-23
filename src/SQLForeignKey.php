@@ -9,6 +9,8 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
+
 /** @internal */
 final class SQLForeignKey extends SQLColumn
 {
@@ -19,15 +21,19 @@ final class SQLForeignKey extends SQLColumn
             return $relationshipDescription;
         }
     }
+    #[Override]
     public PropertyDescriptionType $propertyType {
         get => PropertyDescriptionType::relationship;
     }
+    #[Override]
     public string $columnName {
         get => "{$this->relationshipDescription->name}ID";
     }
+    #[Override]
     public SQLType $sqlType {
         get => SQLType::int;
     }
+    #[Override]
     public string $description {
         get => sprintf("<%s: %s>, name %s, entity %s", $this->class, $this->hash, $this->columnName, $this->entity->tableName);
     }

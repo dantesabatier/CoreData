@@ -9,12 +9,16 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
+
 /** @internal */
 final class SQLPrimaryKey extends SQLColumn
 {
+    #[Override]
     public PropertyDescriptionType $propertyType {
         get => PropertyDescriptionType::private;
     }
+    #[Override]
     public SQLType $sqlType {
         get => SQLType::int;
     }

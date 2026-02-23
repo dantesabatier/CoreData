@@ -1,7 +1,5 @@
 <?php
 
-/** @noinspection PhpInternalEntityUsedInspection */
-
 namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;

@@ -29,6 +29,7 @@ use function Sabatier\Foundation\fatal_error;
 /** @internal */
 final class XMLObjectStore extends AtomicStore
 {
+    #[Override]
     public string $type {
         get => XMLStoreType;
     }

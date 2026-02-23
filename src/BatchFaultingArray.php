@@ -13,10 +13,12 @@ use function Sabatier\Foundation\invalid_mutation;
 final class BatchFaultingArray extends ArrayClass
 {
     private int $length;
+    #[Override]
     public int $count {
         get => $this->length;
     }
     /** @var list<ManagedObject>|list<ManagedObjectID> */
+    #[Override]
     public array $array {
         get => iterator_to_array($this);
     }

@@ -34,9 +34,11 @@ final class ManagedObjectID extends ObjectClass implements FetchRequestResult
     }
     /** @internal */
     private(set) ?string $storeIdentifier = null;
+    #[Override]
     public string $description {
         get => sprintf("<%s>", $this->uriRepresentation()->absoluteString);
     }
+    #[Override]
     public string $debugDescription {
         get => sprintf("<%s: %s> %s", $this->class, $this->hash, $this->entityName);
     }

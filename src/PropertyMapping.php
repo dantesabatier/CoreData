@@ -21,6 +21,7 @@ final class PropertyMapping extends ObjectClass
 {
     /** @var Dictionary<mixed>|null The user info for the property mapping. */
     public ?Dictionary $userInfo = null;
+    #[Override]
     public string $description {
         get => sprintf("<%s %s %s>", $this->class, $this->name, $this->hash);
     }

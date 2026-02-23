@@ -23,6 +23,7 @@ final class SQLBatchInsertRequestContext extends SQLBatchOperationRequestContext
     public ?SQLStatement $insertStatement {
         get => $this->insertStatement ??= $this->generator->statement;
     }
+    #[Override]
     public bool $isWritingRequest {
         get => true;
     }

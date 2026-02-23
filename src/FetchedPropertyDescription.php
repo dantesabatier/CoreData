@@ -24,6 +24,7 @@ use Sabatier\Foundation\KeyValueCoding;
 final class FetchedPropertyDescription extends PropertyDescription
 {
     /** @internal */
+    #[Override]
     public PropertyDescriptionType $propertyType = PropertyDescriptionType::fetchedProperty;
     /** @var FetchRequest|null The fetch request of the receiver. */
     public ?FetchRequest $fetchRequest = null;

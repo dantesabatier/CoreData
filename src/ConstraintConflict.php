@@ -20,6 +20,7 @@ final class ConstraintConflict extends ObjectClass
     private(set) Dictionary $constraintValues {
         get => $this->constraintValues ??= $this->conflictingObjects->first?->dictionaryWithValues($this->constraint) ?? new Dictionary();
     }
+    #[Override]
     public string $description {
         get => sprintf("%s %s for constraint (%s): database(%s): conflictedObjects (%s):", $this->class, $this->hash, $this->constraint->join(", "), human_readable_value($this->databaseObject), $this->conflictingObjects->join(", "));
     }

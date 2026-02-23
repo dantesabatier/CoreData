@@ -35,6 +35,7 @@ final class SQLBatchDeleteRequestContext extends SQLBatchOperationRequestContext
     private(set) ?SQLStatement $deleteStatement {
         get => $this->deleteStatement ??= $this->generator->statement;
     }
+    #[Override]
     public bool $isWritingRequest {
         get => true;
     }

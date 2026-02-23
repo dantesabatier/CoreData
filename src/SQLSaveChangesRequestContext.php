@@ -15,6 +15,7 @@ final class SQLSaveChangesRequestContext extends SQLStoreRequestContext
             return $request;
         }
     }
+    #[Override]
     public bool $isWritingRequest {
         get => true;
     }

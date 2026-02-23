@@ -9,6 +9,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\Predicates\Expression;
 use function Sabatier\Foundation\human_readable_value;
 
@@ -20,10 +21,12 @@ use function Sabatier\Foundation\human_readable_value;
  */
 final class ExpressionDescription extends PropertyDescription
 {
+    #[Override]
     public string $description {
         get => sprintf("%s, expression %s", parent::$description::get(), human_readable_value($this->expression));
     }
     /** @internal */
+    #[Override]
     public PropertyDescriptionType $propertyType = PropertyDescriptionType::expression;
     /** @var Expression|null The expression for the receiver. */
     public ?Expression $expression = null;

@@ -9,12 +9,16 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
+
 /** @internal */
 final class SQLForeignEntityKey extends SQLColumn
 {
+    #[Override]
     protected(set) string $name {
         get => $this->name ??= $this->relationshipDescription->destinationEntity->name;
     }
+    #[Override]
     protected(set) string $columnName {
         get => $this->columnName ??= $this->entity->entityKey->columnName;
     }

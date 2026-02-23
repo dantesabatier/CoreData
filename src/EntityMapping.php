@@ -63,6 +63,7 @@ final class EntityMapping extends ObjectClass
     public ?ArrayClass $relationshipMappings = null;
     /** @var Dictionary<mixed>|null The user info dictionary for the entity mapping. You can use the info dictionary in any way that might be useful in your migration. */
     public ?Dictionary $userInfo = null;
+    #[Override]
     public string $description {
         get => sprintf("<%s %s %s>", $this->class, $this->name, $this->hash);
     }

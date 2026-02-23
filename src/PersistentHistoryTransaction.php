@@ -49,6 +49,7 @@ final class PersistentHistoryTransaction extends ObjectClass
     }
     /** @var int The transaction's numeric identifier. */
     private(set) int $transactionNumber = NotFound;
+    #[Override]
     public string $description {
         get => sprintf("<%s: %s %s %s %s %s %s>", $this->class, $this->transactionNumber, $this->timestamp->description, $this->bundleID, human_readable_value($this->author), human_readable_value($this->contextName), human_readable_value($this->changes));
     }

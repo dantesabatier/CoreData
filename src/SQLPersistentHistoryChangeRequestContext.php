@@ -26,9 +26,11 @@ final class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestCont
             return $request;
         }
     }
+    #[Override]
     public bool $isWritingRequest {
         get => $this->request->isDelete;
     }
+    #[Override]
     public bool $hasHistoryTracking {
         get => true;
     }

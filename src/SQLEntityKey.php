@@ -9,15 +9,20 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
+
 /** @internal */
 final class SQLEntityKey extends SQLColumn
 {
+    #[Override]
     public PropertyDescriptionType $propertyType {
         get => PropertyDescriptionType::private;
     }
+    #[Override]
     public SQLType $sqlType {
         get => SQLType::varchar;
     }
+    #[Override]
     public mixed $defaultValue {
         get => $this->entity->entityDescription->name;
     }

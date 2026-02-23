@@ -29,6 +29,7 @@ final class SQLCore extends IncrementalStore
 {
     public static SQLDebugLevel $debugLevel = SQLDebugLevel::none;
     public static bool $debugColorOutputDefault = false;
+    #[Override]
     public string $type {
         get => SQLStoreType;
     }

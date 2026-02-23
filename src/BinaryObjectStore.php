@@ -9,9 +9,12 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
+
 /** @internal */
 final class BinaryObjectStore extends MappedObjectStore
 {
+    #[Override]
     public string $type {
         get => BinaryStoreType;
     }

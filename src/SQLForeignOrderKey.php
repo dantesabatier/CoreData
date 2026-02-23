@@ -9,6 +9,8 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
+
 /** @internal */
 final class SQLForeignOrderKey extends SQLColumn
 {
@@ -19,6 +21,7 @@ final class SQLForeignOrderKey extends SQLColumn
             return $relationshipDescription;
         }
     }
+    #[Override]
     public string $columnName {
         get => $this->columnName ??= $this->relationshipDescription->destinationEntity->attributesByName->first?->name ?? ManagedObjectObjectIDKey;
     }

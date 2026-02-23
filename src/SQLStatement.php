@@ -24,6 +24,7 @@ use function Sabatier\Foundation\string_search;
 /** @internal */
 final class SQLStatement extends ObjectClass
 {
+    #[Override]
     public string $description {
         get => $this->formatted();
     }
