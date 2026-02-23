@@ -299,11 +299,11 @@ final class SQLGenerator
     private function needsDistinct(Dictionary $dictionary, EntityDescription $entity): bool
     {
         return $dictionary->contains(function (mixed $value, string $key) use ($entity): bool {
-            if (! $value instanceof Dictionary) {
+            if (!$value instanceof Dictionary) {
                 return false;
             }
             $relationship = $entity->relationshipsByName[$key] ?? null;
-            if (! $relationship) {
+            if (!$relationship) {
                 return false;
             }
             if ($relationship->isToMany) {
