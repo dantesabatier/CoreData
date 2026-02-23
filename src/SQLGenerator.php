@@ -1056,12 +1056,11 @@ final class SQLGenerator
     private function buildClauseWithSelectPredicate(ComparisonPredicate $predicate, string &$clause): void
     {
         $expressions = new ArrayClass([$predicate->leftExpression, $predicate->rightExpression]);
-        $expression = $expressions->first(fn(Expression $expression): bool => $this->isKeyPathExpression($expression)) ?? fatal_error();
-        $relationship = $this->resolveRelationshipFromKeyPath($expression) ?? fatal_error();
-        $rightExpression = $expressions->first(fn(Expression $expression): bool => $expression->expressionType !== ExpressionType::keyPath);
-        $keyPath = $this->buildKeyPathExpression($expression);
-        $description = $expression->keyPath;
-        $components = components_from_key_path($description);
+        $leftExpression = $expressions->first(fn(Expression $expression): bool => $this->isKeyPathExpression($expression)) ?? fatal_error();
+        $relationship = $this->resolveRelationshipFromKeyPath($leftExpression) ?? fatal_error();
+        $rightExpression = ($leftExpression === $predicate->leftExpression) ? $predicate->rightExpression : $predicate->leftExpression;
+        $keyPath = $this->buildKeyPathExpression($leftExpression);
+        $components = components_from_key_path($leftExpression->keyPath);
         $propertyName = $components->remainderPath ?? $components->key;
         $innerPredicate = new ComparisonPredicate(Expression::expressionForKeyPath($propertyName), $rightExpression, $predicate->predicateOperatorType);
         $clause .= match ($predicate->comparisonPredicateModifier) {
