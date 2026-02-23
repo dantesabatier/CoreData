@@ -6,15 +6,14 @@ namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Set;
 
 /** @internal */
-final class SQLAdapter extends ObjectClass
+final readonly class SQLAdapter
 {
-    public function __construct(public readonly SQLCore $sqlCore)
+    public function __construct(public SQLCore $sqlCore)
     {
     }
 

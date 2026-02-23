@@ -21,7 +21,6 @@ use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\KeyedUnarchiver;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
-use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\ProcessInfo;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
@@ -33,7 +32,7 @@ use function Sabatier\Foundation\pluralize;
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /** @internal */
-final class SQLConnection extends ObjectClass
+final class SQLConnection
 {
     private(set) SQLSchema $schema {
         get => $this->schema ??= SQLSchema::schema($this->sqlCore?->url?->host);
