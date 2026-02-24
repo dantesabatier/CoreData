@@ -1059,14 +1059,13 @@ final class SQLGenerator
         $leftExpression = $expressions->first(fn(Expression $expression): bool => $this->isKeyPathExpression($expression)) ?? fatal_error();
         $relationship = $this->resolveRelationshipFromKeyPath($leftExpression) ?? fatal_error();
         $rightExpression = ($leftExpression === $predicate->leftExpression) ? $predicate->rightExpression : $predicate->leftExpression;
-        $keyPath = $this->buildKeyPathExpression($leftExpression);
         $components = components_from_key_path($leftExpression->keyPath);
         $propertyName = $components->remainderPath ?? $components->key;
         $innerPredicate = new ComparisonPredicate(Expression::expressionForKeyPath($propertyName), $rightExpression, $predicate->predicateOperatorType);
         $clause .= match ($predicate->comparisonPredicateModifier) {
             ComparisonPredicateModifier::any => $this->buildAnySubquery($relationship, $innerPredicate),
             ComparisonPredicateModifier::all => $this->buildAllSubquery($relationship, $propertyName, $rightExpression),
-            ComparisonPredicateModifier::direct => $this->buildDirectSubquery($relationship, $keyPath, $innerPredicate),
+            ComparisonPredicateModifier::direct => $this->buildDirectSubquery($relationship, $this->buildKeyPathExpression($leftExpression), $innerPredicate),
         };
     }
 
