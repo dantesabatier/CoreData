@@ -1359,10 +1359,7 @@ final class SQLGenerator
             if ($this->isKeyPathExpression($expression)) {
                 $expressionKeyPath = $expression->keyPath;
             }
-            $components = kvc_components($expressionKeyPath);
-            if (count($components) > 1) {
-                $keyValueOperator = $components[1];
-            }
+            [, $keyValueOperator,] = kvc_components($expressionKeyPath);
             if ($predicate instanceof ComparisonPredicate) {
                 $analyser = new SQLPredicateAnalyser();
                 $predicate->leftExpression->accept($analyser, PredicateVisitorFlags::all);
