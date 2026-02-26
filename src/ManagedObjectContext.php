@@ -1083,6 +1083,6 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function performBlockAndWait(Closure $block): void
     {
-        $this->queue->addOperationWithBlock($block);
+        OperationQueue::main->addOperationWithBlock($block);
     }
 }
