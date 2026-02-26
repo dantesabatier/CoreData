@@ -1086,7 +1086,7 @@ final class ManagedObjectContext extends ObjectClass
         $this->executeOnQueue(OperationQueue::main(), $block);
     }
 
-    private function executeOnQueue($queue, Closure $block): void
+    private function executeOnQueue(OperationQueue $queue, Closure $block): void
     {
         $wrappedBlock = function () use ($queue, $block): void {
             $queue->setAssociatedValueForKey($this, ManagedObjectContextKey);
@@ -1096,6 +1096,7 @@ final class ManagedObjectContext extends ObjectClass
                 $queue->setAssociatedValueForKey(null, ManagedObjectContextKey);
             }
         };
+        /** @noinspection PhpUnhandledExceptionInspection */
         $queue->addOperationWithBlock($wrappedBlock);
     }
 }
