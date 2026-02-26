@@ -1088,7 +1088,7 @@ final class ManagedObjectContext extends ObjectClass
 
     private function executeOnQueue($queue, Closure $block): void
     {
-        $wrappedBlock = function () use ($queue, $block) {
+        $wrappedBlock = function () use ($queue, $block): void {
             $queue->setAssociatedValueForKey($this, ManagedObjectContextKey);
             try {
                 $block();
