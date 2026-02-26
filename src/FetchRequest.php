@@ -87,7 +87,7 @@ final class FetchRequest extends PersistentStoreRequest
             if (!($queue = OperationQueue::current())) {
                 fatal_error("Current operation queue not found");
             }
-            if (!($context = $queue->associatedValues["managedObjectContext"])) {
+            if (!($context = $queue->associatedValueForKey(ManagedObjectContextKey))) {
                 fatal_error("Unable to find the managed object context associated with the current operation queue");
             }
             return $this->context = $context;
