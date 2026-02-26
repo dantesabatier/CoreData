@@ -1074,7 +1074,7 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function performBlock(Closure $block): void
     {
-        $this->queue->addOperationWithBlock($block);
+        $this->executeOnQueue($this->queue, $block);
     }
 
     /**
@@ -1083,6 +1083,19 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function performBlockAndWait(Closure $block): void
     {
-        OperationQueue::main->addOperationWithBlock($block);
+        $this->executeOnQueue(OperationQueue::main(), $block);
+    }
+
+    private function executeOnQueue($queue, Closure $block): void
+    {
+        $wrappedBlock = function () use ($queue, $block) {
+            $queue->setAssociatedValueForKey($this, "managedObjectContext");
+            try {
+                $block();
+            } finally {
+                $queue->setAssociatedValueForKey(null, "managedObjectContext");
+            }
+        };
+        $queue->addOperationWithBlock($wrappedBlock);
     }
 }
