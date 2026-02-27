@@ -109,27 +109,27 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /** @var ArrayClass<string> Explicit list of properties included in the object's serializable representation. Used both when recursively preparing related objects for serialization and when producing JSON output through jsonSerialize(). */
     public ArrayClass $serializationKeys {
         get {
-            if (!isset($this->serializationKeys)) {
-                /** @var ArrayClass<string> $serializationKeys */
-                $serializationKeys = match ($this->serializationRule) {
-                    SerializationRule::attributesOnly => $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient)->keys,
-                    SerializationRule::attributesAndRelationships => $this->entity->propertiesByName->filter(function (PropertyDescription $property): bool {
-                        if ($property instanceof AttributeDescription) {
-                            return !$property->isTransient;
-                        }
-                        if ($property instanceof RelationshipDescription) {
-                            return $property->isToMany && !$property->inverseRelationship->isToMany;
-                        }
-                        return $property instanceof FetchedPropertyDescription;
-                    })->keys,
-                    default => new ArrayClass(),
-                };
-                $serializationKeys->insertAt(ManagedObjectObjectIDKey, 0);
-                $serializationKeys->insertAt(ManagedObjectEntityNameKey, 1);
-                $serializationKeys->insertAt(ManagedObjectVersionKey, 2);
-                $this->serializationKeys = $serializationKeys;
+            if (isset($this->serializationKeys)) {
+                return $this->serializationKeys;
             }
-            return $this->serializationKeys;
+            /** @var ArrayClass<string> $serializationKeys */
+            $serializationKeys = match ($this->serializationRule) {
+                SerializationRule::attributesOnly => $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient)->keys,
+                SerializationRule::attributesAndRelationships => $this->entity->propertiesByName->filter(function (PropertyDescription $property): bool {
+                    if ($property instanceof AttributeDescription) {
+                        return !$property->isTransient;
+                    }
+                    if ($property instanceof RelationshipDescription) {
+                        return $property->isToMany && !$property->inverseRelationship->isToMany;
+                    }
+                    return $property instanceof FetchedPropertyDescription;
+                })->keys,
+                default => new ArrayClass(),
+            };
+            $serializationKeys->insertAt(ManagedObjectObjectIDKey, 0);
+            $serializationKeys->insertAt(ManagedObjectEntityNameKey, 1);
+            $serializationKeys->insertAt(ManagedObjectVersionKey, 2);
+            return $this->serializationKeys = $serializationKeys;
         }
     }
     /** @internal */
