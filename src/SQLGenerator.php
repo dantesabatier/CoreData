@@ -1415,7 +1415,7 @@ final class SQLGenerator
                 }
                 return null;
             }));
-            $descriptors->appendContentsOf($toManyRelationships->map(fn(SQLToMany $toMany) => new SortDescriptor($toMany->inverseToOne->foreignOrderKey->columnName)));
+            $descriptors->appendContentsOf($toManyRelationships->map(fn(SQLToMany $toMany) => new SortDescriptor("{$toMany->inverseToOne->foreignOrderKey->name}.{$toMany->inverseToOne->foreignOrderKey->columnName}")));
         endif;
         if (!$descriptors->isEmpty) {
             $clauses = new Set($descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? "ASC" : "DESC"))->filter(fn(string $string): bool => str_contains($string, ".")));
