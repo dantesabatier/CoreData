@@ -56,23 +56,30 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public int $version = 1;
     /** @var bool A Boolean value that indicates whether the managed object has been inserted in a managed object context. */
     public bool $isInserted {
+        /**
+         * @throws Exception
+         */
         get {
-            if (!isset($this->isInserted)) {
-                if (!$this->objectID->isTemporaryID && ($persistentStore = $this->objectID->persistentStore)) {
-                    try {
-                        $debugDefault = SQLCore::$debugLevel;
-                        SQLCore::$debugLevel = SQLDebugLevel::none;
-                        /** @var FetchRequest<Number> $fetchRequest */
-                        $fetchRequest = $this::fetchRequest();
-                        $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($this->objectID));
-                        $fetchRequest->affectedStores = new ArrayClass([$persistentStore]);
-                        $this->isInserted = (bool)$this->managedObjectContext->count($fetchRequest);
-                        SQLCore::$debugLevel = $debugDefault;
-                    } catch (Exception) {
-                    }
-                }
-                $this->isInserted ??= false;
+            if (isset($this->isInserted)) {
+                return $this->isInserted;
             }
+            if ($this->isStable) {
+                return $this->isInserted = true;
+            }
+            if ($this->objectID->isTemporaryID) {
+                return $this->isInserted = false;
+            }
+            if (!($persistentStore = $this->objectID->persistentStore)) {
+                return $this->isInserted = false;
+            }
+            $debugDefault = SQLCore::$debugLevel;
+            SQLCore::$debugLevel = SQLDebugLevel::none;
+            /** @var FetchRequest<Number> $fetchRequest */
+            $fetchRequest = $this::fetchRequest();
+            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($this->objectID));
+            $fetchRequest->affectedStores = new ArrayClass([$persistentStore]);
+            $this->isInserted = (bool)$this->managedObjectContext->count($fetchRequest);
+            SQLCore::$debugLevel = $debugDefault;
             return $this->isInserted;
         }
     }
