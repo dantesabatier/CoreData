@@ -24,7 +24,7 @@ final class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
         $this->debugLevel = SQLDebugLevel::none;
         /** @var SQLEntity $entity */
         $entity = $this->sqlModel->entitiesByName[$this->objectID->entity->name] ?? fatal_error();
-        $property = $entity->propertiesByName[$this->relationship->name] ?? fatal_error("$entity unable to find relationship {$this->relationship->name} in {$entity->propertiesByName->keys}");
+        $property = $entity->propertiesByName[$this->relationship->name] ?? fatal_error("$entity unable to find relationship \"{$this->relationship->name}\" in relationships \"{$entity->propertiesByName->keys}\"");
         if ($property instanceof SQLToOne) {
             $sourceEntity = $property->entity;
             $foreignKey = $property->foreignKey;
