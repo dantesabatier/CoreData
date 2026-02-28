@@ -255,7 +255,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         $this->entity = $entity ?? fatal_error("Invalid argument: entity cannot be null");
         $this->managedObjectContext = $managedObjectContext;
         $this->managedObjectContext->insert($this);
-        $this->hydrateProperties();
     }
 
     public function __get(string $name)
@@ -318,6 +317,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function awakeFromInsert(): void
     {
+        $this->hydrateProperties();
     }
 
     private function hydrateProperties(): void
