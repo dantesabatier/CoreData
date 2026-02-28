@@ -852,7 +852,7 @@ final class ManagedObjectContext extends ObjectClass
         }
         $changesRequest = $this->createSaveChangesRequest();
         NotificationCenter::default()->postNotificationName(self::willSaveObjectsNotification, $this);
-        $this->execute($changesRequest);
+        $this->executeSaveChangesRequest($changesRequest);
         $this->notifyObjectsDidSave($changesRequest);
         NotificationCenter::default()->postNotificationName(self::didSaveObjectsNotification, $this, new Dictionary([InsertedObjectsKey => $changesRequest->insertedObjects, UpdatedObjectsKey => $changesRequest->updatedObjects, DeletedObjectsKey => $changesRequest->deletedObjects]));
         $this->resetState();
