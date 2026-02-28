@@ -220,14 +220,6 @@ final class ManagedObjectContext extends ObjectClass
      */
     private function executeSaveChangesRequest(SaveChangesRequest $request): UnknownRequestTypeResult
     {
-        /** @var Set<ManagedObject> $savedObjects */
-        $savedObjects = new Set();
-        if ($insertedObjects = $request->insertedObjects) {
-            $savedObjects->formUnion($insertedObjects);
-        }
-        if ($updatedObjects = $request->updatedObjects) {
-            $savedObjects->formUnion($updatedObjects);
-        }
         $this->processingChanges = true;
         $result = $this->executePersistentStoreRequest($request);
         $this->processingChanges = false;
