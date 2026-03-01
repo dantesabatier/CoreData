@@ -136,24 +136,6 @@ final class SQLGenerator
         return new SQLStatement($this->string, $this->arguments);
     }
 
-    private function newSQLStatementForSaveInsertChanges(SQLEntity $entity, ArrayClass $insertedObjects): SQLStatement
-    {
-        $this->prepareInsertStatement($entity, $insertedObjects);
-        return new SQLStatement($this->string, $this->arguments);
-    }
-
-    private function newSQLStatementForSaveUpdateChanges(SQLEntity $entity, ArrayClass $updatedObjects): SQLStatement
-    {
-        $this->prepareUpdateStatement($entity, $updatedObjects);
-        return new SQLStatement($this->string, $this->arguments);
-    }
-
-    private function newSQLStatementForSaveDeleteChanges(SQLEntity $entity, ArrayClass $deletedObjects): SQLStatement
-    {
-        $this->prepareDeleteStatement($entity, $deletedObjects);
-        return new SQLStatement($this->string, $this->arguments);
-    }
-
     private function newSQLStatementForSaveChangesRequestContext(): ?SQLStatement
     {
         /** @var SQLSaveChangesRequestContext $requestContext */
@@ -195,6 +177,24 @@ final class SQLGenerator
             }
         endif;
         return SQLStatement::merging($statements);
+    }
+
+    private function newSQLStatementForSaveInsertChanges(SQLEntity $entity, ArrayClass $insertedObjects): SQLStatement
+    {
+        $this->prepareInsertStatement($entity, $insertedObjects);
+        return new SQLStatement($this->string, $this->arguments);
+    }
+
+    private function newSQLStatementForSaveUpdateChanges(SQLEntity $entity, ArrayClass $updatedObjects): SQLStatement
+    {
+        $this->prepareUpdateStatement($entity, $updatedObjects);
+        return new SQLStatement($this->string, $this->arguments);
+    }
+
+    private function newSQLStatementForSaveDeleteChanges(SQLEntity $entity, ArrayClass $deletedObjects): SQLStatement
+    {
+        $this->prepareDeleteStatement($entity, $deletedObjects);
+        return new SQLStatement($this->string, $this->arguments);
     }
 
     private function applyDiscriminatorPredicate(EntityDescription $entity, ?Predicate $predicate): ?Predicate
