@@ -567,7 +567,7 @@ final class SQLGenerator
             $serialization = clone $nestedSerialization;
             $serializationKeys = $serialization->keys->filter(function (string $key) use ($currentEntity): bool {
                 /** @var SQLProperty $property */
-                $property = $currentEntity->propertiesByName[$key] ?? fatal_error("$currentEntity->tableName does not contains a property named \"$key\"");
+                $property = $currentEntity->propertiesByName[$key] ?? fatal_error("{$currentEntity->entityDescription->name} does not contains a property named \"$key\"");
                 return !$property->isTransient;
             });
             if (!$serializationKeys->containsElement($currentEntity->primaryKey->columnName)) {
@@ -745,7 +745,7 @@ final class SQLGenerator
                 continue;
             }
             if ($this->raisesForNotApplicableKeys) {
-                fatal_error("$entity->tableName does not contains a property named \"$key\"");
+                fatal_error("{$entity->entityDescription->name} does not contains a property named \"$key\"");
             }
             break;
         }
@@ -1349,7 +1349,7 @@ final class SQLGenerator
         $predicate = $operand->predicate;
         $entity = $this->entity;
         /** @var SQLToMany|SQLManyToMany $relationship */
-        $relationship = $entity->propertiesByName[$keyPath] ?? fatal_error("Invalid argument: \"$entity\" does not contains a property named \"$keyPath\"");
+        $relationship = $entity->propertiesByName[$keyPath] ?? fatal_error("Invalid argument: \"{$entity->entityDescription->name}\" does not contains a property named \"$keyPath\"");
         $relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany ?: fatal_error("Invalid argument: $relationship is not a to-many relationship");
         $tableAlias = str_starts_with($variable, "\$") ? substr($variable, 1) : $variable;
         $keyValueOperator = null;
@@ -1529,7 +1529,7 @@ final class SQLGenerator
         }
         $this->string = "UPDATE `$entity->tableName` SET {$columnNames->map(fn(string $columnName): string => "`$columnName` = (CASE {$updatedObjects->map(function(ManagedObject $object) use ($entity, $columnName, &$arguments): string {
             /** @var SQLProperty $property */
-            $property = $entity->propertiesByName[$columnName] ?? $entity->compositeAttributeNameToSQLProperty[$columnName] ?? fatal_error("Invalid argument: \"$entity\" does not contains a property named \"$columnName\"");
+            $property = $entity->propertiesByName[$columnName] ?? $entity->compositeAttributeNameToSQLProperty[$columnName] ?? fatal_error("Invalid argument: \"{$entity->entityDescription->name}\" does not contains a property named \"$columnName\"");
             if ($property instanceof SQLOptLockKey) {
                 $value = $object->valueForKey($entity->optLockKey->name);
             } elseif ($property instanceof SQLAttribute) {
