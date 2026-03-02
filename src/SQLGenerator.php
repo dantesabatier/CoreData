@@ -790,8 +790,8 @@ final class SQLGenerator
         $properties = $this->propertiesFromKeyPathExpression($expression);
         if ($properties->isEmpty && $this->isSubquery) {
             return new Set($compatibility->analyser->keyPathExpressions)->filter(fn(Expression $keyPathExpression): bool => str_contains($keyPathExpression->keyPath, "."))->map(function (Expression $expression) use ($tableName): string {
-                $parts = explode(".", $expression->keyPath);
-                [, $propertyName] = $parts;
+                $keyPathComponents = components_from_key_path($expression->keyPath);
+                $propertyName = $keyPathComponents->remainderPath ?? $keyPathComponents->key;
                 return "$tableName.$propertyName";
             })->join(", ");
         }
@@ -1059,8 +1059,8 @@ final class SQLGenerator
         $leftExpression = $expressions->first(fn(Expression $expression): bool => $this->isKeyPathExpression($expression)) ?? fatal_error();
         $relationship = $this->resolveRelationshipFromKeyPath($leftExpression) ?? fatal_error();
         $rightExpression = ($leftExpression === $predicate->leftExpression) ? $predicate->rightExpression : $predicate->leftExpression;
-        $components = components_from_key_path($leftExpression->keyPath);
-        $propertyName = $components->remainderPath ?? $components->key;
+        $keyPathComponents = components_from_key_path($leftExpression->keyPath);
+        $propertyName = $keyPathComponents->remainderPath ?? $keyPathComponents->key;
         $innerPredicate = new ComparisonPredicate(Expression::expressionForKeyPath($propertyName), $rightExpression, $predicate->predicateOperatorType);
         $clause .= match ($predicate->comparisonPredicateModifier) {
             ComparisonPredicateModifier::any => $this->buildAnySubquery($relationship, $innerPredicate),
@@ -1364,7 +1364,8 @@ final class SQLGenerator
                 $analyser = new SQLPredicateAnalyser();
                 $predicate->leftExpression->accept($analyser, PredicateVisitorFlags::all);
                 $keyPathExpression = $analyser->keyPathExpressions->first ?? fatal_error("Invalid argument: $predicate");
-                [, $keyPathToProperty] = explode(".", $keyPathExpression->keyPath);
+                $keyPathComponents = components_from_key_path($keyPathExpression->keyPath);
+                $keyPathToProperty = $keyPathComponents->remainderPath ?? $keyPathComponents->key;
             }
         }
         return $this->buildCorrelatedSubqueryString($this->createSubQueryGenerator($relationship, $keyValueOperator, $keyPathToProperty, $tableAlias, $predicate), $relationship, $entity->tableName, $tableAlias);
