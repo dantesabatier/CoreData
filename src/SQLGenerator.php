@@ -1491,7 +1491,12 @@ final class SQLGenerator
                 }
             }
         }
-        $this->string = "INSERT INTO `$entity->tableName` (" . $columnNames->map(fn(string $columnName): string => "`$columnName`")->join(", ") . ") VALUES " . ArrayClass::repeating("(" . ArrayClass::repeating("?", $columnNames->count)->join(", ") . ")", $insertedObjects->count)->join(", ") . " ON DUPLICATE KEY UPDATE {$columnNames->map(fn(string $columnName): string => "`$columnName` = VALUES(`$columnName`)")->join(", ")}";
+        $mutableColumns = $columnNames->filter(fn(string $columnName): bool => $entity->propertiesByName[$columnName] instanceof SQLAttribute && !$entity->propertiesByName[$columnName]->isUnique);
+        if ($mutableColumns->isEmpty) {
+            $this->string = "INSERT IGNORE INTO `$entity->tableName` (" . $columnNames->map(fn(string $columnName): string => "`$columnName`")->join(", ") . ") VALUES " . ArrayClass::repeating("(" . ArrayClass::repeating("?", $columnNames->count)->join(", ") . ")", $insertedObjects->count)->join(", ");
+        } else {
+            $this->string = "INSERT INTO `$entity->tableName` (" . $columnNames->map(fn(string $columnName): string => "`$columnName`")->join(", ") . ") VALUES " . ArrayClass::repeating("(" . ArrayClass::repeating("?", $columnNames->count)->join(", ") . ")", $insertedObjects->count)->join(", ") . " ON DUPLICATE KEY UPDATE {$mutableColumns->map(fn(string$columnName): string => "`$columnName` = VALUES(`$columnName`)")->join(", ")}";
+        }
         $this->arguments = $arguments;
     }
 
