@@ -52,14 +52,20 @@ final class SQLSaveChangesRequestContext extends SQLStoreRequestContext
             return;
         }
         /** @var Dictionary<Set<ManagedObject>> $byEntity */
-        $byEntity = $insertedObjects->reduce(new Dictionary(), function (Dictionary $dictionary, ManagedObject $object): Dictionary {
-            if ($object->entity->indexes->isEmpty) {
+        $byEntity = $insertedObjects->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<Set<ManagedObject>> $dictionary
+             * @param ManagedObject $object
+             * @return Dictionary<Set<ManagedObject>>
+             */
+            function (Dictionary $dictionary, ManagedObject $object): Dictionary {
+                if ($object->entity->indexes->isEmpty) {
+                    return $dictionary;
+                }
+                $dictionary[$object->entityName] ??= new Set();
+                $dictionary[$object->entityName]?->insert($object);
                 return $dictionary;
-            }
-            $dictionary[$object->entity->name] ??= new Set();
-            $dictionary[$object->entity->name]->insert($object);
-            return $dictionary;
-        });
+            });
         $context = $this->context;
         $connection = $this->connection;
         $sqlCore = $this->sqlCore;
