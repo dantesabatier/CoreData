@@ -1444,8 +1444,7 @@ final class SQLGenerator
         /** @var ArrayClass<mixed> $arguments */
         $arguments = new ArrayClass();
         /** @var Set<string> $columnNames */
-        $columnNames = new Set();
-        $columnNames->formUnion([$entity->primaryKey->columnName, $entity->entityKey->columnName, $entity->optLockKey->columnName]);
+        $columnNames = new Set([$entity->primaryKey->columnName, $entity->entityKey->columnName, $entity->optLockKey->columnName]);
         foreach ($insertedObjects as $insertedObject) {
             foreach ($entity->properties as $property) {
                 if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLOptLockKey) {
@@ -1491,18 +1490,11 @@ final class SQLGenerator
                 }
             }
         }
-        $mutableColumns = $columnNames->filter(fn(string $columnName): bool => $entity->propertiesByName[$columnName] instanceof SQLAttribute && !$entity->propertiesByName[$columnName]->isUnique);
         $sqlColumns = $columnNames->map(fn(string $columnName): string => "`$columnName`")->join(", ");
         $placeholders = "(" . ArrayClass::repeating("?", $columnNames->count)->join(", ") . ")";
         $sqlValues = ArrayClass::repeating($placeholders, $insertedObjects->count)->join(", ");
-        $action = $mutableColumns->isEmpty ? "INSERT IGNORE" : "INSERT";
-        $query = "$action INTO `$entity->tableName` ($sqlColumns) VALUES $sqlValues";
-        if (!$mutableColumns->isEmpty) {
-            $updateClause = $mutableColumns
-                ->map(fn(string $col): string => "`$col` = VALUES(`$col`)")
-                ->join(", ");
-            $query .= " ON DUPLICATE KEY UPDATE $updateClause";
-        }
+        $updateClause = $columnNames->map(fn(string $columName): string => "`$columName` = VALUES(`$columName`)")->join(", ");
+        $query = "INSERT INTO `$entity->tableName` ($sqlColumns) VALUES $sqlValues ON DUPLICATE KEY UPDATE $updateClause";
         $this->string = $query;
         $this->arguments = $arguments;
     }

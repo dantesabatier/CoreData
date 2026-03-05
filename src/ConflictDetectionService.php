@@ -19,18 +19,6 @@ final readonly class ConflictDetectionService
     }
 
     /**
-     * @param ManagedObject $object
-     * @return Dictionary<mixed>
-     */
-    private function baselineSnapshotFor(ManagedObject $object): Dictionary
-    {
-        return $object->originalSnapshot?->filter(fn(mixed $value, string $key): bool => match ($key) {
-            ManagedObjectObjectIDKey, ManagedObjectEntityNameKey, ManagedObjectVersionKey => true,
-            default => $object->modeledAttributes->offsetExists($key) && !$object->transientProperties->offsetExists($key),
-        }) ?? new Dictionary();
-    }
-
-    /**
      * @throws Exception
      */
     public function detectConflicts(ManagedObject $object): void
@@ -77,6 +65,18 @@ final readonly class ConflictDetectionService
         $this->mergePolicy->resolveConstraintConflicts($conflicts);
     }
 
+    /**
+     * @param ManagedObject $object
+     * @return Dictionary<mixed>
+     */
+    private function baselineSnapshotFor(ManagedObject $object): Dictionary
+    {
+        return $object->originalSnapshot?->filter(fn(mixed $value, string $key): bool => match ($key) {
+            ManagedObjectObjectIDKey, ManagedObjectEntityNameKey, ManagedObjectVersionKey => true,
+            default => $object->modeledAttributes->offsetExists($key) && !$object->transientProperties->offsetExists($key),
+        }) ?? new Dictionary();
+    }
+
     private function isUniqueIndexedAttribute(ManagedObject $object, string $key): bool
     {
         return $object->entity->indexes->contains(fn(FetchIndexDescription $index): bool => $index->isUnique && $index->elements->contains(fn(FetchIndexElementDescription $element): bool => $element->property->name === $key));
@@ -121,18 +121,14 @@ final readonly class ConflictDetectionService
         if (!$this->isUniqueIndexedAttribute($object, $key)) {
             return null;
         }
-        $fetchRequest = $this->constraintFetchRequestFor($object, $key, $value, $attributeKeys);
         $context = $object->managedObjectContext;
+        $fetchRequest = $this->constraintFetchRequestFor($object, $key, $value, $attributeKeys);
         $databaseSnapshots = $context->fetch($fetchRequest);
         if ($databaseSnapshot = $databaseSnapshots->first) {
             $constraint = new ArrayClass([$key]);
             $conflictingSnapshots = new ArrayClass([$baselineSnapshot, $databaseSnapshot]);
-            /** @var PersistentStore $store */
-            $store = $object->objectID->persistentStore;
-            $objectID = $store->objectID($object->entity, $databaseSnapshot[ManagedObjectObjectIDKey]);
-            $databaseObject = $context->object($objectID);
-            $conflictingObjects = new ArrayClass([$object, $databaseObject]);
-            return new ConstraintConflict($constraint, $databaseObject, $databaseSnapshot, $conflictingObjects, $conflictingSnapshots);
+            $conflictingObjects = new ArrayClass([$object]);
+            return new ConstraintConflict($constraint, null, $databaseSnapshot, $conflictingObjects, $conflictingSnapshots);
         }
         return null;
     }
