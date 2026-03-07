@@ -65,7 +65,6 @@ final class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
             $fetchRequest->entity = $entity->entityDescription;
             $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($this->objectID));
             $fetchRequest->propertiesToFetch = new ArrayClass([$property->relationshipDescription]);
-            $fetchRequest->includesPendingChanges = true;
             $first = $this->sqlCore->execute($fetchRequest, $this->context)->first;
             if ($first instanceof ManagedObject) {
                 $this->result = $first->primitiveValueForKey($property->name) ?? new ArrayClass();
