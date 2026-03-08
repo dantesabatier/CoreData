@@ -279,7 +279,10 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         $this->result = match ($this->request->resultType) {
             FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType => $this->mapSnapshotsToResult($this->fetchSnapshotsFromStatement($this->queryStatement)),
             FetchRequestResultType::dictionaryResultType => $this->fetchSnapshotsFromStatement($this->queryStatement),
-            FetchRequestResultType::countResultType => fatal_error(sprintf("CoreData: annotation: invalid result type: %s", human_readable_value($this->request->resultType))),
+            FetchRequestResultType::countResultType => $this->request->resultType
+                    |> human_readable_value(...)
+                    |> (fn($x) => sprintf("CoreData: annotation: invalid result type: %s", $x))
+                    |> fatal_error(...),
         };
         return true;
     }
