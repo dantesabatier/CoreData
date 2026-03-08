@@ -34,14 +34,18 @@ final readonly class FaultHandler
 
     public function turnObjectIntoFault(/** @noinspection PhpUnusedParameterInspection */ ManagedObject $object, ?ManagedObjectContext $context = null): void
     {
+        $object->isSuppressingChangeNotifications = true;
         $object->isSuppressingKVO = true;
         $object->willTurnIntoFault();
+        $committedValues = $object->committedValues(null);
         $properties = $object->persistentProperties;
         foreach ($properties as $property) {
-            if ($property instanceof AttributeDescription && !$property->preservesValueInHistoryOnDeletion) {
-                $object->setValueForKey(null, $property->name);
-            } elseif ($property instanceof FetchedPropertyDescription || $property instanceof RelationshipDescription) {
-                if (($value = $object->primitiveValueForKey($property->name)) && ($value instanceof FaultingSet || $value instanceof FaultingArray)) {
+            $key = $property->name;
+            $committedValue = $committedValues[$key];
+            if ($property instanceof AttributeDescription) {
+                $object->setValueForKey($committedValue, $key);
+            } elseif (!$committedValue && $property instanceof FetchedPropertyDescription || $property instanceof RelationshipDescription) {
+                if (($value = $object->primitiveValueForKey($key)) && ($value instanceof FaultingSet || $value instanceof FaultingArray)) {
                     $value->turnIntoFault();
                 }
             }
@@ -50,5 +54,6 @@ final readonly class FaultHandler
         $object->faultingState = NotFound;
         $object->didTurnIntoFault();
         $object->isSuppressingKVO = false;
+        $object->isSuppressingChangeNotifications = false;
     }
 }
