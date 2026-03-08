@@ -1038,7 +1038,7 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function reset(): void
     {
-        foreach ($this->byHashAssociationTable as $registeredObject) {
+        foreach ($this->byHashAssociationTable->values as $registeredObject) {
             $this->unregister($registeredObject);
         }
         $this->byHashAssociationTable->removeAll();
