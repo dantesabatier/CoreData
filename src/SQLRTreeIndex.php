@@ -14,12 +14,10 @@ final class SQLRTreeIndex extends SQLIndex
         /** @var FetchIndexElementDescription $element */
         $element = $indexDescription->elements->first;
         $property = $element->property;
-        if ($property->isOptional) {
-            $element->collationType
+        !$property->isOptional ?: $element->collationType
                 |> human_readable_value(...)
                 |> (fn(string $x): string => sprintf("Invalid argument for index %s, property \"%s\" cannot be optional", $x, $property->name))
                 |> fatal_error(...);
-        }
         /** @var SQLEntity $entity */
         $entity = $entity->isRootEntity ? $entity : $entity->rootEntity;
         $this->createTableStatements->append(new SQLStatement("ALTER TABLE `$entity->tableName` ADD CONSTRAINT `$indexDescription->name` SPATIAL INDEX IF NOT EXISTS ({$indexDescription->elements->map(fn(FetchIndexElementDescription $element): string => "`{$element->property->name}` $element->order")->join(", ")})"));
