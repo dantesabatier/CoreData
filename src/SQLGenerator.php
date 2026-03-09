@@ -206,22 +206,6 @@ final class SQLGenerator
         return new SQLStatement($this->string, $this->arguments);
     }
 
-    private function applyDiscriminatorPredicate(EntityDescription $entity, ?Predicate $predicate): ?Predicate
-    {
-        /** @var  EntityDescription $rootEntity */
-        $rootEntity = $entity->isRootEntity ? $entity : $entity->rootEntity;
-        $subentities = $entity->managedObjectModel->flatten($rootEntity->subentities);
-        if (!$entity->isAbstract && !$subentities->isEmpty) {
-            $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($entity->name));
-            if ($predicate) {
-                $predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory]));
-            } else {
-                $predicate = $mandatory;
-            }
-        }
-        return $predicate;
-    }
-
     private function resetSQL(): void
     {
         $this->selectList = "";
@@ -325,6 +309,22 @@ final class SQLGenerator
             }
             return $this->needsDistinct($value, $relationship->destinationEntity);
         });
+    }
+
+    private function applyDiscriminatorPredicate(EntityDescription $entity, ?Predicate $predicate): ?Predicate
+    {
+        /** @var  EntityDescription $rootEntity */
+        $rootEntity = $entity->isRootEntity ? $entity : $entity->rootEntity;
+        $subentities = $entity->managedObjectModel->flatten($rootEntity->subentities);
+        if (!$entity->isAbstract && !$subentities->isEmpty) {
+            $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($entity->name));
+            if ($predicate) {
+                $predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory]));
+            } else {
+                $predicate = $mandatory;
+            }
+        }
+        return $predicate;
     }
 
     private function endSQL(): void
