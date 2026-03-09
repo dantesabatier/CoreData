@@ -403,6 +403,7 @@ final class SQLGenerator
     private function appendSelectListToSQLForRequest(FetchRequest $request): void
     {
         $entity = $this->entity;
+        /** @var Set<string> $columnNames */
         $columnNames = new Set();
         if ($this->keyValueOperator === KeyValueOperator::countKeyValueOperator) {
             $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
