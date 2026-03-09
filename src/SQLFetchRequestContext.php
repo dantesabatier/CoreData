@@ -83,9 +83,11 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         $nullPropertyPrefixes = new Set();
         $isNonDictionaryResultType = ($this->request->resultType !== FetchRequestResultType::dictionaryResultType);
         do {
+            /** @var EntityDescription $entityDescription */
+            $entityDescription = $this->request->entity;
             /** @var array<string, mixed> $row */
             while ($row = $statement->fetch()) {
-                $entityNameFromRow = $row[ManagedObjectEntityNameKey] ?? $this->request->entity->name;
+                $entityNameFromRow = $row[ManagedObjectEntityNameKey] ?? $entityDescription->name;
                 /** @var SQLEntity $entity */
                 $entity = $this->sqlModel->entitiesByName[$entityNameFromRow] ?? fatal_error("Entity \"$entityNameFromRow\" does not exist");
                 $cursorEntity = $entity;
@@ -281,7 +283,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
             FetchRequestResultType::dictionaryResultType => $this->fetchSnapshotsFromStatement($this->queryStatement),
             FetchRequestResultType::countResultType => $this->request->resultType
                     |> human_readable_value(...)
-                    |> (fn($x) => sprintf("CoreData: annotation: invalid result type: %s", $x))
+                    |> (fn(string $x): string => sprintf("CoreData: annotation: invalid result type: %s", $x))
                     |> fatal_error(...),
         };
         return true;

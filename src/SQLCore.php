@@ -289,7 +289,7 @@ final class SQLCore extends IncrementalStore
                     BatchDeleteRequestResultType::count => (bool)$result->sum()
                 }) {
                     /** @var SQLEntity $entity */
-                    $entity = $this->model->entitiesByName[$requestContext->fetchRequestForObjectsToDelete->entity->name];
+                    $entity = $this->model->entitiesByName[(string)$requestContext->fetchRequestForObjectsToDelete->entity?->name];
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass([$entity]));
                 }
             } elseif ($requestContext instanceof SQLSaveChangesRequestContext) {

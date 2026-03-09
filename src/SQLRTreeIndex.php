@@ -17,7 +17,7 @@ final class SQLRTreeIndex extends SQLIndex
         if ($property->isOptional) {
             $element->collationType
                 |> human_readable_value(...)
-                |> (fn($x) => sprintf("Invalid argument for index %s, property \"%s\" cannot be optional", $x, $property->name))
+                |> (fn(string $x): string => sprintf("Invalid argument for index %s, property \"%s\" cannot be optional", $x, $property->name))
                 |> fatal_error(...);
         }
         /** @var SQLEntity $entity */

@@ -81,7 +81,7 @@ final class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestCont
         $date = $request->date;
         $transactionNumber = $request->transactionNumber;
         $transactionIDs = $request->transactionIDs;
-        $transactionKey = $fetchRequest->entity->isKindOf($persistentHistoryTransactionEntityDescription) ? "" : "transaction.";
+        $transactionKey = $fetchRequest->entity?->isKindOf($persistentHistoryTransactionEntityDescription) ? "" : "transaction.";
         if ($request->isFetchTransactionForToken) {
             $token = $request->token ?? new PersistentHistoryToken(new Dictionary([$this->sqlCore->identifier => $transactionNumber ?? new Number(0)]));
             /** @psalm-suppress ReservedWord */
@@ -116,10 +116,12 @@ final class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestCont
             PersistentHistoryResultType::objectIDs,
             PersistentHistoryResultType::transactionsOnly, PersistentHistoryResultType::changesOnly, PersistentHistoryResultType::transactionsAndChanges => FetchRequestResultType::dictionaryResultType,
         };
+        /** @var EntityDescription $entity */
+        $entity = $fetchRequest->entity;
         /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
         $fetchRequest->propertiesToFetch = match ($request->resultType) {
-            PersistentHistoryResultType::transactionsOnly => $fetchRequest->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute instanceof DerivedAttributeDescription)->keys,
-            PersistentHistoryResultType::objectIDs, PersistentHistoryResultType::changesOnly, PersistentHistoryResultType::transactionsAndChanges => $fetchRequest->entity->properties,
+            PersistentHistoryResultType::transactionsOnly => $entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute instanceof DerivedAttributeDescription)->keys,
+            PersistentHistoryResultType::objectIDs, PersistentHistoryResultType::changesOnly, PersistentHistoryResultType::transactionsAndChanges => $entity->properties,
             default => $fetchRequest->propertiesToFetch
         };
         return $fetchRequest;
@@ -184,7 +186,7 @@ final class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestCont
             PersistentHistoryResultType::statusOnly => new ArrayClass([new Number((bool)$context->result->sum())]),
             PersistentHistoryResultType::count => $context->result,
             default => (function () use ($context): ArrayClass {
-                if ($context->request->entity->isKindOf(PersistentHistoryTransaction::$entityDescription ?? fatal_error())) {
+                if ($context->request->entity?->isKindOf(PersistentHistoryTransaction::$entityDescription ?? fatal_error())) {
                     $transactions = $context->result->map($this->transactionFromResult(...));
                     return match ($this->request->resultType) {
                         PersistentHistoryResultType::objectIDs => $transactions->flatMap(fn(PersistentHistoryTransaction $transaction): iterable => $transaction->changes?->map(fn(PersistentHistoryChange $change): ManagedObjectID => $change->changedObjectID) ?? []),

@@ -42,7 +42,7 @@ final class SQLStatement extends ObjectClass
         $numberOfPlaceholders = string_search($this->string, "?", SearchMethod::contains);
         $numberOfArguments === $numberOfPlaceholders ?: $this->arguments
                 |> human_readable_value(...)
-                |> (fn($x) => sprintf("Invalid sql statement: number of arguments (%s) does not match the number of placeholders (%s)\n\"%s\"\n%s", $numberOfArguments, $numberOfPlaceholders, $this->string, $x))
+                |> (fn(string $x): string => sprintf("Invalid sql statement: number of arguments (%s) does not match the number of placeholders (%s)\n\"%s\"\n%s", $numberOfArguments, $numberOfPlaceholders, $this->string, $x))
                 |> fatal_error(...);
     }
 

@@ -241,6 +241,7 @@ final class SQLGenerator
     {
         $this->resetSQL();
         if ($request instanceof FetchRequest) {
+            /** @var EntityDescription $entity */
             $entity = $request->entity;
             /** @var ArrayClass<PropertyDescription> $propertiesToGroupBy */
             $propertiesToGroupBy = $request->propertiesToGroupBy?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $entity->propertiesByName[$property]) ?? new ArrayClass();
@@ -700,6 +701,7 @@ final class SQLGenerator
         }
         $request = $this->request;
         $entity ??= $request->entity;
+        assert($entity instanceof EntityDescription);
         $serialization ??= $request->serialization;
         foreach ($serialization as $key => $value) {
             $property = $entity->propertiesByName[$key];
@@ -1684,7 +1686,7 @@ final class SQLGenerator
     private function prepareStatementForBatchDeleteRequest(BatchDeleteRequest $request): void
     {
         /** @var EntityDescription $entity */
-        $entity = $request->fetchRequest->entity->isRootEntity ? $request->fetchRequest->entity : $request->fetchRequest->entity->rootEntity;
+        $entity = $request->fetchRequest->entity?->isRootEntity ? $request->fetchRequest->entity : $request->fetchRequest->entity?->rootEntity;
         /** @noinspection SqlWithoutWhere */
         $this->string = "DELETE `$entity->name` FROM `$entity->name`";
     }

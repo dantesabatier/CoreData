@@ -46,9 +46,22 @@ final class FetchRequest extends PersistentStoreRequest
     public ?Predicate $havingPredicate = null;
     /** @var FetchRequestResultType The result type of the fetch request. If you set the value to {@see FetchRequestResultType::objectID}, and do not include property values in the request, sort orderings are demoted to “best efforts” hints. {@see includesPendingChanges} discusses with whether pending changes are taken into account when the resultType is set to {@see FetchRequestResultType::object}. {@see includesPropertyValues} discusses whether property values are included or not by default when the resultType is set to {@see FetchRequestResultType::object}. */
     public FetchRequestResultType $resultType = FetchRequestResultType::managedObjectResultType;
-    /** @var EntityDescription The entity specified for the fetch request. When a FetchRequest instance is created without {@see entityName}, it is expected that the entity property will be set. If this property is not set, the fetch request fails upon execution. */
-    public EntityDescription $entity {
-        get => $this->entity ??= EntityDescription::entity($this->entityName ?? fatal_error("Invalid fetch request: expecting an entity or an entity name"), $this->context);
+    private bool $isEntityResolved = false;
+    /** @var EntityDescription|null The entity specified for the fetch request. When a FetchRequest instance is created without {@see entityName}, it is expected that the entity property will be set. If this property is not set, the fetch request fails upon execution. */
+    public ?EntityDescription $entity = null {
+        get {
+            if ($this->isEntityResolved) {
+                return $this->entity;
+            }
+            if (!($entityName = $this->entityName)) {
+                return $this->entity = null;
+            }
+            return $this->entity = EntityDescription::entity($entityName, $this->context);
+        }
+        set {
+            $this->isEntityResolved = true;
+            $this->entity = $value;
+        }
     }
     /** @var Predicate|null The predicate of the fetch request. The predicate instance constrains the selection of objects the FetchRequest instance is to fetch. If the predicate is empty, for example, if it is an AND predicate whose array of elements contains no predicates, the request has its predicate set to null. */
     public ?Predicate $predicate = null;
@@ -74,11 +87,8 @@ final class FetchRequest extends PersistentStoreRequest
                 return $result;
             });
     }
-
     /** @var string|null The name of the entity to fetch. */
-    public ?string $entityName {
-        get => $this->entityName ??= $this->entity->name;
-    }
+    public ?string $entityName = null;
     private ManagedObjectContext $context {
         get {
             if (isset($this->context)) {

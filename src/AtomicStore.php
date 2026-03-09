@@ -123,6 +123,7 @@ abstract class AtomicStore extends PersistentStore
 
     private function executeFetchRequest(FetchRequest $request, ManagedObjectContext $context): ArrayClass
     {
+        assert($request->entity !== null, "Invalid fetch request: missing entity");
         $resultType = $request->resultType;
         /** @var ArrayClass<PropertyDescription|string> $propertiesToGroupBy */
         $propertiesToGroupBy = $request->propertiesToGroupBy ?? new ArrayClass();
@@ -133,6 +134,8 @@ abstract class AtomicStore extends PersistentStore
         $objects = new ArrayClass();
         /** @var AtomicStoreCacheNode $cacheNode */
         foreach ($this->nodeCache as $cacheNode) {
+            /** @var EntityDescription $entity */
+            $entity = $cacheNode->objectID->entity;
             $object = $context->object($cacheNode->objectID);
             if (!$object->isAwakeFromFetch) {
                 $object->isAwakeFromFetch = true;
@@ -140,10 +143,10 @@ abstract class AtomicStore extends PersistentStore
                 $object->awakeFromFetch();
             }
             if ($request->includesSubentities) {
-                if ($cacheNode->objectID->entity->isKindOf($request->entity)) {
+                if ($entity->isKindOf($request->entity)) {
                     $objects->append($object);
                 }
-            } elseif ($cacheNode->objectID->entity->isEqual($request->entity)) {
+            } elseif ($entity->isEqual($request->entity)) {
                 $objects->append($object);
             }
         }

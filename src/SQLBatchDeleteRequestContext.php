@@ -5,6 +5,7 @@ namespace Sabatier\CoreData;
 use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Number;
+use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
 final class SQLBatchDeleteRequestContext extends SQLBatchOperationRequestContext
@@ -55,7 +56,7 @@ final class SQLBatchDeleteRequestContext extends SQLBatchOperationRequestContext
         /** @return ArrayClass<ManagedObjectID> */
         $objectIDs = function () use ($execute): ArrayClass {
             /** @var SQLEntity $entity */
-            $entity = $this->sqlCore->model->entity($this->fetchRequestForObjectsToDelete->entity->name);
+            $entity = $this->sqlCore->model->entity($this->fetchRequestForObjectsToDelete->entity?->name ?? fatal_error("Invalid fetch request: missing entity"));
             /** @var ArrayClass<ManagedObjectID> $managedObjectIDs */
             $managedObjectIDs = new ArrayClass();
             do {

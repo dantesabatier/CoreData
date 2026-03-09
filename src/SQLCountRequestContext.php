@@ -16,7 +16,7 @@ final class SQLCountRequestContext extends SQLFetchRequestContext
     {
         $this->request->resultType === FetchRequestResultType::countResultType ?: $this->request->resultType
                 |> human_readable_value(...)
-                |> (fn($x) => sprintf("CoreData: annotation: invalid result type: %s", $x))
+                |> (fn(string $x): string => sprintf("CoreData: annotation: invalid result type: %s", $x))
                 |> fatal_error(...);
         $this->result = new ArrayClass([new Number((int)$this->queryStatement->fetchColumn())]);
         return true;
