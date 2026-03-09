@@ -54,8 +54,17 @@ final class SQLGenerator
     private string $havingClause = "";
     private string $orderByClause = "";
     private ?string $tableAlias = null;
-    private Dictionary $byTableNameSQLEntities {
-        get => $this->byTableNameSQLEntities ??= new Dictionary();
+    /** @var Dictionary<bool> */
+    private Dictionary $joinedAliasesMap {
+        get => $this->joinedAliasesMap ??= new Dictionary();
+    }
+    /** @var Dictionary<bool> */
+    private Dictionary $selectedColumnsMap {
+        get => $this->selectedColumnsMap ??= new Dictionary();
+    }
+    /** @var Dictionary<bool> */
+    private Dictionary $processedColumnAliasesMap {
+        get => $this->processedColumnAliasesMap ??= new Dictionary();
     }
     private SQLAliasGenerator $aliasGenerator {
         get => $this->aliasGenerator ??= new SQLAliasGenerator();
@@ -223,6 +232,9 @@ final class SQLGenerator
         $this->orderByClause = "";
         $this->string = $this->selectList;
         $this->arguments->removeAll();
+        $this->joinedAliasesMap->removeAll();
+        $this->selectedColumnsMap->removeAll();
+        $this->processedColumnAliasesMap->removeAll();
     }
 
     private function startSQL(PersistentStoreRequest $request): void
@@ -417,6 +429,9 @@ final class SQLGenerator
         if ($columnNames->isEmpty) {
             $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
         }
+        foreach ($columnNames as $columnName) {
+            $this->selectedColumnsMap[$columnName] = true;
+        }
         $this->selectList .= $columnNames->join(", ");
     }
 
@@ -431,7 +446,7 @@ final class SQLGenerator
         foreach ($expressions as $expression) {
             $this->appendJoinsForRelationships($this->relationshipsFromKeyPathExpression($expression));
         }
-        $this->joinClause = new Set(explode(" LEFT JOIN ", $this->joinClause))->join(" LEFT JOIN ");
+
         $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
     }
 
@@ -490,6 +505,10 @@ final class SQLGenerator
         if ($destinationPath === "") {
             $destinationPath = "{$sourceEntity->tableName}_$toOne->name";
         }
+        if ($this->joinedAliasesMap[$destinationPath]) {
+            return;
+        }
+        $this->joinedAliasesMap[$destinationPath] = true;
         $this->appendJoinClauseToSQL();
         $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $destinationPath.$columnName = ";
         $this->joinClause .= $inverseRelationship instanceof SQLToOne ? "$sourcePath.{$sourceEntity->primaryKey->columnName}" : "$sourcePath.{$toOne->foreignKey->columnName}";
@@ -502,13 +521,17 @@ final class SQLGenerator
     {
         $sourceEntity = $toMany->entity;
         $inverseToOne = $toMany->inverseToOne;
-        $destinationEntity = $toMany->destinationEntity;
         if ($sourcePath === "") {
             $sourcePath = $sourceEntity->tableName;
         }
         if ($destinationPath === "") {
             $destinationPath = "{$sourceEntity->tableName}_$toMany->name";
         }
+        if ($this->joinedAliasesMap[$destinationPath]) {
+            return;
+        }
+        $this->joinedAliasesMap[$destinationPath] = true;
+        $destinationEntity = $toMany->destinationEntity;
         $this->appendJoinClauseToSQL();
         $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $destinationPath.{$inverseToOne->foreignKey->columnName} = ";
         $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
@@ -526,20 +549,23 @@ final class SQLGenerator
             $sourcePath = $sourceEntity->tableName;
         }
         $correlationTableAlias = "{$sourcePath}_$correlationTableName";
-        $this->appendJoinClauseToSQL();
-        $this->joinClause .= "`$correlationTableName` AS $correlationTableAlias";
-        $this->joinClause .= " ON ";
-        $this->joinClause .= "$correlationTableAlias.$manyToMany->inverseColumnName";
-        $this->joinClause .= " = ";
-        $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
-        $destinationEntity = $manyToMany->destinationEntity;
-        if ($this->byTableNameSQLEntities[$destinationEntity->tableName]) {
-            return;
+
+        if (!$this->joinedAliasesMap[$correlationTableAlias]) {
+            $this->joinedAliasesMap[$correlationTableAlias] = true;
+            $this->appendJoinClauseToSQL();
+            $this->joinClause .= "`$correlationTableName` AS $correlationTableAlias";
+            $this->joinClause .= " ON ";
+            $this->joinClause .= "$correlationTableAlias.$manyToMany->inverseColumnName";
+            $this->joinClause .= " = ";
+            $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
         }
-        $this->byTableNameSQLEntities[$destinationEntity->tableName] = $destinationEntity;
-        $this->appendJoinClauseToSQL();
-        $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $correlationTableAlias.$manyToMany->columnName = $destinationPath.{$destinationEntity->primaryKey->columnName}";
-        $this->appendJoinDestinationEntity($destinationEntity, $destinationPath);
+        $destinationEntity = $manyToMany->destinationEntity;
+        if ($destinationPath !== "" && !$this->joinedAliasesMap[$destinationPath]) {
+            $this->joinedAliasesMap[$destinationPath] = true;
+            $this->appendJoinClauseToSQL();
+            $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $correlationTableAlias.$manyToMany->columnName = $destinationPath.{$destinationEntity->primaryKey->columnName}";
+            $this->appendJoinDestinationEntity($destinationEntity, $destinationPath);
+        }
     }
 
     private function appendJoinDestinationEntity(SQLEntity $destinationEntity, string $destinationPath): void
@@ -614,11 +640,13 @@ final class SQLGenerator
         }
         $columnsToCheck = clone $columnNames;
         foreach ($columnsToCheck as $columnName) {
-            if (str_contains($this->selectList, $columnName)) {
+            if ($this->selectedColumnsMap[$columnName]) {
                 $columnNames->remove($columnName);
                 if (str_contains($columnName, "?")) {
                     $this->arguments->popFirst();
                 }
+            } else {
+                $this->selectedColumnsMap[$columnName] = true;
             }
         }
         if (!$columnNames->isEmpty) {
@@ -642,8 +670,11 @@ final class SQLGenerator
             $currentEntity = $relationship->destinationEntity;
             if (!$this->isSubquery && $this->request->resultType !== FetchRequestResultType::countResultType) {
                 /** @var Dictionary<mixed>|null $nestedSerialization */
-                $nestedSerialization = $currentSerialization[$name];
-                $this->appendUniqueColumnsToSelectList($this->generateColumnNames($currentEntity, $joinedTableAlias, $nestedSerialization));
+                $nestedSerialization = $currentSerialization[$name] ?? null;
+                if (!$this->processedColumnAliasesMap[$joinedTableAlias]) {
+                    $this->processedColumnAliasesMap[$joinedTableAlias] = true;
+                    $this->appendUniqueColumnsToSelectList($this->generateColumnNames($currentEntity, $joinedTableAlias, $nestedSerialization));
+                }
                 if ($nestedSerialization instanceof Dictionary) {
                     $currentSerialization = clone $nestedSerialization;
                 }
@@ -1143,7 +1174,6 @@ final class SQLGenerator
         }
         $newContext = new SQLFetchRequestContext($fetchRequest, $requestContext->context, $requestContext->sqlCore);
         $generator = new SQLGenerator($newContext);
-        $generator->byTableNameSQLEntities[$this->entity->tableName] = $this->entity;
         $generator->isSubquery = true;
         $generator->tableAlias = $tableAlias;
         $generator->autoDistinct = false;
@@ -1352,6 +1382,9 @@ final class SQLGenerator
         $relationship = $entity->propertiesByName[$keyPath] ?? fatal_error("Invalid argument: \"{$entity->entityDescription->name}\" does not contains a property named \"$keyPath\"");
         $relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany ?: fatal_error("Invalid argument: $relationship is not a to-many relationship");
         $tableAlias = str_starts_with($variable, "\$") ? substr($variable, 1) : $variable;
+        if ($tableAlias === $this->entity->tableName || $tableAlias === $this->tableReference || $this->joinedAliasesMap[$tableAlias]) {
+            $tableAlias = $this->aliasGenerator->generateTableAlias();
+        }
         $keyValueOperator = null;
         $keyPathToProperty = null;
         if (!$asExists) {
