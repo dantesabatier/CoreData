@@ -67,7 +67,6 @@ final class SQLSaveChangesRequestContext extends SQLStoreRequestContext
                 return $dictionary;
             });
         $context = $this->context;
-        $connection = $this->connection;
         $sqlCore = $this->sqlCore;
         foreach ($byEntity as $entityName => $insertedObjects) {
             $entity = EntityDescription::entity($entityName, $context);
@@ -82,10 +81,8 @@ final class SQLSaveChangesRequestContext extends SQLStoreRequestContext
                 $fetchRequest = new FetchRequest();
                 $fetchRequest->entity = $entity;
                 $fetchRequest->predicate = Predicate::format("%K IN %@", new ArrayClass([$propertyName, $insertedValues]));
-                $fetchRequestContext = new SQLFetchRequestContext($fetchRequest, $context, $sqlCore);
-                $fetchRequestContext->executeRequestUsingConnection($connection);
                 /** @var ArrayClass<ManagedObject> $existingObjects */
-                $existingObjects = $fetchRequestContext->result;
+                $existingObjects = $sqlCore->execute($fetchRequest, $context);
                 foreach ($existingObjects as $existingObject) {
                     foreach ($insertedObjects as $insertedObject) {
                         if (is_equal($existingObject->$propertyName, $insertedObject->$propertyName) && !is_equal($insertedObject->objectID->referenceObject, $existingObject->objectID->referenceObject)) {
