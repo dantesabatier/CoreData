@@ -221,11 +221,12 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     private function managedObjectsFromSnapshots(ArrayClass $snapshots): ArrayClass
     {
         return $snapshots->map(function (Dictionary $snapshot): ManagedObject {
+            $serialization = $this->request->serialization;
             /** @var SQLEntity $entity */
             $entity = $this->sqlModel->entitiesByName[$snapshot[$this->sqlEntityForFetchRequest->entityKey->columnName]];
             $object = $this->context->object($this->sqlCore->objectID($entity->entityDescription, $snapshot[$entity->primaryKey->columnName]));
             if ($this->request->includesPendingChanges && $object->isStable) {
-                return $object->serialized($this->request->serialization);
+                return $object->serialized($serialization);
             }
             $object->isSuppressingChangeNotifications = true;
             $object->isSuppressingKVO = true;
@@ -237,7 +238,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
             }
             $object->isSuppressingChangeNotifications = false;
             /** @var ManagedObject */
-            return $object->serialized($this->request->serialization);
+            return $object->serialized($serialization);
         });
     }
 
