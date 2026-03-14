@@ -26,7 +26,6 @@ final class ManagedObjectSerializationPreparer
         }
         $serializationKeys->insertAt(ManagedObjectObjectIDKey, 0);
         $serializationKeys->insertAt(ManagedObjectEntityNameKey, 1);
-        $serializationKeys->insertAt(ManagedObjectVersionKey, 2);
         $object->serializationRule = SerializationRule::custom;
         $object->serializationKeys = $serializationKeys;
     }
@@ -78,6 +77,7 @@ final class ManagedObjectSerializationPreparer
         }
     }
 
+    /** @noinspection PhpMixedReturnTypeCanBeReducedInspection */
     public function serialized(ManagedObject $object, ?Dictionary $dictionary): mixed
     {
         if (!$dictionary || $dictionary->isEmpty) {

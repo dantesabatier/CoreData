@@ -128,7 +128,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             };
             $serializationKeys->insertAt(ManagedObjectObjectIDKey, 0);
             $serializationKeys->insertAt(ManagedObjectEntityNameKey, 1);
-            $serializationKeys->insertAt(ManagedObjectVersionKey, 2);
             return $this->serializationKeys = $serializationKeys;
         }
     }
@@ -748,7 +747,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         } elseif ($property instanceof RelationshipDescription) {
             $inverseRelationship = $property->inverseRelationship;
             if ($property->isToMany) {
-                assert($value instanceof Set, sprintf("invalid argument: expecting \"%s\", \"%s\" given", Set::class, typeof($value)));
+                $value
+                    |> typeof(...)
+                    |> (fn(string $x): string => sprintf("invalid argument: expecting \"%s\", \"%s\" given", Set::class, $x))
+                    |> (fn(string $x): bool => assert($value instanceof Set, $x));
                 $set = new FaultingSet($this, $property);
                 $set->setSet($value);
                 $value = $set;
@@ -790,13 +792,19 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     }
                 }
             } else {
-                assert($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null, sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $this->entityName, $key, ManagedObject::class, ManagedObjectID::class, typeof($value)));
+                $value
+                    |> typeof(...)
+                    |> (fn(string $x): string => sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $this->entityName, $key, ManagedObject::class, ManagedObjectID::class, $x))
+                    |> (fn(string $x): bool => assert($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null, $x));
                 $change = $value;
                 $current = $this->primitiveValueForKey($key);
                 if ($this->isInserted && $this->isPropertyForKeyFault($key)) {
                     $current = $this->valueForKey($key);
                 }
-                assert($current instanceof ManagedObject || $current instanceof ManagedObjectID || $current === null, sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $this->entityName, $key, ManagedObject::class, ManagedObjectID::class, typeof($current)));
+                $current
+                    |> typeof(...)
+                    |> (fn(string $x): string => sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $this->entityName, $key, ManagedObject::class, ManagedObjectID::class, $x))
+                    |> (fn(string $x): bool => assert($current instanceof ManagedObject || $current instanceof ManagedObjectID || $current === null, $x));
                 if ($current === null && $value !== null) {
                     $changeKind = KeyValueChange::insertion;
                 } elseif ($current !== null && $value === null) {
@@ -933,7 +941,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             AttributeType::uri => match (true) {
                 $value instanceof URL => $value,
                 is_string($value) => $write ? $value : new URL($value),
-                is_null($value) => $isOptional ? null : fatal_error(sprintf("Invalid argument: attribute type \"%s\" cannot be initialized with a null argument", human_readable_value($type))),
+                is_null($value) => $isOptional ? null : $type
+                        |> human_readable_value(...)
+                        |> (fn(string $x): string => sprintf("Invalid argument: attribute type \"%s\" cannot be initialized with a null argument", $x))
+                        |> fatal_error(...),
                 default => fatal_error(sprintf("Invalid argument: invalid value %s(%s) for type %s", human_readable_value($value), typeof($value), human_readable_value($type)))
             },
             AttributeType::transformable, AttributeType::objectID => (function () use ($value, $write, $valueTransformerName): mixed {
@@ -971,7 +982,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 };
                 if ($attributeValueClassName !== null) {
                     if ($value && class_exists($attributeValueClassName) && !is_a($value, $attributeValueClassName, true)) {
-                        fatal_error(sprintf("Invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeValueClassName, typeof($value)));
+                        $value
+                            |> typeof(...)
+                            |> (fn(string $x): string => sprintf("Invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeValueClassName, $x))
+                            |> fatal_error(...);
                     }
                 } elseif (!match ($type) {
                         AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => is_int($value) || is_float($value) || $value instanceof Number || $value instanceof BackedEnum,
@@ -981,7 +995,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         AttributeType::compositeAttributeType => $value instanceof Dictionary,
                         default => false,
                     } && !$property->isOptional) {
-                    fatal_error(sprintf("Invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $type->name, typeof($value)));
+                    $value
+                        |> typeof(...)
+                        |> (fn(string $x): string => sprintf("Invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $type->name, $x))
+                        |> fatal_error(...);
                 }
             }
         } elseif ($property instanceof FetchedPropertyDescription) {
