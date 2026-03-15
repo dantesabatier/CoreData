@@ -179,7 +179,10 @@ final class ManagedObjectContext extends ObjectClass
                 $newValue = $newValue->value;
             }
             $value = $newValue;
-            assert($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null, sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $objectID->entityName, $relationship->name, ManagedObject::class, ManagedObjectID::class, typeof($value)));
+            $value
+                |> typeof(...)
+                |> (fn(string $x): string => sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $objectID->entityName, $relationship->name, ManagedObject::class, ManagedObjectID::class, $x))
+                |> (fn(string $x): bool => assert($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null, $x));
         }
         return $value;
     }
@@ -749,7 +752,10 @@ final class ManagedObjectContext extends ObjectClass
         }
         $value = $change->newValue;
         if ($property instanceof RelationshipDescription && $value !== null) {
-            assert($value instanceof Set || $value instanceof ManagedObject || $value instanceof ManagedObjectID, sprintf("invalid argument: %s->%s expecting \"%s|%s|%s\", \"%s\" given", $object->entity->name, $keyPath, Set::class, ManagedObject::class, ManagedObjectID::class, typeof($value)));
+            $value
+                |> typeof(...)
+                |> (fn(string $x): string => sprintf("invalid argument: %s->%s expecting \"%s|%s|%s\", \"%s\" given", $object->entity->name, $keyPath, Set::class, ManagedObject::class, ManagedObjectID::class, $x))
+                |> (fn(string $x): bool => assert($value instanceof Set || $value instanceof ManagedObject || $value instanceof ManagedObjectID, $x));
             if (!$value instanceof Set) {
                 if ($value instanceof ManagedObjectID) {
                     $value = $this->object($value);
@@ -760,7 +766,10 @@ final class ManagedObjectContext extends ObjectClass
                 return;
             }
             foreach ($value as $managedObject) {
-                assert($managedObject instanceof ManagedObject, sprintf("invalid argument: expecting \"%s\", \"%s\" given", ManagedObject::class, typeof($managedObject)));
+                $managedObject
+                    |> typeof(...)
+                    |> (fn(string $x): string => sprintf("invalid argument: expecting \"%s\", \"%s\" given", ManagedObject::class, $x))
+                    |> (fn(string $x): bool => assert($managedObject instanceof ManagedObject, $x));
                 $this->obtainPermanentID($managedObject);
             }
         }

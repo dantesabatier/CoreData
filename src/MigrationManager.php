@@ -178,7 +178,10 @@ class MigrationManager extends ObjectClass
                     $context = new Dictionary(["\$manager" => $this, "\$source" => new ArrayClass([$value])]);
                     $destinationInstances->appendContentsOf($expression->expressionValue($source, $context));
                 } elseif ($value) {
-                    fatal_error(sprintf("Unexpected value \"%s\" for relationship %s->%s", typeof($value), $source->entity->name, $key));
+                    $value
+                        |> typeof(...)
+                        |> (fn(string $x): string => sprintf("Unexpected value \"%s\" for relationship %s->%s", $x, $source->entity->name, $key))
+                        |> (fn(string $x): never => fatal_error($x));
                 }
                 $relationshipsByName[$relationshipKey] = $destinationInstances;
                 $this->byMappingBySourceRelationshipsAssociationTable[$key] = $relationshipsByName;

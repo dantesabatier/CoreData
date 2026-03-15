@@ -30,14 +30,20 @@ final readonly class RelationshipMapper
             if ($relationship->isToMany) {
                 $mappedValues[$key] = $value->compactMap(fn(ManagedObject|ManagedObjectID|Dictionary $object): ?ManagedObject => $this->objectResolver->resolve($destinationEntity, $object));
             } elseif (!$value->isEmpty) {
-                fatal_error(sprintf("%s: Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", $contextObject->entity->name, typeof($value), $key));
+                $value
+                    |> typeof(...)
+                    |> (fn(string $x): string => sprintf("%s: Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", $contextObject->entity->name, $x, $key))
+                    |> (fn(string $x): never => fatal_error($x));
             }
         } elseif ($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value instanceof Dictionary) {
             $mappedValues[$key] = $this->objectResolver->resolve($destinationEntity, $value);
         } elseif ($value instanceof Nil) {
             $mappedValues[$key] = $value;
         } else {
-            fatal_error(sprintf("%s: Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", $contextObject->entity->name, typeof($value), $key));
+            $value
+                |> typeof(...)
+                |> (fn(string $x): string => sprintf("%s: Attempting to insert an unsupported value of type \"%s\" for relationship \"%s\"", $contextObject->entity->name, $x, $key))
+                |> (fn(string $x): never => fatal_error($x));
         }
     }
 }
