@@ -13,6 +13,41 @@ final readonly class FaultingSetMutationMethod
     {
     }
 
+    /**
+     * @param ManagedObject $obj
+     * @param string $key
+     * @param ManagedObject|Set<ManagedObject> $target
+     * @param ManagedObjectID|null $value
+     */
+    private static function handleInverseRelationshipUpdate(ManagedObject $obj, string $key, ManagedObject|Set $target, ?ManagedObjectID $value): void
+    {
+        if ($inverse = self::toOneInverseRelationshipForKey($obj, $key)) {
+            self::updateTargetsInInverseRelationship($target, $value, $inverse);
+        }
+    }
+
+    private static function toOneInverseRelationshipForKey(ManagedObject $obj, string $key): ?RelationshipDescription
+    {
+        /** @var RelationshipDescription $relationship */
+        $relationship = $obj->modeledRelationships[$key];
+        $inverseRelationship = $relationship->inverseRelationship;
+        return !$inverseRelationship->isToMany ? $inverseRelationship : null;
+    }
+
+    /**
+     * @param ManagedObject|Set<ManagedObject> $target
+     * @param ManagedObjectID|null $value
+     * @param RelationshipDescription $inverseRelationship
+     */
+    private static function updateTargetsInInverseRelationship(ManagedObject|Set $target, ?ManagedObjectID $value, RelationshipDescription $inverseRelationship): void
+    {
+        if ($target instanceof ManagedObject) {
+            $target->setPrimitiveValueForKey($value, $inverseRelationship->name);
+        } else {
+            $target->forEach(fn(ManagedObject $object) => $object->setPrimitiveValueForKey($value, $inverseRelationship->name));
+        }
+    }
+
     public static function addObjectMethod(ManagedObject $obj, string $key): FaultingSetMutationMethod
     {
         return new FaultingSetMutationMethod(sprintf("add%sObject", ucfirst($key)), function (ManagedObject $newObject) use ($obj, $key): void {
@@ -23,12 +58,7 @@ final readonly class FaultingSetMutationMethod
             }
             $obj->willChangeValueForKey($key, KeyValueChange::insertion, $set);
             $set->insert($newObject);
-            /** @var RelationshipDescription $relationship */
-            $relationship = $obj->modeledRelationships[$key];
-            $inverseRelationship = $relationship->inverseRelationship;
-            if (!$inverseRelationship->isToMany) {
-                $newObject->setPrimitiveValueForKey($obj->objectID, $inverseRelationship->name);
-            }
+            self::handleInverseRelationshipUpdate($obj, $key, $newObject, $obj->objectID);
             $obj->didChangeValueForKey($key, KeyValueChange::insertion, $set);
         });
     }
@@ -43,12 +73,7 @@ final readonly class FaultingSetMutationMethod
             }
             $obj->willChangeValueForKey($key, KeyValueChange::removal, $set);
             $set->remove($removedObject);
-            /** @var RelationshipDescription $relationship */
-            $relationship = $obj->modeledRelationships[$key];
-            $inverseRelationship = $relationship->inverseRelationship;
-            if (!$inverseRelationship->isToMany) {
-                $removedObject->setPrimitiveValueForKey(null, $inverseRelationship->name);
-            }
+            self::handleInverseRelationshipUpdate($obj, $key, $removedObject, null);
             $obj->didChangeValueForKey($key, KeyValueChange::removal, $set);
         });
     }
@@ -69,12 +94,7 @@ final readonly class FaultingSetMutationMethod
                 }
                 $obj->willChangeValueForKey($key, KeyValueChange::insertion, $set);
                 $set->formUnion($objectsToInsert);
-                /** @var RelationshipDescription $relationship */
-                $relationship = $obj->modeledRelationships[$key];
-                $inverseRelationship = $relationship->inverseRelationship;
-                if (!$inverseRelationship->isToMany) {
-                    $objectsToInsert->forEach(fn(ManagedObject $object) => $object->setPrimitiveValueForKey($obj->objectID, $inverseRelationship->name));
-                }
+                self::handleInverseRelationshipUpdate($obj, $key, $objectsToInsert, $obj->objectID);
                 $obj->didChangeValueForKey($key, KeyValueChange::insertion, $set);
             });
     }
@@ -95,12 +115,7 @@ final readonly class FaultingSetMutationMethod
                 }
                 $obj->willChangeValueForKey($key, KeyValueChange::removal, $set);
                 $set->subtract($removedObjects);
-                /** @var RelationshipDescription $relationship */
-                $relationship = $obj->modeledRelationships[$key];
-                $inverseRelationship = $relationship->inverseRelationship;
-                if (!$inverseRelationship->isToMany) {
-                    $removedObjects->forEach(fn(ManagedObject $object) => $object->setPrimitiveValueForKey(null, $inverseRelationship->name));
-                }
+                self::handleInverseRelationshipUpdate($obj, $key, $removedObjects, null);
                 $obj->didChangeValueForKey($key, KeyValueChange::removal, $set);
             });
     }
@@ -121,12 +136,7 @@ final readonly class FaultingSetMutationMethod
                 }
                 $obj->willChangeValueForKey($key, KeyValueChange::removal, $set);
                 $set->formIntersection($intersectionSet);
-                /** @var RelationshipDescription $relationship */
-                $relationship = $obj->modeledRelationships[$key];
-                $inverseRelationship = $relationship->inverseRelationship;
-                if (!$inverseRelationship->isToMany) {
-                    $objectsToRemove->forEach(fn(ManagedObject $object) => $object->setPrimitiveValueForKey(null, $inverseRelationship->name));
-                }
+                self::handleInverseRelationshipUpdate($obj, $key, $objectsToRemove, null);
                 $obj->didChangeValueForKey($key, KeyValueChange::removal, $set);
                 return $set;
             });
