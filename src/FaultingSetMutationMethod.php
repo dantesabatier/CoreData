@@ -114,12 +114,20 @@ final readonly class FaultingSetMutationMethod
             function (Set $intersectionSet) use ($obj, $key): Set {
                 /** @var Set<ManagedObject> $set */
                 $set = $obj->valueForKey($key);
-                if ($set->isSubset($intersectionSet)) {
+                /** @var Set<ManagedObject> $objectsToRemove */
+                $objectsToRemove = $set->subtracting($intersectionSet);
+                if ($objectsToRemove->isEmpty) {
                     return $set;
                 }
-                $obj->willChangeValueForKey($key, KeyValueChange::replacement, $set);
+                $obj->willChangeValueForKey($key, KeyValueChange::removal, $set);
                 $set->formIntersection($intersectionSet);
-                $obj->didChangeValueForKey($key, KeyValueChange::replacement, $set);
+                /** @var RelationshipDescription $relationship */
+                $relationship = $obj->modeledRelationships[$key];
+                $inverseRelationship = $relationship->inverseRelationship;
+                if (!$inverseRelationship->isToMany) {
+                    $objectsToRemove->forEach(fn(ManagedObject $object) => $object->setPrimitiveValueForKey(null, $inverseRelationship->name));
+                }
+                $obj->didChangeValueForKey($key, KeyValueChange::removal, $set);
                 return $set;
             });
     }
