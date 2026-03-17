@@ -659,9 +659,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     #[Override]
     final public function valueForKey(string $key): mixed
     {
-        if (empty($key)) {
-            return $this->valueForUndefinedKey($key);
-        }
+        $key ?: $this->valueForUndefinedKey($key);
         $context = $this->managedObjectContext;
         $property = $this->entity->propertiesByName[$key];
         if ($property instanceof AttributeDescription) {
@@ -709,7 +707,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 return $context->object($value);
             }
             if ($property->isToMany && !$property->isOptional) {
-                return new Set();
+                return $this->mutableSetValueForKey($key);
             }
             return null;
         }

@@ -51,30 +51,30 @@ final readonly class FaultingSetMutationMethod
     public static function addObjectMethod(ManagedObject $obj, string $key): FaultingSetMutationMethod
     {
         return new FaultingSetMutationMethod(sprintf("add%sObject", ucfirst($key)), function (ManagedObject $newObject) use ($obj, $key): void {
-            /** @var Set<ManagedObject> $set */
-            $set = $obj->valueForKey($key);
-            if ($set->containsElement($newObject)) {
+            /** @var FaultingSet<ManagedObject> $faultingSet */
+            $faultingSet = $obj->$key;
+            if ($faultingSet->containsElement($newObject)) {
                 return;
             }
-            $obj->willChangeValueForKey($key, KeyValueChange::insertion, $set);
-            $set->insert($newObject);
+            $obj->willChangeValueForKey($key, KeyValueChange::insertion, $faultingSet);
+            $faultingSet->insert($newObject);
             self::handleInverseRelationshipUpdate($obj, $key, $newObject, $obj->objectID);
-            $obj->didChangeValueForKey($key, KeyValueChange::insertion, $set);
+            $obj->didChangeValueForKey($key, KeyValueChange::insertion, $faultingSet);
         });
     }
 
     public static function removeObjectMethod(ManagedObject $obj, string $key): FaultingSetMutationMethod
     {
         return new FaultingSetMutationMethod(sprintf("remove%sObject", ucfirst($key)), function (ManagedObject $removedObject) use ($obj, $key): void {
-            /** @var Set<ManagedObject> $set */
-            $set = $obj->valueForKey($key);
-            if (!$set->containsElement($removedObject)) {
+            /** @var FaultingSet<ManagedObject> $faultingSet */
+            $faultingSet = $obj->$key;
+            if (!$faultingSet->containsElement($removedObject)) {
                 return;
             }
-            $obj->willChangeValueForKey($key, KeyValueChange::removal, $set);
-            $set->remove($removedObject);
+            $obj->willChangeValueForKey($key, KeyValueChange::removal, $faultingSet);
+            $faultingSet->remove($removedObject);
             self::handleInverseRelationshipUpdate($obj, $key, $removedObject, null);
-            $obj->didChangeValueForKey($key, KeyValueChange::removal, $set);
+            $obj->didChangeValueForKey($key, KeyValueChange::removal, $faultingSet);
         });
     }
 
@@ -85,17 +85,17 @@ final readonly class FaultingSetMutationMethod
              * @param Set<ManagedObject> $newObjects
              */
             function (Set $newObjects) use ($obj, $key): void {
-                /** @var Set<ManagedObject> $set */
-                $set = $obj->valueForKey($key);
+                /** @var FaultingSet<ManagedObject> $faultingSet */
+                $faultingSet = $obj->$key;
                 /** @var Set<ManagedObject> $objectsToInsert */
-                $objectsToInsert = $newObjects->subtracting($set);
+                $objectsToInsert = $newObjects->subtracting($faultingSet);
                 if ($objectsToInsert->isEmpty) {
                     return;
                 }
-                $obj->willChangeValueForKey($key, KeyValueChange::insertion, $set);
-                $set->formUnion($objectsToInsert);
+                $obj->willChangeValueForKey($key, KeyValueChange::insertion, $faultingSet);
+                $faultingSet->formUnion($objectsToInsert);
                 self::handleInverseRelationshipUpdate($obj, $key, $objectsToInsert, $obj->objectID);
-                $obj->didChangeValueForKey($key, KeyValueChange::insertion, $set);
+                $obj->didChangeValueForKey($key, KeyValueChange::insertion, $faultingSet);
             });
     }
 
@@ -106,17 +106,17 @@ final readonly class FaultingSetMutationMethod
              * @param Set<ManagedObject> $objectsToRemove
              */
             function (Set $objectsToRemove) use ($obj, $key): void {
-                /** @var Set<ManagedObject> $set */
-                $set = $obj->valueForKey($key);
+                /** @var FaultingSet<ManagedObject> $faultingSet */
+                $faultingSet = $obj->$key;
                 /** @var Set<ManagedObject> $removedObjects */
-                $removedObjects = $set->intersection($objectsToRemove);
+                $removedObjects = $faultingSet->intersection($objectsToRemove);
                 if ($removedObjects->isEmpty) {
                     return;
                 }
-                $obj->willChangeValueForKey($key, KeyValueChange::removal, $set);
-                $set->subtract($removedObjects);
+                $obj->willChangeValueForKey($key, KeyValueChange::removal, $faultingSet);
+                $faultingSet->subtract($removedObjects);
                 self::handleInverseRelationshipUpdate($obj, $key, $removedObjects, null);
-                $obj->didChangeValueForKey($key, KeyValueChange::removal, $set);
+                $obj->didChangeValueForKey($key, KeyValueChange::removal, $faultingSet);
             });
     }
 
@@ -127,18 +127,18 @@ final readonly class FaultingSetMutationMethod
              * @param Set<ManagedObject> $intersectionSet
              */
             function (Set $intersectionSet) use ($obj, $key): Set {
-                /** @var Set<ManagedObject> $set */
-                $set = $obj->valueForKey($key);
+                /** @var FaultingSet<ManagedObject> $faultingSet */
+                $faultingSet = $obj->$key;
                 /** @var Set<ManagedObject> $objectsToRemove */
-                $objectsToRemove = $set->subtracting($intersectionSet);
+                $objectsToRemove = $faultingSet->subtracting($intersectionSet);
                 if ($objectsToRemove->isEmpty) {
-                    return $set;
+                    return $faultingSet;
                 }
-                $obj->willChangeValueForKey($key, KeyValueChange::removal, $set);
-                $set->formIntersection($intersectionSet);
+                $obj->willChangeValueForKey($key, KeyValueChange::removal, $faultingSet);
+                $faultingSet->formIntersection($intersectionSet);
                 self::handleInverseRelationshipUpdate($obj, $key, $objectsToRemove, null);
-                $obj->didChangeValueForKey($key, KeyValueChange::removal, $set);
-                return $set;
+                $obj->didChangeValueForKey($key, KeyValueChange::removal, $faultingSet);
+                return $faultingSet;
             });
     }
 
