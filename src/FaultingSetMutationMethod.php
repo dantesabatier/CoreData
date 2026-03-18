@@ -106,7 +106,7 @@ final readonly class FaultingSetMutationMethod
              * @param Set<ManagedObject> $objectsToRemove
              */
             function (Set $objectsToRemove) use ($obj, $key): void {
-                /** @var FaultingSe $faultingSet */
+                /** @var FaultingSet $faultingSet */
                 $faultingSet = $obj->valueForKey($key);
                 /** @var Set<ManagedObject> $removedObjects */
                 $removedObjects = $faultingSet->intersection($objectsToRemove);
