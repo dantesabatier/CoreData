@@ -52,7 +52,7 @@ final readonly class FaultingSetMutationMethod
     {
         return new FaultingSetMutationMethod(sprintf("add%sObject", ucfirst($key)), function (ManagedObject $newObject) use ($obj, $key): void {
             /** @var FaultingSet<ManagedObject> $faultingSet */
-            $faultingSet = $obj->$key;
+            $faultingSet = $obj->valueForKey($key);
             if ($faultingSet->containsElement($newObject)) {
                 return;
             }
@@ -67,7 +67,7 @@ final readonly class FaultingSetMutationMethod
     {
         return new FaultingSetMutationMethod(sprintf("remove%sObject", ucfirst($key)), function (ManagedObject $removedObject) use ($obj, $key): void {
             /** @var FaultingSet<ManagedObject> $faultingSet */
-            $faultingSet = $obj->$key;
+            $faultingSet = $obj->valueForKey($key);
             if (!$faultingSet->containsElement($removedObject)) {
                 return;
             }
@@ -86,7 +86,7 @@ final readonly class FaultingSetMutationMethod
              */
             function (Set $newObjects) use ($obj, $key): void {
                 /** @var FaultingSet<ManagedObject> $faultingSet */
-                $faultingSet = $obj->$key;
+                $faultingSet = $obj->valueForKey($key);
                 /** @var Set<ManagedObject> $objectsToInsert */
                 $objectsToInsert = $newObjects->subtracting($faultingSet);
                 if ($objectsToInsert->isEmpty) {
@@ -107,7 +107,7 @@ final readonly class FaultingSetMutationMethod
              */
             function (Set $objectsToRemove) use ($obj, $key): void {
                 /** @var FaultingSet<ManagedObject> $faultingSet */
-                $faultingSet = $obj->$key;
+                $faultingSet = $obj->valueForKey($key);
                 /** @var Set<ManagedObject> $removedObjects */
                 $removedObjects = $faultingSet->intersection($objectsToRemove);
                 if ($removedObjects->isEmpty) {
@@ -128,7 +128,7 @@ final readonly class FaultingSetMutationMethod
              */
             function (Set $intersectionSet) use ($obj, $key): Set {
                 /** @var FaultingSet<ManagedObject> $faultingSet */
-                $faultingSet = $obj->$key;
+                $faultingSet = $obj->valueForKey($key);
                 /** @var Set<ManagedObject> $objectsToRemove */
                 $objectsToRemove = $faultingSet->subtracting($intersectionSet);
                 if ($objectsToRemove->isEmpty) {
