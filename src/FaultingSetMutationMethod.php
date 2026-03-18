@@ -51,7 +51,7 @@ final readonly class FaultingSetMutationMethod
     public static function addObjectMethod(ManagedObject $obj, string $key): FaultingSetMutationMethod
     {
         return new FaultingSetMutationMethod(sprintf("add%sObject", ucfirst($key)), function (ManagedObject $newObject) use ($obj, $key): void {
-            /** @var FaultingSet<ManagedObject> $faultingSet */
+            /** @var FaultingSet $faultingSet */
             $faultingSet = $obj->valueForKey($key);
             if ($faultingSet->containsElement($newObject)) {
                 return;
@@ -66,7 +66,7 @@ final readonly class FaultingSetMutationMethod
     public static function removeObjectMethod(ManagedObject $obj, string $key): FaultingSetMutationMethod
     {
         return new FaultingSetMutationMethod(sprintf("remove%sObject", ucfirst($key)), function (ManagedObject $removedObject) use ($obj, $key): void {
-            /** @var FaultingSet<ManagedObject> $faultingSet */
+            /** @var FaultingSet $faultingSet */
             $faultingSet = $obj->valueForKey($key);
             if (!$faultingSet->containsElement($removedObject)) {
                 return;
@@ -85,7 +85,7 @@ final readonly class FaultingSetMutationMethod
              * @param Set<ManagedObject> $newObjects
              */
             function (Set $newObjects) use ($obj, $key): void {
-                /** @var FaultingSet<ManagedObject> $faultingSet */
+                /** @var FaultingSet $faultingSet */
                 $faultingSet = $obj->valueForKey($key);
                 /** @var Set<ManagedObject> $objectsToInsert */
                 $objectsToInsert = $newObjects->subtracting($faultingSet);
@@ -106,7 +106,7 @@ final readonly class FaultingSetMutationMethod
              * @param Set<ManagedObject> $objectsToRemove
              */
             function (Set $objectsToRemove) use ($obj, $key): void {
-                /** @var FaultingSet<ManagedObject> $faultingSet */
+                /** @var FaultingSe $faultingSet */
                 $faultingSet = $obj->valueForKey($key);
                 /** @var Set<ManagedObject> $removedObjects */
                 $removedObjects = $faultingSet->intersection($objectsToRemove);
@@ -127,7 +127,7 @@ final readonly class FaultingSetMutationMethod
              * @param Set<ManagedObject> $intersectionSet
              */
             function (Set $intersectionSet) use ($obj, $key): Set {
-                /** @var FaultingSet<ManagedObject> $faultingSet */
+                /** @var FaultingSet $faultingSet */
                 $faultingSet = $obj->valueForKey($key);
                 /** @var Set<ManagedObject> $objectsToRemove */
                 $objectsToRemove = $faultingSet->subtracting($intersectionSet);
