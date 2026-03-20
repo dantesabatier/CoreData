@@ -177,6 +177,13 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public Dictionary $modeledRelationships {
         get => $this->modeledRelationships ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
     }
+    /**
+     * @var Dictionary<FetchedPropertyDescription>
+     * @internal
+     */
+    public Dictionary $modeledFetchedProperties {
+        get => $this->modeledFetchedProperties ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property instanceof FetchedPropertyDescription);
+    }
     /** @internal */
     public bool $isSuppressingKVO = false;
     /** @internal */
@@ -577,7 +584,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     #[Override]
     public function mutableArrayValueForKey(string $key): ArrayClass
     {
-        if (!($relationship = $this->modeledRelationships[$key])) {
+        if (!($relationship = $this->modeledFetchedProperties[$key])) {
             return $this->valueForUndefinedKey($key);
         }
         /** @var ArrayClass<ManagedObject>|null $mutableArray */
@@ -677,7 +684,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
             if (!$this->isSuppressingKVO && $this->isInserted && $this->isPropertyForKeyFault($key)) {
-                $value ??= new FaultingArray($this, $property);
+                $value ??= $this->mutableArrayValueForKey($key);
                 if ($property->fetchRequest !== null) {
                     $fetchRequest = clone $property->fetchRequest;
                     if ($entityName = $fetchRequest->entityName) {
