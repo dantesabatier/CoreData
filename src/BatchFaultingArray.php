@@ -38,7 +38,6 @@ final class BatchFaultingArray extends ArrayClass
     public function __construct(FetchRequest $fetchRequest, ManagedObjectContext $context)
     {
         parent::__construct();
-        /** @var FetchRequest $request */
         $request = clone($fetchRequest, [
             "fetchBatchSize" => 0,
             "resultType" => FetchRequestResultType::managedObjectIDResultType,
