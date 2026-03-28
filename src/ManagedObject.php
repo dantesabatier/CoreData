@@ -581,6 +581,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         return $mutableSet;
     }
 
+    /**
+     * @param string $key
+     * @return ArrayClass<ManagedObject>
+     */
     #[Override]
     public function mutableArrayValueForKey(string $key): ArrayClass
     {
