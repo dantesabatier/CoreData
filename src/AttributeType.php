@@ -37,7 +37,7 @@ enum AttributeType: int
     case transformable = 1800;
     /** An attribute that stores a managed object's ID. */
     case objectID = 2000;
-    /** An attribute that derives its value by composing other attributes. Composite attributes support all attribute types except the following: {@see AttributeType::undefinedAttributeType}, {@see AttributeType::objectIDAttributeType} and {@see AttributeType::binaryDataAttributeType} (when {@see AttributeDescription::allowsExternalBinaryDataStorage} is true)
+    /** An attribute that derives its value by composing other attributes. Composite attributes support all attribute types except the following: {@see AttributeType::undefined}, {@see AttributeType::objectID} and {@see AttributeType::binaryData} (when {@see AttributeDescription::allowsExternalBinaryDataStorage} is true)
      */
     case compositeAttributeType = 2100;
 }

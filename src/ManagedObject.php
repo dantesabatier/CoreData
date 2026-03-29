@@ -333,6 +333,20 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         $this->hydrateAttributes($isManagedObjectSubclass);
     }
 
+    private function hydrateRelationships(bool $enableMutators): void
+    {
+        foreach ($this->modeledRelationships as $relationship) {
+            $this->setupRelationshipDynamicMethods($relationship, $enableMutators);
+        }
+    }
+
+    private function setupRelationshipDynamicMethods(RelationshipDescription $relationship, bool $enableMutators): void
+    {
+        if ($relationship->isToMany && $enableMutators) {
+            $this->createMutationMethods($relationship->name);
+        }
+    }
+
     private function hydrateAttributes(bool $shouldValidate): void
     {
         foreach ($this->modeledAttributes as $attribute) {
@@ -346,17 +360,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         }
     }
 
-    private function hydrateRelationships(bool $enableMutators): void
-    {
-        foreach ($this->modeledRelationships as $relationship) {
-            $this->setupRelationshipDynamicMethods($relationship, $enableMutators);
-        }
-    }
-
     private function resolveInitialAttributeValue(AttributeDescription $attribute, mixed $value, bool $shouldValidate): mixed
     {
         $value ??= $attribute->defaultValue;
-        if ($value === null && !$attribute->isOptional) {
+        if (!$attribute->isOptional) {
             $value = $this->applyTypeCoercionFallback($attribute, $value);
         }
         if ($shouldValidate) {
@@ -368,8 +375,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     private function applyTypeCoercionFallback(AttributeDescription $attribute, mixed $value): mixed
     {
         return match ($attribute->type) {
-            AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float, AttributeType::string, AttributeType::boolean => self::coercedValue($value, $attribute->type, $attribute->attributeValueClassName, $attribute->valueTransformerName, $attribute->isOptional),
-            default => null
+            AttributeType::undefined, AttributeType::binaryData, AttributeType::objectID, AttributeType::compositeAttributeType => null,
+            default => self::coercedValue($value, $attribute->type, $attribute->attributeValueClassName, $attribute->valueTransformerName, $attribute->isOptional),
         };
     }
 
@@ -378,13 +385,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         $method = "validate" . ucfirst($key);
         if (method_exists($this, $method)) {
             $this->$method($value);
-        }
-    }
-
-    private function setupRelationshipDynamicMethods(RelationshipDescription $relationship, bool $enableMutators): void
-    {
-        if ($relationship->isToMany && $enableMutators) {
-            $this->createMutationMethods($relationship->name);
         }
     }
 
