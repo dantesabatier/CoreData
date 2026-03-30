@@ -90,18 +90,7 @@ final class FetchRequest extends PersistentStoreRequest
     /** @var string|null The name of the entity to fetch. */
     public ?string $entityName = null;
     private ManagedObjectContext $context {
-        get {
-            if (isset($this->context)) {
-                return $this->context;
-            }
-            if (!($queue = OperationQueue::current())) {
-                fatal_error("Current operation queue not found");
-            }
-            if (!($context = $queue->associatedValueForKey(ManagedObjectContextKey))) {
-                fatal_error("Unable to find the managed object context associated with the current operation queue");
-            }
-            return $this->context = $context;
-        }
+        get => $this->context ??= OperationQueue::current()?->associatedValueForKey(ManagedObjectContextKey) ?? fatal_error("Unable to find the managed object context associated with the current operation queue");
     }
 
     /**

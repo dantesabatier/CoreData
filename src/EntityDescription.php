@@ -78,25 +78,21 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
     /** @var Dictionary<AttributeDescription> The attributes of the receiver in a dictionary. The keys in the dictionary are the attribute names and the values are instances of {@see AttributeDescription}. */
     private(set) Dictionary $attributesByName {
         get {
-            if (!isset($this->attributesByName)) {
-                if ($this->isEditable) {
-                    fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
-                }
-                $this->attributesByName = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
+            if (isset($this->attributesByName)) {
+                return $this->attributesByName;
             }
-            return $this->attributesByName;
+            !$this->isEditable ?: fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
+            return $this->attributesByName = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
         }
     }
     /** @var Dictionary<RelationshipDescription> The relationships of the receiver in a dictionary. The keys in the dictionary are the relationship names, and the values are instances of {@see RelationshipDescription}. */
     private(set) Dictionary $relationshipsByName {
         get {
-            if (!isset($this->relationshipsByName)) {
-                if ($this->isEditable) {
-                    fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
-                }
-                $this->relationshipsByName = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
+            if (isset($this->relationshipsByName)) {
+                return $this->relationshipsByName;
             }
-            return $this->relationshipsByName;
+            !$this->isEditable ?: fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
+            return $this->relationshipsByName = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
         }
     }
     /** @var ArrayClass<FetchIndexDescription> $indexes An array of fetch index descriptions for the entity. This value doesn't form part of the entity's version hash, and stores that don't natively support indexing may ignore it. Set indexes last in a model. Changing an entity hierarchy in any way that affects the validity of indexes drops all existing indexes for entities in that hierarchy, such as adding or removing superentities or subentities, or adding and removing properties anywhere in the hierarchy. */
@@ -159,9 +155,7 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
 
     private function throwIfNotEditable(): void
     {
-        if (!$this->isEditable) {
-            fatal_error();
-        }
+        $this->isEditable ?: fatal_error();
     }
 
     /** @internal */
@@ -339,11 +333,11 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
              * @return Dictionary<FetchIndexDescription>
              */
             function (Dictionary $initial, ArrayClass $constraint): Dictionary {
-            if ($index = $this->constraintAsIndex($constraint)) {
-                $initial[$index->name] = $index;
-            }
-            return $initial;
-        });
+                if ($index = $this->constraintAsIndex($constraint)) {
+                    $initial[$index->name] = $index;
+                }
+                return $initial;
+            });
     }
 
     #[Override]

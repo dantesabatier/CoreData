@@ -4,6 +4,7 @@ namespace Sabatier\CoreData;
 
 use Override;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Number;
 use function Sabatier\Foundation\invalid_mutation;
 
 /**
@@ -38,6 +39,7 @@ final class BatchFaultingArray extends ArrayClass
     public function __construct(FetchRequest $fetchRequest, ManagedObjectContext $context)
     {
         parent::__construct();
+        /** @var FetchRequest<ManagedObjectID> $request */
         $request = clone($fetchRequest, [
             "fetchBatchSize" => 0,
             "resultType" => FetchRequestResultType::managedObjectIDResultType,
@@ -51,9 +53,13 @@ final class BatchFaultingArray extends ArrayClass
         if ($debugDefault->value && ($sqlCore = $context->persistentStoreCoordinator?->persistentStores->first) && $sqlCore instanceof SQLCore && ($statement = new SQLGenerator(new SQLFetchRequestContext($this->request, $context, $sqlCore))->statement)) {
             error_log(sprintf("CoreData: sql: \n%s", $statement->formatted(SQLStatementFormatterStyle::defaultFormatterStyle())));
         }
+        /** @var FetchRequest<Number> $request */
+        $request = clone($request, [
+            "resultType" => FetchRequestResultType::countResultType,
+        ]);
         SQLCore::$debugLevel = SQLDebugLevel::none;
         /** @noinspection PhpUnhandledExceptionInspection */
-        $this->length = $context->count($this->request);
+        $this->length = $context->count($request);
         SQLCore::$debugLevel = $debugDefault;
     }
 

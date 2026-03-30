@@ -171,7 +171,7 @@ final class ManagedObjectContext extends ObjectClass
     {
         $newValue = $this->persistentStoreCoordinator?->persistentStoreForObjectID($objectID)?->newValueForRelationship($relationship, $objectID, $this);
         if ($relationship->isToMany) {
-            assert($newValue instanceof Sequence, sprintf("invalid argument: expecting \"%s\", (%s)%s given", Sequence::class, typeof($newValue), human_readable_value($newValue)));
+            $newValue instanceof Sequence ?: fatal_error(sprintf("invalid argument: expecting \"%s\", (%s)%s given", Sequence::class, typeof($newValue), human_readable_value($newValue)));
             $value = new FaultingSet($this->object($objectID), $relationship);
             $value->setSet(new Set($newValue));
         } else {
@@ -179,10 +179,10 @@ final class ManagedObjectContext extends ObjectClass
                 $newValue = $newValue->value;
             }
             $value = $newValue;
-            $value
-                |> typeof(...)
-                |> (fn(string $x): string => sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $objectID->entityName, $relationship->name, ManagedObject::class, ManagedObjectID::class, $x))
-                |> (fn(string $x): bool => assert($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null, $x));
+            $value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null ?: $value
+                    |> typeof(...)
+                    |> (fn(string $x): string => sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $objectID->entityName, $relationship->name, ManagedObject::class, ManagedObjectID::class, $x))
+                    |> fatal_error(...);
         }
         return $value;
     }
@@ -351,8 +351,7 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function object(ManagedObjectID $objectID): ManagedObject
     {
-        $object = $this->registeredObject($objectID);
-        if (!$object instanceof ManagedObject) {
+        if (!($object = $this->registeredObject($objectID))) {
             $object = EntityDescription::insertNewObject($objectID->entityName, $this);
             $this->unregister($object);
             $object->objectID = $objectID;
@@ -752,10 +751,10 @@ final class ManagedObjectContext extends ObjectClass
         }
         $value = $change->newValue;
         if ($property instanceof RelationshipDescription && $value !== null) {
-            $value
-                |> typeof(...)
-                |> (fn(string $x): string => sprintf("invalid argument: %s->%s expecting \"%s|%s|%s\", \"%s\" given", $object->entity->name, $keyPath, Set::class, ManagedObject::class, ManagedObjectID::class, $x))
-                |> (fn(string $x): bool => assert($value instanceof Set || $value instanceof ManagedObject || $value instanceof ManagedObjectID, $x));
+            $value instanceof Set || $value instanceof ManagedObject || $value instanceof ManagedObjectID ?: $value
+                    |> typeof(...)
+                    |> (fn(string $x): string => sprintf("invalid argument: %s->%s expecting \"%s|%s|%s\", \"%s\" given", $object->entity->name, $keyPath, Set::class, ManagedObject::class, ManagedObjectID::class, $x))
+                    |> fatal_error(...);
             if (!$value instanceof Set) {
                 if ($value instanceof ManagedObjectID) {
                     $value = $this->object($value);
@@ -766,10 +765,10 @@ final class ManagedObjectContext extends ObjectClass
                 return;
             }
             foreach ($value as $managedObject) {
-                $managedObject
-                    |> typeof(...)
-                    |> (fn(string $x): string => sprintf("invalid argument: expecting \"%s\", \"%s\" given", ManagedObject::class, $x))
-                    |> (fn(string $x): bool => assert($managedObject instanceof ManagedObject, $x));
+                $managedObject instanceof ManagedObject ?: $managedObject
+                        |> typeof(...)
+                        |> (fn(string $x): string => sprintf("invalid argument: expecting \"%s\", \"%s\" given", ManagedObject::class, $x))
+                        |> fatal_error(...);
                 $this->obtainPermanentID($managedObject);
             }
         }

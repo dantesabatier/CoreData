@@ -565,9 +565,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if (!($relationship = $this->entity->relationshipsByName[$key])) {
             return $this->valueForUndefinedKey($key);
         }
-        if (!$relationship->isToMany) {
-            fatal_error("$this->debugDescription does not contains a to many relationship named \"$key\"");
-        }
+        $relationship->isToMany ?: fatal_error("$this->debugDescription does not contains a to many relationship named \"$key\"");
         /** @var Set<ManagedObject>|null $mutableSet */
         $mutableSet = $this->primitiveValueForKey($key);
         if (!$mutableSet instanceof FaultingSet) {
@@ -756,10 +754,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         } elseif ($property instanceof RelationshipDescription) {
             $inverseRelationship = $property->inverseRelationship;
             if ($property->isToMany) {
-                $value
-                    |> typeof(...)
-                    |> (fn(string $x): string => sprintf("invalid argument: expecting \"%s\", \"%s\" given", Set::class, $x))
-                    |> (fn(string $x): bool => assert($value instanceof Set, $x));
+                $value instanceof Set ?: $value
+                        |> typeof(...)
+                        |> (fn(string $x): string => sprintf("invalid argument: expecting \"%s\", \"%s\" given", Set::class, $x))
+                        |> fatal_error(...);
                 $set = new FaultingSet($this, $property);
                 $set->setSet($value);
                 $value = $set;
@@ -801,19 +799,19 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     }
                 }
             } else {
-                $value
-                    |> typeof(...)
-                    |> (fn(string $x): string => sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $this->entityName, $key, ManagedObject::class, ManagedObjectID::class, $x))
-                    |> (fn(string $x): bool => assert($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null, $x));
+                $value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null ?: $value
+                        |> typeof(...)
+                        |> (fn(string $x): string => sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $this->entityName, $key, ManagedObject::class, ManagedObjectID::class, $x))
+                        |> fatal_error(...);
                 $change = $value;
                 $current = $this->primitiveValueForKey($key);
                 if ($this->isInserted && $this->isPropertyForKeyFault($key)) {
                     $current = $this->valueForKey($key);
                 }
-                $current
-                    |> typeof(...)
-                    |> (fn(string $x): string => sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $this->entityName, $key, ManagedObject::class, ManagedObjectID::class, $x))
-                    |> (fn(string $x): bool => assert($current instanceof ManagedObject || $current instanceof ManagedObjectID || $current === null, $x));
+                $current instanceof ManagedObject || $current instanceof ManagedObjectID || $current === null ?: $current
+                        |> typeof(...)
+                        |> (fn(string $x): string => sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $this->entityName, $key, ManagedObject::class, ManagedObjectID::class, $x))
+                        |> fatal_error(...);
                 if ($current === null && $value !== null) {
                     $changeKind = KeyValueChange::insertion;
                 } elseif ($current !== null && $value === null) {
@@ -890,9 +888,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function objectIDsForRelationshipNamed(string $key): ArrayClass
     {
-        if (!($relationship = $this->entity->relationshipsByName[$key])) {
-            fatal_error(sprintf("%s %s() does not contains a relationship named \"%s\"", $this->debugDescription, __FUNCTION__, $key));
-        }
+        $relationship = $this->entity->relationshipsByName[$key] ?? fatal_error(sprintf("%s %s() does not contains a relationship named \"%s\"", $this->debugDescription, __FUNCTION__, $key));
         $value = $relationship->isToMany ? $this->mutableSetValueForKey($key) : new Set([$this->primitiveValueForKey($key)]);
         return new ArrayClass($value->map(
         /**

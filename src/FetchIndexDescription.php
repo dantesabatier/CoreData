@@ -50,9 +50,9 @@ final class FetchIndexDescription extends ObjectClass
      */
     public function __construct(public string $name, public ArrayClass $elements = new ArrayClass() {
         set {
-            if (new Set($value->map(fn(FetchIndexElementDescription $element): FetchIndexElementType => $element->collationType))->count > 1) {
-                fatal_error("Invalid argument: elements must be of the same collation type");
-            }
+            $collationTypes = $value->map(fn(FetchIndexElementDescription $element): FetchIndexElementType => $element->collationType);
+            $uniqueCollationTypes = new Set($collationTypes);
+            $uniqueCollationTypes->count <= 1 ?: fatal_error("Invalid argument: elements must be of the same collation type");
             $this->elements = $value;
             $this->elements->setValueForKey($this, "indexDescription");
         }
