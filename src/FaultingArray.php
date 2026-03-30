@@ -13,7 +13,7 @@ final class FaultingArray extends ArrayClass
 {
     private(set) bool $isFault = true;
 
-    public function __construct(public readonly ManagedObject $source, public readonly PropertyDescription $relationship)
+    public function __construct(public readonly ManagedObject $source, public readonly FetchedPropertyDescription $property)
     {
         parent::__construct();
     }

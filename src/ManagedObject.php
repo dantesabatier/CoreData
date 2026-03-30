@@ -569,12 +569,12 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         /** @var Set<ManagedObject>|null $mutableSet */
         $mutableSet = $this->primitiveValueForKey($key);
         if (!$mutableSet instanceof FaultingSet) {
-            $set = new FaultingSet($this, $relationship);
+            $faultingSet = new FaultingSet($this, $relationship);
             if ($mutableSet instanceof Set) {
-                $set->formUnion($mutableSet);
+                $faultingSet->formUnion($mutableSet);
             }
-            $this->setPrimitiveValueForKey($set, $key);
-            $mutableSet = $set;
+            $this->setPrimitiveValueForKey($faultingSet, $key);
+            $mutableSet = $faultingSet;
         }
         return $mutableSet;
     }
@@ -586,18 +586,18 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     #[Override]
     public function mutableArrayValueForKey(string $key): ArrayClass
     {
-        if (!($relationship = $this->modeledFetchedProperties[$key])) {
+        if (!($fetchedProperty = $this->modeledFetchedProperties[$key])) {
             return $this->valueForUndefinedKey($key);
         }
         /** @var ArrayClass<ManagedObject>|null $mutableArray */
         $mutableArray = $this->primitiveValueForKey($key);
         if (!$mutableArray instanceof FaultingArray) {
-            $array = new FaultingArray($this, $relationship);
+            $faultingArray = new FaultingArray($this, $fetchedProperty);
             if ($mutableArray instanceof ArrayClass) {
-                $array->appendContentsOf($mutableArray);
+                $faultingArray->appendContentsOf($mutableArray);
             }
-            $this->setPrimitiveValueForKey($array, $key);
-            $mutableArray = $array;
+            $this->setPrimitiveValueForKey($faultingArray, $key);
+            $mutableArray = $faultingArray;
         }
         return $mutableArray;
     }
