@@ -888,6 +888,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function objectIDsForRelationshipNamed(string $key): ArrayClass
     {
+        /** @var RelationshipDescription $relationship */
         $relationship = $this->entity->relationshipsByName[$key] ?? fatal_error(sprintf("%s %s() does not contains a relationship named \"%s\"", $this->debugDescription, __FUNCTION__, $key));
         $value = $relationship->isToMany ? $this->mutableSetValueForKey($key) : new Set([$this->primitiveValueForKey($key)]);
         return new ArrayClass($value->map(

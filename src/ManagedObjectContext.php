@@ -171,6 +171,7 @@ final class ManagedObjectContext extends ObjectClass
     {
         $newValue = $this->persistentStoreCoordinator?->persistentStoreForObjectID($objectID)?->newValueForRelationship($relationship, $objectID, $this);
         if ($relationship->isToMany) {
+            /** @var Sequence $newValue */
             $newValue instanceof Sequence ?: fatal_error(sprintf("invalid argument: expecting \"%s\", (%s)%s given", Sequence::class, typeof($newValue), human_readable_value($newValue)));
             $value = new FaultingSet($this->object($objectID), $relationship);
             $value->setSet(new Set($newValue));

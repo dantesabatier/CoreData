@@ -11,7 +11,7 @@ use function Sabatier\Foundation\invalid_mutation;
  * @extends ArrayClass<ManagedObject|ManagedObjectID>
  * @internal
  */
-final class BatchFaultingArray extends ArrayClass
+final class BatchFaultingArray extends ArrayClass implements Materializable
 {
     private int $length;
     #[Override]
@@ -103,14 +103,18 @@ final class BatchFaultingArray extends ArrayClass
     }
 
     #[Override]
+    public function materialize(mixed $element): mixed
+    {
+        if ($element instanceof ManagedObjectID && $this->resultType === FetchRequestResultType::managedObjectResultType) {
+            return $this->context->object($element);
+        }
+        return $element;
+    }
+
+    #[Override]
     public function current(): ManagedObjectID|ManagedObject
     {
-        $objectID = $this->objectIDs->current();
-        if ($this->resultType === FetchRequestResultType::managedObjectIDResultType) {
-            return $objectID;
-        }
-        /** @noinspection PhpUnhandledExceptionInspection */
-        return $this->context->object($objectID);
+        return $this->materialize($this->objectIDs->current());
     }
 
     #[Override]
@@ -146,12 +150,7 @@ final class BatchFaultingArray extends ArrayClass
     #[Override]
     public function offsetGet(mixed $offset): ManagedObjectID|ManagedObject
     {
-        $objectID = $this->objectIDs->offsetGet($offset);
-        if ($this->resultType === FetchRequestResultType::managedObjectIDResultType) {
-            return $objectID;
-        }
-        /** @noinspection PhpUnhandledExceptionInspection */
-        return $this->context->object($objectID);
+        return $this->materialize($this->objectIDs->offsetGet($offset));
     }
 
     #[Override]
