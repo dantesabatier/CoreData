@@ -96,7 +96,6 @@ final class FaultingSet extends Set implements Materializable
         $this->isFault = false;
     }
 
-
     #[Override]
     public function sort(?Closure $by = null): self
     {
