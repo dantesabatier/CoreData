@@ -181,7 +181,7 @@ class MigrationManager extends ObjectClass
                     $value
                         |> typeof(...)
                         |> (fn(string $x): string => sprintf("Unexpected value \"%s\" for relationship %s->%s", $x, $source->entity->name, $key))
-                        |> (fn(string $x): never => fatal_error($x));
+                        |> fatal_error(...);
                 }
                 $relationshipsByName[$relationshipKey] = $destinationInstances;
                 $this->byMappingBySourceRelationshipsAssociationTable[$key] = $relationshipsByName;
