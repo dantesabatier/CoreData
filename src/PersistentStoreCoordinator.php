@@ -41,8 +41,8 @@ final class PersistentStoreCoordinator extends ObjectClass
     private OperationQueue $queue {
         get => $this->queue ??= new OperationQueue();
     }
-    public PersistentStoreCache $rowCache {
-        get => $this->rowCache ??= new InMemoryCache();
+    public PersistentStoreCache $storeCache {
+        get => $this->storeCache ??= new InMemoryCache();
     }
 
     /**
@@ -198,7 +198,7 @@ final class PersistentStoreCoordinator extends ObjectClass
             fn(string $class, string $type): bool => $type === $class::metadataForPersistentStore($storeURL)[StoreTypeKey]) ?? fatal_error();
         $persistentStore = new $persistentStoreClass($this, $configuration ?? "Default", $storeURL, $options);
         if ($persistentStore instanceof IncrementalStore) {
-            $persistentStore->rowCache = $this->rowCache;
+            $persistentStore->nodeCache = $this->storeCache;
         }
         $persistentStore->load() && $persistentStore->loadMetadata() ?: fatal_error("PersistentStore $storeType->value cannot be loaded");
         $userInfo = new Dictionary([AddedPersistentStoresKey => new ArrayClass([$persistentStore])]);

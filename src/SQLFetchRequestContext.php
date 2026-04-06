@@ -225,7 +225,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
             /** @var SQLEntity $entity */
             $entity = $this->sqlModel->entitiesByName[$snapshot[$this->sqlEntityForFetchRequest->entityKey->columnName]];
             $objectID = $this->sqlCore->objectID($entity->entityDescription, $snapshot[$entity->primaryKey->columnName]);
-            $this->sqlCore->rowCache->setSnapshot($snapshot, $objectID);
+            $this->sqlCore->nodeCache->setSnapshot($snapshot, $objectID);
             $object = $this->context->object($objectID);
             if ($this->request->includesPendingChanges && $object->isStable) {
                 return $object->serialized($serialization);

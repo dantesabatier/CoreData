@@ -28,7 +28,8 @@
     "ext-pdo": "*",
     "ext-zlib": "*",
     "sabatier/foundation": "@dev",
-    "ext-apcu": "*"
+    "ext-apcu": "*",
+    "ext-redis": "*"
   },
   "config": {
     "platform": {

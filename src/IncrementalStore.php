@@ -18,8 +18,8 @@ use function Sabatier\Foundation\request_concrete_implementation;
  */
 abstract class IncrementalStore extends PersistentStore
 {
-    public PersistentStoreCache $rowCache {
-        get => $this->rowCache ??= new InMemoryCache();
+    public PersistentStoreCache $nodeCache {
+        get => $this->nodeCache ??= new InMemoryCache();
     }
 
     #[Override]

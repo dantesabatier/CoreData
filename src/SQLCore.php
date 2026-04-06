@@ -292,16 +292,16 @@ final class SQLCore extends IncrementalStore
                     $entity = $this->model->entitiesByName[(string)$requestContext->fetchRequestForObjectsToDelete->entity?->name];
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass([$entity]));
                     if ($requestContext->request->resultType === BatchDeleteRequestResultType::objectIDs) {
-                        $result->forEach(fn(ManagedObjectID $objectID) => $this->rowCache->deleteSnapshot($objectID));
+                        $result->forEach(fn(ManagedObjectID $objectID) => $this->nodeCache->deleteSnapshot($objectID));
                     }
                 }
             } elseif ($requestContext instanceof SQLSaveChangesRequestContext) {
                 if (($deletedObjects = $requestContext->request->deletedObjects) && !$deletedObjects->isEmpty) {
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass($deletedObjects->compactMap(fn(ManagedObject $object): ?SQLEntity => $this->model->entitiesByName[$object->entity->name])));
-                    $deletedObjects->forEach(fn(ManagedObject $object) => $this->rowCache->deleteSnapshot($object->objectID));
+                    $deletedObjects->forEach(fn(ManagedObject $object) => $this->nodeCache->deleteSnapshot($object->objectID));
                 }
                 if ($updatedObjects = $requestContext->request->updatedObjects) {
-                    $updatedObjects->forEach(fn(ManagedObject $object) => $this->rowCache->deleteSnapshot($object->objectID));
+                    $updatedObjects->forEach(fn(ManagedObject $object) => $this->nodeCache->deleteSnapshot($object->objectID));
                 }
             }
         }
@@ -415,7 +415,7 @@ final class SQLCore extends IncrementalStore
     #[Override]
     public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): ?IncrementalStoreNode
     {
-        if ($snapshot = $this->rowCache->snapshotForKey($objectID)) {
+        if ($snapshot = $this->nodeCache->snapshotForKey($objectID)) {
             return new IncrementalStoreNode($objectID, $snapshot, $snapshot["version"] ?? 1);
         }
         $requestContext = new SQLObjectFaultRequestContext($objectID, $context, $this);
@@ -424,7 +424,7 @@ final class SQLCore extends IncrementalStore
         if (!$values instanceof Dictionary) {
             return null;
         }
-        $this->rowCache->setSnapshot($values, $objectID);
+        $this->nodeCache->setSnapshot($values, $objectID);
         return new IncrementalStoreNode($objectID, $values);
     }
 

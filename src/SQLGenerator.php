@@ -417,15 +417,23 @@ final class SQLGenerator
             $columnNames->formUnion($entity->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary): ArrayClass => $dictionary->values->map(fn(SQLAttribute $attribute): string => "$this->tableReference.$attribute->name")));
         }
         if ($this->keyValueOperator !== KeyValueOperator::countKeyValueOperator) {
-            foreach ($entity->attributes as $property) {
-                if ($property->isTransient || $property->isCompositeAttribute) continue;
-                if ($property->isDerivedAttribute) {
-                    if ($request->serialization->offsetExists($property->name)) {
-                        $columnNames->insert("{$this->buildDerivationExpression($property->derivationExpression)} AS $property->name");
+            if (!$this->isSubquery) {
+                foreach ($entity->attributes as $property) {
+                    if ($property->isTransient || $property->isCompositeAttribute || $property->isDerivedAttribute) {
+                        continue;
                     }
-                    continue;
+                    $columnNames->insert("$this->tableReference.$property->name");
                 }
-                $columnNames->insert("$this->tableReference.$property->name");
+            }
+            foreach ($request->serialization->keys as $key) {
+                $property = $entity->propertiesByName[$key];
+                if ($property instanceof SQLAttribute) {
+                    if ($property->isDerivedAttribute) {
+                        $columnNames->insert("({$this->buildDerivationExpression($property->derivationExpression)}) AS $property->name");
+                    } elseif ($this->isSubquery && !$property->isTransient && !$property->isCompositeAttribute) {
+                        $columnNames->insert("$this->tableReference.$property->name");
+                    }
+                }
             }
         }
         if ($columnNames->isEmpty) {
@@ -590,16 +598,18 @@ final class SQLGenerator
      */
     private function generateColumnNames(SQLEntity $currentEntity, string $joinedTableAlias, ?Dictionary $nestedSerialization): ArrayClass
     {
+        /** @var ArrayClass<string> $columnNames */
         $columnNames = $currentEntity->columnsToFetch->map(fn(SQLColumn $column): string => "$joinedTableAlias.$column->columnName AS {$joinedTableAlias}_$column->columnName");
         if ($nestedSerialization instanceof Dictionary) {
             foreach ($nestedSerialization->keys as $key) {
-                $property = $currentEntity->propertiesByName[$key] ?? null;
+                /** @var SQLProperty|null $property */
+                $property = $currentEntity->propertiesByName[$key];
                 if ($property instanceof SQLAttribute && $property->isDerivedAttribute && $property->isRuntimeOnly) {
                     $backupEntity = $this->entity;
                     $this->entity = $currentEntity;
                     $result = $this->buildDerivationExpression($property->derivationExpression, $joinedTableAlias);
                     $this->entity = $backupEntity;
-                    $columnNames->append("$result AS {$joinedTableAlias}_$property->columnName");
+                    $columnNames->append("($result) AS {$joinedTableAlias}_$property->name");
                 }
             }
         }
