@@ -27,7 +27,8 @@
     "ext-libxml": "*",
     "ext-pdo": "*",
     "ext-zlib": "*",
-    "sabatier/foundation": "@dev"
+    "sabatier/foundation": "@dev",
+    "ext-apcu": "*"
   },
   "config": {
     "platform": {

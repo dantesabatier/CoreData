@@ -41,6 +41,9 @@ final class PersistentStoreCoordinator extends ObjectClass
     private OperationQueue $queue {
         get => $this->queue ??= new OperationQueue();
     }
+    public PersistentStoreCache $rowCache {
+        get => $this->rowCache ??= new InMemoryCache();
+    }
 
     /**
      * Initializes the coordinator with a managed object model.
@@ -188,9 +191,15 @@ final class PersistentStoreCoordinator extends ObjectClass
         $persistentStoreClass = self::registeredStoreTypes()[$storeType->value] ?? self::registeredStoreTypes()->first(
         /**
          * @param class-string<PersistentStore> $class
+         * @param string $type
+         * @return bool
          * @throws Exception
-         */ fn(string $class, string $type): bool => $type === $class::metadataForPersistentStore($storeURL)[StoreTypeKey]) ?? fatal_error();
+         */
+            fn(string $class, string $type): bool => $type === $class::metadataForPersistentStore($storeURL)[StoreTypeKey]) ?? fatal_error();
         $persistentStore = new $persistentStoreClass($this, $configuration ?? "Default", $storeURL, $options);
+        if ($persistentStore instanceof IncrementalStore) {
+            $persistentStore->rowCache = $this->rowCache;
+        }
         $persistentStore->load() && $persistentStore->loadMetadata() ?: fatal_error("PersistentStore $storeType->value cannot be loaded");
         $userInfo = new Dictionary([AddedPersistentStoresKey => new ArrayClass([$persistentStore])]);
         NotificationCenter::default()->postNotificationName(PersistentStoreCoordinatorStoresWillChange, $this, $userInfo);

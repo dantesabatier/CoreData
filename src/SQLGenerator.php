@@ -417,16 +417,16 @@ final class SQLGenerator
             $columnNames->formUnion($entity->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary): ArrayClass => $dictionary->values->map(fn(SQLAttribute $attribute): string => "$this->tableReference.$attribute->name")));
         }
         if ($this->keyValueOperator !== KeyValueOperator::countKeyValueOperator) {
-            $columnNames->formUnion($request->serialization->keys->compactMap(function (string $key) use ($entity): ?string {
-                $property = $entity->propertiesByName[$key];
-                if ($property instanceof SQLAttribute && !$property->isTransient && !$property->isCompositeAttribute) {
-                    if ($property->isDerivedAttribute && $property->isRuntimeOnly) {
-                        return "{$this->buildDerivationExpression($property->derivationExpression)} AS $property->name";
+            foreach ($entity->attributes as $property) {
+                if ($property->isTransient || $property->isCompositeAttribute) continue;
+                if ($property->isDerivedAttribute) {
+                    if ($request->serialization->offsetExists($property->name)) {
+                        $columnNames->insert("{$this->buildDerivationExpression($property->derivationExpression)} AS $property->name");
                     }
-                    return "$this->tableReference.$property->name";
+                    continue;
                 }
-                return null;
-            }));
+                $columnNames->insert("$this->tableReference.$property->name");
+            }
         }
         if ($columnNames->isEmpty) {
             $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
@@ -592,42 +592,16 @@ final class SQLGenerator
     {
         $columnNames = $currentEntity->columnsToFetch->map(fn(SQLColumn $column): string => "$joinedTableAlias.$column->columnName AS {$joinedTableAlias}_$column->columnName");
         if ($nestedSerialization instanceof Dictionary) {
-            $serialization = clone $nestedSerialization;
-            $serializationKeys = $serialization->keys->filter(function (string $key) use ($currentEntity): bool {
-                /** @var SQLProperty $property */
-                $property = $currentEntity->propertiesByName[$key] ?? fatal_error("{$currentEntity->entityDescription->name} does not contains a property named \"$key\"");
-                return !$property->isTransient;
-            });
-            if (!$serializationKeys->containsElement($currentEntity->primaryKey->columnName)) {
-                $serializationKeys->insertAt($currentEntity->primaryKey->columnName, 0);
-            }
-            if (!$currentEntity->entityDescription->isPersistentHistoryEntity) {
-                if (!$serializationKeys->containsElement($currentEntity->entityKey->columnName)) {
-                    $serializationKeys->insertAt($currentEntity->entityKey->columnName, 1);
-                }
-                if (!$serializationKeys->containsElement($currentEntity->optLockKey->columnName)) {
-                    $serializationKeys->insertAt($currentEntity->optLockKey->columnName, 2);
+            foreach ($nestedSerialization->keys as $key) {
+                $property = $currentEntity->propertiesByName[$key] ?? null;
+                if ($property instanceof SQLAttribute && $property->isDerivedAttribute && $property->isRuntimeOnly) {
+                    $backupEntity = $this->entity;
+                    $this->entity = $currentEntity;
+                    $result = $this->buildDerivationExpression($property->derivationExpression, $joinedTableAlias);
+                    $this->entity = $backupEntity;
+                    $columnNames->append("$result AS {$joinedTableAlias}_$property->columnName");
                 }
             }
-            /** @var ArrayClass<string> $columnNames */
-            $columnNames = $serializationKeys->compactMap(function (string $key) use ($currentEntity, $joinedTableAlias): ?string {
-                /** @var SQLProperty|null $property */
-                $property = $currentEntity->propertiesByName[$key];
-                if ($property instanceof SQLEntityKey || $property instanceof SQLPrimaryKey || $property instanceof SQLOptLockKey) {
-                    return "$joinedTableAlias.$property->columnName AS {$joinedTableAlias}_$property->columnName";
-                }
-                if ($property instanceof SQLAttribute) {
-                    if (($expression = $property->derivationExpression) && $property->isRuntimeOnly) {
-                        $backupEntity = $this->entity;
-                        $this->entity = $currentEntity;
-                        $result = $this->buildDerivationExpression($expression, $joinedTableAlias);
-                        $this->entity = $backupEntity;
-                        return "$result AS {$joinedTableAlias}_$property->columnName";
-                    }
-                    return "$joinedTableAlias.$property->columnName AS {$joinedTableAlias}_$property->columnName";
-                }
-                return null;
-            });
         }
         return $columnNames;
     }

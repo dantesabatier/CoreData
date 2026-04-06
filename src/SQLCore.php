@@ -291,10 +291,17 @@ final class SQLCore extends IncrementalStore
                     /** @var SQLEntity $entity */
                     $entity = $this->model->entitiesByName[(string)$requestContext->fetchRequestForObjectsToDelete->entity?->name];
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass([$entity]));
+                    if ($requestContext->request->resultType === BatchDeleteRequestResultType::objectIDs) {
+                        $result->forEach(fn(ManagedObjectID $objectID) => $this->rowCache->deleteSnapshot($objectID));
+                    }
                 }
             } elseif ($requestContext instanceof SQLSaveChangesRequestContext) {
                 if (($deletedObjects = $requestContext->request->deletedObjects) && !$deletedObjects->isEmpty) {
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass($deletedObjects->compactMap(fn(ManagedObject $object): ?SQLEntity => $this->model->entitiesByName[$object->entity->name])));
+                    $deletedObjects->forEach(fn(ManagedObject $object) => $this->rowCache->deleteSnapshot($object->objectID));
+                }
+                if ($updatedObjects = $requestContext->request->updatedObjects) {
+                    $updatedObjects->forEach(fn(ManagedObject $object) => $this->rowCache->deleteSnapshot($object->objectID));
                 }
             }
         }
@@ -408,12 +415,16 @@ final class SQLCore extends IncrementalStore
     #[Override]
     public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): ?IncrementalStoreNode
     {
+        if ($snapshot = $this->rowCache->snapshotForKey($objectID)) {
+            return new IncrementalStoreNode($objectID, $snapshot, $snapshot["version"] ?? 1);
+        }
         $requestContext = new SQLObjectFaultRequestContext($objectID, $context, $this);
         $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
         $values = $requestContext->result;
         if (!$values instanceof Dictionary) {
             return null;
         }
+        $this->rowCache->setSnapshot($values, $objectID);
         return new IncrementalStoreNode($objectID, $values);
     }
 
