@@ -84,29 +84,4 @@ final class RelationshipDescription extends PropertyDescription
         $dictionary["lazyInverseRelationshipName"] = $this->lazyInverseRelationshipName;
         $out = KeyedArchiver::archivedData($dictionary);
     }
-
-    #[Override]
-    public function jsonSerialize(): Dictionary
-    {
-        /** @var Dictionary<mixed> $dictionary */
-        $dictionary = parent::jsonSerialize();
-        if ($this->isToMany) {
-            $dictionary["isToMany"] = $this->isToMany;
-        }
-        if ($this->isOrdered) {
-            $dictionary["isOrdered"] = $this->isOrdered;
-        }
-        if ($this->deleteRule !== DeleteRule::nullifyDeleteRule) {
-            $dictionary["deleteRule"] = $this->deleteRule;
-        }
-        if ($this->maxCount) {
-            $dictionary["maxCount"] = $this->maxCount;
-        }
-        if ($this->minCount) {
-            $dictionary["minCount"] = $this->minCount;
-        }
-        $dictionary["lazyDestinationEntityName"] = $this->lazyDestinationEntityName;
-        $dictionary["lazyInverseRelationshipName"] = $this->lazyInverseRelationshipName;
-        return $dictionary;
-    }
 }

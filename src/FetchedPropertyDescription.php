@@ -10,7 +10,6 @@
 namespace Sabatier\CoreData;
 
 use Override;
-use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\KeyValueCoding;
 
 /**
@@ -28,15 +27,4 @@ final class FetchedPropertyDescription extends PropertyDescription
     public PropertyDescriptionType $propertyType = PropertyDescriptionType::fetchedProperty;
     /** @var FetchRequest|null The fetch request of the receiver. */
     public ?FetchRequest $fetchRequest = null;
-
-    #[Override]
-    public function jsonSerialize(): Dictionary
-    {
-        $dictionary = parent::jsonSerialize();
-        if ($fetchRequest = $this->fetchRequest) {
-            $dictionary["fetchRequestEntityName"] = $fetchRequest->entityName;
-            $dictionary["fetchRequestPredicateFormat"] = $fetchRequest->predicate?->predicateFormat;
-        }
-        return $dictionary;
-    }
 }

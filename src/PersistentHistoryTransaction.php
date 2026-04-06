@@ -127,19 +127,4 @@ final class PersistentHistoryTransaction extends ObjectClass
     {
         return $context->persistentStoreCoordinator?->managedObjectModel?->entitiesByName["PersistentHistoryTransaction"];
     }
-
-    #[Override]
-    public function jsonSerialize(): Dictionary
-    {
-        /** @var Dictionary<mixed> $dictionary */
-        $dictionary = new Dictionary();
-        $dictionary["transactionID"] = $this->transactionNumber;
-        $dictionary["author"] = $this->author;
-        $dictionary["bundleID"] = $this->bundleID;
-        $dictionary["contextName"] = $this->contextName;
-        $dictionary["processID"] = $this->processID;
-        $dictionary["storeID"] = $this->storeID;
-        $dictionary["changes"] = $this->changes?->map(fn(PersistentHistoryChange $change): Dictionary => $change->jsonSerialize());
-        return $dictionary;
-    }
 }

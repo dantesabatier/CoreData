@@ -89,9 +89,7 @@ abstract class PropertyDescription extends ObjectClass
 
     private function throwIfNotEditable(): void
     {
-        if (!$this->isEditable) {
-            fatal_error();
-        }
+        $this->isEditable ?: fatal_error("$this->debugDescription cannot be edited before initialization");
     }
 
     /**
@@ -109,21 +107,6 @@ abstract class PropertyDescription extends ObjectClass
 
     /** @internal */
     public function versionHashInStyle(?string &$out, VersionHashStyle $style): void
-    {
-        $out = KeyedArchiver::archivedData($this->jsonSerialize());
-    }
-
-    #[Override]
-    public function isEqual(mixed $other): bool
-    {
-        if ($other instanceof PropertyDescription) {
-            return $this->entity->isKindOf($other->entity) && $this->renamingIdentifier === $other->renamingIdentifier;
-        }
-        return false;
-    }
-
-    #[Override]
-    public function jsonSerialize(): Dictionary
     {
         /** @var Dictionary<mixed> $dictionary */
         $dictionary = new Dictionary();
@@ -151,6 +134,18 @@ abstract class PropertyDescription extends ObjectClass
         if ($this->regex) {
             $dictionary["regex"] = $this->regex;
         }
-        return $dictionary;
+        $out = KeyedArchiver::archivedData($dictionary);
+    }
+
+    #[Override]
+    public function isEqual(mixed $other): bool
+    {
+        if ($other instanceof PropertyDescription) {
+            if ($this->isEditable || $other->isEditable) {
+                return $this->renamingIdentifier === $other->renamingIdentifier;
+            }
+            return $this->entity->isKindOf($other->entity) && $this->renamingIdentifier === $other->renamingIdentifier;
+        }
+        return false;
     }
 }

@@ -11,7 +11,6 @@ namespace Sabatier\CoreData;
 
 use Override;
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\Set;
@@ -42,6 +41,8 @@ final class FetchIndexDescription extends ObjectClass
     public bool $isBinary {
         get => $this->elements->first?->collationType === FetchIndexElementType::binary;
     }
+    /** @internal */
+    public bool $isEditable = true;
 
     /**
      * Creates a fetch index description using the specified name and element descriptions.
@@ -60,17 +61,6 @@ final class FetchIndexDescription extends ObjectClass
     {
     }
 
-    public function __serialize(): array
-    {
-        return ["name" => $this->name, "elements" => $this->elements];
-    }
-
-    public function __unserialize(array $data): void
-    {
-        $this->name = $data["name"];
-        $this->elements = $data["elements"];
-    }
-
     #[Override]
     public function isEqual(mixed $other): bool
     {
@@ -79,15 +69,5 @@ final class FetchIndexDescription extends ObjectClass
             return $this->name === $other->name;
         }
         return false;
-    }
-
-    #[Override]
-    public function jsonSerialize(): Dictionary
-    {
-        /** @var Dictionary<mixed> $dictionary */
-        $dictionary = new Dictionary();
-        $dictionary["name"] = $this->name;
-        $dictionary["elements"] = $this->elements->map(fn(FetchIndexElementDescription $element): Dictionary => $element->jsonSerialize());
-        return $dictionary;
     }
 }

@@ -50,7 +50,7 @@ class PersistentContainer extends ObjectClass
     {
         $bundle = $this->isSubclass(PersistentContainer::class) ? Bundle::bundleForClass(static::class) : Bundle::main();
         $this->name = $name;
-        $this->managedObjectModel = $managedObjectModel ?? new ManagedObjectModel($bundle->url($this->name, "plist"));
+        $this->managedObjectModel = $managedObjectModel ?? new ManagedObjectModel($bundle->url($this->name, "mom"));
         $this->persistentStoreCoordinator = new PersistentStoreCoordinator($this->managedObjectModel);
         $this->viewContext = new ManagedObjectContext();
         $this->viewContext->persistentStoreCoordinator = $this->persistentStoreCoordinator;

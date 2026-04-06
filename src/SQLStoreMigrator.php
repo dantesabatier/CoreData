@@ -40,8 +40,8 @@ final class SQLStoreMigrator
     public function __construct(public readonly SQLCore $store, public readonly SQLModel $destinationModel, public readonly MappingModel $mappingModel)
     {
         $this->connection = $this->store->schemaValidationConnection;
-        $this->adapter = $this->connection->adapter ?? fatal_error();
-        $this->sourceModel = new SQLModel($this->connection->cachedModel ?? fatal_error(), $this->store->configurationName);
+        $this->adapter = $this->connection->adapter ?? fatal_error("SQL adapter cannot be null");
+        $this->sourceModel = new SQLModel($this->connection->cachedModel ?? fatal_error("SQL source model cannot be ull"), $this->store->configurationName);
         $this->removedEntities = new Set();
         $this->removedManyToMany = new Set();
         $this->removedColumns = new Set();

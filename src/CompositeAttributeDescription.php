@@ -41,15 +41,4 @@ final class CompositeAttributeDescription extends AttributeDescription
         });
         $out = KeyedArchiver::archivedData($dictionary);
     }
-
-    #[Override]
-    public function jsonSerialize(): Dictionary
-    {
-        $dictionary = parent::jsonSerialize();
-        $elements = $this->elements->map(fn(AttributeDescription $element): Dictionary => $element->jsonSerialize());
-        if (!$elements->isEmpty) {
-            $dictionary["elements"] = $elements;
-        }
-        return $dictionary;
-    }
 }

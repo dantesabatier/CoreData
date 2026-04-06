@@ -76,18 +76,4 @@ class AttributeDescription extends PropertyDescription
         }
         $out = KeyedArchiver::archivedData($dictionary);
     }
-
-    #[Override]
-    public function jsonSerialize(): Dictionary
-    {
-        $dictionary = parent::jsonSerialize();
-        if ($this->type !== AttributeType::undefined) {
-            $dictionary["type"] = $this->type;
-        }
-        $defaultValue = $this->defaultValue;
-        if ($defaultValue !== null) {
-            $dictionary["defaultValue"] = $defaultValue;
-        }
-        return $dictionary;
-    }
 }

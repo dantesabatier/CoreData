@@ -10,7 +10,6 @@
 namespace Sabatier\CoreData;
 
 use Override;
-use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Predicates\Expression;
 
 /**
@@ -55,15 +54,5 @@ final class DerivedAttributeDescription extends AttributeDescription
     /** @internal */
     public bool $isRuntimeOnly {
         get => $this->compatibility && $this->compatibility->isRuntimeOnly;
-    }
-
-    #[Override]
-    public function jsonSerialize(): Dictionary
-    {
-        $dictionary = parent::jsonSerialize();
-        if ($derivationExpression = $this->derivationExpression) {
-            $dictionary["derivationExpressionFormat"] = (string)$derivationExpression;
-        }
-        return $dictionary;
     }
 }

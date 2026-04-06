@@ -63,10 +63,11 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
             $this->propertiesByName->removeAll();
             /** @var PropertyDescription $property */
             foreach ($value as $property) {
-                if ($property->entity !== $this) {
+                if (!$property->isEditable && $property->entity !== $this) {
                     $property = clone $property;
                 }
                 $property->entity = $this;
+                $property->isEditable = false;
                 $this->propertiesByName[$property->name] = $property;
             }
         }
@@ -103,10 +104,11 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
             $this->indexesByName->removeAll();
             /** @var FetchIndexDescription $index */
             foreach ($value as $index) {
-                if ($index->entity !== $this) {
+                if (!$index->isEditable && $index->entity !== $this) {
                     $index = clone $index;
                 }
                 $index->entity = $this;
+                $index->isEditable = false;
                 $this->indexesByName[$index->name] = $index;
             }
             $this->indexesByName->merge($this->uniquenessConstraintsAsFetchIndexes());
@@ -155,7 +157,7 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
 
     private function throwIfNotEditable(): void
     {
-        $this->isEditable ?: fatal_error();
+        $this->isEditable ?: fatal_error("$this->debugDescription cannot be edited before initialization");
     }
 
     /** @internal */
@@ -356,46 +358,11 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof EntityDescription) {
+            if ($this->isEditable || $other->isEditable) {
+                return $this->renamingIdentifier === $other->renamingIdentifier;
+            }
             return ($this->managedObjectClassName === $other->managedObjectClassName) && ($this->renamingIdentifier === $other->renamingIdentifier);
         }
         return false;
-    }
-
-    #[Override]
-    public function jsonSerialize(): Dictionary
-    {
-        /** @var Dictionary<mixed> $dictionary */
-        $dictionary = new Dictionary();
-        $dictionary["name"] = $this->name;
-        $dictionary["managedObjectClassName"] = $this->managedObjectClassName;
-        if ($this->isAbstract) {
-            $dictionary["isAbstract"] = $this->isAbstract;
-        }
-        $dictionary["versionHashModifier"] = $this->versionHashModifier;
-        $attributes = $this->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$this->superentity?->attributesByName?->contains(fn(AttributeDescription $e): bool => $e->name === $attribute->name))->map(fn(AttributeDescription $attribute): Dictionary => $attribute->jsonSerialize());
-        if (!$attributes->isEmpty) {
-            $dictionary["attributes"] = $attributes;
-        }
-        $relationships = $this->relationshipsByName->filter(fn(RelationshipDescription $relationship): bool => !$this->superentity?->relationshipsByName?->contains(fn(RelationshipDescription $e): bool => $e->name === $relationship->name))->map(fn(RelationshipDescription $relationship): Dictionary => $relationship->jsonSerialize());
-        if (!$relationships->isEmpty) {
-            $dictionary["relationships"] = $relationships;
-        }
-        $fetchedProperties = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof FetchedPropertyDescription && !$this->superentity?->propertiesByName?->contains(fn(PropertyDescription $e): bool => $e->name === $property->name))->map(fn(PropertyDescription $property): Dictionary => $property->jsonSerialize());
-        if (!$fetchedProperties->isEmpty) {
-            $dictionary["fetchedProperties"] = $fetchedProperties;
-        }
-        $uniquenessConstraints = $this->uniquenessConstraints;
-        if (!$uniquenessConstraints->isEmpty) {
-            $dictionary["uniquenessConstraints"] = $uniquenessConstraints;
-        }
-        $indexes = $this->indexesByName->filter(fn(FetchIndexDescription $index): bool => !$index->isUnique && !$this->superentity?->indexesByName?->contains(fn(FetchIndexDescription $e): bool => $e->name === $index->name))->map(fn(FetchIndexDescription $index): Dictionary => $index->jsonSerialize());
-        if (!$indexes->isEmpty) {
-            $dictionary["indexes"] = $indexes;
-        }
-        $subentities = $this->subentitiesByName->map(fn(EntityDescription $subentity): Dictionary => $subentity->jsonSerialize());
-        if (!$subentities->isEmpty) {
-            $dictionary["subentities"] = $subentities;
-        }
-        return $dictionary;
     }
 }

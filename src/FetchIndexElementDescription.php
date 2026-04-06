@@ -10,9 +10,7 @@
 namespace Sabatier\CoreData;
 
 use Override;
-use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\ObjectClass;
-use function Sabatier\Foundation\fatal_error;
 
 /**
  * Description of an Index Element
@@ -28,12 +26,7 @@ final class FetchIndexElementDescription extends ObjectClass
     public bool $isUnique = false;
     /** @internal */
     public string $order {
-        get {
-            if ($this->collationType !== FetchIndexElementType::binary) {
-                return $this->isAscending ? "ASC" : "DESC";
-            }
-            return "";
-        }
+        get => $this->collationType !== FetchIndexElementType::binary ? ($this->isAscending ? "ASC" : "DESC") : "";
     }
     private(set) PropertyDescription $property;
     public FetchIndexElementType $collationType = FetchIndexElementType::bTree {
@@ -57,31 +50,6 @@ final class FetchIndexElementDescription extends ObjectClass
         $this->collationType = $collationType;
     }
 
-    public function __serialize(): array
-    {
-        $data = ["propertyName" => $this->propertyName];
-        if ($this->collationType !== FetchIndexElementType::bTree) {
-            $data["collationType"] = $this->collationType;
-        }
-        if (!$this->isAscending) {
-            $data["isAscending"] = $this->isAscending;
-        }
-        if ($this->isUnique) {
-            $data["isUnique"] = $this->isUnique;
-        }
-        return $data;
-    }
-
-    public function __unserialize(array $data): void
-    {
-        $this->propertyName = $data["propertyName"];
-        $this->collationType = $data["collationType"] ?? FetchIndexElementType::bTree;
-        $this->isAscending = $data["isAscending"];
-        $this->isUnique = $data["isUnique"];
-        /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-        $this->property = $this->indexDescription->entity->propertiesByName[$this->propertyName] ?? fatal_error("Entity \"{$this->indexDescription->entity->name}\" does not contains a property named \"$this->propertyName\"");
-    }
-
     #[Override]
     public function isEqual(mixed $other): bool
     {
@@ -89,23 +57,5 @@ final class FetchIndexElementDescription extends ObjectClass
             return $this->property->isEqual($other->property) && $this->collationType === $other->collationType;
         }
         return false;
-    }
-
-    #[Override]
-    public function jsonSerialize(): Dictionary
-    {
-        /** @var Dictionary<mixed> $dictionary */
-        $dictionary = new Dictionary();
-        $dictionary["propertyName"] = $this->property->name;
-        if ($this->collationType !== FetchIndexElementType::bTree) {
-            $dictionary["collationType"] = $this->collationType;
-        }
-        if (!$this->isAscending) {
-            $dictionary["isAscending"] = $this->isAscending;
-        }
-        if ($this->isUnique) {
-            $dictionary["isUnique"] = $this->isUnique;
-        }
-        return $dictionary;
     }
 }

@@ -93,7 +93,7 @@ class MigrationManager extends ObjectClass
     {
         $entityMigrationPolicyClass = EntityMigrationPolicy::class;
         if ($mapping->mappingType === EntityMappingType::customEntityMappingType) {
-            $entityMigrationPolicyClass = $mapping->entityMigrationPolicyClassName ?? fatal_error();
+            $entityMigrationPolicyClass = $mapping->entityMigrationPolicyClassName ?? fatal_error("$this->debugDescription cannot be mapped without a custom entityMigrationPolicyClassName");
         }
         $this->entityMigrationPolicy = new $entityMigrationPolicyClass();
         if (!$this->entityMigrationPolicy->begin($mapping, $this)) {

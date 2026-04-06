@@ -91,14 +91,4 @@ final class PersistentHistoryChange extends ObjectClass
     {
         return $context->persistentStoreCoordinator?->managedObjectModel?->entitiesByName["PersistentHistoryChange"];
     }
-
-    #[Override]
-    public function jsonSerialize(): Dictionary
-    {
-        /** @var Dictionary<mixed> $dictionary */
-        $dictionary = new Dictionary();
-        $dictionary["changeID"] = $this->changeID;
-        $dictionary["changeType"] = $this->changeType;
-        return $dictionary;
-    }
 }

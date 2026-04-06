@@ -507,7 +507,7 @@ final class SQLConnection
      */
     private function compressedDataWithModel(ManagedObjectModel $model): string
     {
-        return KeyedArchiver::archivedData($model->jsonSerialize());
+        return KeyedArchiver::archivedData($model);
     }
 
     /**
