@@ -416,7 +416,7 @@ final class SQLCore extends IncrementalStore
     public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): ?IncrementalStoreNode
     {
         if ($snapshot = $this->nodeCache->snapshotForKey($objectID)) {
-            return new IncrementalStoreNode($objectID, $snapshot, $snapshot["version"] ?? 1);
+            return new IncrementalStoreNode($objectID, $snapshot, $snapshot[ManagedObjectVersionKey] ?? 1);
         }
         $requestContext = new SQLObjectFaultRequestContext($objectID, $context, $this);
         $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
