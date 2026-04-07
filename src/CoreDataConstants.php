@@ -103,6 +103,19 @@ const ValidationPredicateErrorKey = "ValidationPredicateErrorKey";
 const ValidationValueErrorKey = "ValidationValueErrorKey";
 const ConflictListErrorKey = "conflictList";
 
+// Managed Object Constants
+
+const ManagedObjectObjectIDKey = "objectID";
+const ManagedObjectEntityNameKey = "entityName";
+const ManagedObjectVersionKey = "version";
+const ManagedObjectIsInsertedKey = "isInserted";
+const ManagedObjectIsFaultKey = "isFault";
+const ManagedObjectFaultingStateKey = "faultingState";
+const ManagedObjectFaultingStateStable = 0;
+const ManagedObjectFaultingStateUnstable = -1;
+const ManagedObjectParentIDKey = "parentID";
+const ManagedObjectContextKey = "managedObjectContext";
+
 // Environment Variables
 
 const SQLSchemaName = "SQL_SCHEMA_NAME";
