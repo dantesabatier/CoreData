@@ -336,6 +336,9 @@ final class PersistentStoreCoordinator extends ObjectClass
         $stores = $request->affectedStores ?? $this->persistentStores;
         $result = $stores->map(fn(PersistentStore $store): ArrayClass => $store->execute($request, $context));
         if ($request instanceof FetchRequest || $request instanceof SaveChangesRequest) {
+            if ($result instanceof BatchFaultingArray) {
+                return $result;
+            }
             return new ArrayClass($result->joined());
         }
         return $result;
