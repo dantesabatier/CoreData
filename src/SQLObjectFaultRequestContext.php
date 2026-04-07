@@ -23,11 +23,12 @@ final class SQLObjectFaultRequestContext extends SQLStoreRequestContext
     {
         /** @var SQLEntity $entity */
         $entity = $sqlCore->model->entitiesByName[$this->objectID->entityName] ?? fatal_error("Entity not found: {$this->objectID->entityName}");
+        $object = $context->object($this->objectID);
         /** @var FetchRequest<Dictionary> $fetchRequest */
         $fetchRequest = new FetchRequest();
         $fetchRequest->entity = $this->objectID->entity;
         $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($this->objectID));
-        $fetchRequest->propertiesToFetch = $this->objectID->entity->properties;
+        $fetchRequest->propertiesToFetch = $object->persistentProperties->values;
         $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
         parent::__construct($fetchRequest, $context, $sqlCore);
     }
