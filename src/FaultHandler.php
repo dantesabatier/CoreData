@@ -2,8 +2,6 @@
 
 namespace Sabatier\CoreData;
 
-use const Sabatier\Foundation\NotFound;
-
 /** @internal */
 final readonly class FaultHandler
 {
@@ -14,6 +12,9 @@ final readonly class FaultHandler
     /** @noinspection PhpUnhandledExceptionInspection */
     public function fulfillFault(ManagedObject $object, ?ManagedObjectContext $context = null): void
     {
+        if (!$object->isFault) {
+            return;
+        }
         $context ??= $object->managedObjectContext;
         /** @var IncrementalStoreNode|AtomicStoreCacheNode|null $node */
         $node = $this->persistentStore->newValuesForObjectWithID($object->objectID, $context);
@@ -21,22 +22,25 @@ final readonly class FaultHandler
             return;
         }
         $snapshot = $node instanceof AtomicStoreCacheNode ? $node->propertyCache : $node->values;
-        $snapshot[ManagedObjectIsInsertedKey] = true;
-        $snapshot[ManagedObjectIsFaultKey] = false;
-        $snapshot[ManagedObjectFaultingStateKey] = 0;
+        $object->isFault = false;
         $object->isSuppressingChangeNotifications = true;
         $object->isSuppressingKVO = true;
         $object->updateFromRefreshSnapshot($snapshot);
         $object->isSuppressingKVO = false;
         $object->awakeFromSnapshotEvents(SnapshotEventType::refresh);
         $object->isSuppressingChangeNotifications = false;
+        $object->faultingState = ManagedObjectFaultingStateStable;
     }
 
     public function turnObjectIntoFault(/** @noinspection PhpUnusedParameterInspection */ ManagedObject $object, ?ManagedObjectContext $context = null): void
     {
+        if ($object->isFault) {
+            return;
+        }
         $object->isSuppressingChangeNotifications = true;
         $object->isSuppressingKVO = true;
         $object->willTurnIntoFault();
+        $object->isFault = true;
         $committedValues = $object->committedValues(null);
         $properties = $object->persistentProperties;
         foreach ($properties as $property) {
@@ -50,9 +54,8 @@ final readonly class FaultHandler
                 }
             }
         }
-        $object->isFault = true;
-        $object->faultingState = NotFound;
         $object->didTurnIntoFault();
+        $object->faultingState = ManagedObjectFaultingStateUnstable;
         $object->isSuppressingKVO = false;
         $object->isSuppressingChangeNotifications = false;
     }
