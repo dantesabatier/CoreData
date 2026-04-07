@@ -281,7 +281,7 @@ final class SQLCore extends IncrementalStore
                 $this->postChangeNotificationWithTransactionID($requestContext->transactionID);
             }
             if ($requestContext instanceof SQLBatchDeleteRequestContext) {
-                /** @var ArrayClass<bool|int|ManagedObjectID> $result */
+                /** @var ArrayClass<mixed> $result */
                 $result = $requestContext->result;
                 if (match ($requestContext->request->resultType) {
                     BatchDeleteRequestResultType::statusOnly => !$result->containsElement(false),
