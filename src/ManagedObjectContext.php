@@ -303,14 +303,12 @@ final class ManagedObjectContext extends ObjectClass
      * @return ArrayClass<T> An array of objects that meet the criteria specified by request fetched from the receiver and from the persistent stores associated with the receiver's persistent store coordinator.
      * If no objects match the criteria specified by request, returns an empty array.
      * @throws Exception If there is a problem executing the fetch, upon return contains an error that describes the problem.
-     * @psalm-suppress InvalidReturnType, InvalidReturnStatement
      */
     public function fetch(FetchRequest $request): ArrayClass
     {
         /** @var UnknownRequestTypeResult $result */
         $result = $this->execute($request);
         $subresults = $result->subresults;
-        /** @psalm-suppress DocblockTypeContradiction */
         if ($subresults instanceof BatchFaultingArray) {
             return $subresults;
         }
