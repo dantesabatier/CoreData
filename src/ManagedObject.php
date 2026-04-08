@@ -394,6 +394,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     private function genericUpdateFromSnapshot(Dictionary $snapshot): void
     {
         $this->setValuesForKeys($this->snapshotValueMapper->mapSnapshot($this, $snapshot));
+        $this->isFault = false;
+        $this->faultingState = ManagedObjectFaultingStateStable;
     }
 
     /**
