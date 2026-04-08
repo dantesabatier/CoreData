@@ -669,10 +669,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     final public function valueForKey(string $key): mixed
     {
         $key ?: $this->valueForUndefinedKey($key);
+        $flag = $this->persistentProperties->offsetExists($key) && $this->isFault && !$this->isSuppressingKVO
         $context = $this->managedObjectContext;
         $property = $this->entity->propertiesByName[$key];
         if ($property instanceof AttributeDescription) {
-            $this->willAccessValueForKey($key);
+            $this->willAccessValueForKey($flag ? null : $key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
             if ($property instanceof DerivedAttributeDescription && !$value && $this->isPropertyForKeyFault($key)) {
@@ -762,7 +763,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $set->setSet($value);
                 $value = $set;
                 $change = $this->mutableSetValueForKey($key);
-                if (!$this->isSuppressingKVO && $this->isAwakeFromFetch && $this->isInserted && $this->isPropertyForKeyFault($key)) {
+                if (!$this->isFault && !$this->isSuppressingKVO && $this->isAwakeFromFetch && $this->isInserted && $this->isPropertyForKeyFault($key)) {
                     /** @var FaultingSet $change */
                     $change = $this->valueForKey($key);
                     /** @var ManagedObject $managedObject */
@@ -858,6 +859,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             }
         }
         $this->changedValuesForCurrentEvent[$propertyName] = $finalValue;
+        $this->isFault = false;
     }
 
     #[Override]
