@@ -198,6 +198,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     final public string $description {
         get => sprintf("<%s %s> (entity: %s; id: %s %s; data: %s)", $this->class, $this->hash, $this->entity->name, $this->objectID->hash, $this->objectID->description, $this->isFault ? "<fault>" : $this->dictionaryWithValues($this->serializationKeys->filter(fn(string $key): bool => !$this->isPropertyForKeyFault($key)))->description);
     }
+    #[Override]
+    public string $debugDescription {
+        get => sprintf("<%s %s> (entity: %s; id: %s)", $this->class, $this->hash, $this->entity->name, $this->objectID->referenceObject);
+    }
     /**
      * @var Dictionary<mixed>|null
      * @internal
