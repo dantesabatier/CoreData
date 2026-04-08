@@ -81,7 +81,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         $byRootIDResult = new Dictionary();
         /** @var Set<string> $nullPropertyPrefixes */
         $nullPropertyPrefixes = new Set();
-        $isNonDictionaryResultType = ($this->request->resultType !== FetchRequestResultType::dictionaryResultType);
         do {
             /** @var EntityDescription $entityDescription */
             $entityDescription = $this->request->entity;
@@ -190,7 +189,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     if ($cursor !== $root) {
                                         $cursor[ManagedObjectParentIDKey] = $parentID;
                                     }
-                                    if ($isNonDictionaryResultType && $cursor[ManagedObjectObjectIDKey] && $cursor[ManagedObjectEntityNameKey] && $cursor[ManagedObjectVersionKey]) {
+                                    if ($cursor[ManagedObjectObjectIDKey] && $cursor[ManagedObjectEntityNameKey] && $cursor[ManagedObjectVersionKey]) {
                                         $cursor[ManagedObjectIsInsertedKey] = true;
                                         $cursor[ManagedObjectIsFaultKey] = false;
                                         $cursor[ManagedObjectFaultingStateKey] = ManagedObjectFaultingStateStable;
@@ -203,7 +202,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                     $cursorEntity = $entity;
                 }
                 assert($root instanceof Dictionary);
-                if ($isNonDictionaryResultType && $root[ManagedObjectObjectIDKey] && $root[ManagedObjectEntityNameKey] && $root[ManagedObjectVersionKey]) {
+                if ($root[ManagedObjectObjectIDKey] && $root[ManagedObjectEntityNameKey] && $root[ManagedObjectVersionKey]) {
                     $root[ManagedObjectIsInsertedKey] = true;
                     $root[ManagedObjectFaultingStateKey] = ManagedObjectFaultingStateStable;
                     $root[ManagedObjectIsFaultKey] = $this->request->returnsObjectsAsFaults;
