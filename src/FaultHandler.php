@@ -40,22 +40,22 @@ final readonly class FaultHandler
         $object->isSuppressingChangeNotifications = true;
         $object->isSuppressingKVO = true;
         $object->willTurnIntoFault();
-        $object->isFault = true;
         $committedValues = $object->committedValues(null);
         $properties = $object->persistentProperties;
         foreach ($properties as $property) {
             $key = $property->name;
             $committedValue = $committedValues[$key];
             if ($property instanceof AttributeDescription) {
-                $object->setValueForKey($committedValue, $key);
+                $object->setPrimitiveValueForKey($committedValue, $key);
             } elseif (!$committedValue && $property instanceof FetchedPropertyDescription || $property instanceof RelationshipDescription) {
                 if (($value = $object->primitiveValueForKey($key)) && ($value instanceof FaultingSet || $value instanceof FaultingArray)) {
                     $value->turnIntoFault();
                 }
             }
         }
-        $object->didTurnIntoFault();
+        $object->isFault = true;
         $object->faultingState = ManagedObjectFaultingStateUnstable;
+        $object->didTurnIntoFault();
         $object->isSuppressingKVO = false;
         $object->isSuppressingChangeNotifications = false;
     }

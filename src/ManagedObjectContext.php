@@ -576,13 +576,12 @@ final class ManagedObjectContext extends ObjectClass
     /** @noinspection PhpUnhandledExceptionInspection */
     private function refault(ManagedObject $object, bool $mergeChanges = false): void
     {
-        if ($mergeChanges) {
-            $this->save();
-        }
+        $changes = $mergeChanges ? $object->changedValues() : null;
+        $this->persistentStoreCoordinator?->storeCache?->deleteSnapshot($object->objectID);
         $faultHandler = $object->faultHandler;
         $faultHandler->turnObjectIntoFault($object, $this);
         if ($mergeChanges) {
-            $faultHandler->fulfillFault($object, $this);
+            $changes?->forEach(fn(mixed $value, string $key) => $object->setPrimitiveValueForKey($value, $key));
         }
     }
 

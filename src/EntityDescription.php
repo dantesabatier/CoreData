@@ -128,17 +128,26 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
     }
     /** @var string|null The version-hash modifier for the receiver. This value is included in the version hash for the entity. You use it to mark or denote an entity as being a different “version” than another even if all the values which affect persistence are equal. (Such a difference is important in cases where, for example, the structure of an entity is unchanged but the format or content of data has changed.) */
     public ?string $versionHashModifier = null;
-    /** @var ArrayClass<RelationshipDescription> */
-    private(set) ArrayClass $entitySpecificRelationships {
-        get => $this->entitySpecificRelationships ??= new ArrayClass();
+    /**
+     * @var Dictionary<AttributeDescription>
+     * @internal
+     */
+    private(set) Dictionary $entitySpecificAttributes {
+        get => $this->entitySpecificAttributes ??= new Dictionary();
     }
-    /** @var ArrayClass<AttributeDescription> */
-    private(set) ArrayClass $entitySpecificAttributes {
-        get => $this->entitySpecificAttributes ??= new ArrayClass();
+    /**
+     * @var Dictionary<RelationshipDescription>
+     * @internal
+     */
+    private(set) Dictionary $entitySpecificRelationships {
+        get => $this->entitySpecificRelationships ??= new Dictionary();
     }
-    /** @var ArrayClass<FetchIndexDescription> */
-    private(set) ArrayClass $entitySpecificIndexes {
-        get => $this->entitySpecificIndexes ??= new ArrayClass();
+    /**
+     * @var Dictionary<FetchIndexDescription>
+     * @internal
+     */
+    private(set) Dictionary $entitySpecificIndexes {
+        get => $this->entitySpecificIndexes ??= new Dictionary();
     }
     /** @internal */
     public bool $isFlattened = false;
@@ -166,11 +175,40 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
         if ($this->isFlattened) {
             return;
         }
-        /** @psalm-suppress PropertyTypeCoercion */
-        $this->entitySpecificAttributes = $this->properties->filter(fn(PropertyDescription $propertyDescription): bool => $propertyDescription instanceof AttributeDescription);
-        /** @psalm-suppress PropertyTypeCoercion */
-        $this->entitySpecificRelationships = $this->properties->filter(fn(PropertyDescription $propertyDescription): bool => $propertyDescription instanceof RelationshipDescription);
-        $this->entitySpecificIndexes = $this->indexes;
+        $this->entitySpecificAttributes = $this->properties->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<AttributeDescription> $attributes
+             * @param PropertyDescription $propertyDescription
+             * @return Dictionary<AttributeDescription>
+             */
+            function (Dictionary $attributes, PropertyDescription $propertyDescription): Dictionary {
+                if ($propertyDescription instanceof AttributeDescription) {
+                    $attributes[$propertyDescription->name] = $propertyDescription;
+                }
+                return $attributes;
+            });
+        $this->entitySpecificRelationships = $this->properties->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<RelationshipDescription> $relationships
+             * @param PropertyDescription $propertyDescription
+             * @return Dictionary<RelationshipDescription>
+             */
+            function (Dictionary $relationships, PropertyDescription $propertyDescription): Dictionary {
+                if ($propertyDescription instanceof RelationshipDescription) {
+                    $relationships[$propertyDescription->name] = $propertyDescription;
+                }
+                return $relationships;
+            });
+        $this->entitySpecificIndexes = $this->indexes->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<FetchIndexDescription> $indexes
+             * @param FetchIndexDescription $fetchIndexDescription
+             * @return Dictionary<FetchIndexDescription>
+             */
+            function (Dictionary $indexes, FetchIndexDescription $fetchIndexDescription): Dictionary {
+                $indexes[$fetchIndexDescription->name] = $fetchIndexDescription;
+                return $indexes;
+            });
         /** @var Set<FetchIndexDescription> $indexes */
         $indexes = new Set();
         /** @var Set<PropertyDescription> $properties */

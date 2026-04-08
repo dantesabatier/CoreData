@@ -193,6 +193,12 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         $cursor[ManagedObjectIsInsertedKey] = true;
                                         $cursor[ManagedObjectIsFaultKey] = false;
                                         $cursor[ManagedObjectFaultingStateKey] = ManagedObjectFaultingStateStable;
+                                        $objectID = $this->sqlCore->objectID($cursorEntity->entityDescription, $cursor[ManagedObjectObjectIDKey]);
+                                        $snapshot = $cursor->filter(fn(mixed $value, string $key): bool => $cursorEntity->entityDescription->entitySpecificAttributes->offsetExists($key) || match ($key) {
+                                                ManagedObjectObjectIDKey, ManagedObjectEntityNameKey, ManagedObjectVersionKey => true,
+                                                default => false
+                                            });
+                                        $this->sqlCore->nodeCache->setSnapshot($snapshot, $objectID);
                                     }
                                 }
                             }
@@ -205,7 +211,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                 if ($root[ManagedObjectObjectIDKey] && $root[ManagedObjectEntityNameKey] && $root[ManagedObjectVersionKey]) {
                     $root[ManagedObjectIsInsertedKey] = true;
                     $root[ManagedObjectFaultingStateKey] = ManagedObjectFaultingStateStable;
-                    $root[ManagedObjectIsFaultKey] = $this->request->returnsObjectsAsFaults;
+                    $root[ManagedObjectIsFaultKey] = true;
                 }
                 $byRootIDResult[$rootID] = $root;
             }
@@ -224,7 +230,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
             /** @var SQLEntity $entity */
             $entity = $this->sqlModel->entitiesByName[$snapshot[$this->sqlEntityForFetchRequest->entityKey->columnName]];
             $objectID = $this->sqlCore->objectID($entity->entityDescription, $snapshot[$entity->primaryKey->columnName]);
-            $this->sqlCore->nodeCache->setSnapshot($snapshot, $objectID);
             $object = $this->context->object($objectID);
             if ($this->request->includesPendingChanges && $object->isStable) {
                 return $object->serialized($serialization);
