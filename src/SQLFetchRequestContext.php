@@ -189,17 +189,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                     if ($cursor !== $root) {
                                         $cursor[ManagedObjectParentIDKey] = $parentID;
                                     }
-                                    if ($cursor[ManagedObjectObjectIDKey] && $cursor[ManagedObjectEntityNameKey] && $cursor[ManagedObjectVersionKey]) {
-                                        $cursor[ManagedObjectIsInsertedKey] = true;
-                                        $cursor[ManagedObjectIsFaultKey] = false;
-                                        $cursor[ManagedObjectFaultingStateKey] = ManagedObjectFaultingStateStable;
-                                        $objectID = $this->sqlCore->objectID($cursorEntity->entityDescription, $cursor[ManagedObjectObjectIDKey]);
-                                        $snapshot = $cursor->filter(fn(mixed $value, string $key): bool => $cursorEntity->entityDescription->entitySpecificAttributes->offsetExists($key) || match ($key) {
-                                                ManagedObjectObjectIDKey, ManagedObjectEntityNameKey, ManagedObjectVersionKey => true,
-                                                default => false
-                                            });
-                                        $this->sqlCore->nodeCache->setSnapshot($snapshot, $objectID);
-                                    }
+                                    $this->registerSnapshot($cursor, $cursorEntity);
                                 }
                             }
                         }
@@ -208,15 +198,29 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                     $cursorEntity = $entity;
                 }
                 assert($root instanceof Dictionary);
-                if ($root[ManagedObjectObjectIDKey] && $root[ManagedObjectEntityNameKey] && $root[ManagedObjectVersionKey]) {
-                    $root[ManagedObjectIsInsertedKey] = true;
-                    $root[ManagedObjectFaultingStateKey] = ManagedObjectFaultingStateStable;
-                    $root[ManagedObjectIsFaultKey] = true;
-                }
+                $this->registerSnapshot($root, $entity);
                 $byRootIDResult[$rootID] = $root;
             }
         } while ($statement->nextRowset() && $statement->columnCount());
         return $byRootIDResult->values;
+    }
+
+    /**
+     * @param Dictionary<mixed> $snapshot
+     * @param SQLEntity $entity
+     */
+    private function registerSnapshot(Dictionary $snapshot, SQLEntity $entity): void
+    {
+        if ($snapshot[ManagedObjectObjectIDKey] && $snapshot[ManagedObjectEntityNameKey] && $snapshot[ManagedObjectVersionKey]) {
+            $snapshot[ManagedObjectIsInsertedKey] = true;
+            $snapshot[ManagedObjectIsFaultKey] = false;
+            $snapshot[ManagedObjectFaultingStateKey] = ManagedObjectFaultingStateStable;
+            $objectID = $this->sqlCore->objectID($entity->entityDescription, $snapshot[ManagedObjectObjectIDKey]);
+            $this->sqlCore->nodeCache->setSnapshot($snapshot->filter(fn(mixed $value, string $key): bool => $entity->entityDescription->entitySpecificAttributes->offsetExists($key) || match ($key) {
+                    ManagedObjectObjectIDKey, ManagedObjectEntityNameKey, ManagedObjectVersionKey => true,
+                    default => false
+                }), $objectID);
+        }
     }
 
     /**
