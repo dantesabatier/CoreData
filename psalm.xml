@@ -65,17 +65,21 @@
         <PossiblyInvalidArgument>
             <errorLevel type="suppress">
                 <file name="src/FaultingSet.php"/>
+                <file name="src/InMemoryCache.php"/>
             </errorLevel>
         </PossiblyInvalidArgument>
         <InvalidReturnType>
             <errorLevel type="suppress">
                 <file name="src/FaultingSet.php"/>
+                <file name="src/ManagedObjectContext.php"/>
                 <file name="src/PersistentStore.php"/>
             </errorLevel>
         </InvalidReturnType>
         <InvalidReturnStatement>
             <errorLevel type="suppress">
                 <file name="src/FaultingSet.php"/>
+                <file name="src/ManagedObjectContext.php"/>
+                <file name="src/PersistentStoreCoordinator.php"/>
             </errorLevel>
         </InvalidReturnStatement>
         <RedundantCondition>

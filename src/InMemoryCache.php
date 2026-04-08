@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\Dictionary;
 
 /** @internal */
@@ -15,17 +16,20 @@ final readonly class InMemoryCache implements PersistentStoreCache
         $this->storage = new Dictionary();
     }
 
+    #[Override]
     public function snapshotForKey(ManagedObjectID $objectID): ?Dictionary
     {
         $data = $this->storage->valueForKey((string)$objectID);
         return $data ? new Dictionary($data) : null;
     }
 
+    #[Override]
     public function setSnapshot(Dictionary $snapshot, ManagedObjectID $objectID, int $ttl = 3600): void
     {
         $this->storage->setValueForKey($snapshot->array, (string)$objectID);
     }
 
+    #[Override]
     public function deleteSnapshot(ManagedObjectID $objectID): void
     {
         $this->storage->removeValueForKey((string)$objectID);
