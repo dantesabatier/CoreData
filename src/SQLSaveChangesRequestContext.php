@@ -81,8 +81,10 @@ final class SQLSaveChangesRequestContext extends SQLStoreRequestContext
                 $fetchRequest = new FetchRequest();
                 $fetchRequest->entity = $entity;
                 $fetchRequest->predicate = Predicate::format("%K IN %@", new ArrayClass([$propertyName, $insertedValues]));
-                /** @var ArrayClass<ManagedObject> $existingObjects */
-                $existingObjects = $sqlCore->execute($fetchRequest, $context);
+                $fetchRequestContext = new SQLFetchRequestContext($fetchRequest, $context, $sqlCore);
+                $fetchRequestContext->executeRequestUsingConnection($this->connection);
+                 /** @var ArrayClass<ManagedObject> $existingObjects */
+                 $existingObjects = $fetchRequestContext->result;
                 foreach ($existingObjects as $existingObject) {
                     foreach ($insertedObjects as $insertedObject) {
                         if (is_equal($existingObject->$propertyName, $insertedObject->$propertyName) && !is_equal($insertedObject->objectID->referenceObject, $existingObject->objectID->referenceObject)) {
