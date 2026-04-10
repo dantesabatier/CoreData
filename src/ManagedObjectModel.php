@@ -95,7 +95,7 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
         if ($url && ($data = FileManager::default()->contents($url->path))) {
             /** @var ManagedObjectModel $unarchivedModel */
             $unarchivedModel = KeyedUnarchiver::unarchiveTopLevelObjectWithData($data);
-            $this->setValuesForKeys($unarchivedModel->dictionaryWithValues($unarchivedModel->archivableModelKeys));
+            $this->setValuesForKeys($unarchivedModel->dictionaryWithValues($this->archivableModelKeys));
             $this->isEditable = false;
         }
     }
@@ -108,7 +108,7 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
         /** @var ManagedObjectModel $unarchivedModel */
         $unarchivedModel = KeyedUnarchiver::unarchiveTopLevelObjectWithData($data);
         $model = new ManagedObjectModel();
-        $model->setValuesForKeys($unarchivedModel->dictionaryWithValues($unarchivedModel->archivableModelKeys));
+        $model->setValuesForKeys($unarchivedModel->dictionaryWithValues($model->archivableModelKeys));
         $model->isImmutable = true;
         $model->isEditable = false;
         return $model;
