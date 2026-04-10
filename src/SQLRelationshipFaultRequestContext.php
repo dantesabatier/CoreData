@@ -74,7 +74,7 @@ final class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
             $fetchRequestContext->executeRequestUsingConnection($this->connection);
             $first = $fetchRequestContext->result->first;
             if ($first instanceof ManagedObject) {
-                $this->result = $first->primitiveValueForKey($property->name) ?? new ArrayClass();
+                $this->result = $first->primitiveValueForKey($property->name)?->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID) ?? new ArrayClass();
             }
         }
         $this->debugLevel = $debugLevel;
