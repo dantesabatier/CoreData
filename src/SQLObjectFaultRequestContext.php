@@ -4,6 +4,7 @@ namespace Sabatier\CoreData;
 
 use Override;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 use function Sabatier\Foundation\fatal_error;
@@ -11,6 +12,9 @@ use function Sabatier\Foundation\fatal_error;
 /** @internal */
 final class SQLObjectFaultRequestContext extends SQLStoreRequestContext
 {
+    protected(set) mixed $result {
+        get => $this->result ??= Nil::nil();
+    }
     public FetchRequest $fetchRequest {
         get {
             /** @var FetchRequest $request */
