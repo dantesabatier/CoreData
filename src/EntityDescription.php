@@ -143,6 +143,20 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
         get => $this->entitySpecificRelationships ??= new Dictionary();
     }
     /**
+     * @var Dictionary<FetchedPropertyDescription>
+     * @internal
+     */
+    private(set) Dictionary $entitySpecificFetchedPropertyDescriptions {
+        get => $this->entitySpecificFetchedPropertyDescriptions ??= new Dictionary();
+    }
+    /**
+     * @var Dictionary<PropertyDescription>
+     * @internal
+     */
+    private(set) Dictionary $entitySpecificProperties {
+        get => $this->entitySpecificProperties ??= new Dictionary($this->entitySpecificAttributes)union($this->entitySpecificRelationships)->union($this->entitySpecificFetchedPropertyDescriptions);
+    }
+    /**
      * @var Dictionary<FetchIndexDescription>
      * @internal
      */
@@ -198,6 +212,18 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
                     $relationships[$propertyDescription->name] = $propertyDescription;
                 }
                 return $relationships;
+            });
+        $this->entitySpecificFetchedPropertyDescriptions = $this->properties->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<FetchedPropertyDescription> $fetchedProperties
+             * @param PropertyDescription $propertyDescription
+             * @return Dictionary<FetchedPropertyDescription>
+             */
+            function (Dictionary $fetchedProperties, PropertyDescription $propertyDescription): Dictionary {
+                if ($propertyDescription instanceof FetchedPropertyDescription) {
+                    $fetchedProperties[$propertyDescription->name] = $propertyDescription;
+                }
+                return $fetchedProperties;
             });
         $this->entitySpecificIndexes = $this->indexes->reduce(new Dictionary(),
             /**
