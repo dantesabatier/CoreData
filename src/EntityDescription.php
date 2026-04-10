@@ -154,7 +154,7 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
      * @internal
      */
     private(set) Dictionary $entitySpecificProperties {
-        get => $this->entitySpecificProperties ??= new Dictionary($this->entitySpecificAttributes)union($this->entitySpecificRelationships)->union($this->entitySpecificFetchedPropertyDescriptions);
+        get => $this->entitySpecificProperties ??= new Dictionary($this->entitySpecificAttributes)->merging($this->entitySpecificRelationships)->merging($this->entitySpecificFetchedPropertyDescriptions);
     }
     /**
      * @var Dictionary<FetchIndexDescription>
