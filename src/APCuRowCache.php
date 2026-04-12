@@ -9,6 +9,30 @@ use Sabatier\Foundation\Dictionary;
 final class APCuRowCache extends RowCache
 {
     #[Override]
+    public function currentGenerationForStore(string $storeIdentifier): int
+    {
+        $key = "generation:$storeIdentifier";
+        $generation = apcu_fetch($key, $success);
+        if ($success) {
+            return (int)$generation;
+        }
+        apcu_add($key, 1);
+        return 1;
+    }
+
+    #[Override]
+    public function advanceGenerationForStore(string $storeIdentifier): int
+    {
+        $key = "generation:$storeIdentifier";
+        $newGeneration = apcu_inc($key, 1, $success);
+        if ($success) {
+            return $newGeneration;
+        }
+        apcu_add($key, 1);
+        return 1;
+    }
+
+    #[Override]
     public function hasSnapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): bool
     {
         return apcu_exists($this->cacheKey($objectID, $relationship));

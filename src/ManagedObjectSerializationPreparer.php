@@ -11,8 +11,7 @@ final class ManagedObjectSerializationPreparer
 
     public static function shared(): ManagedObjectSerializationPreparer
     {
-        self::$shared ??= new ManagedObjectSerializationPreparer();
-        return self::$shared;
+        return self::$shared ??= new ManagedObjectSerializationPreparer();
     }
 
     private function applySerializationShape(ManagedObject $object, Dictionary $dictionary): void

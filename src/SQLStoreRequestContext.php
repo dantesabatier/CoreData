@@ -13,7 +13,7 @@ abstract class SQLStoreRequestContext extends ObjectClass
     protected(set) SQLConnection $connection;
     protected(set) Number $transactionID;
     protected(set) ?QueryGenerationToken $queryGenerationToken = null;
-    protected(set) bool $shouldRegisterQueryGeneration = false;
+    protected(set) bool $shouldRegisterQueryGeneration = true;
     protected(set) SQLGenerator $generator {
         get => $this->generator ??= new SQLGenerator($this);
     }
@@ -40,6 +40,7 @@ abstract class SQLStoreRequestContext extends ObjectClass
 
     public function __construct(public readonly PersistentStoreRequest $persistentStoreRequest, public readonly ManagedObjectContext $context, public readonly SQLCore $sqlCore)
     {
+        $this->queryGenerationToken = $this->context->queryGenerationToken;
     }
 
     /**

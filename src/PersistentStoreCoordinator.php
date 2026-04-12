@@ -72,8 +72,7 @@ final class PersistentStoreCoordinator extends ObjectClass
      */
     public static function registeredStoreTypes(): Dictionary
     {
-        self::$registeredStoreTypes ??= new Dictionary([SQLStoreType => SQLCore::class, XMLStoreType => XMLObjectStore::class, BinaryStoreType => BinaryObjectStore::class, InMemoryStoreType => MemoryObjectStore::class]);
-        return self::$registeredStoreTypes;
+        return self::$registeredStoreTypes ??= new Dictionary([SQLStoreType => SQLCore::class, XMLStoreType => XMLObjectStore::class, BinaryStoreType => BinaryObjectStore::class, InMemoryStoreType => MemoryObjectStore::class]);
     }
 
     /**

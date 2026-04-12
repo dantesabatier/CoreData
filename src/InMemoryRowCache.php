@@ -16,6 +16,16 @@ final class InMemoryRowCache extends RowCache
         $this->storage = new Dictionary();
     }
 
+    public function currentGenerationForStore(string $storeIdentifier): int
+    {
+        return $this->storage["generation:$storeIdentifier"] ?? 1;
+    }
+
+    public function advanceGenerationForStore(string $storeIdentifier): int
+    {
+        return $this->storage["generation:$storeIdentifier"] = $this->currentGenerationForStore($storeIdentifier) + 1;
+    }
+
     #[Override]
     public function hasSnapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): bool
     {

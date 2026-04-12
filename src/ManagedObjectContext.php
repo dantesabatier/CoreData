@@ -840,9 +840,9 @@ final class ManagedObjectContext extends ObjectClass
 
     /**
      * Sets the query generation this context should use.
-     * @param QueryGenerationToken $generation
+     * @param QueryGenerationToken|null $generation
      */
-    public function setQueryGenerationFrom(QueryGenerationToken $generation): void
+    public function setQueryGenerationFrom(?QueryGenerationToken $generation): void
     {
         $this->queryGenerationToken = $generation;
     }

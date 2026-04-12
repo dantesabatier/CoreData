@@ -19,6 +19,20 @@ final class RedisRowCache extends RowCache
     }
 
     #[Override]
+    public function currentGenerationForStore(string $storeIdentifier): int
+    {
+        $generation = $this->redis->get("generation:$storeIdentifier");
+        return is_numeric($generation) ? (int)$generation : 1;
+    }
+
+    #[Override]
+    public function advanceGenerationForStore(string $storeIdentifier): int
+    {
+        $generation = $this->redis->incr("generation:$storeIdentifier");
+        return is_int($generation) ? $generation : 1;
+    }
+
+    #[Override]
     public function hasSnapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): bool
     {
         return (bool)$this->redis->exists($this->cacheKey($objectID, $relationship));

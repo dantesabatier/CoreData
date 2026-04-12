@@ -10,6 +10,25 @@ use Sabatier\Foundation\Dictionary;
  */
 interface PersistentStoreCache
 {
+    /**
+     * Returns the current global generation integer for the specified store.
+     * If no generation has been tracked yet, it should return a default value (e.g., 1).
+     *
+     * @param string $storeIdentifier The unique identifier of the persistent store.
+     * @return int The current generation number.
+     */
+    public function currentGenerationForStore(string $storeIdentifier): int;
+
+    /**
+     * Atomically increments the global generation integer for the specified store
+     * and returns the new generation number.
+     * This invalidates all unpinned cached queries across all PHP processes.
+     *
+     * @param string $storeIdentifier The unique identifier of the persistent store.
+     * @return int The newly incremented generation number.
+     */
+    public function advanceGenerationForStore(string $storeIdentifier): int;
+
     public function hasSnapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): bool;
 
     /**
