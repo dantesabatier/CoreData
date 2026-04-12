@@ -677,7 +677,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     final public function valueForKey(string $key): mixed
     {
         $key ?: $this->valueForUndefinedKey($key);
-        $flag = $this->modeledAttributes->offsetExists($key) && $this->isFault && !$this->isSuppressingKVO;
+        $flag = $this->persistentProperties->offsetExists($key) && $this->isFault && !$this->isSuppressingKVO;
         $context = $this->managedObjectContext;
         $property = $this->entity->propertiesByName[$key];
         if ($property instanceof AttributeDescription) {
@@ -716,7 +716,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if (!isset($this->resolvedKeys[$key]) && !$this->isSuppressingKVO && $this->isStable && $this->hasFaultForRelationshipNamed($key) && $this->isInserted) {
+            if (!isset($this->resolvedKeys[$key]) && !$this->isSuppressingKVO && $this->hasFaultForRelationshipNamed($key) && $this->isInserted) {
                 $this->resolvedKeys[$key] = true;
                 $value = $context->newValueForRelationship($property, $this->objectID);
                 $this->setPrimitiveValueForKey($value, $key);

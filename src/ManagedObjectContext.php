@@ -97,7 +97,7 @@ final class ManagedObjectContext extends ObjectClass
         get => new Set($this->byHashAssociationTable->values);
     }
     /** @var bool A Boolean value that indicates whether the context keeps strong references to all registered managed objects. If set to true, the receiver keeps strong references to all registered managed objects. If set to false, then the receiver keeps strong references to registered objects only when they are inserted, updated, deleted, or locked. The default is false. */
-    public bool $retainsRegisteredObjects = false;
+    public bool $retainsRegisteredObjects = true;
     /** @var bool A Boolean value that determines whether the context turns inaccessible faults into deleted objects. Use this property to control how the context behaves when it encounters an inaccessible fault, an object with no underlying data in the persistent store. For example, you might fetch an object that has a to-many relationship, but then a background context deletes the related objects from the store before you traverse that relationship. */
     public bool $shouldDeleteInaccessibleFaults = true;
     /** @var Set<ManagedObject> The set of objects that have been inserted into the context but not yet saved in a persistent store. */
