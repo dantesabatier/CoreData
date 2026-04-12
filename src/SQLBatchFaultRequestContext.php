@@ -33,7 +33,7 @@ final class SQLBatchFaultRequestContext extends SQLStoreRequestContext
         $fetchRequest = new FetchRequest();
         $fetchRequest->entity = $entity->entityDescription;
         $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($this->objectIDs), PredicateOperatorType::in);
-        $fetchRequest->propertiesToFetch = $entity->entityDescription->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient && !$attribute instanceof CompositeAttributeDescription)->merging($entity->entityDescription->relationshipsByName->filter(fn(RelationshipDescription $relationship): bool => !$relationship->isToMany))->map(fn(AttributeDescription|RelationshipDescription $description): string => $description->name);
+        $fetchRequest->propertiesToFetch = $entity->entityDescription->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient && !$attribute instanceof CompositeAttributeDescription)->merging($entity->entityDescription->relationshipsByName->filter(fn(RelationshipDescription $relationship): bool => !$relationship->isToMany && !$relationship->inverseRelationship->isToMany))->map(fn(AttributeDescription|RelationshipDescription $description): string => $description->name);
         $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
         parent::__construct($fetchRequest, $context, $sqlCore);
     }

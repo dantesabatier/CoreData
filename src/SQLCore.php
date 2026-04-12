@@ -320,7 +320,10 @@ final class SQLCore extends IncrementalStore
     private function processFetchRequest(FetchRequest $request, ManagedObjectContext $context): ArrayClass
     {
         $expectedToken = $context->queryGenerationToken?->value ?? new GenerationToken($this->identifier, $this->storeGeneration, $this->currentGeneration);
-        $shouldCache = !$request->needsDistinct;
+        $shouldCache = !$request->needsDistinct && match ($request->resultType) {
+                FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType => true,
+                default => false
+            };
         if ($shouldCache && ($predicate = $request->predicate)) {
             $analyser = new SQLPredicateAnalyser();
             $predicate->accept($analyser, PredicateVisitorFlags::all);

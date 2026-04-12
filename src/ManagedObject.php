@@ -684,10 +684,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($flag ? null : $key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if (!isset($this->resolvedKeys[$key]) && !$value && !$this->isSuppressingKVO && $this->isPropertyForKeyFault($key)) {
+            if ($property instanceof DerivedAttributeDescription && !isset($this->resolvedKeys[$key]) && !$this->isSuppressingKVO && $this->isPropertyForKeyFault($key) && $this->isInserted) {
                 $this->resolvedKeys[$key] = true;
-                //$value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional);
-                //$this->setPrimitiveValueForKey($value, $key);
+                $value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional);
+                $this->setPrimitiveValueForKey($value, $key);
             }
             return $value;
         }
