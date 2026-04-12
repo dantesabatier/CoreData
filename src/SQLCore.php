@@ -336,27 +336,25 @@ final class SQLCore extends IncrementalStore
         $entity = $request->entity;
         $queryKey = $this->rowCache->queryKeyForRequest($request);
         $queryID = $this->objectID($entity, $queryKey);
-        if ($shouldCache) {
-            if ($cached = $this->rowCache->snapshot($queryID)) {
-                /** @var GenerationToken|null $cachedToken */
-                $cachedToken = $cached[ManagedObjectQueryResultGenerationKey];
-                if ($expectedToken->isCompatible($cachedToken)) {
-                    /** @var list<string> $strings */
-                    $strings = $cached[ManagedObjectQueryResultKey];
-                    $managedObjectIDs = new ArrayClass($strings)->map(fn(string $string) => $this->managedObjectID(new URL($string)));
-                    if ($request->resultType === FetchRequestResultType::managedObjectIDResultType) {
-                        return $managedObjectIDs;
-                    }
-                    $missingIDs = $managedObjectIDs->filter(fn(ManagedObjectID $objectID): bool => $context->isFaultOrUnregistered($objectID) && !$this->rowCache->hasSnapshot($objectID));
-                    if (!$missingIDs->isEmpty) {
-                        $faultRequestContext = new SQLBatchFaultRequestContext($missingIDs, $context, $this);
-                        $faultRequestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
-                        /** @var ArrayClass<Dictionary<mixed>> $snapshots */
-                        $snapshots = $faultRequestContext->result;
-                        $snapshots->forEach(fn(Dictionary $snapshot) => $this->rowCache->setSnapshot($entity->sanitizeSnapshot($snapshot), $this->objectID($entity, $snapshot[ManagedObjectObjectIDKey]), $this->stalenessInterval));
-                    }
-                    return $managedObjectIDs->map(fn(ManagedObjectID $objectID): ManagedObject => $context->object($objectID)->serialized($request->serialization));
+        if ($shouldCache && ($cached = $this->rowCache->snapshot($queryID))) {
+            /** @var GenerationToken|null $cachedToken */
+            $cachedToken = $cached[ManagedObjectQueryResultGenerationKey];
+            if ($expectedToken->isCompatible($cachedToken)) {
+                /** @var list<string> $strings */
+                $strings = $cached[ManagedObjectQueryResultKey];
+                $managedObjectIDs = new ArrayClass($strings)->map(fn(string $string) => $this->managedObjectID(new URL($string)));
+                if ($request->resultType === FetchRequestResultType::managedObjectIDResultType) {
+                    return $managedObjectIDs;
                 }
+                $missingIDs = $managedObjectIDs->filter(fn(ManagedObjectID $objectID): bool => $context->isFaultOrUnregistered($objectID) && !$this->rowCache->hasSnapshot($objectID));
+                if (!$missingIDs->isEmpty) {
+                    $faultRequestContext = new SQLBatchFaultRequestContext($missingIDs, $context, $this);
+                    $faultRequestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
+                    /** @var ArrayClass<Dictionary<mixed>> $snapshots */
+                    $snapshots = $faultRequestContext->result;
+                    $snapshots->forEach(fn(Dictionary $snapshot) => $this->rowCache->setSnapshot($entity->sanitizeSnapshot($snapshot), $this->objectID($entity, $snapshot[ManagedObjectObjectIDKey]), $this->stalenessInterval));
+                }
+                return $managedObjectIDs->map(fn(ManagedObjectID $objectID): ManagedObject => $context->object($objectID)->serialized($request->serialization));
             }
         }
         /** @var ArrayClass $result */
