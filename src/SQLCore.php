@@ -458,7 +458,6 @@ final class SQLCore extends IncrementalStore
     #[Override]
     public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass|Set|ManagedObjectID|Nil
     {
-        $objectID->persistentStore ??= $this;
         if ($cached = $this->rowCache->snapshot($objectID, $relationship)) {
             /** @var list<string>|string|Nil $value */
             $value = $cached[ManagedObjectRelationshipResultKey];
@@ -491,7 +490,6 @@ final class SQLCore extends IncrementalStore
     #[Override]
     public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): IncrementalStoreNode
     {
-        $objectID->persistentStore ??= $this;
         if ($snapshot = $this->rowCache->snapshot($objectID)) {
             return new IncrementalStoreNode($objectID, $snapshot, $snapshot[ManagedObjectVersionKey] ?? 1);
         }
