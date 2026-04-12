@@ -79,10 +79,12 @@ final class ManagedObjectSerializationPreparer
     /** @noinspection PhpMixedReturnTypeCanBeReducedInspection */
     public function serialized(ManagedObject $object, ?Dictionary $dictionary): mixed
     {
-        if (!$dictionary || $dictionary->isEmpty) {
+        $serializationKey = $dictionary && !$dictionary->isEmpty ? md5($dictionary->description) : null;
+        if ($object->serializationKey === $serializationKey) {
             return $object;
         }
         $this->prepareObjectGraph($object, $dictionary);
+        $object->serializationKey = $serializationKey;
         return $object;
     }
 }

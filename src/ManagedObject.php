@@ -128,6 +128,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             return $this->serializationKeys = $serializationKeys;
         }
     }
+    public ?string $serializationKey = null;
     /** @internal */
     public FaultHandler $faultHandler {
         get => $this->faultHandler ??= ($this->managedObjectContext->persistentStoreCoordinator?->persistentStoreForObject($this) ?? fatal_error("Persistent store coordinator cannot be null"))->faultHandler;
