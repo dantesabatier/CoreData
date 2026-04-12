@@ -12,7 +12,7 @@ use function Sabatier\Foundation\fatal_error;
 /** @internal */
 final class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
 {
-    public function __construct(public readonly ManagedObjectID $objectID, public readonly RelationshipDescription $relationship, ManagedObjectContext $context, SQLCore $sqlCore)
+    public function __construct(private readonly ManagedObjectID $objectID, private readonly RelationshipDescription $relationship, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         parent::__construct(new FetchRequest(), $context, $sqlCore);
     }
@@ -23,7 +23,7 @@ final class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
         $debugLevel = $this->debugLevel;
         $this->debugLevel = SQLDebugLevel::none;
         /** @var SQLEntity $entity */
-        $entity = $this->sqlModel->entitiesByName[$this->objectID->entityName] ?? fatal_error();
+        $entity = $this->sqlModel->entitiesByName[$this->objectID->entityName] ?? fatal_error("Entity not found for relationship fault: {$this->objectID->entityName}");
         $property = $entity->propertiesByName[$this->relationship->name] ?? fatal_error("$entity unable to find relationship \"{$this->relationship->name}\" in relationships \"{$entity->propertiesByName->keys}\"");
         if ($property instanceof SQLToOne) {
             $sourceEntity = $property->entity;
@@ -57,7 +57,7 @@ final class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
             /** @var FetchRequest<ManagedObjectID> $fetchRequest */
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $destinationEntity->entityDescription;
-            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($columnName), Expression::expressionForConstantValue($this->objectID));
+            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($columnName), Expression::expressionForConstantValue($this->objectID->referenceObject));
             $fetchRequest->includesPendingChanges = true;
             $fetchRequest->resultType = FetchRequestResultType::managedObjectIDResultType;
             $fetchRequestContext = new SQLFetchRequestContext($fetchRequest, $this->context, $this->sqlCore);
@@ -67,14 +67,14 @@ final class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
             /** @var FetchRequest<ManagedObject> $fetchRequest */
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $entity->entityDescription;
-            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($this->objectID));
+            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($this->objectID->referenceObject));
             $fetchRequest->includesPendingChanges = true;
-            $fetchRequest->propertiesToFetch = new ArrayClass([$property->relationshipDescription]);
+            $fetchRequest->propertiesToFetch = new ArrayClass([$property->relationshipDescription->name]);
             $fetchRequestContext = new SQLFetchRequestContext($fetchRequest, $this->context, $this->sqlCore);
             $fetchRequestContext->executeRequestUsingConnection($this->connection);
             $first = $fetchRequestContext->result->first;
             if ($first instanceof ManagedObject) {
-                $this->result = $first->primitiveValueForKey($property->name)?->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID) ?? new ArrayClass();
+                $this->result = $first->valueForKey($property->name)?->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID) ?? new ArrayClass();
             }
         }
         $this->debugLevel = $debugLevel;

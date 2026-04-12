@@ -9,7 +9,6 @@ use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\URL;
-use Sabatier\Foundation\UUID;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\request_concrete_implementation;
 
@@ -19,13 +18,23 @@ use function Sabatier\Foundation\request_concrete_implementation;
  */
 abstract class PersistentStore extends ObjectClass
 {
+    /** @var class-string<MigrationManager> The class responsible for managing schema migrations. This class is instantiated when the persistent store requires a migration to match the current managed object model. */
+    public static string $migrationManagerClass = MigrationManager::class;
+    /** @var class-string<RowCache> The class that provides the L2 caching mechanism for the store. This determines the persistence strategy for snapshots and relationship results (e.g., APCu, or Redis). The default value is {@see RedisRowCache}. */
+    public static string $rowCacheClass = RedisRowCache::class;
+    /** @var class-string<SnapshotMapper> The class used to map raw data from the persistent store into managed object snapshots. It handles the conversion between primitive store values and the dictionary format used by the framework. */
+    public static string $snapshotMapperClass = StandardSnapshotMapper::class;
     /** @var string The type string of the persistent store. */
     abstract public string $type {
         get;
     }
     /** @var string The unique identifier for the persistent store. */
     public string $identifier {
-        get => $this->identifier ??= new UUID()->uuidString;
+        get => $this->identifier ??= $this->options?->valueForKey(PersistentStoreIDOption) ?? md5($this->url->absoluteString);
+    }
+    /** @var int The time interval, in seconds, for which cached snapshots and relationships remain valid. */
+    public int $stalenessInterval {
+        get => $this->stalenessInterval ??= (int)($this->options?->valueForKey(PersistentStoreCacheStalenessIntervalOption) ?? 3600);
     }
     /** @var Dictionary<mixed> The metadata for the persistent store. The dictionary must include the store type. */
     public Dictionary $metadata {
@@ -40,6 +49,9 @@ abstract class PersistentStore extends ObjectClass
     /** @var Dictionary<Dictionary<ManagedObjectID>> */
     private Dictionary $cacheEntities {
         get => $this->cacheEntities ??= new Dictionary();
+    }
+    public PersistentStoreCache $rowCache {
+        get => $this->rowCache ??= new (static::$rowCacheClass)();
     }
 
     /**
@@ -113,6 +125,17 @@ abstract class PersistentStore extends ObjectClass
         request_concrete_implementation($this, __FUNCTION__);
     }
 
+    protected function managedObjectID(URL $uriRepresentation): ManagedObjectID
+    {
+        $referenceObject = (int)$uriRepresentation->lastPathComponent;
+        $entityName = $uriRepresentation->deletingLastPathComponent()->lastPathComponent;
+        /** @var EntityDescription $entity */
+        $entity = $this->persistentStoreCoordinator->managedObjectModel->entitiesByName[$entityName] ?? fatal_error(sprintf("Failed to resolve EntityDescription from URI: entity \"%s\" not found in managedObjectModel", $entityName));
+        $host = $uriRepresentation->host ?? "";
+        $this->identifier === $host ?: fatal_error(sprintf("ManagedObjectID host mismatch: expected \"%s\", got \"%s\"", $this->identifier, $host));
+        return $this->objectID($entity, $referenceObject);
+    }
+
     /**
      * Returns a managed object ID from the reference data for a specified entity.
      *
@@ -134,6 +157,11 @@ abstract class PersistentStore extends ObjectClass
             $this->cacheEntities[$entity->name] = $table;
         }
         return $objectID;
+    }
+
+    public function newOrderedRelationshipInformationForRelationship(/** @noinspection PhpUnusedParameterInspection */ RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): mixed
+    {
+        request_concrete_implementation($this, __FUNCTION__);
     }
 
     /**
@@ -268,28 +296,6 @@ abstract class PersistentStore extends ObjectClass
      */
     public function willRemove(PersistentStoreCoordinator $coordinator): void
     {
-    }
-
-    /**
-     * Returns the migration manager class for this store class.
-     *
-     * In a subclass of PersistentStore, you can override this to provide a custom migration manager subclass
-     * (for example, to take advantage of store-specific functionality to improve migration performance).
-     * @return class-string<MigrationManager> The {@see MigrationManager} class for this store class
-     */
-    public static function migrationManagerClass(): string
-    {
-        return MigrationManager::class;
-    }
-
-    /**
-     * Returns the class name of the standard snapshot mapper.
-     *
-     * @return string The fully qualified class name of the snapshot mapper.
-     */
-    public static function snapshotMapperClass(): string
-    {
-        return StandardSnapshotMapper::class;
     }
 
     /**

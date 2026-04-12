@@ -682,7 +682,7 @@ final class SQLConnection
      */
     private function createPivotTables(ArrayClass $entities): void
     {
-        $adapter = $this->adapter ?? fatal_error();
+        $adapter = $this->adapter ?? fatal_error("SQL adapter cannot be null while creating pivot tables");
         $manyToManyRelationships = new Set($entities)->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->manyToManyRelationships);
         /** @var Set<SQLStatement> $statements */
         $statements = $manyToManyRelationships->map($adapter->newCreateTableStatementForManyToMany(...));

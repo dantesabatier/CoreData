@@ -65,7 +65,7 @@
         <PossiblyInvalidArgument>
             <errorLevel type="suppress">
                 <file name="src/FaultingSet.php"/>
-                <file name="src/InMemoryCache.php"/>
+                <file name="src/InMemoryRowCache.php"/>
             </errorLevel>
         </PossiblyInvalidArgument>
         <InvalidReturnType>

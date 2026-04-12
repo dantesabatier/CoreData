@@ -10,6 +10,7 @@ use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\ExpressionType;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\Predicates\PredicateOperator;
+use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Predicates\PredicateVisitor;
 
 /** @internal */
@@ -33,6 +34,8 @@ final readonly class SQLPredicateAnalyser implements PredicateVisitor
     public ArrayClass $blockExpressions;
     /** @var ArrayClass<Expression> */
     public ArrayClass $conditionalExpressions;
+    /** @var ArrayClass<PredicateOperatorType> */
+    public ArrayClass $allTypePredicates;
 
     public function __construct()
     {
@@ -45,6 +48,7 @@ final readonly class SQLPredicateAnalyser implements PredicateVisitor
         $this->subqueryExpressions = new ArrayClass();
         $this->blockExpressions = new ArrayClass();
         $this->conditionalExpressions = new ArrayClass();
+        $this->allTypePredicates = new ArrayClass();
     }
 
     #[Override]
@@ -74,5 +78,6 @@ final readonly class SQLPredicateAnalyser implements PredicateVisitor
     #[Override]
     public function visitPredicateOperator(PredicateOperator $operator): void
     {
+        $this->allTypePredicates->append($operator->operatorType);
     }
 }

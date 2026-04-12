@@ -234,7 +234,7 @@ final class SQLGenerator
             }
             $this->useDistinct = $request->returnsDistinctResults;
             if (!$this->useDistinct && $this->autoDistinct) {
-                $this->useDistinct = $this->needsDistinct($request->serialization, $entity);
+                $this->useDistinct = $request->needsDistinct;
             }
             $this->prepareSelectStatementWithFetchRequest($request);
             $this->prepareJoinStatementsForPredicateAndRelationships();
@@ -292,23 +292,6 @@ final class SQLGenerator
             }
         }
         $this->endSQL();
-    }
-
-    private function needsDistinct(Dictionary $dictionary, EntityDescription $entity): bool
-    {
-        return $dictionary->contains(function (mixed $value, string $key) use ($entity): bool {
-            if (!$value instanceof Dictionary) {
-                return false;
-            }
-            $relationship = $entity->relationshipsByName[$key] ?? null;
-            if (!$relationship) {
-                return false;
-            }
-            if ($relationship->isToMany) {
-                return true;
-            }
-            return $this->needsDistinct($value, $relationship->destinationEntity);
-        });
     }
 
     private function applyDiscriminatorPredicate(EntityDescription $entity, ?Predicate $predicate): ?Predicate
@@ -417,24 +400,16 @@ final class SQLGenerator
             $columnNames->formUnion($entity->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary): ArrayClass => $dictionary->values->map(fn(SQLAttribute $attribute): string => "$this->tableReference.$attribute->name")));
         }
         if ($this->keyValueOperator !== KeyValueOperator::countKeyValueOperator) {
-            if (!$this->isSubquery) {
-                foreach ($entity->attributes as $property) {
-                    if ($property->isTransient || $property->isCompositeAttribute || $property->isDerivedAttribute) {
-                        continue;
-                    }
-                    $columnNames->insert("$this->tableReference.$property->name");
-                }
-            }
-            foreach ($request->serialization->keys as $key) {
+            $columnNames->formUnion($request->serialization->keys->compactMap(function (string $key) use ($entity): ?string {
                 $property = $entity->propertiesByName[$key];
-                if ($property instanceof SQLAttribute) {
-                    if ($property->isDerivedAttribute) {
-                        $columnNames->insert("({$this->buildDerivationExpression($property->derivationExpression)}) AS $property->name");
-                    } elseif ($this->isSubquery && !$property->isTransient && !$property->isCompositeAttribute) {
-                        $columnNames->insert("$this->tableReference.$property->name");
+                if ($property instanceof SQLAttribute && !$property->isTransient && !$property->isCompositeAttribute) {
+                    if ($property->isDerivedAttribute && $property->isRuntimeOnly) {
+                        return "{$this->buildDerivationExpression($property->derivationExpression)} AS $property->name";
                     }
+                    return "$this->tableReference.$property->name";
                 }
-            }
+                return null;
+            }));
         }
         if ($columnNames->isEmpty) {
             $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
@@ -598,20 +573,44 @@ final class SQLGenerator
      */
     private function generateColumnNames(SQLEntity $currentEntity, string $joinedTableAlias, ?Dictionary $nestedSerialization): ArrayClass
     {
-        /** @var ArrayClass<string> $columnNames */
         $columnNames = $currentEntity->columnsToFetch->map(fn(SQLColumn $column): string => "$joinedTableAlias.$column->columnName AS {$joinedTableAlias}_$column->columnName");
         if ($nestedSerialization instanceof Dictionary) {
-            foreach ($nestedSerialization->keys as $key) {
-                /** @var SQLProperty|null $property */
-                $property = $currentEntity->propertiesByName[$key];
-                if ($property instanceof SQLAttribute && $property->isDerivedAttribute && $property->isRuntimeOnly) {
-                    $backupEntity = $this->entity;
-                    $this->entity = $currentEntity;
-                    $result = $this->buildDerivationExpression($property->derivationExpression, $joinedTableAlias);
-                    $this->entity = $backupEntity;
-                    $columnNames->append("($result) AS {$joinedTableAlias}_$property->name");
+            $serialization = clone $nestedSerialization;
+            $serializationKeys = $serialization->keys->filter(function (string $key) use ($currentEntity): bool {
+                /** @var SQLProperty $property */
+                $property = $currentEntity->propertiesByName[$key] ?? fatal_error("{$currentEntity->entityDescription->name} does not contains a property named \"$key\"");
+                return !$property->isTransient;
+            });
+            if (!$serializationKeys->containsElement($currentEntity->primaryKey->columnName)) {
+                $serializationKeys->insertAt($currentEntity->primaryKey->columnName, 0);
+            }
+            if (!$currentEntity->entityDescription->isPersistentHistoryEntity) {
+                if (!$serializationKeys->containsElement($currentEntity->entityKey->columnName)) {
+                    $serializationKeys->insertAt($currentEntity->entityKey->columnName, 1);
+                }
+                if (!$serializationKeys->containsElement($currentEntity->optLockKey->columnName)) {
+                    $serializationKeys->insertAt($currentEntity->optLockKey->columnName, 2);
                 }
             }
+            /** @var ArrayClass<string> $columnNames */
+            $columnNames = $serializationKeys->compactMap(function (string $key) use ($currentEntity, $joinedTableAlias): ?string {
+                /** @var SQLProperty|null $property */
+                $property = $currentEntity->propertiesByName[$key];
+                if ($property instanceof SQLEntityKey || $property instanceof SQLPrimaryKey || $property instanceof SQLOptLockKey) {
+                    return "$joinedTableAlias.$property->columnName AS {$joinedTableAlias}_$property->columnName";
+                }
+                if ($property instanceof SQLAttribute) {
+                    if (($expression = $property->derivationExpression) && $property->isRuntimeOnly) {
+                        $backupEntity = $this->entity;
+                        $this->entity = $currentEntity;
+                        $result = $this->buildDerivationExpression($expression, $joinedTableAlias);
+                        $this->entity = $backupEntity;
+                        return "$result AS {$joinedTableAlias}_$property->columnName";
+                    }
+                    return "$joinedTableAlias.$property->columnName AS {$joinedTableAlias}_$property->columnName";
+                }
+                return null;
+            });
         }
         return $columnNames;
     }
@@ -782,7 +781,6 @@ final class SQLGenerator
 
     private function isNullExpression(Expression $expression): bool
     {
-        /** @noinspection PhpVoidFunctionResultUsedInspection */
         return match ($expression->expressionType) {
             ExpressionType::constantValue => Nil::nil()->isEqual($expression->constantValue),
             ExpressionType::keyPath => Nil::nil()->isEqual(new Value((string)$expression)) ? fatal_error("Invalid argument: invalid expression $expression") : false,
@@ -1074,8 +1072,8 @@ final class SQLGenerator
     private function buildClauseWithSelectPredicate(ComparisonPredicate $predicate, string &$clause): void
     {
         $expressions = new ArrayClass([$predicate->leftExpression, $predicate->rightExpression]);
-        $leftExpression = $expressions->first(fn(Expression $expression): bool => $this->isKeyPathExpression($expression)) ?? fatal_error();
-        $relationship = $this->resolveRelationshipFromKeyPath($leftExpression) ?? fatal_error();
+        $leftExpression = $expressions->first(fn(Expression $expression): bool => $this->isKeyPathExpression($expression)) ?? fatal_error("Select predicate must contain a key path expression");
+        $relationship = $this->resolveRelationshipFromKeyPath($leftExpression) ?? fatal_error("Unable to resolve relationship from key path \"$leftExpression->keyPath\"");
         $rightExpression = ($leftExpression === $predicate->leftExpression) ? $predicate->rightExpression : $predicate->leftExpression;
         $keyPathComponents = components_from_key_path($leftExpression->keyPath);
         $propertyName = $keyPathComponents->remainderPath ?? $keyPathComponents->key;
@@ -1321,21 +1319,13 @@ final class SQLGenerator
 
     private function buildConditionalExpression(Expression $expression, ?bool &$isDeterministic = true): string
     {
-        $predicate = "";
-        $this->preparePredicate($expression->predicate, $predicate);
-        $true = $expression->true;
-        if ($this->isKeyPathExpression($true)) {
-            $true = $this->buildKeyPathExpression($true, $isDeterministic);
-        } elseif ($true->expressionType === ExpressionType::function) {
-            $true = $this->buildFunctionExpression($true, $isDeterministic);
-        }
-        $false = $expression->false;
-        if ($this->isKeyPathExpression($false)) {
-            $false = $this->buildKeyPathExpression($false, $isDeterministic);
-        } elseif ($false->expressionType === ExpressionType::function) {
-            $false = $this->buildFunctionExpression($false, $isDeterministic);
-        }
-        $isDeterministic = false;
+        $string = "";
+        $this->preparePredicate($expression->predicate, $string);
+        $true = $this->buildExpression($expression->true, $isDeterministic);
+        $false = $this->buildExpression($expression->false, $isDeterministic);
+        $statement = new SQLStatement($string, $this->arguments);
+        $predicate = $statement->description;
+        $this->arguments->removeAll();
         return "IF($predicate, $true, $false)";
     }
 
@@ -1611,7 +1601,7 @@ final class SQLGenerator
         /** @var ArrayClass<string> $columnNames */
         $columnNames = new ArrayClass();
         $columnNames->appendContentsOf([$entity->entityKey->columnName]);
-        $firstObjectToInsert = $objectsToInsert->first ?? fatal_error();
+        $firstObjectToInsert = $objectsToInsert->first ?? fatal_error("Cannot generate INSERT statement with no objects to insert");
         if ($firstObjectToInsert instanceof ManagedObject) {
             $columnNames->appendContentsOf($firstObjectToInsert->changedValuesForCurrentEvent()->keys);
         }
@@ -1662,7 +1652,10 @@ final class SQLGenerator
     {
         $expression = Expression::expressionWithFormat($format) ?? fatal_error("Unable to create expression \"$format\"");
         if ($this->isKeyPathExpression($expression) && !$this->entity->propertiesByName->offsetExists($expression->keyPath)) {
-            $expression = Expression::expressionForConstantValue($expression->keyPath);
+            $compatibility = new DerivationSchemaCompatibility($expression);
+            if (!$compatibility->usesKeyValueCoding) {
+                $expression = Expression::expressionForConstantValue($expression->keyPath);
+            }
         }
         return $this->buildExpression($expression);
     }

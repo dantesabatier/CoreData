@@ -76,7 +76,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             SQLCore::$debugLevel = SQLDebugLevel::none;
             /** @var FetchRequest<Number> $fetchRequest */
             $fetchRequest = $this::fetchRequest();
-            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($this->objectID));
+            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($this->objectID->referenceObject));
             $fetchRequest->affectedStores = new ArrayClass([$persistentStore]);
             $this->isInserted = (bool)$this->managedObjectContext->count($fetchRequest);
             SQLCore::$debugLevel = $debugDefault;
@@ -105,7 +105,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /** @var int The faulting state of the managed object. 0 if the object is fully initialized as a managed object and not transitioning to or from another state, otherwise some other value. */
     public int $faultingState = NotFound;
     /** @var SerializationRule Serialization rule. Defines how the object's properties contribute to its external serializable representation. */
-    public SerializationRule $serializationRule = SerializationRule::attributesAndRelationships;
+    public SerializationRule $serializationRule = SerializationRule::attributesOnly;
     /** @var ArrayClass<string> Explicit list of properties included in the object's serializable representation. Used both when recursively preparing related objects for serialization and when producing JSON output through jsonSerialize(). */
     public ArrayClass $serializationKeys {
         get {
@@ -116,11 +116,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $serializationKeys = match ($this->serializationRule) {
                 SerializationRule::attributesOnly => $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient)->keys,
                 SerializationRule::attributesAndRelationships => $this->entity->propertiesByName->filter(function (PropertyDescription $property): bool {
-                    if ($property instanceof AttributeDescription) {
-                        return !$property->isTransient;
-                    }
                     if ($property instanceof RelationshipDescription) {
-                        return $property->isToMany && !$property->inverseRelationship->isToMany;
+                        return !$property->isToMany || !$property->inverseRelationship->isToMany;
                     }
                     return $property instanceof FetchedPropertyDescription;
                 })->keys,
@@ -184,6 +181,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public Dictionary $modeledFetchedProperties {
         get => $this->modeledFetchedProperties ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property instanceof FetchedPropertyDescription);
     }
+    /** @var array<string, bool> */
+    private array $resolvedKeys = [];
     /** @internal */
     public bool $isSuppressingKVO = false;
     /** @internal */
@@ -201,6 +200,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     #[Override]
     public string $debugDescription {
         get => sprintf("<%s %s> (entity: %s; id: %s)", $this->class, $this->hash, $this->entity->name, $this->objectID->referenceObject);
+    }
+    #[Override]
+    public string $canonicalDescription {
+        get => sprintf("<%s:%s>", $this->entity->name, $this->objectID->referenceObject);
     }
     /**
      * @var Dictionary<mixed>|null
@@ -308,7 +311,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if (($property instanceof FetchedPropertyDescription && $value instanceof FaultingArray) || ($property instanceof RelationshipDescription && $value instanceof FaultingSet)) {
             return $value->isFault;
         }
-        return !isset($this->changedValues[$key]);
+        return is_null($value) || $value instanceof Nil;
     }
 
     /**
@@ -638,7 +641,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     {
         if (($expression->expressionType === ExpressionType::variable) || (($expression->expressionType === ExpressionType::keyPath) && $expression->operand?->expressionType === ExpressionType::variable)) {
             /** @var Dictionary<mixed> $context */
-            $context = new Dictionary(["\$FETCH_SOURCE" => $this, "\$FETCHED_PROPERTY" => $fetchedPropertyDescription]);
+            $context = new Dictionary(["\$FETCH_SOURCE" => $this->objectID->referenceObject, "\$FETCHED_PROPERTY" => $fetchedPropertyDescription]);
             return Expression::expressionForConstantValue($expression->expressionValue($this, $context));
         }
         return $expression;
@@ -680,9 +683,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($flag ? null : $key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if ($property instanceof DerivedAttributeDescription && !$value && $this->isPropertyForKeyFault($key)) {
-                $value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional);
-                $this->setPrimitiveValueForKey($value, $key);
+            if (!isset($this->resolvedKeys[$key]) && !$value && !$this->isSuppressingKVO && $this->isPropertyForKeyFault($key)) {
+                $this->resolvedKeys[$key] = true;
+                //$value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional);
+                //$this->setPrimitiveValueForKey($value, $key);
             }
             return $value;
         }
@@ -690,7 +694,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if (!$this->isSuppressingKVO && $this->isInserted && $this->isPropertyForKeyFault($key)) {
+            if (!isset($this->resolvedKeys[$key]) && !$this->isSuppressingKVO && $this->isPropertyForKeyFault($key) && $this->isInserted) {
+                $this->resolvedKeys[$key] = true;
                 $value ??= $this->mutableArrayValueForKey($key);
                 if ($property->fetchRequest !== null) {
                     $fetchRequest = clone $property->fetchRequest;
@@ -710,7 +715,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if (!$this->isSuppressingKVO && $this->isInserted && $this->isPropertyForKeyFault($key)) {
+            if (!isset($this->resolvedKeys[$key]) && !$this->isSuppressingKVO && $this->hasFaultForRelationshipNamed($key) && $this->isInserted) {
+                $this->resolvedKeys[$key] = true;
                 $value = $context->newValueForRelationship($property, $this->objectID);
                 $this->setPrimitiveValueForKey($value, $key);
             }
@@ -767,7 +773,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $set->setSet($value);
                 $value = $set;
                 $change = $this->mutableSetValueForKey($key);
-                if (!$this->isFault && !$this->isSuppressingKVO && $this->isAwakeFromFetch && $this->isPropertyForKeyFault($key) && $this->isInserted) {
+                if ($this->isStable && !$this->isSuppressingKVO && $this->isAwakeFromFetch && $this->hasFaultForRelationshipNamed($key) && $this->isInserted) {
                     /** @var FaultingSet $change */
                     $change = $this->valueForKey($key);
                     /** @var ManagedObject $managedObject */

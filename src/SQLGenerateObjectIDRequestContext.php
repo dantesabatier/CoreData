@@ -6,7 +6,7 @@ use Override;
 use Sabatier\Foundation\Dictionary;
 
 /** @internal */
-final class SQLObjectIDRequestContext extends SQLStoreRequestContext
+final class SQLGenerateObjectIDRequestContext extends SQLStoreRequestContext
 {
     #[Override]
     public bool $isWritingRequest {

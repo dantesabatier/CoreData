@@ -98,7 +98,7 @@ final readonly class ConflictDetectionService
             AttributeType::string => PredicateOperatorType::like,
             default => PredicateOperatorType::equalTo,
         }
-        ), new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($object->objectID), PredicateOperatorType::notEqualTo)]));
+        ), new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($object->objectID->referenceObject), PredicateOperatorType::notEqualTo)]));
         $fetchRequest->propertiesToFetch = $attributeKeys;
         $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
         if ($store = $object->objectID->persistentStore) {

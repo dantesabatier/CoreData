@@ -14,7 +14,7 @@ final class SnapshotMapperResolver
     }
     public SnapshotMapper $mapper {
         get {
-            $mapperClass = $this->store::snapshotMapperClass();
+            $mapperClass = $this->store::$snapshotMapperClass;
             $mapper = $this->cache[$mapperClass];
             if ($mapper) {
                 return $mapper;

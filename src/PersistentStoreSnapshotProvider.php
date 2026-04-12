@@ -52,7 +52,7 @@ final readonly class PersistentStoreSnapshotProvider implements SnapshotProvider
     {
         /** @var FetchRequest<Dictionary<mixed>> $fetchRequest */
         $fetchRequest = $object::fetchRequest();
-        $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($object->objectID));
+        $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($object->objectID->referenceObject));
         $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
         if ($store = $object->objectID->persistentStore) {
             $fetchRequest->affectedStores = new ArrayClass([$store]);

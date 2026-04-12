@@ -89,6 +89,66 @@ final class FetchRequest extends PersistentStoreRequest
     }
     /** @var string|null The name of the entity to fetch. */
     public ?string $entityName = null;
+    /** @var bool @internal */
+    public bool $needsDistinct {
+        get => $this->needsDistinct ??= $this->computeNeedsDistinct($this->serialization, $this->entity ?? fatal_error("Unable to compute distinct requirement without an entity"));
+    }
+    #[Override]
+    public string $description {
+        get => [
+                $this->includesSubentities ? "includesSubentities" : null,
+                $this->includesPendingChanges ? "includesPendingChanges" : null,
+                $this->returnsDistinctResults ? "distinct" : null,
+                $this->includesPropertyValues ? "includesValues" : "noValues",
+                $this->shouldRefreshRefetchedObjects ? "refresh" : null,
+                $this->returnsObjectsAsFaults ? "faults" : "materialized"
+            ]
+                |> array_filter(...)
+                |> (fn(array $x): string => implode(", ", $x))
+                |> (fn(string $x): string => sprintf("<%s %s> (entity: %s; resultType: %s; limit: %d; offset: %d; batch: %d; predicate: %s; sort: %s; flags: [%s])", $this->class, $this->hash, $this->entity?->name ?? "null", $this->resultType->name, $this->fetchLimit, $this->fetchOffset, $this->fetchBatchSize, $this->predicate?->description ?? "null", $this->sortDescriptors?->description ?? "null", $x));
+    }
+    #[Override]
+    public string $debugDescription {
+        get => sprintf(
+            "<%s %s> {\n  entity: %s\n  predicate: %s\n  sort: %s\n  propertiesToFetch: %s\n  groupBy: %s\n  flags: %s\n}",
+            $this->class,
+            $this->hash,
+            $this->entity?->name ?? "null",
+            $this->predicate?->description ?? "null",
+            $this->sortDescriptors?->description ?? "null",
+            $this->propertiesToFetch?->description ?? "null",
+            $this->propertiesToGroupBy?->description ?? "null",
+            json_encode([
+                "includesSubentities" => $this->includesSubentities,
+                "includesPendingChanges" => $this->includesPendingChanges,
+                "returnsDistinctResults" => $this->returnsDistinctResults,
+                "includesPropertyValues" => $this->includesPropertyValues,
+                "shouldRefreshRefetchedObjects" => $this->shouldRefreshRefetchedObjects,
+                "returnsObjectsAsFaults" => $this->returnsObjectsAsFaults,
+            ])
+        );
+    }
+    #[Override]
+    public string $canonicalDescription {
+        get => sprintf("%s|%s|%s|%d|%d|%d|%s|%s|%s",
+            $this->class,
+            $this->entity?->name ?? "null",
+            $this->resultType->name,
+            $this->fetchLimit,
+            $this->fetchOffset,
+            $this->fetchBatchSize,
+            $this->predicate?->canonicalDescription ?? "null",
+            $this->sortDescriptors?->map(fn(SortDescriptor $sortDescriptor) => $sortDescriptor->canonicalDescription)->sort()->join(",") ?? "null",
+            implode(",", [
+                $this->includesSubentities ? "sub" : "nosub",
+                $this->includesPendingChanges ? "pending" : "nopending",
+                $this->returnsDistinctResults ? "distinct" : "nodistinct",
+                $this->includesPropertyValues ? "values" : "novalues",
+                $this->shouldRefreshRefetchedObjects ? "refresh" : "norefresh",
+                $this->returnsObjectsAsFaults ? "faults" : "materialized",
+            ])
+        );
+    }
     private ManagedObjectContext $context {
         get => $this->context ??= OperationQueue::current()?->associatedValueForKey(ManagedObjectContextKey) ?? fatal_error("Unable to find the managed object context associated with the current operation queue");
     }
@@ -131,10 +191,35 @@ final class FetchRequest extends PersistentStoreRequest
         if ($attribute->isTransient) {
             return false;
         }
+        if ($attribute instanceof CompositeAttributeDescription) {
+            return false;
+        }
         if ($attribute instanceof DerivedAttributeDescription) {
             return !$attribute->isRuntimeOnly;
         }
         return true;
+    }
+
+    /**
+     * @param Dictionary<mixed> $dictionary
+     * @param EntityDescription $entity
+     * @return bool
+     */
+    private function computeNeedsDistinct(Dictionary $dictionary, EntityDescription $entity): bool
+    {
+        return $dictionary->contains(function (mixed $value, string $key) use ($entity): bool {
+            if (!$value instanceof Dictionary) {
+                return false;
+            }
+            $relationship = $entity->relationshipsByName[$key];
+            if (!$relationship) {
+                return false;
+            }
+            if ($relationship->isToMany) {
+                return true;
+            }
+            return $this->computeNeedsDistinct($value, $relationship->destinationEntity);
+        });
     }
 
     /**
@@ -147,11 +232,5 @@ final class FetchRequest extends PersistentStoreRequest
     public function execute(): ArrayClass
     {
         return $this->context->fetch($this);
-    }
-
-    #[Override]
-    public function jsonSerialize(): Dictionary
-    {
-        return $this->dictionaryWithValues(new ArrayClass(["includesSubentities", "fetchLimit", "fetchOffset", "fetchBatchSize", "sortDescriptors", "includesPendingChanges", "returnsDistinctResults", "includesPropertyValues", "shouldRefreshRefetchedObjects", "returnsObjectsAsFaults", "havingPredicate", "resultType", "entity", "predicate", "propertiesToFetch", "propertiesToGroupBy", "entityName"]));
     }
 }

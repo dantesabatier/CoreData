@@ -24,7 +24,7 @@ final class CompositeAttributeDescription extends AttributeDescription
     public ArrayClass $elements {
         get => $this->elements ??= new ArrayClass();
         set {
-            $value->allSatisfy(fn(mixed $e): bool => $e instanceof AttributeDescription) ?: throw new InvalidArgumentException();
+            $value->allSatisfy(fn(mixed $e): bool => $e instanceof AttributeDescription) ?: throw new InvalidArgumentException("Composite attributes elements must all be instances of " . AttributeDescription::class);
             $this->elements = $value;
         }
     }

@@ -41,9 +41,6 @@ final class PersistentStoreCoordinator extends ObjectClass
     private OperationQueue $queue {
         get => $this->queue ??= new OperationQueue();
     }
-    public PersistentStoreCache $storeCache {
-        get => $this->storeCache ??= new InMemoryCache();
-    }
 
     /**
      * Initializes the coordinator with a managed object model.
@@ -195,11 +192,8 @@ final class PersistentStoreCoordinator extends ObjectClass
          * @return bool
          * @throws Exception
          */
-            fn(string $class, string $type): bool => $type === $class::metadataForPersistentStore($storeURL)[StoreTypeKey]) ?? fatal_error();
+            fn(string $class, string $type): bool => $type === $class::metadataForPersistentStore($storeURL)[StoreTypeKey]) ?? fatal_error("No persistent store class registered for store type \"$storeType->value\"");
         $persistentStore = new $persistentStoreClass($this, $configuration ?? "Default", $storeURL, $options);
-        if ($persistentStore instanceof IncrementalStore) {
-            $persistentStore->nodeCache = $this->storeCache;
-        }
         $persistentStore->load() && $persistentStore->loadMetadata() ?: fatal_error("PersistentStore $storeType->value cannot be loaded");
         $userInfo = new Dictionary([AddedPersistentStoresKey => new ArrayClass([$persistentStore])]);
         NotificationCenter::default()->postNotificationName(PersistentStoreCoordinatorStoresWillChange, $this, $userInfo);
@@ -275,7 +269,7 @@ final class PersistentStoreCoordinator extends ObjectClass
         }
         $sourceType = PersistentStoreType::from($store->type);
         $sourceOptions = $store->options;
-        $migrationManagerClass = $store::migrationManagerClass();
+        $migrationManagerClass = $store::$migrationManagerClass;
         /** @var MigrationManager $migrationManager */
         $migrationManager = new $migrationManagerClass($sourceModel, $destinationModel);
         if ($migrationManager->migrateStore($sourceURL, $sourceType, $sourceOptions, $mappingModel, $destinationURL, $destinationType, $destinationOptions)) {

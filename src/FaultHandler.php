@@ -2,6 +2,8 @@
 
 namespace Sabatier\CoreData;
 
+use Sabatier\Foundation\Dictionary;
+
 /** @internal */
 final readonly class FaultHandler
 {
@@ -21,6 +23,7 @@ final readonly class FaultHandler
         if ($node === null) {
             return;
         }
+        /** @var Dictionary<mixed> $snapshot */
         $snapshot = $node instanceof AtomicStoreCacheNode ? $node->propertyCache : $node->values;
         $object->isFault = false;
         $object->isSuppressingChangeNotifications = true;

@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpInternalEntityUsedInspection */
 
 /**
  * Created by PhpStorm.
@@ -17,17 +17,30 @@ use ReflectionProperty;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\NotificationCenter;
 use Sabatier\Foundation\Number;
+use Sabatier\Foundation\Predicates\Expression;
+use Sabatier\Foundation\Predicates\PredicateOperatorType;
+use Sabatier\Foundation\Predicates\PredicateVisitorFlags;
+use Sabatier\Foundation\Sequence;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
+use function Sabatier\Foundation\components_from_key_path;
 use function Sabatier\Foundation\fatal_error;
+use function Sabatier\Foundation\typeof;
 
 /** @internal */
 final class SQLCore extends IncrementalStore
 {
     public static SQLDebugLevel $debugLevel = SQLDebugLevel::none;
+    /** @var class-string<MigrationManager> */
+    #[Override]
+    public static string $migrationManagerClass = SQLInPlaceMigrationManager::class;
+    /** @var class-string<SnapshotMapper> */
+    #[Override]
+    public static string $snapshotMapperClass = SQLSnapshotMapper::class;
     public static bool $debugColorOutputDefault = false;
     #[Override]
     public string $type {
@@ -55,18 +68,6 @@ final class SQLCore extends IncrementalStore
     {
         parent::__construct($coordinator, $configurationName, $url, $options);
         $this->addPersistentHistoryEntities();
-    }
-
-    #[Override]
-    public static function migrationManagerClass(): string
-    {
-        return SQLInPlaceMigrationManager::class;
-    }
-
-    #[Override]
-    public static function snapshotMapperClass(): string
-    {
-        return SQLSnapshotMapper::class;
     }
 
     /**
@@ -292,16 +293,16 @@ final class SQLCore extends IncrementalStore
                     $entity = $this->model->entitiesByName[(string)$requestContext->fetchRequestForObjectsToDelete->entity?->name];
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass([$entity]));
                     if ($requestContext->request->resultType === BatchDeleteRequestResultType::objectIDs) {
-                        $result->forEach(fn(ManagedObjectID $objectID) => $this->nodeCache->deleteSnapshot($objectID));
+                        $result->forEach(fn(ManagedObjectID $objectID) => $this->rowCache->deleteSnapshot($objectID));
                     }
                 }
             } elseif ($requestContext instanceof SQLSaveChangesRequestContext) {
                 if (($deletedObjects = $requestContext->request->deletedObjects) && !$deletedObjects->isEmpty) {
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass($deletedObjects->compactMap(fn(ManagedObject $object): ?SQLEntity => $this->model->entitiesByName[$object->entity->name])));
-                    $deletedObjects->forEach(fn(ManagedObject $object) => $this->nodeCache->deleteSnapshot($object->objectID));
+                    $deletedObjects->forEach(fn(ManagedObject $object) => $this->rowCache->deleteSnapshot($object->objectID));
                 }
                 if ($updatedObjects = $requestContext->request->updatedObjects) {
-                    $updatedObjects->forEach(fn(ManagedObject $object) => $this->nodeCache->deleteSnapshot($object->objectID));
+                    $updatedObjects->forEach(fn(ManagedObject $object) => $this->rowCache->deleteSnapshot($object->objectID));
                 }
             }
         }
@@ -313,10 +314,51 @@ final class SQLCore extends IncrementalStore
      */
     private function processFetchRequest(FetchRequest $request, ManagedObjectContext $context): ArrayClass
     {
-        return $this->processRequestContext(match ($request->resultType) {
+        $shouldCache = !$request->needsDistinct;
+        if ($shouldCache && ($predicate = $request->predicate)) {
+            $analyser = new SQLPredicateAnalyser();
+            $predicate->accept($analyser, PredicateVisitorFlags::all);
+            $hasNoBetweenOperators = !$analyser->allTypePredicates->contains(fn(PredicateOperatorType $operatorType): bool => $operatorType === PredicateOperatorType::between);
+            $hasNoDeepRelationships = $analyser->keyPathExpressions->isEmpty || $analyser->keyPathExpressions->allSatisfy(fn(Expression $expression): bool => components_from_key_path($expression->description)->remainderPath === null);
+            $hasNoSubqueries = $analyser->subqueryExpressions->isEmpty;
+            $shouldCache = $hasNoBetweenOperators && $hasNoDeepRelationships && $hasNoSubqueries;
+        }
+        /** @var EntityDescription $entity */
+        $entity = $request->entity;
+        $queryKey = $this->rowCache->queryKeyForRequest($request);
+        $queryID = $this->objectID($entity, $queryKey);
+        if ($shouldCache) {
+            if ($cached = $this->rowCache->snapshot($queryID)) {
+                /** @var list<string> $strings */
+                $strings = $cached[ManagedObjectQueryResultKey];
+                $managedObjectIDs = new ArrayClass($strings)->map(fn(string $string) => $this->managedObjectID(new URL($string)));
+                if ($request->resultType === FetchRequestResultType::managedObjectIDResultType) {
+                    return $managedObjectIDs;
+                }
+                $missingIDs = $managedObjectIDs->filter(fn(ManagedObjectID $objectID): bool => $context->isFaultOrUnregistered($objectID) && !$this->rowCache->hasSnapshot($objectID));
+                if (!$missingIDs->isEmpty) {
+                    $faultRequestContext = new SQLBatchFaultRequestContext($missingIDs, $context, $this);
+                    $faultRequestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
+                    /** @var ArrayClass<Dictionary<mixed>> $snapshots */
+                    $snapshots = $faultRequestContext->result;
+                    $snapshots->forEach(fn(Dictionary $snapshot) => $this->rowCache->setSnapshot($entity->sanitizeSnapshot($snapshot), $this->objectID($entity, $snapshot[ManagedObjectObjectIDKey]), $this->stalenessInterval));
+                }
+                return $managedObjectIDs->map(fn(ManagedObjectID $objectID): ManagedObject => $context->object($objectID)->serialized($request->serialization));
+            }
+        }
+        /** @var ArrayClass $result */
+        $result = $this->processRequestContext(match ($request->resultType) {
             FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType, FetchRequestResultType::dictionaryResultType => new SQLFetchRequestContext($request, $context, $this),
             FetchRequestResultType::countResultType => new SQLCountRequestContext($request, $context, $this)
         });
+        if ($shouldCache && ($queryResultValue = match ($request->resultType) {
+                FetchRequestResultType::managedObjectResultType => $result->map(fn(ManagedObject $object): string => $object->objectID->uriRepresentation()->absoluteString),
+                FetchRequestResultType::managedObjectIDResultType => $result->map(fn(ManagedObjectID $objectID): string => $objectID->uriRepresentation()->absoluteString),
+                default => false
+            }) && $queryResultValue instanceof Sequence) {
+            $this->rowCache->setSnapshot(new Dictionary([ManagedObjectQueryResultKey => $queryResultValue->array]), $queryID, $this->stalenessInterval);
+        }
+        return $result;
     }
 
     /**
@@ -394,38 +436,60 @@ final class SQLCore extends IncrementalStore
         return new ArrayClass();
     }
 
+
     /**
+     * @param RelationshipDescription $relationship
+     * @param ManagedObjectID $objectID
+     * @param ManagedObjectContext $context
+     * @return ArrayClass<ManagedObjectID>|Set<ManagedObjectID>|ManagedObjectID|Nil
      * @throws Exception
      */
-    public function newObjectIDSetsForToManyPrefetchingRequest(FetchRequest $request, ArrayClass $sourceObjectIDs, string $orderColumnName, ManagedObjectContext $context): mixed
-    {
-        $requestContext = new SQLObjectIDSetFetchRequestContext($request, $context, $this, $sourceObjectIDs, $orderColumnName);
-        $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
-        return $requestContext->result;
-    }
-
     #[Override]
-    public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): mixed
+    public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass|Set|ManagedObjectID|Nil
     {
+        $objectID->persistentStore ??= $this;
+        if ($cached = $this->rowCache->snapshot($objectID, $relationship)) {
+            /** @var list<string>|string|Nil $value */
+            $value = $cached[ManagedObjectRelationshipResultKey];
+            if (is_array($value)) {
+                return new ArrayClass($value)->map(fn(string $string) => $this->managedObjectID(new URL($string)));
+            }
+            if (is_string($value)) {
+                return $this->managedObjectID(new URL($value));
+            }
+            return $value;
+        }
         $requestContext = new SQLRelationshipFaultRequestContext($objectID, $relationship, $context, $this);
         $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
-        return $requestContext->result;
+        $result = $requestContext->result;
+        $result instanceof Sequence || $result instanceof ManagedObjectID || $result instanceof Nil ?: $result
+                |> typeof(...)
+                |> (fn(string $x): string => sprintf("invalid argument: %s(%s, %s) expecting \"%s|%s|%s\", \"%s\" given", __FUNCTION__, $relationship->name, $objectID->entityName, Sequence::class, ManagedObjectID::class, Nil::class, $x))
+                |> fatal_error(...);
+        /** @var list<string>|string|Nil $relationshipResultValue */
+        $relationshipResultValue = $result;
+        if ($result instanceof ArrayClass) {
+            $relationshipResultValue = $result->map(fn(ManagedObjectID $objectID): string => $objectID->uriRepresentation()->absoluteString)->array;
+        } elseif ($result instanceof ManagedObjectID) {
+            $relationshipResultValue = $result->uriRepresentation()->absoluteString;
+        }
+        $this->rowCache->setSnapshot(new Dictionary([ManagedObjectRelationshipResultKey => $relationshipResultValue]), $objectID, $this->stalenessInterval, $relationship);
+        return $result;
     }
 
     #[Override]
-    public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): ?IncrementalStoreNode
+    public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): IncrementalStoreNode
     {
-        if ($snapshot = $this->nodeCache->snapshotForKey($objectID)) {
+        $objectID->persistentStore ??= $this;
+        if ($snapshot = $this->rowCache->snapshot($objectID)) {
             return new IncrementalStoreNode($objectID, $snapshot, $snapshot[ManagedObjectVersionKey] ?? 1);
         }
         $requestContext = new SQLObjectFaultRequestContext($objectID, $context, $this);
         $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
-        $values = $requestContext->result;
-        if (!$values instanceof Dictionary) {
-            return null;
-        }
-        $this->nodeCache->setSnapshot($values, $objectID);
-        return new IncrementalStoreNode($objectID, $values);
+        /** @var Dictionary<mixed> $snapshot */
+        $snapshot = $requestContext->result;
+        $this->rowCache->setSnapshot($objectID->entity->sanitizeSnapshot($snapshot), $objectID, $this->stalenessInterval);
+        return new IncrementalStoreNode($objectID, $snapshot);
     }
 
     #[Override]

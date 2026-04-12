@@ -232,7 +232,7 @@ class MigrationManager extends ObjectClass
             1 => $this->doFirstPassForMapping($mapping),
             2 => $this->doSecondPassForMapping($mapping),
             3 => $this->doThirdPassForMapping($mapping),
-            default => fatal_error()
+            default => fatal_error("Invalid migration pass: expected 1, 2, or 3, got $pass")
         };
     }
 

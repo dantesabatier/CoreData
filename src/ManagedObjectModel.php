@@ -288,7 +288,7 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
                         return $result;
                     }) ?? $this->entityVersionHashesByName) === $metadata[StoreModelVersionHashesKey];
         }
-        return true;
+        return false;
     }
 
     /**

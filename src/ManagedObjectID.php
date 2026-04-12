@@ -12,6 +12,8 @@ namespace Sabatier\CoreData;
 use Override;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\URL;
+use Sabatier\Foundation\UUID;
+use function Sabatier\Foundation\fatal_error;
 
 /**
  * A compact, universal identifier for a managed object.
@@ -26,14 +28,31 @@ final class ManagedObjectID extends ObjectClass implements FetchRequestResult
     public ?PersistentStore $persistentStore = null;
     /** @var bool A Boolean value that indicates whether the object ID is temporary. Most object IDs return false. New objects inserted into a managed object context are assigned a temporary ID which is replaced with a permanent one once the object gets saved to a persistent store. */
     public bool $isTemporaryID {
-        get => $this->persistentStore === null || !is_int($this->referenceObject);
+        get => $this->persistentStore === null || !is_numeric($this->referenceObject);
+    }
+    /** @var EntityDescription The entity description associated with the object ID. */
+    public EntityDescription $entity {
+        get => $this->entity ??= $this->persistentStore?->persistentStoreCoordinator?->managedObjectModel?->entitiesByName?->valueForKey($this->entityName) ?? fatal_error("Unable to resolve entity \"$this->entityName\" for object ID");
+    }
+    /** @internal */
+    public string|int $referenceObject {
+        get => $this->referenceObject ??= new UUID()->uuidString;
     }
     /** @internal */
     private(set) string $entityName {
         get => $this->entityName ??= $this->entity->name;
     }
+    private bool $isStoreIdentifierResolved = false;
     /** @internal */
-    private(set) ?string $storeIdentifier = null;
+    private(set) ?string $storeIdentifier {
+        get {
+            if ($this->isStoreIdentifierResolved) {
+                return $this->storeIdentifier;
+            }
+            $this->isStoreIdentifierResolved = true;
+            return $this->storeIdentifier = $this->persistentStore?->identifier;
+        }
+    }
     #[Override]
     public string $description {
         get => sprintf("<%s>", $this->uriRepresentation()->absoluteString);
@@ -42,29 +61,31 @@ final class ManagedObjectID extends ObjectClass implements FetchRequestResult
     public string $debugDescription {
         get => sprintf("<%s: %s> %s", $this->class, $this->hash, $this->entityName);
     }
+    #[Override]
+    public string $canonicalDescription {
+        get => sprintf("<%s: %s> %s", $this->storeIdentifier, $this->entity->name, $this->referenceObject);
+    }
 
     /**
      * @param EntityDescription $entity The entity description associated with the object ID.
      * @param int|string $referenceObject
      */
-    public function __construct(public EntityDescription $entity, /** @internal */ public int|string $referenceObject)
+    public function __construct(EntityDescription $entity, /** @internal */ int|string $referenceObject)
     {
+        $this->entity = $entity;
+        $this->referenceObject = $referenceObject;
     }
 
     public function __serialize(): array
     {
-        $serialization = ["entityName" => $this->entity->name, "referenceObject" => $this->referenceObject];
-        if ($persistentStore = $this->persistentStore) {
-            $serialization["storeIdentifier"] = $persistentStore->identifier;
-        }
-        return $serialization;
+        return ["entityName" => $this->entityName, "referenceObject" => $this->referenceObject, "storeIdentifier" => $this->storeIdentifier];
     }
 
     public function __unserialize(array $data): void
     {
         $this->entityName = $data["entityName"];
         $this->referenceObject = $data["referenceObject"];
-        $this->storeIdentifier = $data["storeIdentifier"] ?? null;
+        $this->storeIdentifier = $data["storeIdentifier"];
     }
 
     /**
@@ -75,8 +96,8 @@ final class ManagedObjectID extends ObjectClass implements FetchRequestResult
      */
     public function uriRepresentation(): URL
     {
-        $url = new URL("x-coredata://{$this->persistentStore?->identifier}");
-        $url->appendPathComponent($this->entity->name);
+        $url = new URL("x-coredata://$this->storeIdentifier");
+        $url->appendPathComponent($this->entityName);
         if ($referenceObject = $this->referenceObject) {
             $url->appendPathComponent((string)$referenceObject);
         }

@@ -18,10 +18,6 @@ use function Sabatier\Foundation\request_concrete_implementation;
  */
 abstract class IncrementalStore extends PersistentStore
 {
-    public PersistentStoreCache $nodeCache {
-        get => $this->nodeCache ??= new InMemoryCache();
-    }
-
     #[Override]
     public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): ?IncrementalStoreNode
     {

@@ -131,3 +131,5 @@ const SQLSchemaCredentialUserDefault = "root";
 // Other
 
 const UnknownName = "Unknown";
+const ManagedObjectRelationshipResultKey = "result";
+const ManagedObjectQueryResultKey = "queryResult";

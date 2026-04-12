@@ -423,7 +423,7 @@ final class XMLObjectStore extends AtomicStore
                     foreach ($relationshipElements as $relationshipElement) {
                         /** @var string $name */
                         $name = $relationshipElement->getAttribute("name");
-                        $relationship = $entity->relationshipsByName[$name] ?? fatal_error();
+                        $relationship = $entity->relationshipsByName[$name] ?? fatal_error("Entity \"$entity->name\" does not contains a relationship named \"$name\"");
                         /** @psalm-suppress PossiblyNullPropertyFetch */
                         if ($relationship->deleteRule === DeleteRule::cascadeDeleteRule) {
                             /** @var string $destination */

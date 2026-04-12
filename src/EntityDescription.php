@@ -133,21 +133,21 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
      * @internal
      */
     private(set) Dictionary $entitySpecificAttributes {
-        get => $this->entitySpecificAttributes ??= new Dictionary();
+        get => $this->entitySpecificAttributes ??= $this->entitySpecificProperties->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
     }
     /**
      * @var Dictionary<RelationshipDescription>
      * @internal
      */
     private(set) Dictionary $entitySpecificRelationships {
-        get => $this->entitySpecificRelationships ??= new Dictionary();
+        get => $this->entitySpecificRelationships ??= $this->entitySpecificProperties->filter(fn(PropertyDescription $property): bool => $property instanceof RelationshipDescription);
     }
     /**
      * @var Dictionary<FetchedPropertyDescription>
      * @internal
      */
     private(set) Dictionary $entitySpecificFetchedPropertyDescriptions {
-        get => $this->entitySpecificFetchedPropertyDescriptions ??= new Dictionary();
+        get => $this->entitySpecificFetchedPropertyDescriptions ??= $this->entitySpecificProperties->filter(fn(PropertyDescription $property): bool => $property instanceof FetchedPropertyDescription);
     }
     /**
      * @var Dictionary<PropertyDescription>
@@ -189,41 +189,15 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
         if ($this->isFlattened) {
             return;
         }
-        $this->entitySpecificAttributes = $this->properties->reduce(new Dictionary(),
+        $this->entitySpecificProperties = $this->properties->reduce(new Dictionary(),
             /**
-             * @param Dictionary<AttributeDescription> $attributes
+             * @param Dictionary<PropertyDescription> $properties
              * @param PropertyDescription $propertyDescription
-             * @return Dictionary<AttributeDescription>
+             * @return Dictionary<PropertyDescription>
              */
-            function (Dictionary $attributes, PropertyDescription $propertyDescription): Dictionary {
-                if ($propertyDescription instanceof AttributeDescription) {
-                    $attributes[$propertyDescription->name] = $propertyDescription;
-                }
-                return $attributes;
-            });
-        $this->entitySpecificRelationships = $this->properties->reduce(new Dictionary(),
-            /**
-             * @param Dictionary<RelationshipDescription> $relationships
-             * @param PropertyDescription $propertyDescription
-             * @return Dictionary<RelationshipDescription>
-             */
-            function (Dictionary $relationships, PropertyDescription $propertyDescription): Dictionary {
-                if ($propertyDescription instanceof RelationshipDescription) {
-                    $relationships[$propertyDescription->name] = $propertyDescription;
-                }
-                return $relationships;
-            });
-        $this->entitySpecificFetchedPropertyDescriptions = $this->properties->reduce(new Dictionary(),
-            /**
-             * @param Dictionary<FetchedPropertyDescription> $fetchedProperties
-             * @param PropertyDescription $propertyDescription
-             * @return Dictionary<FetchedPropertyDescription>
-             */
-            function (Dictionary $fetchedProperties, PropertyDescription $propertyDescription): Dictionary {
-                if ($propertyDescription instanceof FetchedPropertyDescription) {
-                    $fetchedProperties[$propertyDescription->name] = $propertyDescription;
-                }
-                return $fetchedProperties;
+            function (Dictionary $properties, PropertyDescription $propertyDescription): Dictionary {
+                $properties[$propertyDescription->name] = $propertyDescription;
+                return $properties;
             });
         $this->entitySpecificIndexes = $this->indexes->reduce(new Dictionary(),
             /**
@@ -262,6 +236,19 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
         $this->indexes = new ArrayClass($indexes);
         $this->isFlattened = true;
         $this->isEditable = false;
+    }
+
+    /**
+     * @param Dictionary<mixed> $snapshot
+     * @return Dictionary<mixed>
+     * @internal
+     */
+    public function sanitizeSnapshot(Dictionary $snapshot): Dictionary
+    {
+        return $snapshot->filter(fn(mixed $value, string $key): bool => $this->attributesByName->offsetExists($key) || match ($key) {
+                ManagedObjectObjectIDKey, ManagedObjectEntityNameKey, ManagedObjectVersionKey => true,
+                default => false
+            });
     }
 
     /**

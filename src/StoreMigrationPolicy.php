@@ -59,11 +59,11 @@ final class StoreMigrationPolicy
      */
     public function migrateStoreAtURL(URL $sourceURL, URL $destinationURL, PersistentStoreType $storeType, ?Dictionary $options, MigrationManager $manager): bool
     {
-        $coordinator = $this->persistentStoreCoordinator ?? fatal_error();
-        $persistentStore = $coordinator->persistentStore($sourceURL) ?? fatal_error();
+        $coordinator = $this->persistentStoreCoordinator ?? fatal_error("Persistent store coordinator cannot be null during store migration");
+        $persistentStore = $coordinator->persistentStore($sourceURL) ?? fatal_error("Unable to find persistent store for source URL $sourceURL");
         $metadata = $coordinator->metadata($persistentStore);
-        $sourceModel = $this->sourceModelForStoreAtURL($sourceURL, $metadata) ?? fatal_error();
-        $destinationModel = $this->destinationModel ?? fatal_error();
+        $sourceModel = $this->sourceModelForStoreAtURL($sourceURL, $metadata) ?? fatal_error("Unable to resolve source model for store at URL $sourceURL");
+        $destinationModel = $this->destinationModel ?? fatal_error("Destination model cannot be null during store migration");
         $mappingModel = $this->mappingModel($sourceModel, $destinationModel);
         $this->willPerformMigrationWithManager($manager);
         $ok = $manager->migrateStore($sourceURL, $storeType, $options, $mappingModel, $destinationURL, $storeType, $options);
@@ -87,6 +87,6 @@ final class StoreMigrationPolicy
         if ($this->destinationOptions?->valueForKey(InferMappingModelAutomaticallyOption)) {
             return MappingModel::inferredMappingModel($sourceModel, $destinationModel);
         }
-        return MappingModel::mappingModel(null, $sourceModel, $destinationModel) ?? fatal_error();
+        return MappingModel::mappingModel(null, $sourceModel, $destinationModel) ?? fatal_error("Unable to find mapping model for store migration");
     }
 }

@@ -29,6 +29,7 @@ use Sabatier\Foundation\Sequence;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\UndoManager;
 use Sabatier\Foundation\URL;
+use WeakReference;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\typeof;
@@ -56,7 +57,7 @@ final class ManagedObjectContext extends ObjectClass
                 /** @var ArrayClass<PersistentStore> $stores */
                 $stores = $userInfo[RemovedPersistentStoresKey];
                 foreach ($stores as $store) {
-                    foreach ($this->byHashAssociationTable as $registeredObject) {
+                    foreach ($this->registeredObjectsByID as $registeredObject) {
                         if ($store === $registeredObject->objectID->persistentStore) {
                             $this->unregister($registeredObject);
                             $this->insertedObjects->remove($registeredObject);
@@ -88,13 +89,13 @@ final class ManagedObjectContext extends ObjectClass
     private Set $unprocessedInserts {
         get => $this->unprocessedInserts ??= new Set();
     }
-    /** @var Dictionary<ManagedObject> */
-    private Dictionary $byHashAssociationTable {
-        get => $this->byHashAssociationTable ??= new Dictionary();
+    /** @var Dictionary<WeakReference<ManagedObject>> */
+    private Dictionary $registeredObjectsByID {
+        get => $this->registeredObjectsByID ??= new Dictionary();
     }
     /** @var Set<ManagedObject> $registeredObjects The set of objects registered with the context. */
     public Set $registeredObjects {
-        get => new Set($this->byHashAssociationTable->values);
+        get => new Set($this->registeredObjectsByID->values);
     }
     /** @var bool A Boolean value that indicates whether the context keeps strong references to all registered managed objects. If set to true, the receiver keeps strong references to all registered managed objects. If set to false, then the receiver keeps strong references to registered objects only when they are inserted, updated, deleted, or locked. The default is false. */
     public bool $retainsRegisteredObjects = false;
@@ -163,26 +164,23 @@ final class ManagedObjectContext extends ObjectClass
     /**
      * @param RelationshipDescription $relationship
      * @param ManagedObjectID $objectID
-     * @return FaultingSet|ManagedObject|ManagedObjectID|null
+     * @return FaultingSet|ManagedObject|ManagedObjectID|Nil
      * @throws Exception
      * @internal
      */
-    public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID): FaultingSet|ManagedObject|ManagedObjectID|null
+    public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID): FaultingSet|ManagedObject|ManagedObjectID|Nil
     {
-        $newValue = $this->persistentStoreCoordinator?->persistentStoreForObjectID($objectID)?->newValueForRelationship($relationship, $objectID, $this);
+        $newValue = $this->persistentStoreCoordinator?->persistentStoreForObjectID($objectID)?->newValueForRelationship($relationship, $objectID, $this) ?? Nil::nil();
         if ($relationship->isToMany) {
             /** @var Sequence $newValue */
             $newValue instanceof Sequence ?: fatal_error(sprintf("invalid argument: expecting \"%s\", (%s)%s given", Sequence::class, typeof($newValue), human_readable_value($newValue)));
             $value = new FaultingSet($this->object($objectID), $relationship);
             $value->setSet(new Set($newValue));
         } else {
-            if ($newValue instanceof Nil) {
-                $newValue = $newValue->value;
-            }
             $value = $newValue;
-            $value instanceof ManagedObject || $value instanceof ManagedObjectID || $value === null ?: $value
+            $value instanceof ManagedObject || $value instanceof ManagedObjectID || $value instanceof Nil ?: $value
                     |> typeof(...)
-                    |> (fn(string $x): string => sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $objectID->entityName, $relationship->name, ManagedObject::class, ManagedObjectID::class, $x))
+                    |> (fn(string $x): string => sprintf("invalid argument: %s->%s expecting \"%s|%s|%s\", \"%s\" given", $objectID->entityName, $relationship->name, ManagedObject::class, ManagedObjectID::class, Nil::class, $x))
                     |> fatal_error(...);
         }
         return $value;
@@ -331,13 +329,24 @@ final class ManagedObjectContext extends ObjectClass
     }
 
     /**
+     * @param ManagedObjectID $objectID
+     * @return bool
+     * @internal
+     */
+    public function isFaultOrUnregistered(ManagedObjectID $objectID): bool
+    {
+        $object = $this->registeredObject($objectID);
+        return $object === null || !$object->isStable;
+    }
+
+    /**
      * Returns the object for a specified ID if the object is registered with the context.
      * @param ManagedObjectID $objectID An object ID.
      * @return ManagedObject|null The object for the specified ID if it is registered with the receiver, otherwise null.
      */
     public function registeredObject(ManagedObjectID $objectID): ?ManagedObject
     {
-        return $this->byHashAssociationTable[(string)$objectID];
+        return $this->registeredObjectsByID->valueForKey((string)$objectID)?->get();
     }
 
     /**
@@ -376,7 +385,7 @@ final class ManagedObjectContext extends ObjectClass
             /** @var FetchRequest<ManagedObject> $fetchRequest */
             $fetchRequest = new FetchRequest();
             $fetchRequest->entity = $objectID->entity;
-            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($objectID));
+            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($objectID->referenceObject));
             $object = $this->fetch($fetchRequest)->first;
         }
         return $object;
@@ -388,16 +397,18 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function refreshAllObjects(): void
     {
-        foreach ($this->byHashAssociationTable as $registeredObject) {
-            $this->refresh($registeredObject, true);
+        foreach ($this->registeredObjectsByID as $weakReference) {
+            if ($registeredObject = $weakReference->get()) {
+                $this->refresh($registeredObject, true);
+            }
         }
     }
 
     private function register(ManagedObject $object): void
     {
         $key = (string)$object->objectID;
-        if (!$this->byHashAssociationTable[$key]) {
-            $this->byHashAssociationTable[$key] = $object;
+        if (!$this->registeredObjectsByID->valueForKey($key)?->get()) {
+            $this->registeredObjectsByID[$key] = WeakReference::create($object);
             $properties = $object::$contextShouldIgnoreUnmodeledPropertyChanges ? $object->persistentProperties : $object->allProperties;
             /** @var PropertyDescription $property */
             foreach ($properties as $property) {
@@ -411,8 +422,8 @@ final class ManagedObjectContext extends ObjectClass
     private function unregister(ManagedObject $object): void
     {
         $key = (string)$object->objectID;
-        if ($this->byHashAssociationTable[$key]) {
-            $this->byHashAssociationTable->removeValueForKey($key);
+        if ($this->registeredObjectsByID->valueForKey($key)?->get()) {
+            $this->registeredObjectsByID->removeValueForKey($key);
             $properties = $object::$contextShouldIgnoreUnmodeledPropertyChanges ? $object->persistentProperties : $object->allProperties;
             foreach ($properties as $property) {
                 if (!$property instanceof FetchedPropertyDescription) {
@@ -577,7 +588,7 @@ final class ManagedObjectContext extends ObjectClass
     private function refault(ManagedObject $object, bool $mergeChanges = false): void
     {
         $changes = $mergeChanges ? $object->changedValues() : null;
-        $this->persistentStoreCoordinator?->storeCache?->deleteSnapshot($object->objectID);
+        $this->persistentStoreCoordinator?->persistentStoreForObject($object)?->rowCache?->deleteSnapshot($object->objectID);
         $faultHandler = $object->faultHandler;
         $faultHandler->turnObjectIntoFault($object, $this);
         if ($mergeChanges) {
@@ -1044,10 +1055,12 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function reset(): void
     {
-        foreach ($this->byHashAssociationTable->values as $registeredObject) {
-            $this->unregister($registeredObject);
+        foreach ($this->registeredObjectsByID->values as $weakReference) {
+            if ($registeredObject = $weakReference->get()) {
+                $this->unregister($registeredObject);
+            }
         }
-        $this->byHashAssociationTable->removeAll();
+        $this->registeredObjectsByID->removeAll();
         $this->resetState();
     }
 

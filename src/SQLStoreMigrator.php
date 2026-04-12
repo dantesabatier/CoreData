@@ -41,7 +41,7 @@ final class SQLStoreMigrator
     {
         $this->connection = $this->store->schemaValidationConnection;
         $this->adapter = $this->connection->adapter ?? fatal_error("SQL adapter cannot be null");
-        $this->sourceModel = new SQLModel($this->connection->cachedModel ?? fatal_error("SQL source model cannot be ull"), $this->store->configurationName);
+        $this->sourceModel = new SQLModel($this->connection->cachedModel ?? $this->destinationModel->managedObjectModel, $this->store->configurationName);
         $this->removedEntities = new Set();
         $this->removedManyToMany = new Set();
         $this->removedColumns = new Set();
@@ -423,7 +423,7 @@ final class SQLStoreMigrator
     private function removeUnusedEntities(): void
     {
         foreach ($this->removedEntities as $entity) {
-            /** @var ArrayClass<SQLForeignKey> $foreignKeys  */
+            /** @var ArrayClass<SQLForeignKey> $foreignKeys */
             $foreignKeys = $entity->toManyRelationships->flatMap(fn(SQLToMany $many): ArrayClass => $many->destinationEntity->foreignKeyColumns->filter(fn(SQLForeignKey $foreignKey): bool => $foreignKey->toOneRelationship->isEqual($many->inverseToOne)));
             foreach ($foreignKeys as $foreignKey) {
                 $statement = $this->adapter->newDropIndexStatementForForeignKey($foreignKey);
