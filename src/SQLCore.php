@@ -25,7 +25,6 @@ use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Predicates\PredicateVisitorFlags;
 use Sabatier\Foundation\Sequence;
 use Sabatier\Foundation\Set;
-use Sabatier\Foundation\SystemRandomNumberGenerator;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
 use function Sabatier\Foundation\components_from_key_path;
@@ -70,8 +69,8 @@ final class SQLCore extends IncrementalStore
     public function __construct(PersistentStoreCoordinator $coordinator, string $configurationName, URL $url, ?Dictionary $options = null)
     {
         parent::__construct($coordinator, $configurationName, $url, $options);
-        $this->storeGeneration = new SystemRandomNumberGenerator()->next();
         $this->currentGeneration = $this->rowCache->currentGenerationForStore($this->identifier);
+        $this->storeGeneration = $this->currentGeneration;
         $this->addPersistentHistoryEntities();
     }
 
@@ -338,7 +337,7 @@ final class SQLCore extends IncrementalStore
             if ($cached = $this->rowCache->snapshot($queryID)) {
                 /** @var GenerationToken|null $cachedToken */
                 $cachedToken = $cached[ManagedObjectQueryResultGenerationKey];
-                if ($expectedToken->isEqual($cachedToken)) {
+                if ($expectedToken->isCompatible($cachedToken)) {
                     /** @var list<string> $strings */
                     $strings = $cached[ManagedObjectQueryResultKey];
                     $managedObjectIDs = new ArrayClass($strings)->map(fn(string $string) => $this->managedObjectID(new URL($string)));
