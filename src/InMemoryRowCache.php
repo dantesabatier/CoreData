@@ -8,7 +8,7 @@ use Sabatier\Foundation\Dictionary;
 /** @internal */
 final class InMemoryRowCache extends RowCache
 {
-    /** @var Dictionary<array> */
+    /** @var Dictionary<mixed> */
     private Dictionary $storage;
 
     public function __construct()
@@ -16,11 +16,13 @@ final class InMemoryRowCache extends RowCache
         $this->storage = new Dictionary();
     }
 
+    #[Override]
     public function currentGenerationForStore(string $storeIdentifier): int
     {
         return $this->storage["generation:$storeIdentifier"] ?? 1;
     }
 
+    #[Override]
     public function advanceGenerationForStore(string $storeIdentifier): int
     {
         return $this->storage["generation:$storeIdentifier"] = $this->currentGenerationForStore($storeIdentifier) + 1;
