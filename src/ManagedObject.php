@@ -677,7 +677,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     final public function valueForKey(string $key): mixed
     {
         $key ?: $this->valueForUndefinedKey($key);
-        $flag = $this->persistentProperties->offsetExists($key) && $this->isFault && !$this->isSuppressingKVO;
+        $flag = $this->persistentProperties->offsetExists($key) && $this->isFault && !$this->isSuppressingKVO && $this->isInserted;
         $context = $this->managedObjectContext;
         $property = $this->entity->propertiesByName[$key];
         if ($property instanceof AttributeDescription) {
