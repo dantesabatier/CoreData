@@ -83,6 +83,9 @@ final class ManagedObjectSerializationPreparer
         if ($object->serializationKey === $serializationKey) {
             return $object;
         }
+        if ($dictionary === null) {
+            return $object;
+        }
         $this->prepareObjectGraph($object, $dictionary);
         $object->serializationKey = $serializationKey;
         return $object;

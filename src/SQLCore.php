@@ -303,10 +303,10 @@ final class SQLCore extends IncrementalStore
             } elseif ($requestContext instanceof SQLSaveChangesRequestContext) {
                 if (($deletedObjects = $requestContext->request->deletedObjects) && !$deletedObjects->isEmpty) {
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass($deletedObjects->compactMap(fn(ManagedObject $object): ?SQLEntity => $this->model->entitiesByName[$object->entity->name])));
-                    $this->rowCache->deleteSnapshots($deletedObjects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID));
+                    $this->rowCache->deleteSnapshots(new ArrayClass($deletedObjects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID)));
                 }
                 if ($updatedObjects = $requestContext->request->updatedObjects) {
-                    $this->rowCache->deleteSnapshots($updatedObjects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID));
+                    $this->rowCache->deleteSnapshots(New ArrayClass($updatedObjects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID)));
                 }
             }
             $this->currentGeneration = $this->rowCache->advanceGenerationForStore($this->identifier);

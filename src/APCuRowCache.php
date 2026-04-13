@@ -74,6 +74,7 @@ final class APCuRowCache extends RowCache
                 $map[$this->cacheKey($objectID)] = $objectID->uriRepresentation()->absoluteString;
                 return $map;
             });
+        /** @var array<string, mixed> $cache */
         $cache = apcu_fetch($map->keys->array);
         if (empty($cache)) {
             return new Dictionary();
@@ -81,12 +82,12 @@ final class APCuRowCache extends RowCache
         return new Dictionary($cache)->reduce(new Dictionary(),
             /**
              * @param Dictionary<Dictionary<mixed>> $result
-             * @param array $value
+             * @param array<string, mixed> $value
              * @param string $key
              * @return Dictionary<Dictionary<mixed>>
              */
             function (Dictionary $result, array $value, string $key) use ($map): Dictionary {
-                $result[$map[$key]] = new Dictionary($value);
+                $result[(string)$map[$key]] = new Dictionary($value);
                 return $result;
             });
     }

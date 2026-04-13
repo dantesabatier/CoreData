@@ -65,7 +65,6 @@
         <PossiblyInvalidArgument>
             <errorLevel type="suppress">
                 <file name="src/FaultingSet.php"/>
-                <file name="src/InMemoryRowCache.php"/>
             </errorLevel>
         </PossiblyInvalidArgument>
         <InvalidReturnType>
@@ -87,6 +86,7 @@
                 <file name="src/SQLGenerator.php"/>
             </errorLevel>
         </RedundantCondition>
+        <InvalidAttribute errorLevel="suppress"/>
     </issueHandlers>
     <plugins>
         <pluginClass class="Sabatier\Foundation\Plugins\Psalm\Plugin"/>

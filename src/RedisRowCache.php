@@ -76,6 +76,7 @@ final class RedisRowCache extends RowCache
                 $map[$this->cacheKey($objectID)] = $objectID->uriRepresentation()->absoluteString;
                 return $map;
             });
+        /** @var array<string, mixed> $cache */
         $cache = $this->redis->mget($map->keys->array);
         if (!$cache) {
             return new Dictionary();
@@ -103,6 +104,7 @@ final class RedisRowCache extends RowCache
         if ($snapshots->isEmpty) {
             return;
         }
+        /** @var Redis $pipe */
         $pipe = $this->redis->multi(Redis::PIPELINE);
         $snapshots->forEach(fn(Dictionary $snapshot, string $key) => $pipe->setex($key, $ttl, serialize($snapshot->array) ?: fatal_error("Unable to serialize snapshot for Redis row cache")));
         $pipe->exec();
