@@ -88,7 +88,7 @@ interface PersistentStoreCache
     /**
      * Saves multiple snapshots to the cache in a single operation.
      *
-     * @param Dictionary<Dictionary> $snapshots A collection of snapshots
+     * @param Dictionary<Dictionary> $snapshots A collection of snapshots where keys are the URI string of each ObjectID and values are the corresponding snapshots.
      * @param int $ttl The time-to-live for the cached snapshots, in seconds.
      */
     public function setSnapshots(Dictionary $snapshots, int $ttl = SecondsPerHourTimeInterval): void;
