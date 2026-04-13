@@ -455,7 +455,6 @@ final class SQLCore extends IncrementalStore
         return new ArrayClass();
     }
 
-
     /**
      * @param RelationshipDescription $relationship
      * @param ManagedObjectID $objectID
