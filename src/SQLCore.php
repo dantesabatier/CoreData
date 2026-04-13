@@ -297,16 +297,16 @@ final class SQLCore extends IncrementalStore
                     $entity = $this->model->entitiesByName[(string)$requestContext->fetchRequestForObjectsToDelete->entity?->name];
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass([$entity]));
                     if ($requestContext->request->resultType === BatchDeleteRequestResultType::objectIDs) {
-                        $result->forEach(fn(ManagedObjectID $objectID) => $this->rowCache->deleteSnapshot($objectID));
+                        $this->rowCache->deleteSnapshots($result);
                     }
                 }
             } elseif ($requestContext instanceof SQLSaveChangesRequestContext) {
                 if (($deletedObjects = $requestContext->request->deletedObjects) && !$deletedObjects->isEmpty) {
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass($deletedObjects->compactMap(fn(ManagedObject $object): ?SQLEntity => $this->model->entitiesByName[$object->entity->name])));
-                    $deletedObjects->forEach(fn(ManagedObject $object) => $this->rowCache->deleteSnapshot($object->objectID));
+                    $this->rowCache->deleteSnapshots($deletedObjects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID));
                 }
                 if ($updatedObjects = $requestContext->request->updatedObjects) {
-                    $updatedObjects->forEach(fn(ManagedObject $object) => $this->rowCache->deleteSnapshot($object->objectID));
+                    $this->rowCache->deleteSnapshots($updatedObjects->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID));
                 }
             }
             $this->currentGeneration = $this->rowCache->advanceGenerationForStore($this->identifier);
@@ -352,7 +352,15 @@ final class SQLCore extends IncrementalStore
                     $faultRequestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
                     /** @var ArrayClass<Dictionary<mixed>> $snapshots */
                     $snapshots = $faultRequestContext->result;
-                    $snapshots->forEach(fn(Dictionary $snapshot) => $this->rowCache->setSnapshot($entity->sanitizeSnapshot($snapshot), $this->objectID($entity, $snapshot[ManagedObjectObjectIDKey]), $this->stalenessInterval));
+                    $this->rowCache->setSnapshots($snapshots->reduce(new Dictionary(),
+                        /**
+                         * @param Dictionary<mixed> $snapshot
+                         * @return Dictionary<mixed>
+                         */
+                        function (Dictionary $snapshots, Dictionary $snapshot) use ($entity): Dictionary {
+                            $snapshots[$this->objectID($entity, $snapshot[ManagedObjectObjectIDKey])->uriRepresentation()->absoluteString] = $entity->sanitizeSnapshot($snapshot);
+                            return $snapshots;
+                        }), $this->stalenessInterval);
                 }
                 return $managedObjectIDs->map(fn(ManagedObjectID $objectID): ManagedObject => $context->object($objectID)->serialized($request->serialization));
             }

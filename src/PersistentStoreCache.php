@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 
 /**
@@ -63,10 +64,10 @@ interface PersistentStoreCache
      *
      * @param Dictionary<mixed> $snapshot The raw snapshot of the managed object to cache.
      * @param ManagedObjectID $objectID The object ID of the managed object.
-     * @param int $ttl The time-to-live for the cached snapshot, in seconds. Default is 3600.
+     * @param int $ttl The time-to-live for the cached snapshot, in seconds. Default is {@see SecondsPerHourTimeInterval}.
      * @param RelationshipDescription|null $relationship Optional relationship scope.
      */
-    public function setSnapshot(Dictionary $snapshot, ManagedObjectID $objectID, int $ttl = 3600, ?RelationshipDescription $relationship = null): void;
+    public function setSnapshot(Dictionary $snapshot, ManagedObjectID $objectID, int $ttl = SecondsPerHourTimeInterval, ?RelationshipDescription $relationship = null): void;
 
     /**
      * Removes the snapshot for the specified managed object ID from the cache.
@@ -75,6 +76,29 @@ interface PersistentStoreCache
      * @param RelationshipDescription|null $relationship Optional relationship scope.
      */
     public function deleteSnapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): void;
+
+    /**
+     * Retrieves multiple snapshots from the cache in a single operation.
+     *
+     * @param ArrayClass<ManagedObjectID> $objectIDs The object IDs to fetch.
+     * @return Dictionary<Dictionary<mixed>> A dictionary keyed by the URI string of each ObjectID, with the corresponding raw snapshot as value.
+     */
+    public function snapshots(ArrayClass $objectIDs): Dictionary;
+
+    /**
+     * Saves multiple snapshots to the cache in a single operation.
+     *
+     * @param Dictionary<Dictionary> $snapshots A collection of snapshots
+     * @param int $ttl The time-to-live for the cached snapshots, in seconds.
+     */
+    public function setSnapshots(Dictionary $snapshots, int $ttl = SecondsPerHourTimeInterval): void;
+
+    /**
+     * Removes the snapshots for the specified managed object IDs from the cache in a single operation.
+     *
+     * @param ArrayClass<ManagedObjectID> $objectIDs The object IDs whose snapshots should be removed.
+     */
+    public function deleteSnapshots(ArrayClass $objectIDs): void;
 
     /**
      * Returns the canonical cache key for a fetch request.

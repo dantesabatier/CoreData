@@ -6,7 +6,7 @@ use Override;
 
 abstract class RowCache implements PersistentStoreCache
 {
-    protected function cacheKey(ManagedObjectID $objectID, ?RelationshipDescription $relationship): string
+    protected function cacheKey(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): string
     {
         $name = $relationship?->name ?? "";
         $divider = $relationship ? "/" : "";

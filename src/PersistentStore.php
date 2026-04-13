@@ -21,7 +21,7 @@ abstract class PersistentStore extends ObjectClass
     /** @var class-string<MigrationManager> The class responsible for managing schema migrations. This class is instantiated when the persistent store requires a migration to match the current managed object model. */
     public static string $migrationManagerClass = MigrationManager::class;
     /** @var class-string<RowCache> The class that provides the L2 caching mechanism for the store. This determines the persistence strategy for snapshots and relationship results (e.g., APCu, or Redis). The default value is {@see RedisRowCache}. */
-    public static string $rowCacheClass = DefaultRowCache::class;
+    public static string $rowCacheClass = RedisRowCache::class;
     /** @var class-string<SnapshotMapper> The class used to map raw data from the persistent store into managed object snapshots. It handles the conversion between primitive store values and the dictionary format used by the framework. */
     public static string $snapshotMapperClass = StandardSnapshotMapper::class;
     /** @var string The type string of the persistent store. */
@@ -34,7 +34,7 @@ abstract class PersistentStore extends ObjectClass
     }
     /** @var int The time interval, in seconds, for which cached snapshots and relationships remain valid. */
     public int $stalenessInterval {
-        get => $this->stalenessInterval ??= (int)($this->options?->valueForKey(PersistentStoreCacheStalenessIntervalOption) ?? 3600);
+        get => $this->stalenessInterval ??= (int)($this->options?->valueForKey(PersistentStoreCacheStalenessIntervalOption) ?? SecondsPerHourTimeInterval);
     }
     /** @var Dictionary<mixed> The metadata for the persistent store. The dictionary must include the store type. */
     public Dictionary $metadata {

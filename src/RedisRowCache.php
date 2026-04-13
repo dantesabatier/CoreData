@@ -4,6 +4,7 @@ namespace Sabatier\CoreData;
 
 use Override;
 use Redis;
+use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use function Sabatier\Foundation\fatal_error;
 
@@ -47,7 +48,7 @@ final class RedisRowCache extends RowCache
     }
 
     #[Override]
-    public function setSnapshot(Dictionary $snapshot, ManagedObjectID $objectID, int $ttl = 3600, ?RelationshipDescription $relationship = null): void
+    public function setSnapshot(Dictionary $snapshot, ManagedObjectID $objectID, int $ttl = SecondsPerHourTimeInterval, ?RelationshipDescription $relationship = null): void
     {
         $value = serialize($snapshot->array) ?: fatal_error("Unable to serialize snapshot for Redis row cache");
         $this->redis->setex($this->cacheKey($objectID, $relationship), $ttl, $value);
@@ -57,5 +58,62 @@ final class RedisRowCache extends RowCache
     public function deleteSnapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): void
     {
         $this->redis->del($this->cacheKey($objectID, $relationship));
+    }
+
+    #[Override]
+    public function snapshots(ArrayClass $objectIDs): Dictionary
+    {
+        if ($objectIDs->isEmpty) {
+            return new Dictionary();
+        }
+        $map = $objectIDs->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<string> $map
+             * @param ManagedObjectID $objectID
+             * @return Dictionary<string>
+             */
+            function (Dictionary $map, ManagedObjectID $objectID): Dictionary {
+                $map[$this->cacheKey($objectID)] = $objectID->uriRepresentation()->absoluteString;
+                return $map;
+            });
+        $cache = $this->redis->mget($map->keys->array);
+        if (!$cache) {
+            return new Dictionary();
+        }
+        $values = $map->values;
+        return new ArrayClass($cache)->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<Dictionary<mixed>> $result
+             * @param string|false|null $value Serialized snapshot from `mget`, or `false`/`null` when the key is absent.
+             * @param int $index
+             * @return Dictionary<Dictionary<mixed>>
+             */
+            function (Dictionary $result, string|false|null $value, int $index) use ($values): Dictionary {
+                if ($value === false || $value === null) {
+                    return $result;
+                }
+                $result[$values[$index]] = new Dictionary(unserialize($value));
+                return $result;
+            });
+    }
+
+    #[Override]
+    public function setSnapshots(Dictionary $snapshots, int $ttl = SecondsPerHourTimeInterval): void
+    {
+        if ($snapshots->isEmpty) {
+            return;
+        }
+        $pipe = $this->redis->multi(Redis::PIPELINE);
+        $snapshots->forEach(fn(Dictionary $snapshot, string $key) => $pipe->setex($key, $ttl, serialize($snapshot->array) ?: fatal_error("Unable to serialize snapshot for Redis row cache")));
+        $pipe->exec();
+    }
+
+    #[Override]
+    public function deleteSnapshots(ArrayClass $objectIDs): void
+    {
+        if ($objectIDs->isEmpty) {
+            return;
+        }
+        $this->redis->del($objectIDs->map(fn(ManagedObjectID $objectID): string => $this->cacheKey($objectID))->array);
     }
 }

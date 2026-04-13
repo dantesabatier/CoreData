@@ -3,6 +3,7 @@
 namespace Sabatier\CoreData;
 
 use Override;
+use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 
 /** @internal */
@@ -33,12 +34,28 @@ final class DefaultRowCache extends RowCache
     }
 
     #[Override]
-    public function setSnapshot(Dictionary $snapshot, ManagedObjectID $objectID, int $ttl = 3600, ?RelationshipDescription $relationship = null): void
+    public function setSnapshot(Dictionary $snapshot, ManagedObjectID $objectID, int $ttl = SecondsPerHourTimeInterval, ?RelationshipDescription $relationship = null): void
     {
     }
 
     #[Override]
     public function deleteSnapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): void
+    {
+    }
+
+    #[Override]
+    public function snapshots(ArrayClass $objectIDs): Dictionary
+    {
+        return new Dictionary();
+    }
+
+    #[Override]
+    public function setSnapshots(Dictionary $snapshots, int $ttl = SecondsPerHourTimeInterval): void
+    {
+    }
+
+    #[Override]
+    public function deleteSnapshots(ArrayClass $objectIDs): void
     {
     }
 }
