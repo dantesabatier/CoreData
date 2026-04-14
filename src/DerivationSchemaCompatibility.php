@@ -16,10 +16,11 @@ final class DerivationSchemaCompatibility
 {
     private(set) SQLPredicateAnalyser $analyser {
         get {
-            if (!isset($this->analyser)) {
-                $this->analyser = new SQLPredicateAnalyser();
-                $this->expression->accept($this->analyser, PredicateVisitorFlags::all);
+            if (isset($this->analyser)) {
+                return $this->analyser;
             }
+            $this->analyser = new SQLPredicateAnalyser();
+            $this->expression->accept($this->analyser, PredicateVisitorFlags::all);
             return $this->analyser;
         }
     }

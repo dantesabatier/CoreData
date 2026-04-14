@@ -749,7 +749,7 @@ final class ManagedObjectContext extends ObjectClass
             parent::observeValue($keyPath, $object, $change, $context);
             return;
         }
-        if ($this->processingChanges || !$object instanceof ManagedObject || $object->isSuppressingKVO || $object->isSuppressingChangeNotifications || (!$object->isAwakeFromFetch && $object->isInserted)) {
+        if ($this->processingChanges || !$object instanceof ManagedObject || $object->isSuppressingKVO || $object->isSuppressingChangeNotifications) {
             return;
         }
         if (!($property = $object->entity->propertiesByName[$keyPath])) {

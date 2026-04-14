@@ -20,14 +20,10 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\NotificationCenter;
 use Sabatier\Foundation\Number;
-use Sabatier\Foundation\Predicates\Expression;
-use Sabatier\Foundation\Predicates\PredicateOperatorType;
-use Sabatier\Foundation\Predicates\PredicateVisitorFlags;
 use Sabatier\Foundation\Sequence;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
-use function Sabatier\Foundation\components_from_key_path;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\typeof;
 
@@ -63,14 +59,16 @@ final class SQLCore extends IncrementalStore
         get => $this->maxPrimaryKeys ??= new Dictionary();
     }
     private(set) ?PersistentHistoryToken $remoteNotificationToken = null;
-    private int $currentGeneration;
-    private int $storeGeneration;
+    private int $currentGeneration {
+        get => $this->currentGeneration ??= $this->rowCache->currentGenerationForStore($this->identifier);
+    }
+    private int $storeGeneration {
+        get => $this->storeGeneration ??= $this->queryGenerationTrackingConnection->storeOrigin;
+    }
 
     public function __construct(PersistentStoreCoordinator $coordinator, string $configurationName, URL $url, ?Dictionary $options = null)
     {
         parent::__construct($coordinator, $configurationName, $url, $options);
-        $this->currentGeneration = $this->rowCache->currentGenerationForStore($this->identifier);
-        $this->storeGeneration = $this->currentGeneration;
         $this->addPersistentHistoryEntities();
     }
 
@@ -156,7 +154,7 @@ final class SQLCore extends IncrementalStore
                 }
                 $name = $property->name;
                 if (match ($name) {
-                    "token", "transactionNumber", "description", "associatedValues", "hash", "class", "superclass", "debugDescription" => true,
+                    "token", "transactionNumber", "description", "associatedValues", "hash", "class", "superclass", "debugDescription", "canonicalDescription" => true,
                     default => false
                 }) {
                     return null;
@@ -204,7 +202,7 @@ final class SQLCore extends IncrementalStore
                 }
                 $name = $property->name;
                 if (match ($name) {
-                    "changeID", "description", "associatedValues", "hash", "class", "superclass", "debugDescription" => true,
+                    "changeID", "description", "associatedValues", "hash", "class", "superclass", "debugDescription", "canonicalDescription" => true,
                     default => false
                 }) {
                     return null;
@@ -319,25 +317,20 @@ final class SQLCore extends IncrementalStore
      */
     private function processFetchRequest(FetchRequest $request, ManagedObjectContext $context): ArrayClass
     {
-        $expectedToken = $context->queryGenerationToken?->value ?? new GenerationToken($this->identifier, $this->storeGeneration, $this->currentGeneration);
+        $expectedToken = $context->queryGenerationToken ?? new QueryGenerationToken($this->identifier, $this->storeGeneration, $this->currentGeneration);
         $shouldCache = !$request->needsDistinct && match ($request->resultType) {
                 FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType => true,
                 default => false
             };
         if ($shouldCache && ($predicate = $request->predicate)) {
-            $analyser = new SQLPredicateAnalyser();
-            $predicate->accept($analyser, PredicateVisitorFlags::all);
-            $hasNoBetweenOperators = !$analyser->allTypePredicates->contains(fn(PredicateOperatorType $operatorType): bool => $operatorType === PredicateOperatorType::between);
-            $hasNoDeepRelationships = $analyser->keyPathExpressions->isEmpty || $analyser->keyPathExpressions->allSatisfy(fn(Expression $expression): bool => components_from_key_path($expression->description)->remainderPath === null);
-            $hasNoSubqueries = $analyser->subqueryExpressions->isEmpty;
-            $shouldCache = $hasNoBetweenOperators && $hasNoDeepRelationships && $hasNoSubqueries;
+            $shouldCache = !new PredicateCacheEvaluator($predicate)->isRuntimeOnly;
         }
         /** @var EntityDescription $entity */
         $entity = $request->entity;
-        $queryKey = $this->rowCache->queryKeyForRequest($request);
+        $queryKey = $this->rowCache->queryKeyForRequest($request, $expectedToken);
         $queryID = $this->objectID($entity, $queryKey);
         if ($shouldCache && ($cached = $this->rowCache->snapshot($queryID))) {
-            /** @var GenerationToken|null $cachedToken */
+            /** @var QueryGenerationToken|null $cachedToken */
             $cachedToken = $cached[ManagedObjectQueryResultGenerationKey];
             if ($expectedToken->isCompatible($cachedToken)) {
                 /** @var list<string> $strings */

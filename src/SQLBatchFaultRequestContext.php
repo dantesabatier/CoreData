@@ -41,9 +41,12 @@ final class SQLBatchFaultRequestContext extends SQLStoreRequestContext
     #[Override]
     protected function executeRequestCore(): bool
     {
+        $debugLevel = $this->debugLevel;
+        $this->debugLevel = SQLDebugLevel::none;
         $context = new SQLFetchRequestContext($this->fetchRequest, $this->context, $this->sqlCore);
         $context->executeRequestUsingConnection($this->connection);
         $this->result = $context->result;
+        $this->debugLevel = $debugLevel;
         return true;
     }
 }

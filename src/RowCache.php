@@ -14,8 +14,9 @@ abstract class RowCache implements PersistentStoreCache
     }
 
     #[Override]
-    public function queryKeyForRequest(FetchRequest $request): string
+    public function queryKeyForRequest(FetchRequest $request, QueryGenerationToken $token): string
     {
-        return "/query/" . urlencode($request->canonicalDescription);
+        $hash = urlencode($request->canonicalDescription);
+        return "/query/$token->origin/$token->generation/$hash";
     }
 }

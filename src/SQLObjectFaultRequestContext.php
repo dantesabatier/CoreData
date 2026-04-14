@@ -35,9 +35,12 @@ final class SQLObjectFaultRequestContext extends SQLStoreRequestContext
     #[Override]
     protected function executeRequestCore(): bool
     {
+        $debugLevel = $this->debugLevel;
+        $this->debugLevel = SQLDebugLevel::none;
         $context = new SQLFetchRequestContext($this->fetchRequest, $this->context, $this->sqlCore);
         $context->executeRequestUsingConnection($this->connection);
         $this->result = $context->result->first ?? fatal_error("Object not found: {$this->objectID->entityName} {$this->objectID->referenceObject}");
+        $this->debugLevel = $debugLevel;
         return true;
     }
 }

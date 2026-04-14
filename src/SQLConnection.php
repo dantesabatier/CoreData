@@ -103,6 +103,12 @@ final class SQLConnection
             return $this->cachedModel = null;
         }
     }
+    public int $storeOrigin {
+        /**
+         * @throws Exception
+         */
+        get => $this->storeOrigin ??= (int)$this->execute(new SQLStatement("SELECT COALESCE(UNIX_TIMESTAMP(MIN(create_time)), 1) AS timestamp FROM information_schema.TABLES WHERE table_schema = '{$this->schema->name}'"))->fetchColumn();
+    }
     private SQLStoreRequestContext $requestContext;
     public string $bundleID {
         get => Bundle::main()->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString;
@@ -714,7 +720,6 @@ final class SQLConnection
      */
     public function hasSchema(): bool
     {
-        /** @noinspection SqlShadowingAlias */
         return (bool)$this->execute(new SQLStatement("SELECT COUNT(*) schema_name FROM information_schema.schemata WHERE schema_name = ?", new ArrayClass([$this->schema->name])))->fetchColumn();
     }
 
