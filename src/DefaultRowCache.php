@@ -72,6 +72,6 @@ final class DefaultRowCache extends RowCache
     #[Override]
     public function deleteSnapshots(ArrayClass $objectIDs): void
     {
-        $objectIDs->forEach(fn(ManagedObjectID $objectID) => $this->storage->removeValueForKey($this->cacheKey($objectID)));
+        $objectIDs->forEach(fn(ManagedObjectID $objectID): mixed => $this->storage->removeValueForKey($this->cacheKey($objectID)));
     }
 }
