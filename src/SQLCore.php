@@ -323,7 +323,7 @@ final class SQLCore extends IncrementalStore
                 default => false
             };
         if ($shouldCache && ($predicate = $request->predicate)) {
-            $shouldCache = !new PredicateCacheEvaluator($predicate)->isRuntimeOnly;
+            $shouldCache = !new PredicateCacheAnalysis($predicate)->isRuntimeOnly;
         }
         /** @var EntityDescription $entity */
         $entity = $request->entity;

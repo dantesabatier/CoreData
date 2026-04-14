@@ -14,7 +14,7 @@ use function Sabatier\Foundation\kvc_components;
 use function Sabatier\Foundation\kvc_operator_from_key;
 
 /** @internal */
-final class PredicateCacheEvaluator
+final class PredicateCacheAnalysis
 {
     private SQLPredicateAnalyser $analyser {
         get {
