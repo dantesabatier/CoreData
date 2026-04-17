@@ -103,15 +103,15 @@ final class SQLConnection
             return $this->cachedModel = null;
         }
     }
-    public int $storeOrigin {
+    private(set) int $storeOrigin {
         /**
          * @throws Exception
          */
         get => $this->storeOrigin ??= (int)$this->execute(new SQLStatement("SELECT COALESCE(UNIX_TIMESTAMP(MIN(create_time)), 1) AS timestamp FROM information_schema.TABLES WHERE table_schema = '{$this->schema->name}'"))->fetchColumn();
     }
     private SQLStoreRequestContext $requestContext;
-    public string $bundleID {
-        get => Bundle::main()->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString;
+    private string $bundleID {
+        get => $this->bundleID ??= Bundle::main()->bundleIdentifier ?? ProcessInfo::processInfo()->globallyUniqueString;
     }
     private ?Mysql $mysql = null;
     private(set) bool $isOpen = false;
