@@ -1232,7 +1232,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         $dictionary[$key] = $value;
                     } elseif ($property instanceof RelationshipDescription) {
                         if (!($value = $this->serializedRelationshipValue($property))) {
-                            $value = $property->isOptional ? Nil::nil() : ($property->isToMany ? new Set() : fatal_error(sprintf("%s rela$property \"%s\" is not optional", $this->debugDescription, $property->name)));
+                            $value = $property->isOptional ? Nil::nil() : ($property->isToMany ? new Set() : fatal_error(sprintf("%s relationship \"%s\" is not optional", $this->debugDescription, $property->name)));
                         }
                         $dictionary[$key] = $value;
                     } else {
