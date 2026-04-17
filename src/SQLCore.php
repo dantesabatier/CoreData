@@ -362,7 +362,7 @@ final class SQLCore extends IncrementalStore
             if ($expectedToken->isCompatible($cachedToken)) {
                 /** @var list<string> $strings */
                 $strings = $cached[ManagedObjectQueryResultKey];
-                $managedObjectIDs = new ArrayClass($strings)->map(fn(string $string) => $this->managedObjectID(new URL($string)));
+                $managedObjectIDs = new ArrayClass($strings)->map(fn(string $string): ManagedObjectID => $this->managedObjectID(new URL($string)));
                 if ($request->resultType === FetchRequestResultType::managedObjectIDResultType) {
                     return $managedObjectIDs;
                 }
