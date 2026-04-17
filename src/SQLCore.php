@@ -283,13 +283,7 @@ final class SQLCore extends IncrementalStore
             if (!$requestContext->hasHistoryTracking && $this->options?->valueForKey(PersistentStoreRemoteChangeNotificationPostOptionKey) && $requestContext->transactionID->boolValue) {
                 $this->postChangeNotificationWithTransactionID($requestContext->transactionID);
             }
-            if ($requestContext instanceof SQLBatchInsertRequestContext && $requestContext->request->resultType === BatchInsertRequestResultType::objectIDs) {
-                /** @var ArrayClass<ManagedObjectID> $insertedObjectIDs */
-                $insertedObjectIDs = $requestContext->result;
-                if (!$insertedObjectIDs->isEmpty) {
-                    $this->rowCache->deleteSnapshots($insertedObjectIDs);
-                }
-            } elseif ($requestContext instanceof SQLBatchUpdateRequestContext && $requestContext->request->resultType === BatchUpdateRequestResultType::objectIDs) {
+            if ($requestContext instanceof SQLBatchUpdateRequestContext && $requestContext->request->resultType === BatchUpdateRequestResultType::objectIDs) {
                 /** @var ArrayClass<ManagedObjectID> $updatedObjectIDs */
                 $updatedObjectIDs = $requestContext->result;
                 if (!$updatedObjectIDs->isEmpty) {
