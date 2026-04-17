@@ -3,6 +3,7 @@
 namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Sequence;
 
 /** @internal */
 final class ManagedObjectSerializationPreparer
@@ -29,49 +30,25 @@ final class ManagedObjectSerializationPreparer
         $object->serializationKeys = $serializationKeys;
     }
 
-    private function subShapeForProperty(string $propertyName, Dictionary $dictionary): ?Dictionary
-    {
-        if ($dictionary[$propertyName]) {
-            return $dictionary[$propertyName];
-        }
-        foreach ($dictionary as $key => $value) {
-            if ($key === $propertyName) {
-                return $value;
-            }
-            if ($value instanceof Dictionary) {
-                $serialization = $this->subShapeForProperty($propertyName, $value);
-                if (!$serialization?->isEmpty) {
-                    return $serialization;
-                }
-            }
-        }
-        return null;
-    }
-
     private function prepareObjectGraph(ManagedObject $object, Dictionary $dictionary): void
     {
+        $serializationKey = md5($dictionary->description);
+        if ($object->serializationKey === $serializationKey) {
+            return;
+        }
         $this->applySerializationShape($object, $dictionary);
-        foreach ($object->entity as $property) {
-            if ($property instanceof AttributeDescription) {
+        $object->serializationKey = $serializationKey;
+        foreach ($dictionary as $k => $v) {
+            if (!$v instanceof Sequence) {
                 continue;
             }
-            $key = $property->name;
-            $value = $object->primitiveValueForKey($key);
-            if ($value === null) {
-                continue;
-            }
-            $serialization = $this->subShapeForProperty($key, $dictionary);
-            if (!$serialization instanceof Dictionary) {
-                continue;
-            }
-            $objs = $property instanceof RelationshipDescription ? ($property->isToMany ? $value : [$value]) : $value;
-            foreach ($objs as $obj) {
-                if ($obj instanceof ManagedObjectID) {
-                    $obj = $object->managedObjectContext->object($obj);
-                }
-                if ($obj instanceof ManagedObject) {
-                    $this->prepareObjectGraph($obj, $serialization);
-                }
+            $value = $object->valueForKey($k);
+            if ($value instanceof ManagedObject) {
+                $this->prepareObjectGraph($value, $v);
+            } elseif ($value instanceof ManagedObjectID) {
+                $this->prepareObjectGraph($object->managedObjectContext->object($value), $v);
+            } elseif ($value instanceof Sequence) {
+                $value->forEach(fn(ManagedObject $object) => $this->prepareObjectGraph($object, $v));
             }
         }
     }
