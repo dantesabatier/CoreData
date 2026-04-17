@@ -283,7 +283,19 @@ final class SQLCore extends IncrementalStore
             if (!$requestContext->hasHistoryTracking && $this->options?->valueForKey(PersistentStoreRemoteChangeNotificationPostOptionKey) && $requestContext->transactionID->boolValue) {
                 $this->postChangeNotificationWithTransactionID($requestContext->transactionID);
             }
-            if ($requestContext instanceof SQLBatchDeleteRequestContext) {
+            if ($requestContext instanceof SQLBatchInsertRequestContext && $requestContext->request->resultType === BatchInsertRequestResultType::objectIDs) {
+                /** @var ArrayClass<ManagedObjectID> $insertedObjectIDs */
+                $insertedObjectIDs = $requestContext->result;
+                if (!$insertedObjectIDs->isEmpty) {
+                    $this->rowCache->deleteSnapshots($insertedObjectIDs);
+                }
+            } elseif ($requestContext instanceof SQLBatchUpdateRequestContext && $requestContext->request->resultType === BatchUpdateRequestResultType::objectIDs) {
+                /** @var ArrayClass<ManagedObjectID> $updatedObjectIDs */
+                $updatedObjectIDs = $requestContext->result;
+                if (!$updatedObjectIDs->isEmpty) {
+                    $this->rowCache->deleteSnapshots($updatedObjectIDs);
+                }
+            } elseif ($requestContext instanceof SQLBatchDeleteRequestContext) {
                 /** @var ArrayClass<mixed> $result */
                 $result = $requestContext->result;
                 if (match ($requestContext->request->resultType) {
@@ -295,16 +307,37 @@ final class SQLCore extends IncrementalStore
                     $entity = $this->model->entitiesByName[(string)$requestContext->fetchRequestForObjectsToDelete->entity?->name];
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass([$entity]));
                     if ($requestContext->request->resultType === BatchDeleteRequestResultType::objectIDs) {
-                        $this->rowCache->deleteSnapshots($result);
+                        /** @var ArrayClass<ManagedObjectID> $deleteObjectIDs */
+                        $deleteObjectIDs = $requestContext->result;
+                        if (!$deleteObjectIDs->isEmpty) {
+                            $this->rowCache->deleteSnapshots($deleteObjectIDs);
+                        }
                     }
                 }
             } elseif ($requestContext instanceof SQLSaveChangesRequestContext) {
                 if (($deletedObjects = $requestContext->request->deletedObjects) && !$deletedObjects->isEmpty) {
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass($deletedObjects->compactMap(fn(ManagedObject $object): ?SQLEntity => $this->model->entitiesByName[$object->entity->name])));
-                    $deletedObjects->forEach(fn(ManagedObject $object) => $this->rowCache->deleteSnapshot($object->objectID));
+                    $this->rowCache->deleteSnapshots($deletedObjects->map(fn(ManagedObject $deletedObject): ManagedObjectID => $deletedObject->objectID));
                 }
                 if ($updatedObjects = $requestContext->request->updatedObjects) {
-                    $updatedObjects->forEach(fn(ManagedObject $object) => $this->rowCache->deleteSnapshot($object->objectID));
+                    /** @var Dictionary<Dictionary<mixed>> $snapshotsToUpdate */
+                    $snapshotsToUpdate = new Dictionary();
+                    /** @var ArrayClass<ManagedObjectID> $deletedObjectIDs */
+                    $deletedObjectIDs = new ArrayClass();
+                    foreach ($updatedObjects as $updatedObject) {
+                        $objectID = $updatedObject->objectID;
+                        if ($snapshot = $updatedObject->lastSnapshot) {
+                            $snapshotsToUpdate[$objectID->uriRepresentation()->absoluteString] = $objectID->entity->sanitizeSnapshot($snapshot);
+                            continue;
+                        }
+                        $deletedObjectIDs->append($objectID);
+                    }
+                    if (!$snapshotsToUpdate->isEmpty) {
+                        $this->rowCache->setSnapshots($snapshotsToUpdate);
+                    }
+                    if (!$deletedObjectIDs->isEmpty) {
+                        $this->rowCache->deleteSnapshots($deletedObjectIDs);
+                    }
                 }
             }
             $this->currentGeneration = $this->rowCache->advanceGenerationForStore($this->identifier);
