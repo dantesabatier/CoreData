@@ -394,8 +394,13 @@ final class SQLGenerator
         }
         $appendBaseColumns = !$this->isSubquery && !$request->returnsObjectsAsFaults && $request->includesPropertyValues && !($request->resultType === FetchRequestResultType::countResultType && $this->keyValueOperator === KeyValueOperator::countKeyValueOperator);
         if ($appendBaseColumns) {
-            if (!$entity->entityDescription->isPersistentHistoryEntity && $request->resultType !== FetchRequestResultType::countResultType) {
-                $columnNames->formUnion(array_map(fn(SQLColumn $column): string => "$this->tableReference.$column->columnName", [$entity->primaryKey, $entity->entityKey, $entity->optLockKey]));
+            if ($request->resultType !== FetchRequestResultType::countResultType) {
+                /** @var ArrayClass<SQLColumn> $entityColumns */
+                $entityColumns = new ArrayClass([$entity->primaryKey]);
+                if (!$entity->entityDescription->isPersistentHistoryEntity) {
+                    $entityColumns->appendContentsOf([$entity->entityKey, $entity->optLockKey]);
+                }
+                $columnNames->formUnion($entityColumns->map(fn(SQLColumn $column): string => "$this->tableReference.$column->columnName"));
             }
             $columnNames->formUnion($entity->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary): ArrayClass => $dictionary->values->map(fn(SQLAttribute $attribute): string => "$this->tableReference.$attribute->name")));
         }
@@ -1326,6 +1331,7 @@ final class SQLGenerator
         $statement = new SQLStatement($string, $this->arguments);
         $predicate = $statement->description;
         $this->arguments->removeAll();
+        $isDeterministic = false;
         return "IF($predicate, $true, $false)";
     }
 
