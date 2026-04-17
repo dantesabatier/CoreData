@@ -34,7 +34,6 @@ use function Sabatier\Foundation\localized_string;
 use function Sabatier\Foundation\typeof;
 use const Sabatier\Foundation\LocalizedDescriptionKey;
 use const Sabatier\Foundation\LocalizedFailureReasonErrorKey;
-use const Sabatier\Foundation\NotFound;
 use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 
 /**
@@ -103,7 +102,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /** @var bool A Boolean value that indicates whether the managed object is a fault. Knowing whether an object is a fault is useful in many situations when computations are optional. It can also be used to avoid growing the object graph unnecessarily (which may improve performance as it can avoid time-consuming fetches from data stores). If this rela$relationship is false, then the receiver's data must be in memory. However, if this rela$relationship is true, it does not mean that the data is not in memory. The data may be in memory, or it may not, depending on many factors influencing caching. If the receiver is a fault, accessing this rela$relationship does not cause it to fire. */
     public bool $isFault = true;
     /** @var int The faulting state of the managed object. 0 if the object is fully initialized as a managed object and not transitioning to or from another state, otherwise some other value. */
-    public int $faultingState = NotFound;
+    public int $faultingState = ManagedObjectFaultingStateUnstable;
     /** @var SerializationRule Serialization rule. Defines how the object's properties contribute to its external serializable representation. */
     public SerializationRule $serializationRule = SerializationRule::attributesOnly;
     /** @var ArrayClass<string> Explicit list of properties included in the object's serializable representation. Used both when recursively preparing related objects for serialization and when producing JSON output through jsonSerialize(). */
