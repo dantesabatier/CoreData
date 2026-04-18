@@ -29,6 +29,7 @@ use Sabatier\Foundation\Sequence;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\UndoManager;
 use Sabatier\Foundation\URL;
+use WeakReference;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\typeof;
@@ -57,12 +58,19 @@ final class ManagedObjectContext extends ObjectClass
                 $stores = $userInfo[RemovedPersistentStoresKey];
                 foreach ($stores as $store) {
                     foreach ($this->byHashAssociationTable as $registeredObject) {
-                        if ($store === $registeredObject->objectID->persistentStore) {
-                            $this->unregister($registeredObject);
-                            $this->insertedObjects->remove($registeredObject);
-                            $this->updatedObjects->remove($registeredObject);
-                            $this->deletedObjects->remove($registeredObject);
+                        if ($registeredObject instanceof WeakReference) {
+                            $registeredObject = $registeredObject->get();
                         }
+                        if (!$registeredObject instanceof ManagedObject) {
+                            continue;
+                        }
+                        if ($store !== $registeredObject->objectID->persistentStore) {
+                            continue;
+                        }
+                        $this->unregister($registeredObject);
+                        $this->insertedObjects->remove($registeredObject);
+                        $this->updatedObjects->remove($registeredObject);
+                        $this->deletedObjects->remove($registeredObject);
                     }
                 }
             });
@@ -88,15 +96,15 @@ final class ManagedObjectContext extends ObjectClass
     private Set $unprocessedInserts {
         get => $this->unprocessedInserts ??= new Set();
     }
-    /** @var Dictionary<ManagedObject> */
+    /** @var Dictionary<ManagedObject|WeakReference<ManagedObject>> */
     private Dictionary $byHashAssociationTable {
         get => $this->byHashAssociationTable ??= new Dictionary();
     }
     /** @var Set<ManagedObject> $registeredObjects The set of objects registered with the context. */
     public Set $registeredObjects {
-        get => new Set($this->byHashAssociationTable->values);
+        get => new Set($this->byHashAssociationTable->values->compactMap(fn(ManagedObject|WeakReference $object): ?ManagedObject => $object instanceof WeakReference ? $object->get() : $object));
     }
-    /** @var bool A Boolean value that indicates whether the context keeps strong references to all registered managed objects. If set to true, the receiver keeps strong references to all registered managed objects. If set to false, then the receiver keeps strong references to registered objects only when they are inserted, updated, deleted, or locked. The default is false. */
+    /** @var bool A Boolean value that indicates whether the context keeps strong references to all registered managed objects. If set to true, the receiver keeps strong references to all registered managed objects. If set to false, then the receiver keeps strong references to registered objects only when they are inserted, updated, deleted, or locked. The default is true. */
     public bool $retainsRegisteredObjects = true;
     /** @var bool A Boolean value that determines whether the context turns inaccessible faults into deleted objects. Use this property to control how the context behaves when it encounters an inaccessible fault, an object with no underlying data in the persistent store. For example, you might fetch an object that has a to-many relationship, but then a background context deletes the related objects from the store before you traverse that relationship. */
     public bool $shouldDeleteInaccessibleFaults = true;
@@ -345,7 +353,11 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function registeredObject(ManagedObjectID $objectID): ?ManagedObject
     {
-        return $this->byHashAssociationTable[(string)$objectID];
+        $registeredObject = $this->byHashAssociationTable->valueForKey((string)$objectID);
+        if ($registeredObject instanceof WeakReference) {
+            return $registeredObject->get();
+        }
+        return $registeredObject;
     }
 
     /**
@@ -397,15 +409,20 @@ final class ManagedObjectContext extends ObjectClass
     public function refreshAllObjects(): void
     {
         foreach ($this->byHashAssociationTable as $registeredObject) {
-            $this->refresh($registeredObject, true);
+            if ($registeredObject instanceof WeakReference) {
+                $registeredObject = $registeredObject->get();
+            }
+            if ($registeredObject instanceof ManagedObject) {
+                $this->refresh($registeredObject, true);
+            }
         }
     }
 
     private function register(ManagedObject $object): void
     {
-        $key = (string)$object->objectID;
-        if (!$this->byHashAssociationTable[$key]) {
-            $this->byHashAssociationTable[$key] = $object;
+        if ($this->registeredObject($object->objectID) === null) {
+            $key = (string)$object->objectID;
+            $this->byHashAssociationTable[$key] = $this->retainsRegisteredObjects ? $object : WeakReference::create($object);
             $properties = $object::$contextShouldIgnoreUnmodeledPropertyChanges ? $object->persistentProperties : $object->allProperties;
             /** @var PropertyDescription $property */
             foreach ($properties as $property) {
@@ -418,9 +435,8 @@ final class ManagedObjectContext extends ObjectClass
 
     private function unregister(ManagedObject $object): void
     {
-        $key = (string)$object->objectID;
-        if ($this->byHashAssociationTable[$key]) {
-            $this->byHashAssociationTable->removeValueForKey($key);
+        if ($this->registeredObject($object->objectID) !== null) {
+            $this->byHashAssociationTable->removeValueForKey((string)$object->objectID);
             $properties = $object::$contextShouldIgnoreUnmodeledPropertyChanges ? $object->persistentProperties : $object->allProperties;
             foreach ($properties as $property) {
                 if (!$property instanceof FetchedPropertyDescription) {
@@ -585,7 +601,6 @@ final class ManagedObjectContext extends ObjectClass
     private function refault(ManagedObject $object, bool $mergeChanges = false): void
     {
         $changes = $mergeChanges ? $object->changedValues() : null;
-        $this->persistentStoreCoordinator?->persistentStoreForObject($object)?->rowCache?->deleteSnapshot($object->objectID);
         $faultHandler = $object->faultHandler;
         $faultHandler->turnObjectIntoFault($object, $this);
         if ($mergeChanges) {
@@ -1053,7 +1068,12 @@ final class ManagedObjectContext extends ObjectClass
     public function reset(): void
     {
         foreach ($this->byHashAssociationTable->values as $registeredObject) {
-            $this->unregister($registeredObject);
+            if ($registeredObject instanceof WeakReference) {
+                $registeredObject = $registeredObject->get();
+            }
+            if ($registeredObject instanceof ManagedObject) {
+                $this->unregister($registeredObject);
+            }
         }
         $this->byHashAssociationTable->removeAll();
         $this->resetState();

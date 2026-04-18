@@ -476,6 +476,16 @@ final class SQLCore extends IncrementalStore
     }
 
     /**
+     * @throws Exception
+     */
+    public function newObjectIDSetsForToManyPrefetchingRequest(FetchRequest $request, ArrayClass $sourceObjectIDs, string $orderColumnName, ManagedObjectContext $context): mixed
+    {
+        $requestContext = new SQLObjectIDSetFetchRequestContext($request, $context, $this, $sourceObjectIDs, $orderColumnName);
+        $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
+        return $requestContext->result;
+    }
+
+    /**
      * @param RelationshipDescription $relationship
      * @param ManagedObjectID $objectID
      * @param ManagedObjectContext $context
@@ -542,13 +552,19 @@ final class SQLCore extends IncrementalStore
         return $this->maxPrimaryKeys[$entityName];
     }
 
+    public function ensureDatabaseMatchesModel(): void
+    {
+    }
+
     #[Override]
     public function load(): bool
     {
         return $this->queryGenerationTrackingConnection->connect();
     }
 
-    public function ensureDatabaseMatchesModel(): void
+    #[Override]
+    public function unload(): bool
     {
+        return $this->queryGenerationTrackingConnection->disconnect();
     }
 }

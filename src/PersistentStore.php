@@ -50,6 +50,7 @@ abstract class PersistentStore extends ObjectClass
     private Dictionary $cacheEntities {
         get => $this->cacheEntities ??= new Dictionary();
     }
+    /** @internal */
     public PersistentStoreCache $rowCache {
         get => $this->rowCache ??= new (static::$rowCacheClass)();
     }
@@ -125,7 +126,8 @@ abstract class PersistentStore extends ObjectClass
         request_concrete_implementation($this, __FUNCTION__);
     }
 
-    protected function managedObjectID(URL $uriRepresentation): ManagedObjectID
+    /** @internal */
+    public function managedObjectID(URL $uriRepresentation): ManagedObjectID
     {
         $referenceObject = (int)$uriRepresentation->lastPathComponent;
         $entityName = $uriRepresentation->deletingLastPathComponent()->lastPathComponent;
@@ -304,5 +306,14 @@ abstract class PersistentStore extends ObjectClass
     public function load(): bool
     {
         request_concrete_implementation($this, __FUNCTION__);
+    }
+
+    /**
+     * @throws Exception
+     * @internal
+     */
+    public function unload(): bool
+    {
+        return true;
     }
 }

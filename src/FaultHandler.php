@@ -35,11 +35,13 @@ final readonly class FaultHandler
         $object->faultingState = ManagedObjectFaultingStateStable;
     }
 
-    public function turnObjectIntoFault(/** @noinspection PhpUnusedParameterInspection */ ManagedObject $object, ?ManagedObjectContext $context = null): void
+    public function turnObjectIntoFault(ManagedObject $object, ?ManagedObjectContext $context = null): void
     {
         if ($object->isFault) {
             return;
         }
+        $context ??= $object->managedObjectContext;
+        $context->persistentStoreCoordinator?->persistentStoreForObject($object)?->rowCache?->deleteSnapshot($object->objectID);
         $object->isSuppressingChangeNotifications = true;
         $object->isSuppressingKVO = true;
         $object->willTurnIntoFault();
