@@ -64,7 +64,7 @@ final class ManagedObjectContext extends ObjectClass
                         if (!$registeredObject instanceof ManagedObject) {
                             continue;
                         }
-                        if ($store !== $registeredObject->objectID->persistentStore) {
+                        if ($store->identifier !== $registeredObject->objectID->persistentStore?->identifier) {
                             continue;
                         }
                         $this->unregister($registeredObject);
