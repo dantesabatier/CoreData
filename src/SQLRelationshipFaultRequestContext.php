@@ -4,6 +4,7 @@ namespace Sabatier\CoreData;
 
 use Override;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
@@ -70,6 +71,7 @@ final class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
             $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($this->objectID->referenceObject));
             $fetchRequest->includesPendingChanges = true;
             $fetchRequest->propertiesToFetch = new ArrayClass([$property->relationshipDescription->name]);
+            $fetchRequest->serialization = new Dictionary();
             $fetchRequestContext = new SQLFetchRequestContext($fetchRequest, $this->context, $this->sqlCore);
             $fetchRequestContext->executeRequestUsingConnection($this->connection);
             $first = $fetchRequestContext->result->first;

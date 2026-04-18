@@ -38,6 +38,7 @@ final class ManagedObjectSerializationPreparer
         }
         $this->applySerializationShape($object, $dictionary);
         $object->serializationKey = $serializationKey;
+        $context = $object->managedObjectContext;
         foreach ($dictionary as $k => $v) {
             if (!$v instanceof Sequence) {
                 continue;
@@ -46,7 +47,7 @@ final class ManagedObjectSerializationPreparer
             if ($value instanceof ManagedObject) {
                 $this->prepareObjectGraph($value, $v);
             } elseif ($value instanceof ManagedObjectID) {
-                $this->prepareObjectGraph($object->managedObjectContext->object($value), $v);
+                $this->prepareObjectGraph($context->object($value), $v);
             } elseif ($value instanceof Sequence) {
                 $value->forEach(fn(ManagedObject $object) => $this->prepareObjectGraph($object, $v));
             }

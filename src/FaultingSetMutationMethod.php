@@ -31,7 +31,7 @@ final readonly class FaultingSetMutationMethod
         /** @var RelationshipDescription $relationship */
         $relationship = $obj->modeledRelationships[$key];
         $inverseRelationship = $relationship->inverseRelationship;
-        return !$inverseRelationship->isToMany ? $inverseRelationship : null;
+        return $inverseRelationship->isToMany ? null : $inverseRelationship;
     }
 
     /**
