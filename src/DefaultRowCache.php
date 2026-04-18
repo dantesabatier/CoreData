@@ -6,7 +6,18 @@ use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 
-/** @internal */
+/**
+ * Default in-memory implementation of RowCache.
+ *
+ * Stores snapshots and query results in process memory. This implementation
+ * is useful for development, testing, or single-process environments where
+ * persistence across requests is not required.
+ *
+ * Characteristics:
+ * - Fast access (no I/O)
+ * - Not shared between processes
+ * - Resets on every request lifecycle
+ */
 final class DefaultRowCache extends RowCache
 {
     /** @var Dictionary<mixed> */

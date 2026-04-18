@@ -6,7 +6,22 @@ use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 
-/** @internal */
+/**
+ * APCu-based implementation of RowCache.
+ *
+ * Uses the APCu extension as a shared in-memory cache across PHP requests
+ * within the same server.
+ *
+ * Characteristics:
+ * - Shared between requests (same PHP-FPM pool)
+ * - Very fast access
+ * - Limited by APCu memory configuration
+ * - Not distributed across multiple servers
+ *
+ * Recommended for:
+ * - Single-node deployments
+ * - High-performance read-heavy workloads
+ */
 final class APCuRowCache extends RowCache
 {
     #[Override]

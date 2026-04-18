@@ -8,7 +8,22 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use function Sabatier\Foundation\fatal_error;
 
-/** @internal */
+/**
+ * Redis-backed implementation of RowCache.
+ *
+ * Stores snapshots and query results in a Redis server, enabling distributed
+ * caching across multiple application instances.
+ *
+ * Characteristics:
+ * - Shared across multiple servers
+ * - Network-based access (slower than in-memory, but scalable)
+ * - Supports large datasets and persistence strategies
+ *
+ * Recommended for:
+ * - Distributed systems
+ * - Horizontal scaling environments
+ * - High cache consistency requirements across nodes
+ */
 final class RedisRowCache extends RowCache
 {
     private Redis $redis;
