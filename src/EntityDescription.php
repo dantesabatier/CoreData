@@ -163,6 +163,21 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
     private(set) Dictionary $entitySpecificIndexes {
         get => $this->entitySpecificIndexes ??= new Dictionary();
     }
+    /**
+     * @var ArrayClass<string>
+     * @internal
+     */
+    public ArrayClass $defaultSerializationKeys {
+        get {
+            if (isset($this->defaultSerializationKeys)) {
+                return $this->defaultSerializationKeys;
+            }
+            $defaultSerializationKeys = $this->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient)->keys;
+            $defaultSerializationKeys->insertAt(ManagedObjectObjectIDKey, 0);
+            $defaultSerializationKeys->insertAt(ManagedObjectEntityNameKey, 1);
+            return $this->defaultSerializationKeys = $defaultSerializationKeys;
+        }
+    }
     /** @internal */
     public bool $isFlattened = false;
     /** @internal */

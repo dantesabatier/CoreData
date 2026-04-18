@@ -103,29 +103,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public bool $isFault = true;
     /** @var int The faulting state of the managed object. 0 if the object is fully initialized as a managed object and not transitioning to or from another state, otherwise some other value. */
     public int $faultingState = ManagedObjectFaultingStateUnstable;
-    /** @var SerializationRule Serialization rule. Defines how the object's properties contribute to its external serializable representation. */
-    public SerializationRule $serializationRule = SerializationRule::attributesOnly;
-    /** @var ArrayClass<string> Explicit list of properties included in the object's serializable representation. Used both when recursively preparing related objects for serialization and when producing JSON output through jsonSerialize(). */
-    public ArrayClass $serializationKeys {
-        get {
-            if (isset($this->serializationKeys)) {
-                return $this->serializationKeys;
-            }
-            /** @var ArrayClass<string> $serializationKeys */
-            $serializationKeys = match ($this->serializationRule) {
-                SerializationRule::attributesOnly => $this->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute->isTransient)->keys,
-                SerializationRule::attributesAndRelationships => $this->entity->propertiesByName->filter(function (PropertyDescription $property): bool {
-                    if ($property instanceof RelationshipDescription) {
-                        return !$property->isToMany || !$property->inverseRelationship->isToMany;
-                    }
-                    return $property instanceof FetchedPropertyDescription;
-                })->keys,
-                default => new ArrayClass(),
-            };
-            $serializationKeys->insertAt(ManagedObjectObjectIDKey, 0);
-            $serializationKeys->insertAt(ManagedObjectEntityNameKey, 1);
-            return $this->serializationKeys = $serializationKeys;
-        }
+    /** @var ArrayClass<string> */
+    private ArrayClass $serializationKeys {
+        get => ManagedObjectSerializationPreparer::shared()->serializationKeysForObject($this) ?? $this->entity->defaultSerializationKeys;
     }
     public ?string $serializationKey = null;
     /** @internal */
@@ -1182,30 +1162,15 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         }
     }
 
-    private function serializedObject(ManagedObject $object, RelationshipDescription $relationship): Dictionary
-    {
-        $serializationRule = $this->serializationRule;
-        if ($serializationRule === SerializationRule::attributesAndRelationships) {
-            $inverseRelationship = $relationship->inverseRelationship;
-            $destinationEntity = $inverseRelationship->destinationEntity;
-            if ($this->entity->isKindOf($destinationEntity)) {
-                $object->serializationKeys = $object->serializationKeys->filter(fn(string $key): bool => $key !== $inverseRelationship->name);
-            }
-        } elseif ($serializationRule === SerializationRule::attributesOnly) {
-            $object->serializationKeys = $object->entity->attributesByName->keys;
-        }
-        return $object->jsonSerialize();
-    }
-
     private function serializedRelationshipValue(RelationshipDescription $relationship): Set|Dictionary|null
     {
         $key = $relationship->name;
         $value = $this->valueForKey($key);
         if ($value instanceof ManagedObject) {
-            return $this->serializedObject($value, $relationship);
+            return $value->jsonSerialize();
         }
         if ($value instanceof Set) {
-            return $value->map(fn(ManagedObject $object): Dictionary => $this->serializedObject($object, $relationship));
+            return $value->map(fn(ManagedObject $object): Dictionary => $object->jsonSerialize());
         }
         if ($relationship->isToMany && !$relationship->isOptional) {
             return new Set();

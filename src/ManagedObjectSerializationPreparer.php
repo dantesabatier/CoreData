@@ -2,17 +2,32 @@
 
 namespace Sabatier\CoreData;
 
+use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Sequence;
+use WeakMap;
 
 /** @internal */
 final class ManagedObjectSerializationPreparer
 {
     private static ?ManagedObjectSerializationPreparer $shared = null;
 
+    /** @var WeakMap<ManagedObject, ArrayClass<string>> */
+    private WeakMap $serializationShapes;
+
+    public function __construct()
+    {
+        $this->serializationShapes = new WeakMap();
+    }
+
     public static function shared(): ManagedObjectSerializationPreparer
     {
         return self::$shared ??= new ManagedObjectSerializationPreparer();
+    }
+
+    public function serializationKeysForObject(ManagedObject $object): ?ArrayClass
+    {
+        return $this->serializationShapes[$object] ?? null;
     }
 
     private function applySerializationShape(ManagedObject $object, Dictionary $dictionary): void
@@ -26,18 +41,15 @@ final class ManagedObjectSerializationPreparer
         }
         $serializationKeys->insertAt(ManagedObjectObjectIDKey, 0);
         $serializationKeys->insertAt(ManagedObjectEntityNameKey, 1);
-        $object->serializationRule = SerializationRule::custom;
-        $object->serializationKeys = $serializationKeys;
+        $this->serializationShapes[$object] = $serializationKeys;
     }
 
     private function prepareObjectGraph(ManagedObject $object, Dictionary $dictionary): void
     {
-        $serializationKey = md5($dictionary->description);
-        if ($object->serializationKey === $serializationKey) {
+        if (isset($this->serializationShapes[$object])) {
             return;
         }
         $this->applySerializationShape($object, $dictionary);
-        $object->serializationKey = $serializationKey;
         $context = $object->managedObjectContext;
         foreach ($dictionary as $k => $v) {
             if (!$v instanceof Sequence) {
@@ -57,15 +69,10 @@ final class ManagedObjectSerializationPreparer
     /** @noinspection PhpMixedReturnTypeCanBeReducedInspection */
     public function serialized(ManagedObject $object, ?Dictionary $dictionary): mixed
     {
-        $serializationKey = $dictionary && !$dictionary->isEmpty ? md5($dictionary->description) : null;
-        if ($object->serializationKey === $serializationKey) {
-            return $object;
-        }
-        if ($dictionary === null) {
+        if ($dictionary === null || $dictionary->isEmpty) {
             return $object;
         }
         $this->prepareObjectGraph($object, $dictionary);
-        $object->serializationKey = $serializationKey;
         return $object;
     }
 }
