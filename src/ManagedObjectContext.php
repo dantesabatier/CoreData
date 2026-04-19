@@ -51,15 +51,17 @@ final class ManagedObjectContext extends ObjectClass
         set {
             $this->persistentStoreCoordinator = $value;
             NotificationCenter::default()->removeObserver($this, PersistentStoreCoordinatorWillRemoveStore);
-            NotificationCenter::default()->addObserverForName(PersistentStoreCoordinatorWillRemoveStore, $value, function (Notification $notification): void {
-                /** @var Dictionary<mixed> $userInfo */
-                $userInfo = $notification->userInfo;
-                /** @var ArrayClass<PersistentStore> $stores */
-                $stores = $userInfo[RemovedPersistentStoresKey];
-                foreach ($stores as $store) {
-                    $this->unregisterObjects($this->registeredObjects->filter(fn(ManagedObject $object): bool => $store->identifier !== $object->objectID->persistentStore?->identifier));
-                }
-            });
+            if ($value) {
+                NotificationCenter::default()->addObserverForName(PersistentStoreCoordinatorWillRemoveStore, $value, function (Notification $notification): void {
+                    /** @var Dictionary<mixed> $userInfo */
+                    $userInfo = $notification->userInfo;
+                    /** @var ArrayClass<PersistentStore> $stores */
+                    $stores = $userInfo[RemovedPersistentStoresKey];
+                    foreach ($stores as $store) {
+                        $this->unregisterObjects($this->registeredObjects->filter(fn(ManagedObject $object): bool => $store->identifier !== $object->objectID->persistentStore?->identifier));
+                    }
+                });
+            }
         }
     }
     /** @var ManagedObjectContext|null The parent of the context. */
