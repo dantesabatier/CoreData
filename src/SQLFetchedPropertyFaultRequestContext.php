@@ -2,10 +2,11 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\Dictionary;
 use function Sabatier\Foundation\fatal_error;
 
-class SQLFetchedPropertyFaultRequestContext extends SQLStoreRequestContext
+final class SQLFetchedPropertyFaultRequestContext extends SQLStoreRequestContext
 {
     public FetchRequest $fetchRequest {
         get {
@@ -29,6 +30,7 @@ class SQLFetchedPropertyFaultRequestContext extends SQLStoreRequestContext
         parent::__construct($request, $context, $sqlCore);
     }
 
+    #[Override]
     protected function executeRequestCore(): bool
     {
         $debugLevel = $this->debugLevel;
