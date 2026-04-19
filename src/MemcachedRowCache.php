@@ -6,7 +6,6 @@ use Memcached;
 use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
-use function Sabatier\Foundation\fatal_error;
 
 /**
  * Memcached-backed implementation of RowCache.
@@ -30,8 +29,10 @@ final class MemcachedRowCache extends RowCache
 
     public function __construct(string $host = "127.0.0.1", int $port = 11211)
     {
-        $this->memcached = new Memcached();
-        $this->memcached->addServer($host, $port);
+        $this->memcached = new Memcached("core_data_cache");
+        if (!count($this->memcached->getServerList())) {
+            $this->memcached->addServer($host, $port);
+        }
     }
 
     #[Override]
@@ -47,7 +48,7 @@ final class MemcachedRowCache extends RowCache
         $key = "generation:$storeIdentifier";
         $generation = $this->memcached->increment($key);
         if ($generation === false) {
-            $this->memcached->set($key, 1);
+            $this->memcached->add($key, 1);
             return 1;
         }
         return $generation;
@@ -67,15 +68,13 @@ final class MemcachedRowCache extends RowCache
         if ($this->memcached->getResultCode() !== Memcached::RES_SUCCESS || $data === false) {
             return null;
         }
-
-        return new Dictionary(unserialize($data));
+        return new Dictionary($data);
     }
 
     #[Override]
     public function setSnapshot(Dictionary $snapshot, ManagedObjectID $objectID, int $ttl = SecondsPerHourTimeInterval, ?PropertyDescription $property = null): void
     {
-        $value = serialize($snapshot->array) ?: fatal_error("Unable to serialize snapshot for Memcached row cache");
-        $this->memcached->set($this->cacheKey($objectID, $property), $value, $ttl);
+        $this->memcached->set($this->cacheKey($objectID, $property), $snapshot->array, $ttl);
     }
 
     #[Override]
@@ -108,12 +107,12 @@ final class MemcachedRowCache extends RowCache
         return new Dictionary($cache)->reduce(new Dictionary(),
             /**
              * @param Dictionary<Dictionary<mixed>> $result
-             * @param string $value
+             * @param array $value
              * @param string $key
              * @return Dictionary<Dictionary<mixed>>
              */
-            function (Dictionary $result, string $value, string $key) use ($map): Dictionary {
-                $result[(string)$map[$key]] = new Dictionary(unserialize($value));
+            function (Dictionary $result, array $value, string $key) use ($map): Dictionary {
+                $result[(string)$map[$key]] = new Dictionary($value);
                 return $result;
             });
     }
@@ -133,7 +132,7 @@ final class MemcachedRowCache extends RowCache
              * @return array<string, string>
              */
             function (array &$carry, Dictionary $snapshot, string $key): array {
-                $carry[$key] = serialize($snapshot->array) ?: fatal_error("Unable to serialize snapshot for Memcached row cache");
+                $carry[$key] = $snapshot->array;
                 return $carry;
             });
         $this->memcached->setMulti($payload, $ttl);
