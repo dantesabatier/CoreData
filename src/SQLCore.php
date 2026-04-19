@@ -304,6 +304,7 @@ final class SQLCore extends IncrementalStore
                         /** @var ArrayClass<ManagedObjectID> $deleteObjectIDs */
                         $deleteObjectIDs = $requestContext->result;
                         if (!$deleteObjectIDs->isEmpty) {
+                            $this->recomputePrimaryKeyMaxForEntities($deleteObjectIDs->compactMap(fn(ManagedObjectID $objectID): ?SQLEntity => $this->model->entitiesByName[$objectID->entityName]));
                             $this->rowCache->deleteSnapshots($deleteObjectIDs);
                         }
                     }
