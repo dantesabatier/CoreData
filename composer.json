@@ -29,7 +29,8 @@
     "ext-zlib": "*",
     "sabatier/foundation": "@dev",
     "ext-apcu": "*",
-    "ext-redis": "*"
+    "ext-redis": "*",
+    "ext-memcached": "*"
   },
   "config": {
     "platform": {
