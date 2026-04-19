@@ -51,7 +51,6 @@ abstract class PersistentStore extends ObjectClass
     private Dictionary $cacheEntities {
         get => $this->cacheEntities ??= new Dictionary();
     }
-    /** @internal */
     public PersistentStoreCache $rowCache {
         get => $this->rowCache ??= new (static::$rowCacheClass)();
     }
