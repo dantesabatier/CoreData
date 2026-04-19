@@ -174,16 +174,32 @@ final class ManagedObjectContext extends ObjectClass
         $newValue = $this->persistentStoreCoordinator?->persistentStoreForObjectID($objectID)?->newValueForRelationship($relationship, $objectID, $this) ?? Nil::nil();
         if ($relationship->isToMany) {
             /** @var Sequence $newValue */
-            $newValue instanceof Sequence ?: fatal_error(sprintf("invalid argument: expecting \"%s\", (%s)%s given", Sequence::class, typeof($newValue), human_readable_value($newValue)));
+            $newValue instanceof ArrayClass ?: fatal_error(sprintf("invalid argument: expecting \"%s\", (%s)%s given", Sequence::class, typeof($newValue), human_readable_value($newValue)));
             $value = new FaultingSet($this->object($objectID), $relationship);
             $value->setSet(new Set($newValue));
         } else {
             $value = $newValue;
-            $value instanceof ManagedObject || $value instanceof ManagedObjectID || $value instanceof Nil ?: $value
+            $value instanceof ManagedObjectID || $value instanceof Nil ?: $value
                     |> typeof(...)
-                    |> (fn(string $x): string => sprintf("invalid argument: %s->%s expecting \"%s|%s|%s\", \"%s\" given", $objectID->entityName, $relationship->name, ManagedObject::class, ManagedObjectID::class, Nil::class, $x))
+                    |> (fn(string $x): string => sprintf("invalid argument: %s->%s expecting \"%s|%s\", \"%s\" given", $objectID->entityName, $relationship->name, ManagedObjectID::class, Nil::class, $x))
                     |> fatal_error(...);
         }
+        return $value;
+    }
+
+    /**
+     * @param FetchedPropertyDescription $fetchedProperty
+     * @param ManagedObjectID $objectID
+     * @return ArrayClass<ManagedObject>
+     * @internal
+     */
+    public function newValueForFetchedProperty(FetchedPropertyDescription $fetchedProperty, ManagedObjectID $objectID): ArrayClass
+    {
+        $newValue = $this->persistentStoreCoordinator?->persistentStoreForObjectID($objectID)?->newValueForFetchedProperty($fetchedProperty, $objectID, $this);
+        /** @var ArrayClass $newValue */
+        $newValue instanceof ArrayClass ?: fatal_error(sprintf("invalid argument: expecting \"%s\", (%s)%s given", ArrayClass::class, typeof($newValue), human_readable_value($newValue)));
+        $value = new FaultingArray($this->object($objectID), $fetchedProperty);
+        $value->setArray($newValue->map(fn(ManagedObjectID $objectID): ManagedObject => $this->object($objectID)));
         return $value;
     }
 

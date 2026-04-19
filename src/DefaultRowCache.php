@@ -41,27 +41,27 @@ final class DefaultRowCache extends RowCache
     }
 
     #[Override]
-    public function hasSnapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): bool
+    public function hasSnapshot(ManagedObjectID $objectID, ?PropertyDescription $property = null): bool
     {
-        return $this->storage->offsetExists($this->cacheKey($objectID, $relationship));
+        return $this->storage->offsetExists($this->cacheKey($objectID, $property));
     }
 
     #[Override]
-    public function snapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): ?Dictionary
+    public function snapshot(ManagedObjectID $objectID, ?PropertyDescription $property = null): ?Dictionary
     {
-        return $this->storage[$this->cacheKey($objectID, $relationship)];
+        return $this->storage[$this->cacheKey($objectID, $property)];
     }
 
     #[Override]
-    public function setSnapshot(Dictionary $snapshot, ManagedObjectID $objectID, int $ttl = 3600, ?RelationshipDescription $relationship = null): void
+    public function setSnapshot(Dictionary $snapshot, ManagedObjectID $objectID, int $ttl = 3600, ?PropertyDescription $property = null): void
     {
-        $this->storage[$this->cacheKey($objectID, $relationship)] = $snapshot;
+        $this->storage[$this->cacheKey($objectID, $property)] = $snapshot;
     }
 
     #[Override]
-    public function deleteSnapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): void
+    public function deleteSnapshot(ManagedObjectID $objectID, ?PropertyDescription $property = null): void
     {
-        $this->storage->removeValueForKey($this->cacheKey($objectID, $relationship));
+        $this->storage->removeValueForKey($this->cacheKey($objectID, $property));
     }
 
     #[Override]

@@ -480,55 +480,6 @@ final class SQLCore extends IncrementalStore
         return new ArrayClass();
     }
 
-    /**
-     * @throws Exception
-     */
-    public function newObjectIDSetsForToManyPrefetchingRequest(FetchRequest $request, ArrayClass $sourceObjectIDs, string $orderColumnName, ManagedObjectContext $context): mixed
-    {
-        $requestContext = new SQLObjectIDSetFetchRequestContext($request, $context, $this, $sourceObjectIDs, $orderColumnName);
-        $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
-        return $requestContext->result;
-    }
-
-    /**
-     * @param RelationshipDescription $relationship
-     * @param ManagedObjectID $objectID
-     * @param ManagedObjectContext $context
-     * @return ArrayClass<ManagedObjectID>|Set<ManagedObjectID>|ManagedObjectID|Nil
-     * @throws Exception
-     */
-    #[Override]
-    public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass|Set|ManagedObjectID|Nil
-    {
-        if ($cached = $this->rowCache->snapshot($objectID, $relationship)) {
-            /** @var list<string>|string|Nil $value */
-            $value = $cached[ManagedObjectRelationshipResultKey];
-            if (is_array($value)) {
-                return new ArrayClass($value)->map(fn(string $string) => $this->managedObjectID(new URL($string)));
-            }
-            if (is_string($value)) {
-                return $this->managedObjectID(new URL($value));
-            }
-            return $value;
-        }
-        $requestContext = new SQLRelationshipFaultRequestContext($objectID, $relationship, $context, $this);
-        $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
-        $result = $requestContext->result;
-        $result instanceof Sequence || $result instanceof ManagedObjectID || $result instanceof Nil ?: $result
-                |> typeof(...)
-                |> (fn(string $x): string => sprintf("invalid argument: %s(%s, %s) expecting \"%s|%s|%s\", \"%s\" given", __FUNCTION__, $relationship->name, $objectID->entityName, Sequence::class, ManagedObjectID::class, Nil::class, $x))
-                |> fatal_error(...);
-        /** @var list<string>|string|Nil $relationshipResultValue */
-        $relationshipResultValue = $result;
-        if ($result instanceof ArrayClass) {
-            $relationshipResultValue = $result->map(fn(ManagedObjectID $objectID): string => $objectID->uriRepresentation()->absoluteString)->array;
-        } elseif ($result instanceof ManagedObjectID) {
-            $relationshipResultValue = $result->uriRepresentation()->absoluteString;
-        }
-        $this->rowCache->setSnapshot(new Dictionary([ManagedObjectRelationshipResultKey => $relationshipResultValue]), $objectID, $this->stalenessInterval, $relationship);
-        return $result;
-    }
-
     #[Override]
     public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): IncrementalStoreNode
     {
@@ -541,6 +492,62 @@ final class SQLCore extends IncrementalStore
         $snapshot = $requestContext->result;
         $this->rowCache->setSnapshot($objectID->entity->sanitizeSnapshot($snapshot), $objectID, $this->stalenessInterval);
         return new IncrementalStoreNode($objectID, $snapshot);
+    }
+
+    /**
+     * @throws Exception
+     */
+    #[Override]
+    public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass|ManagedObjectID|Nil
+    {
+        if ($cached = $this->rowCache->snapshot($objectID, $relationship)) {
+            /** @var list<string>|string|Nil $value */
+            $value = $cached[ManagedObjectPropertyResultKey];
+            if (is_array($value)) {
+                return new ArrayClass($value)->map(fn(string $string) => $this->managedObjectID(new URL($string)));
+            }
+            if (is_string($value)) {
+                return $this->managedObjectID(new URL($value));
+            }
+            return $value;
+        }
+        $requestContext = new SQLRelationshipFaultRequestContext($objectID, $relationship, $context, $this);
+        $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
+        $result = $requestContext->result;
+        $result instanceof ArrayClass || $result instanceof ManagedObjectID || $result instanceof Nil ?: $result
+                |> typeof(...)
+                |> (fn(string $x): string => sprintf("invalid argument: %s(%s, %s) expecting \"%s|%s|%s\", \"%s\" given", __FUNCTION__, $relationship->name, $objectID->entityName, Sequence::class, ManagedObjectID::class, Nil::class, $x))
+                |> fatal_error(...);
+        /** @var list<string>|string|Nil $propertyResultValue */
+        $propertyResultValue = $result;
+        if ($result instanceof ArrayClass) {
+            $propertyResultValue = $result->map(fn(ManagedObjectID $objectID): string => $objectID->uriRepresentation()->absoluteString)->array;
+        } elseif ($result instanceof ManagedObjectID) {
+            $propertyResultValue = $result->uriRepresentation()->absoluteString;
+        }
+        $this->rowCache->setSnapshot(new Dictionary([ManagedObjectPropertyResultKey => $propertyResultValue]), $objectID, $this->stalenessInterval, $relationship);
+        return $result;
+    }
+
+    /**
+     * @throws Exception
+     */
+    #[Override]
+    public function newValueForFetchedProperty(FetchedPropertyDescription $fetchedProperty, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass
+    {
+        if ($cached = $this->rowCache->snapshot($objectID, $fetchedProperty)) {
+            /** @var list<string> $value */
+            $value = $cached[ManagedObjectPropertyResultKey];
+            return new ArrayClass($value)->map(fn(string $string) => $this->managedObjectID(new URL($string)));
+        }
+        $requestContext = new SQLFetchedPropertyFaultRequestContext($objectID, $fetchedProperty, $context, $this);
+        $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
+        /** @var ArrayClass<ManagedObject> $result */
+        $result = $requestContext->result;
+        /** @var list<string> $propertyResultValue */
+        $propertyResultValue = $result->map(fn(ManagedObjectID $objectID): string => $objectID->uriRepresentation()->absoluteString)->array;
+        $this->rowCache->setSnapshot(new Dictionary([ManagedObjectPropertyResultKey => $propertyResultValue]), $objectID, $this->stalenessInterval, $fetchedProperty);
+        return $result;
     }
 
     /**

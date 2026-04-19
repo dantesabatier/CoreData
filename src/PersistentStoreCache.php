@@ -35,19 +35,19 @@ interface PersistentStoreCache
      * Must be a fast existence check.
      *
      * @param ManagedObjectID $objectID Object identifier.
-     * @param RelationshipDescription|null $relationship Optional relationship scope.
+     * @param PropertyDescription|null $property Optional relationship scope.
      * @return bool
      */
-    public function hasSnapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): bool;
+    public function hasSnapshot(ManagedObjectID $objectID, ?PropertyDescription $property = null): bool;
 
     /**
      * Returns the snapshot for an object.
      *
      * @param ManagedObjectID $objectID Object identifier.
-     * @param RelationshipDescription|null $relationship Optional relationship scope.
+     * @param PropertyDescription|null $property Optional relationship scope.
      * @return Dictionary<mixed>|null
      */
-    public function snapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): ?Dictionary;
+    public function snapshot(ManagedObjectID $objectID, ?PropertyDescription $property = null): ?Dictionary;
 
     /**
      * Stores a snapshot.
@@ -55,17 +55,17 @@ interface PersistentStoreCache
      * @param Dictionary<mixed> $snapshot Snapshot data.
      * @param ManagedObjectID $objectID Object identifier.
      * @param int $ttl Time-to-live in seconds.
-     * @param RelationshipDescription|null $relationship Optional relationship scope.
+     * @param PropertyDescription|null $property Optional relationship scope.
      */
-    public function setSnapshot(Dictionary $snapshot, ManagedObjectID $objectID, int $ttl = SecondsPerHourTimeInterval, ?RelationshipDescription $relationship = null): void;
+    public function setSnapshot(Dictionary $snapshot, ManagedObjectID $objectID, int $ttl = SecondsPerHourTimeInterval, ?PropertyDescription $property = null): void;
 
     /**
      * Deletes a snapshot.
      *
      * @param ManagedObjectID $objectID Object identifier.
-     * @param RelationshipDescription|null $relationship Optional relationship scope.
+     * @param PropertyDescription|null $property Optional relationship scope.
      */
-    public function deleteSnapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): void;
+    public function deleteSnapshot(ManagedObjectID $objectID, ?PropertyDescription $property = null): void;
 
     /**
      * Returns multiple snapshots.

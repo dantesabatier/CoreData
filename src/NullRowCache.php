@@ -36,24 +36,24 @@ final class NullRowCache implements PersistentStoreCache
     }
 
     #[Override]
-    public function hasSnapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): bool
+    public function hasSnapshot(ManagedObjectID $objectID, ?PropertyDescription $property = null): bool
     {
         return false;
     }
 
     #[Override]
-    public function snapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): ?Dictionary
+    public function snapshot(ManagedObjectID $objectID, ?PropertyDescription $property = null): ?Dictionary
     {
         return null;
     }
 
     #[Override]
-    public function setSnapshot(Dictionary $snapshot, ManagedObjectID $objectID, int $ttl = 3600, ?RelationshipDescription $relationship = null): void
+    public function setSnapshot(Dictionary $snapshot, ManagedObjectID $objectID, int $ttl = 3600, ?PropertyDescription $property = null): void
     {
     }
 
     #[Override]
-    public function deleteSnapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): void
+    public function deleteSnapshot(ManagedObjectID $objectID, ?PropertyDescription $property = null): void
     {
     }
 

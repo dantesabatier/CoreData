@@ -15,10 +15,10 @@ use Override;
  */
 abstract class RowCache implements PersistentStoreCache
 {
-    protected function cacheKey(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): string
+    protected function cacheKey(ManagedObjectID $objectID, ?PropertyDescription $property = null): string
     {
-        $name = $relationship?->name ?? "";
-        $divider = $relationship ? "/" : "";
+        $name = $property?->name ?? "";
+        $divider = $property ? "/" : "";
         return "{$objectID->uriRepresentation()->absoluteString}$divider$name";
     }
 

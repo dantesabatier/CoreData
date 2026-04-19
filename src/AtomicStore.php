@@ -6,6 +6,7 @@ use Exception;
 use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\CompoundPredicate;
@@ -301,7 +302,7 @@ abstract class AtomicStore extends PersistentStore
     }
 
     #[Override]
-    public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): mixed
+    public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context):  ArrayClass|ManagedObjectID|Nil
     {
         $entity = $objectID->entity;
         $destinationEntity = $relationship->destinationEntity;
@@ -314,13 +315,13 @@ abstract class AtomicStore extends PersistentStore
                 return $this->nodeCache->filter(fn(AtomicStoreCacheNode $node): bool => $node->objectID->entity->isKindOf($destinationEntity) && $node->valueForKey($inverseRelationship->name)?->isEqual($objectID))->map(fn(AtomicStoreCacheNode $node): ManagedObjectID => $node->objectID);
             }
             if (!$inverseRelationship->isToMany) {
-                return $this->nodeCache->first(fn(AtomicStoreCacheNode $node): bool => $node->objectID->entity->isKindOf($destinationEntity) && $node->valueForKey($inverseRelationship->name)?->isEqual($objectID))?->objectID;
+                return $this->nodeCache->first(fn(AtomicStoreCacheNode $node): bool => $node->objectID->entity->isKindOf($destinationEntity) && $node->valueForKey($inverseRelationship->name)?->isEqual($objectID))?->objectID ?? Nil::nil();
             }
         }
         if ($relationship->isToMany) {
             return new ArrayClass();
         }
-        return null;
+        return Nil::nil();
     }
 
     #[Override]

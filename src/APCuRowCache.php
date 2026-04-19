@@ -49,28 +49,28 @@ final class APCuRowCache extends RowCache
     }
 
     #[Override]
-    public function hasSnapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): bool
+    public function hasSnapshot(ManagedObjectID $objectID, ?PropertyDescription $property = null): bool
     {
-        return apcu_exists($this->cacheKey($objectID, $relationship));
+        return apcu_exists($this->cacheKey($objectID, $property));
     }
 
     #[Override]
-    public function snapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): ?Dictionary
+    public function snapshot(ManagedObjectID $objectID, ?PropertyDescription $property = null): ?Dictionary
     {
-        $data = apcu_fetch($this->cacheKey($objectID, $relationship), $success);
+        $data = apcu_fetch($this->cacheKey($objectID, $property), $success);
         return $success ? new Dictionary($data) : null;
     }
 
     #[Override]
-    public function setSnapshot(Dictionary $snapshot, ManagedObjectID $objectID, int $ttl = SecondsPerHourTimeInterval, ?RelationshipDescription $relationship = null): void
+    public function setSnapshot(Dictionary $snapshot, ManagedObjectID $objectID, int $ttl = SecondsPerHourTimeInterval, ?PropertyDescription $property = null): void
     {
-        apcu_store($this->cacheKey($objectID, $relationship), $snapshot->array, $ttl);
+        apcu_store($this->cacheKey($objectID, $property), $snapshot->array, $ttl);
     }
 
     #[Override]
-    public function deleteSnapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): void
+    public function deleteSnapshot(ManagedObjectID $objectID, ?PropertyDescription $property = null): void
     {
-        apcu_delete($this->cacheKey($objectID, $relationship));
+        apcu_delete($this->cacheKey($objectID, $property));
     }
 
     #[Override]

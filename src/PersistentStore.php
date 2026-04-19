@@ -6,6 +6,7 @@ use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\FileManager;
+use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\URL;
@@ -180,7 +181,7 @@ abstract class PersistentStore extends ObjectClass
      * @param RelationshipDescription $relationship The relationship for which values are requested.
      * @param ManagedObjectID $objectID The ID of the object for which values are requested.
      * @param ManagedObjectContext $context The managed object context into which values will be returned.
-     * @return mixed The value of the relationship specified relationship of the object with object ID objectID, or null if an error occurs.
+     * @return ArrayClass<ManagedObjectID>|ManagedObjectID|Nil The value of the relationship specified relationship of the object with object ID objectID, or null if an error occurs.
      * If the relationship is a to-one, the method should return a {@see ManagedObjectID} instance that identifies the destination, or null if the relationship value is null.
      * If the relationship is to many, the method should return a collection object containing {@see ManagedObjectID} instances to identify the related objects.
      * Using an array instance is preferred because it will be the most efficient.
@@ -188,12 +189,23 @@ abstract class PersistentStore extends ObjectClass
      * If an object with object ID objectID cannot be found, the method should return null.
      * @throws Exception
      */
-    public function newValueForRelationship(/** @noinspection PhpUnusedParameterInspection */ RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): mixed
+    public function newValueForRelationship(/** @noinspection PhpUnusedParameterInspection */ RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass|ManagedObjectID|Nil
     {
         request_concrete_implementation($this, __FUNCTION__);
     }
 
-    public function newOrderedRelationshipInformationForRelationship(/** @noinspection PhpUnusedParameterInspection */ RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): mixed
+    public function newOrderedRelationshipInformationForRelationship(/** @noinspection PhpUnusedParameterInspection */ RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): Dictionary
+    {
+        request_concrete_implementation($this, __FUNCTION__);
+    }
+
+    /**
+     * @param FetchedPropertyDescription $fetchedProperty
+     * @param ManagedObjectID $objectID
+     * @param ManagedObjectContext $context
+     * @return ArrayClass<ManagedObjectID>
+     */
+    public function newValueForFetchedProperty(/** @noinspection PhpUnusedParameterInspection */ FetchedPropertyDescription $fetchedProperty, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass
     {
         request_concrete_implementation($this, __FUNCTION__);
     }

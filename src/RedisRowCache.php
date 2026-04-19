@@ -49,30 +49,30 @@ final class RedisRowCache extends RowCache
     }
 
     #[Override]
-    public function hasSnapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): bool
+    public function hasSnapshot(ManagedObjectID $objectID, ?PropertyDescription $property = null): bool
     {
-        return (bool)$this->redis->exists($this->cacheKey($objectID, $relationship));
+        return (bool)$this->redis->exists($this->cacheKey($objectID, $property));
     }
 
     #[Override]
-    public function snapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): ?Dictionary
+    public function snapshot(ManagedObjectID $objectID, ?PropertyDescription $property = null): ?Dictionary
     {
         /** @var string|null $data */
-        $data = $this->redis->get($this->cacheKey($objectID, $relationship));
+        $data = $this->redis->get($this->cacheKey($objectID, $property));
         return $data ? new Dictionary(unserialize($data)) : null;
     }
 
     #[Override]
-    public function setSnapshot(Dictionary $snapshot, ManagedObjectID $objectID, int $ttl = SecondsPerHourTimeInterval, ?RelationshipDescription $relationship = null): void
+    public function setSnapshot(Dictionary $snapshot, ManagedObjectID $objectID, int $ttl = SecondsPerHourTimeInterval, ?PropertyDescription $property = null): void
     {
         $value = serialize($snapshot->array) ?: fatal_error("Unable to serialize snapshot for Redis row cache");
-        $this->redis->setex($this->cacheKey($objectID, $relationship), $ttl, $value);
+        $this->redis->setex($this->cacheKey($objectID, $property), $ttl, $value);
     }
 
     #[Override]
-    public function deleteSnapshot(ManagedObjectID $objectID, ?RelationshipDescription $relationship = null): void
+    public function deleteSnapshot(ManagedObjectID $objectID, ?PropertyDescription $property = null): void
     {
-        $this->redis->del($this->cacheKey($objectID, $relationship));
+        $this->redis->del($this->cacheKey($objectID, $property));
     }
 
     #[Override]

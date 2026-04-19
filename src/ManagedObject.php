@@ -17,9 +17,7 @@ use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
-use Sabatier\Foundation\Predicates\CompoundPredicate;
 use Sabatier\Foundation\Predicates\Expression;
-use Sabatier\Foundation\Predicates\ExpressionType;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\SensitiveValue;
 use Sabatier\Foundation\Set;
@@ -617,32 +615,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         $this->changedValues[$key] = $value;
     }
 
-    private function replaceFetchVariablesInExpression(Expression $expression, FetchedPropertyDescription $fetchedPropertyDescription): Expression
-    {
-        if (($expression->expressionType === ExpressionType::variable) || (($expression->expressionType === ExpressionType::keyPath) && $expression->operand?->expressionType === ExpressionType::variable)) {
-            /** @var Dictionary<mixed> $context */
-            $context = new Dictionary(["\$FETCH_SOURCE" => $this->objectID->referenceObject, "\$FETCHED_PROPERTY" => $fetchedPropertyDescription]);
-            return Expression::expressionForConstantValue($expression->expressionValue($this, $context));
-        }
-        return $expression;
-    }
-
-    private function replaceFetchVariablesInPredicate(Predicate $predicate, FetchedPropertyDescription $fetchedPropertyDescription): Predicate
-    {
-        if ($predicate instanceof ComparisonPredicate) {
-            $leftExpression = $this->replaceFetchVariablesInExpression($predicate->leftExpression, $fetchedPropertyDescription);
-            $rightExpression = $this->replaceFetchVariablesInExpression($predicate->rightExpression, $fetchedPropertyDescription);
-            if ($leftExpression !== $predicate->leftExpression || $rightExpression !== $predicate->rightExpression) {
-                return new ComparisonPredicate($leftExpression, $rightExpression, $predicate->predicateOperatorType, $predicate->comparisonPredicateModifier, $predicate->options);
-            }
-            return $predicate;
-        }
-        if ($predicate instanceof CompoundPredicate) {
-            return new CompoundPredicate($predicate->compoundPredicateType, $predicate->subpredicates->map(fn(Predicate $subpredicate): Predicate => $this->replaceFetchVariablesInPredicate($subpredicate, $fetchedPropertyDescription)));
-        }
-        return $predicate;
-    }
-
     /**
      * Returns the value for the rela$relationship specified by $key.
      *
@@ -676,17 +648,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->didAccessValueForKey($key);
             if (!isset($this->resolvedKeys[$key]) && !$this->isSuppressingKVO && $this->isPropertyForKeyFault($key) && $this->isInserted) {
                 $this->resolvedKeys[$key] = true;
-                $value ??= $this->mutableArrayValueForKey($key);
-                if ($property->fetchRequest !== null) {
-                    $fetchRequest = clone $property->fetchRequest;
-                    if ($entityName = $fetchRequest->entityName) {
-                        $fetchRequest->entity = EntityDescription::entity($entityName, $context);
-                    }
-                    if ($predicate = $fetchRequest->predicate) {
-                        $fetchRequest->predicate = $this->replaceFetchVariablesInPredicate($predicate, $property);
-                    }
-                    $value->setArray($context->fetch($fetchRequest));
-                }
+                $value = $context->newValueForFetchedProperty($property, $this->objectID);
                 $this->setPrimitiveValueForKey($value, $key);
             }
             return $value;
