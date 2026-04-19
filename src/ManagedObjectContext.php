@@ -58,7 +58,7 @@ final class ManagedObjectContext extends ObjectClass
                     /** @var ArrayClass<PersistentStore> $stores */
                     $stores = $userInfo[RemovedPersistentStoresKey];
                     foreach ($stores as $store) {
-                        $this->unregisterObjects($this->registeredObjects->filter(fn(ManagedObject $object): bool => $store->identifier !== $object->objectID->persistentStore?->identifier));
+                        $this->unregisterObjects($this->registeredObjects->filter(fn(ManagedObject $object): bool => $store->identifier === $object->objectID->persistentStore?->identifier));
                     }
                 });
             }
