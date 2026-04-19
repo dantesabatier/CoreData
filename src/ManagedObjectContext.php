@@ -1057,6 +1057,25 @@ final class ManagedObjectContext extends ObjectClass
         $this->undoManager?->redo();
     }
 
+    /**
+     * Returns the context to its base state.
+     *
+     * All the receiver's managed objects are “forgotten.” If you use this method, you should ensure that you also discard references to any managed objects fetched using the receiver, since they will be invalid afterward.
+     */
+    public function reset(): void
+    {
+        $registeredObjects = $this->registeredObjects;
+        if ($registeredObjects->isEmpty) {
+            $this->resetState();
+            return;
+        }
+        $this->unregisterObjects($registeredObjects);
+        $this->resetState();
+    }
+
+    /**
+     * @param Set<ManagedObject> $registeredObjects
+     */
     private function unregisterObjects(Set $registeredObjects): void
     {
         /** @var Dictionary<ArrayClass<ManagedObjectID>> $byStoreIdentifierObjectIDs */
@@ -1076,22 +1095,6 @@ final class ManagedObjectContext extends ObjectClass
                 return $byStoreIdentifierObjectIDs;
             });
         $byStoreIdentifierObjectIDs->forEach(fn(ArrayClass $objectIDs, string $identifier) => $this->persistentStoreCoordinator?->persistentStoreForIdentifier($identifier)?->managedObjectContextDidUnregisterObjectsWithIDs($objectIDs, $this->queryGenerationToken));
-    }
-
-    /**
-     * Returns the context to its base state.
-     *
-     * All the receiver's managed objects are “forgotten.” If you use this method, you should ensure that you also discard references to any managed objects fetched using the receiver, since they will be invalid afterward.
-     */
-    public function reset(): void
-    {
-        $registeredObjects = $this->registeredObjects;
-        if ($registeredObjects->isEmpty) {
-            $this->resetState();
-            return;
-        }
-        $this->unregisterObjects($registeredObjects);
-        $this->resetState();
     }
 
     /**
