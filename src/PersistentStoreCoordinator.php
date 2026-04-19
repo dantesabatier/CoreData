@@ -407,7 +407,7 @@ final class PersistentStoreCoordinator extends ObjectClass
      */
     public function managedObjectID(URL $uriRepresentation): ?ManagedObjectID
     {
-        if (($entity = $this->managedObjectModel->entitiesByName[$uriRepresentation->deletingLastPathComponent()->lastPathComponent]) && ($store = $this->persistentStores->first(fn(PersistentStore $store): bool => $store->identifier === $uriRepresentation->host))) {
+        if (($entity = $this->managedObjectModel->entitiesByName[$uriRepresentation->deletingLastPathComponent()->lastPathComponent]) && ($store = $this->persistentStoreForIdentifier($uriRepresentation->host))) {
             return $store->objectID($entity, $uriRepresentation->lastPathComponent);
         }
         return null;
@@ -432,7 +432,7 @@ final class PersistentStoreCoordinator extends ObjectClass
     /**
      * @internal
      */
-    public function persistentStoreForIdentifier(string $identifier): PersistentStore
+    public function persistentStoreForIdentifier(string $identifier): ?PersistentStore
     {
         return $this->persistentStores->first(fn(PersistentStore $store): bool => $store->identifier === $identifier);
     }

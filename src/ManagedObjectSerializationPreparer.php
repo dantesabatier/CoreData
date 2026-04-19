@@ -6,6 +6,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Sequence;
 use WeakMap;
+use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
 final class ManagedObjectSerializationPreparer
@@ -13,11 +14,8 @@ final class ManagedObjectSerializationPreparer
     private static ?ManagedObjectSerializationPreparer $shared = null;
 
     /** @var WeakMap<ManagedObject, ArrayClass<string>> */
-    private WeakMap $serializationShapes;
-
-    public function __construct()
-    {
-        $this->serializationShapes = new WeakMap();
+    private WeakMap $serializationShapes {
+        get => $this->serializationShapes ??= new WeakMap();
     }
 
     public static function shared(): ManagedObjectSerializationPreparer
@@ -52,7 +50,8 @@ final class ManagedObjectSerializationPreparer
         $this->applySerializationShape($object, $dictionary);
         $context = $object->managedObjectContext;
         foreach ($dictionary as $k => $v) {
-            if (!$v instanceof Sequence) {
+            $property = $object->allProperties[$k] ?? fatal_error();
+            if (!$property instanceof RelationshipDescription) {
                 continue;
             }
             $value = $object->valueForKey($k);
@@ -60,10 +59,29 @@ final class ManagedObjectSerializationPreparer
                 $this->prepareObjectGraph($value, $v);
             } elseif ($value instanceof ManagedObjectID) {
                 $this->prepareObjectGraph($context->object($value), $v);
-            } elseif ($value instanceof Sequence) {
-                $value->forEach(fn(ManagedObject $object) => $this->prepareObjectGraph($object, $v));
+            } elseif ($value instanceof Sequence && ($shape = $this->subShapeForProperty($k, $dictionary))) {
+                $value->forEach(fn(ManagedObject $object) => $this->prepareObjectGraph($object, $shape));
             }
         }
+    }
+
+    private function subShapeForProperty(string $propertyName, Dictionary $dictionary): ?Dictionary
+    {
+        if ($dictionary[$propertyName]) {
+            return $dictionary[$propertyName];
+        }
+        foreach ($dictionary as $key => $value) {
+            if ($key === $propertyName) {
+                return $value;
+            }
+            if ($value instanceof Dictionary) {
+                $serialization = $this->subShapeForProperty($propertyName, $value);
+                if (!$serialization?->isEmpty) {
+                    return $serialization;
+                }
+            }
+        }
+        return null;
     }
 
     /** @noinspection PhpMixedReturnTypeCanBeReducedInspection */

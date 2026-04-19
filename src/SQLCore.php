@@ -311,7 +311,7 @@ final class SQLCore extends IncrementalStore
             } elseif ($requestContext instanceof SQLSaveChangesRequestContext) {
                 if (($deletedObjects = $requestContext->request->deletedObjects) && !$deletedObjects->isEmpty) {
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass($deletedObjects->compactMap(fn(ManagedObject $object): ?SQLEntity => $this->model->entitiesByName[$object->entity->name])));
-                    $this->rowCache->deleteSnapshots($deletedObjects->map(fn(ManagedObject $deletedObject): ManagedObjectID => $deletedObject->objectID));
+                    $this->rowCache->deleteSnapshots(new ArrayClass($deletedObjects->map(fn(ManagedObject $deletedObject): ManagedObjectID => $deletedObject->objectID)));
                 }
                 if ($updatedObjects = $requestContext->request->updatedObjects) {
                     /** @var Dictionary<Dictionary<mixed>> $snapshotsToUpdate */
@@ -405,7 +405,7 @@ final class SQLCore extends IncrementalStore
      */
     private function processRefreshObjects(RefreshRequest $request, ManagedObjectContext $context): ArrayClass
     {
-        return new ArrayClass($request->refreshObjects->compactMap(function (ManagedObject $object) use ($context): ?ManagedObject {
+        return new ArrayClass($request->refreshObjects->map(function (ManagedObject $object) use ($context): ManagedObject {
             $snapshot = $this->processRequestContext(new SQLObjectFaultRequestContext($object->objectID, $context, $this));
             $object->updateFromRefreshSnapshot($snapshot);
             $object->awakeFromSnapshotEvents(SnapshotEventType::refresh);

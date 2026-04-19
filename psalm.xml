@@ -32,6 +32,7 @@
         <PossiblyNullReference>
             <errorLevel type="suppress">
                 <file name="src/XMLObjectStore.php"/>
+                <file name="src\ManagedObjectContext.php"/>
             </errorLevel>
         </PossiblyNullReference>
         <InternalClass errorLevel="suppress"/>
