@@ -195,9 +195,8 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function newValueForFetchedProperty(FetchedPropertyDescription $fetchedProperty, ManagedObjectID $objectID): ArrayClass
     {
-        $newValue = $this->persistentStoreCoordinator?->persistentStoreForObjectID($objectID)?->newValueForFetchedProperty($fetchedProperty, $objectID, $this);
-        /** @var ArrayClass $newValue */
-        $newValue instanceof ArrayClass ?: fatal_error(sprintf("invalid argument: expecting \"%s\", (%s)%s given", ArrayClass::class, typeof($newValue), human_readable_value($newValue)));
+        /** @var ArrayClass<ManagedObjectID> $newValue */
+        $newValue = $this->persistentStoreCoordinator?->persistentStoreForObjectID($objectID)?->newValueForFetchedProperty($fetchedProperty, $objectID, $this) ?? new ArrayClass();
         $value = new FaultingArray($this->object($objectID), $fetchedProperty);
         $value->setArray($newValue->map(fn(ManagedObjectID $objectID): ManagedObject => $this->object($objectID)));
         return $value;
