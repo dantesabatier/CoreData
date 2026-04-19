@@ -405,7 +405,12 @@ final class SQLCore extends IncrementalStore
      */
     private function processRefreshObjects(RefreshRequest $request, ManagedObjectContext $context): ArrayClass
     {
-        return new ArrayClass($request->refreshObjects->compactMap(fn(ManagedObject $object): ?Dictionary => $this->processRequestContext(new SQLObjectFaultRequestContext($object->objectID, $context, $this))));
+        return new ArrayClass($request->refreshObjects->compactMap(function (ManagedObject $object) use ($context): ?ManagedObject {
+            $snapshot = $this->processRequestContext(new SQLObjectFaultRequestContext($object->objectID, $context, $this));
+            $object->updateFromRefreshSnapshot($snapshot);
+            $object->awakeFromSnapshotEvents(SnapshotEventType::refresh);
+            return $object;
+        }));
     }
 
     /**
@@ -536,6 +541,17 @@ final class SQLCore extends IncrementalStore
         $snapshot = $requestContext->result;
         $this->rowCache->setSnapshot($objectID->entity->sanitizeSnapshot($snapshot), $objectID, $this->stalenessInterval);
         return new IncrementalStoreNode($objectID, $snapshot);
+    }
+
+    /**
+     * @param ArrayClass<ManagedObjectID> $objectIDs
+     * @param QueryGenerationToken|null $generation
+     */
+    #[Override]
+    public function managedObjectContextDidUnregisterObjectsWithIDs(ArrayClass $objectIDs, ?QueryGenerationToken $generation): void
+    {
+        $this->rowCache->deleteSnapshots($objectIDs);
+        $this->currentGeneration = $this->rowCache->advanceGenerationForStore($this->identifier);
     }
 
     #[Override]

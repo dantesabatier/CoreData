@@ -57,13 +57,7 @@ final class ManagedObjectContext extends ObjectClass
                 /** @var ArrayClass<PersistentStore> $stores */
                 $stores = $userInfo[RemovedPersistentStoresKey];
                 foreach ($stores as $store) {
-                    foreach ($this->byHashAssociationTable as $registeredObject) {
-                        if ($registeredObject instanceof WeakReference) {
-                            $registeredObject = $registeredObject->get();
-                        }
-                        if (!$registeredObject instanceof ManagedObject) {
-                            continue;
-                        }
+                    foreach ($this->registeredObjects as $registeredObject) {
                         if ($store->identifier !== $registeredObject->objectID->persistentStore?->identifier) {
                             continue;
                         }
@@ -408,14 +402,7 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function refreshAllObjects(): void
     {
-        foreach ($this->byHashAssociationTable as $registeredObject) {
-            if ($registeredObject instanceof WeakReference) {
-                $registeredObject = $registeredObject->get();
-            }
-            if ($registeredObject instanceof ManagedObject) {
-                $this->refresh($registeredObject, true);
-            }
-        }
+        $this->registeredObjects->forEach(fn(ManagedObject $object) => $this->refresh($object, true));
     }
 
     private function register(ManagedObject $object): void
@@ -1067,15 +1054,28 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function reset(): void
     {
-        foreach ($this->byHashAssociationTable->values as $registeredObject) {
-            if ($registeredObject instanceof WeakReference) {
-                $registeredObject = $registeredObject->get();
-            }
-            if ($registeredObject instanceof ManagedObject) {
-                $this->unregister($registeredObject);
-            }
+        $registeredObjects = $this->registeredObjects;
+        if ($registeredObjects->isEmpty) {
+            $this->resetState();
+            return;
         }
-        $this->byHashAssociationTable->removeAll();
+        /** @var Dictionary<ArrayClass<ManagedObjectID>> $byStoreIdentifierObjectIDs */
+        $byStoreIdentifierObjectIDs = $registeredObjects->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<ArrayClass<ManagedObjectID>> $byStoreIdentifierObjectIDs
+             * @param ManagedObject $object
+             * @return Dictionary<ArrayClass<ManagedObjectID>>
+             */
+            function (Dictionary $byStoreIdentifierObjectIDs, ManagedObject $object): Dictionary {
+                if ($store = $object->objectID->persistentStore) {
+                    $storeIdentifier = $store->identifier;
+                    $byStoreIdentifierObjectIDs[$storeIdentifier] ??= new ArrayClass();
+                    $byStoreIdentifierObjectIDs[$storeIdentifier]->append($object->objectID);
+                }
+                $this->unregister($object);
+                return $byStoreIdentifierObjectIDs;
+            });
+        $byStoreIdentifierObjectIDs->forEach(fn(ArrayClass $objectIDs, string $identifier) => $this->persistentStoreCoordinator?->persistentStoreForIdentifier($identifier)?->managedObjectContextDidUnregisterObjectsWithIDs($objectIDs, $this->queryGenerationToken));
         $this->resetState();
     }
 

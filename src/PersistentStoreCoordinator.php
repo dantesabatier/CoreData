@@ -416,6 +416,14 @@ final class PersistentStoreCoordinator extends ObjectClass
     /**
      * @internal
      */
+    public function persistentStoreForObject(ManagedObject $object): PersistentStore
+    {
+        return $this->persistentStoreForObjectID($object->objectID);
+    }
+
+    /**
+     * @internal
+     */
     public function persistentStoreForObjectID(ManagedObjectID $objectID): PersistentStore
     {
         return $objectID->persistentStore ?? $this->persistentStores->first(fn(PersistentStore $store): bool => ($this->managedObjectModel->entities($store->configurationName)?->contains(fn(EntityDescription $entity): bool => $entity->isKindOf($objectID->entity))) ?? false) ?? $this->persistentStores[0];
@@ -424,8 +432,8 @@ final class PersistentStoreCoordinator extends ObjectClass
     /**
      * @internal
      */
-    public function persistentStoreForObject(ManagedObject $object): PersistentStore
+    public function persistentStoreForIdentifier(string $identifier): PersistentStore
     {
-        return $this->persistentStoreForObjectID($object->objectID);
+        return $this->persistentStores->first(fn(PersistentStore $store): bool => $store->identifier === $identifier);
     }
 }

@@ -20,8 +20,8 @@ abstract class PersistentStore extends ObjectClass
 {
     /** @var class-string<MigrationManager> The class responsible for managing schema migrations. This class is instantiated when the persistent store requires a migration to match the current managed object model. */
     public static string $migrationManagerClass = MigrationManager::class;
-    /** @var class-string<RowCache> The class that provides the L2 caching mechanism for the store. This determines the persistence strategy for snapshots and relationship results (e.g., APCu, or Redis). The default value is {@see RedisRowCache}. */
-    public static string $rowCacheClass = RedisRowCache::class;
+    /** @var class-string<RowCache> The class that provides the L2 caching mechanism for the store. This determines the persistence strategy for snapshots and relationship results (e.g., APCu, or Redis). The default value is {@see DefaultRowCache}. */
+    public static string $rowCacheClass = DefaultRowCache::class;
     /** @var class-string<SnapshotMapper> The class used to map raw data from the persistent store into managed object snapshots. It handles the conversion between primitive store values and the dictionary format used by the framework. */
     public static string $snapshotMapperClass = StandardSnapshotMapper::class;
     /** @var string The type string of the persistent store. */
@@ -161,11 +161,6 @@ abstract class PersistentStore extends ObjectClass
         return $objectID;
     }
 
-    public function newOrderedRelationshipInformationForRelationship(/** @noinspection PhpUnusedParameterInspection */ RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): mixed
-    {
-        request_concrete_implementation($this, __FUNCTION__);
-    }
-
     /**
      * Returns a store node encapsulating the persistent external values of the object with a given object ID.
      * @param ManagedObjectID $objectID The ID of the object for which values are requested.
@@ -196,6 +191,29 @@ abstract class PersistentStore extends ObjectClass
     public function newValueForRelationship(/** @noinspection PhpUnusedParameterInspection */ RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): mixed
     {
         request_concrete_implementation($this, __FUNCTION__);
+    }
+
+    public function newOrderedRelationshipInformationForRelationship(/** @noinspection PhpUnusedParameterInspection */ RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): mixed
+    {
+        request_concrete_implementation($this, __FUNCTION__);
+    }
+
+    /**
+     * @param ArrayClass<ManagedObjectID> $objectIDs
+     * @param QueryGenerationToken|null $generation
+     * @internal
+     */
+    public function managedObjectContextDidRegisterObjectsWithIDs(ArrayClass $objectIDs, ?QueryGenerationToken $generation): void
+    {
+    }
+
+    /**
+     * @param ArrayClass<ManagedObjectID> $objectIDs
+     * @param QueryGenerationToken|null $generation
+     * @internal
+     */
+    public function managedObjectContextDidUnregisterObjectsWithIDs(ArrayClass $objectIDs, ?QueryGenerationToken $generation): void
+    {
     }
 
     /**
