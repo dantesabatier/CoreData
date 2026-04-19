@@ -27,12 +27,12 @@ final class ManagedObjectSerializationPreparer
         return $this->serializationShapes[$object] ?? null;
     }
 
-    private function applySerializationShape(ManagedObject $object, Dictionary $dictionary): void
+    private function applySerializationShape(ManagedObject $object, Dictionary $shape): void
     {
-        if ($dictionary->isEmpty) {
+        if ($shape->isEmpty) {
             return;
         }
-        $serializationKeys = $dictionary->keys->filter(fn(string $key): bool => isset($object->entity->propertiesByName[$key]));
+        $serializationKeys = $shape->keys->filter(fn(string $key): bool => isset($object->entity->propertiesByName[$key]));
         if ($serializationKeys->isEmpty) {
             return;
         }
@@ -41,35 +41,35 @@ final class ManagedObjectSerializationPreparer
         $this->serializationShapes[$object] = $serializationKeys;
     }
 
-    private function prepareObjectGraph(ManagedObject $object, Dictionary $dictionary): void
+    private function prepareObjectGraph(ManagedObject $object, Dictionary $shape): void
     {
         if (isset($this->serializationShapes[$object])) {
             return;
         }
-        $this->applySerializationShape($object, $dictionary);
+        $this->applySerializationShape($object, $shape);
         $context = $object->managedObjectContext;
-        foreach ($dictionary as $k => $v) {
-            if (!$v instanceof Dictionary) {
+        foreach ($shape as $key => $subshape) {
+            if (!$subshape instanceof Dictionary) {
                 continue;
             }
-            $value = $object->valueForKey($k);
+            $value = $object->valueForKey($key);
             if ($value instanceof ManagedObject) {
-                $this->prepareObjectGraph($value, $v);
+                $this->prepareObjectGraph($value, $subshape);
             } elseif ($value instanceof ManagedObjectID) {
-                $this->prepareObjectGraph($context->object($value), $v);
+                $this->prepareObjectGraph($context->object($value), $subshape);
             } elseif ($value instanceof Sequence) {
-                $value->forEach(fn(ManagedObject $object) => $this->prepareObjectGraph($object, $v));
+                $value->forEach(fn(ManagedObject $object) => $this->prepareObjectGraph($object, $subshape));
             }
         }
     }
 
     /** @noinspection PhpMixedReturnTypeCanBeReducedInspection */
-    public function serialized(ManagedObject $object, ?Dictionary $dictionary): mixed
+    public function serialized(ManagedObject $object, ?Dictionary $shape): mixed
     {
-        if ($dictionary === null || $dictionary->isEmpty) {
+        if ($shape === null || $shape->isEmpty) {
             return $object;
         }
-        $this->prepareObjectGraph($object, $dictionary);
+        $this->prepareObjectGraph($object, $shape);
         return $object;
     }
 }
