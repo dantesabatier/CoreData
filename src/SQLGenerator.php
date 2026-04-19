@@ -392,7 +392,7 @@ final class SQLGenerator
         if ($this->keyValueOperator === KeyValueOperator::countKeyValueOperator) {
             $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
         }
-        $appendBaseColumns = !$this->isSubquery && !$request->returnsObjectsAsFaults && $request->includesPropertyValues && !($request->resultType === FetchRequestResultType::countResultType && $this->keyValueOperator === KeyValueOperator::countKeyValueOperator);
+        $appendBaseColumns = !$this->isSubquery && !$request->returnsObjectsAsFaults && !($request->resultType === FetchRequestResultType::countResultType && $this->keyValueOperator === KeyValueOperator::countKeyValueOperator);
         if ($appendBaseColumns) {
             if ($request->resultType !== FetchRequestResultType::countResultType) {
                 /** @var ArrayClass<SQLColumn> $entityColumns */
@@ -402,9 +402,12 @@ final class SQLGenerator
                 }
                 $columnNames->formUnion($entityColumns->map(fn(SQLColumn $column): string => "$this->tableReference.$column->columnName"));
             }
-            $columnNames->formUnion($entity->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary): ArrayClass => $dictionary->values->map(fn(SQLAttribute $attribute): string => "$this->tableReference.$attribute->name")));
+            if ($request->includesPropertyValues) {
+                $columnNames->formUnion($entity->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary): ArrayClass => $dictionary->values->map(fn(SQLAttribute $attribute): string => "$this->tableReference.$attribute->name")));
+            }
         }
-        if ($this->keyValueOperator !== KeyValueOperator::countKeyValueOperator) {
+        $appendBaseColumns = $this->keyValueOperator !== KeyValueOperator::countKeyValueOperator && $request->includesPropertyValues;
+        if ($appendBaseColumns) {
             $columnNames->formUnion($request->serialization->keys->compactMap(function (string $key) use ($entity): ?string {
                 $property = $entity->propertiesByName[$key];
                 if ($property instanceof SQLAttribute && !$property->isTransient && !$property->isCompositeAttribute) {
@@ -419,9 +422,7 @@ final class SQLGenerator
         if ($columnNames->isEmpty) {
             $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
         }
-        foreach ($columnNames as $columnName) {
-            $this->selectedColumnsMap[$columnName] = true;
-        }
+        $columnNames->forEach(fn(string $columnName) => $this->selectedColumnsMap[$columnName] = true);
         $this->selectList .= $columnNames->join(", ");
     }
 
