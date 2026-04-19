@@ -651,7 +651,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $value = $context->newValueForFetchedProperty($property, $this->objectID);
                 $this->setPrimitiveValueForKey($value, $key);
             }
-            return $value;
+            return $value ?? $this->mutableArrayValueForKey($key);
         }
         if ($property instanceof RelationshipDescription) {
             $this->willAccessValueForKey($key);
