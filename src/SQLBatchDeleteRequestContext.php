@@ -19,16 +19,10 @@ final class SQLBatchDeleteRequestContext extends SQLBatchOperationRequestContext
     }
     /** @var FetchRequest<ManagedObjectID> */
     private(set) FetchRequest $fetchRequestForObjectsToDelete {
-        get {
-            if (!isset($this->fetchRequestForObjectsToDelete)) {
-                $fetchRequestForObjectsToDelete = clone($this->request->fetchRequest, [
-                    "resultType" => FetchRequestResultType::managedObjectIDResultType,
-                    "includesPropertyValues" => false
-                ]);
-                $this->fetchRequestForObjectsToDelete = $fetchRequestForObjectsToDelete;
-            }
-            return $this->fetchRequestForObjectsToDelete;
-        }
+        get => $this->fetchRequestForObjectsToDelete ??= clone($this->request->fetchRequest, [
+            "resultType" => FetchRequestResultType::managedObjectIDResultType,
+            "includesPropertyValues" => false
+        ]);
     }
     private(set) SQLFetchRequestContext $fetchContext {
         get => $this->fetchContext ??= new SQLFetchRequestContext($this->fetchRequestForObjectsToDelete, $this->context, $this->sqlCore);
