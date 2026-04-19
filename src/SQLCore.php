@@ -542,7 +542,7 @@ final class SQLCore extends IncrementalStore
         }
         $requestContext = new SQLFetchedPropertyFaultRequestContext($objectID, $fetchedProperty, $context, $this);
         $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
-        /** @var ArrayClass<ManagedObject> $result */
+        /** @var ArrayClass<ManagedObjectID> $result */
         $result = $requestContext->result;
         /** @var list<string> $propertyResultValue */
         $propertyResultValue = $result->map(fn(ManagedObjectID $objectID): string => $objectID->uriRepresentation()->absoluteString)->array;
