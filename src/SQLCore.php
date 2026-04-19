@@ -516,7 +516,7 @@ final class SQLCore extends IncrementalStore
         $result = $requestContext->result;
         $result instanceof ArrayClass || $result instanceof ManagedObjectID || $result instanceof Nil ?: $result
                 |> typeof(...)
-                |> (fn(string $x): string => sprintf("invalid argument: %s(%s, %s) expecting \"%s|%s|%s\", \"%s\" given", __FUNCTION__, $relationship->name, $objectID->entityName, Sequence::class, ManagedObjectID::class, Nil::class, $x))
+                |> (fn(string $x): string => sprintf("invalid argument: %s(%s, %s) expecting \"%s|%s|%s\", \"%s\" given", __FUNCTION__, $relationship->name, $objectID->entityName, ArrayClass::class, ManagedObjectID::class, Nil::class, $x))
                 |> fatal_error(...);
         /** @var list<string>|string|Nil $propertyResultValue */
         $propertyResultValue = $result;
