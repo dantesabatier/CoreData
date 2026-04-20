@@ -557,6 +557,9 @@ final class SQLCore extends IncrementalStore
     #[Override]
     public function managedObjectContextDidUnregisterObjectsWithIDs(ArrayClass $objectIDs, ?QueryGenerationToken $generation): void
     {
+        if ($objectIDs->isEmpty) {
+            return;
+        }
         $this->rowCache->deleteSnapshots($objectIDs);
         $this->currentGeneration = $this->rowCache->advanceGenerationForStore($this->identifier);
     }
