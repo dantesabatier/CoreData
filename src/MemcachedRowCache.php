@@ -107,7 +107,7 @@ final class MemcachedRowCache extends RowCache
         return new Dictionary($cache)->reduce(new Dictionary(),
             /**
              * @param Dictionary<Dictionary<mixed>> $result
-             * @param array $value
+             * @param array<string, mixed> $value
              * @param string $key
              * @return Dictionary<Dictionary<mixed>>
              */
@@ -125,11 +125,11 @@ final class MemcachedRowCache extends RowCache
         }
         $payload = $snapshots->reduce([],
             /**
-             * @param array<string, string> $carry
-             * @param-out array<string, string> $carry
+             * @param array<string, array<string, mixed>> $carry
+             * @param-out array<string, array<string, mixed>> $carry
              * @param Dictionary $snapshot
              * @param string $key
-             * @return array<string, string>
+             * @return array<string, array<string, mixed>>
              */
             function (array &$carry, Dictionary $snapshot, string $key): array {
                 $carry[$key] = $snapshot->array;
