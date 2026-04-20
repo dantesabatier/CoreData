@@ -2,6 +2,8 @@
 
 namespace Sabatier\CoreData;
 
+use function Sabatier\Foundation\unimplemented;
+
 /**
  * A token that indicates which generation of the persistent store is being accessed.
  *
@@ -11,6 +13,11 @@ final readonly class QueryGenerationToken
 {
     public function __construct(public string $storeIdentifier, public int $origin, public int $generation)
     {
+    }
+
+    public static function current(): self
+    {
+        unimplemented(self::class, __FUNCTION__);
     }
 
     public function isCompatible(?QueryGenerationToken $other): bool
