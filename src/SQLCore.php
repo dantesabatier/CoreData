@@ -322,7 +322,7 @@ final class SQLCore extends IncrementalStore
                          * @param ManagedObject $object
                          * @return Dictionary<Dictionary<mixed>>
                          */
-                        function (Dictionary $snapshots, ManagedObject $object) use ($requestContext): Dictionary {
+                        function (Dictionary $snapshots, ManagedObject $object): Dictionary {
                             if ($snapshot = $object->lastSnapshot) {
                                 $snapshots[$object->objectID->uriRepresentation()->absoluteString] = $object->entity->sanitizeSnapshot($snapshot);
                             }
