@@ -283,7 +283,13 @@ final class SQLCore extends IncrementalStore
             if (!$requestContext->hasHistoryTracking && $this->options?->valueForKey(PersistentStoreRemoteChangeNotificationPostOptionKey) && $requestContext->transactionID->boolValue) {
                 $this->postChangeNotificationWithTransactionID($requestContext->transactionID);
             }
-            if ($requestContext instanceof SQLBatchUpdateRequestContext && $requestContext->request->resultType === BatchUpdateRequestResultType::objectIDs) {
+            if ($requestContext instanceof SQLBatchInsertRequestContext && $requestContext->request->resultType === BatchInsertRequestResultType::objectIDs) {
+                /** @var ArrayClass<ManagedObjectID> $insertedObjectIDs */
+                $insertedObjectIDs = $requestContext->result;
+                if (!$insertedObjectIDs->isEmpty) {
+                    $this->rowCache->deleteSnapshots($insertedObjectIDs);
+                }
+            } elseif ($requestContext instanceof SQLBatchUpdateRequestContext && $requestContext->request->resultType === BatchUpdateRequestResultType::objectIDs) {
                 /** @var ArrayClass<ManagedObjectID> $updatedObjectIDs */
                 $updatedObjectIDs = $requestContext->result;
                 if (!$updatedObjectIDs->isEmpty) {
@@ -309,6 +315,20 @@ final class SQLCore extends IncrementalStore
                     }
                 }
             } elseif ($requestContext instanceof SQLSaveChangesRequestContext) {
+                if (($insertedObjects = $requestContext->request->insertedObjects) && !$insertedObjects->isEmpty) {
+                    $this->rowCache->setSnapshots($insertedObjects->reduce(new Dictionary(),
+                        /**
+                         * @param Dictionary<<Dictionary<mixed>> $snapshots
+                         * @param ManagedObject $object
+                         * @return Dictionary<Dictionary<mixed>>
+                         */
+                        function (Dictionary $snapshots, ManagedObject $object) use ($requestContext): Dictionary {
+                            if ($snapshot = $object->lastSnapshot) {
+                                $snapshots[$object->objectID->uriRepresentation()->absoluteString] = $object->entity->sanitizeSnapshot($snapshot);
+                            }
+                            return $snapshots;
+                        }), $this->stalenessInterval);
+                }
                 if (($deletedObjects = $requestContext->request->deletedObjects) && !$deletedObjects->isEmpty) {
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass($deletedObjects->compactMap(fn(ManagedObject $object): ?SQLEntity => $this->model->entitiesByName[$object->entity->name])));
                     $this->rowCache->deleteSnapshots(new ArrayClass($deletedObjects->map(fn(ManagedObject $deletedObject): ManagedObjectID => $deletedObject->objectID)));
