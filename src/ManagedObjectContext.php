@@ -1080,6 +1080,9 @@ final class ManagedObjectContext extends ObjectClass
      */
     private function unregisterObjects(Set $registeredObjects): void
     {
+        if ($registeredObjects->isEmpty) {
+            return;
+        }
         /** @var Dictionary<ArrayClass<ManagedObjectID>> $byStoreIdentifierObjectIDs */
         $byStoreIdentifierObjectIDs = $registeredObjects->reduce(new Dictionary(),
             /**
