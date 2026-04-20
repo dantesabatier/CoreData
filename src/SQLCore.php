@@ -407,7 +407,9 @@ final class SQLCore extends IncrementalStore
     {
         return new ArrayClass($request->refreshObjects->map(function (ManagedObject $object) use ($context): ManagedObject {
             $snapshot = $this->processRequestContext(new SQLObjectFaultRequestContext($object->objectID, $context, $this));
+            $object->isSuppressingKVO = true;
             $object->updateFromRefreshSnapshot($snapshot);
+            $object->isSuppressingKVO = false;
             $object->awakeFromSnapshotEvents(SnapshotEventType::refresh);
             return $object;
         }));
