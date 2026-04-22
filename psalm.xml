@@ -66,6 +66,7 @@
         <PossiblyInvalidArgument>
             <errorLevel type="suppress">
                 <file name="src/FaultingSet.php"/>
+                <file name="src/ManagedObjectContext.php"/>
             </errorLevel>
         </PossiblyInvalidArgument>
         <InvalidReturnType>
