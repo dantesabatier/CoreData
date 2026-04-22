@@ -19,13 +19,13 @@ abstract class RowCache implements PersistentStoreCache
     {
         $name = $property?->name ?? "";
         $divider = $property ? "/" : "";
-        return md5("{$objectID->uriRepresentation()->absoluteString}$divider$name");
+        return "{$objectID->uriRepresentation()->absoluteString}$divider$name";
     }
 
     #[Override]
     public function queryKeyForRequest(FetchRequest $request, QueryGenerationToken $token): string
     {
-        $hash = md5($request->canonicalDescription);
+        $hash = urlencode($request->canonicalDescription);
         return "/query/$token->origin/$token->generation/$hash";
     }
 }

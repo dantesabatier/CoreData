@@ -165,10 +165,10 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID): FaultingSet|ManagedObject|ManagedObjectID|Nil
     {
-        $newValue = $this->persistentStoreCoordinator?->persistentStoreForObjectID($objectID)?->newValueForRelationship($relationship, $objectID, $this) ?? Nil::nil();
+    	$persistentStore = $this->persistentStoreCoordinator?->persistentStoreForObjectID($objectID) ?? fatal_error(sprintf("no persistent store found for object ID %s", $objectID->entityName));
+        $newValue = $relationship->isOrdered ? $persistentStore->newOrderedRelationshipInformationForRelationship($relationship, $objectID, $this) : $persistentStore->newValueForRelationship($relationship, $objectID, $this);
         if ($relationship->isToMany) {
-            /** @var Sequence $newValue */
-            $newValue instanceof ArrayClass ?: fatal_error(sprintf("invalid argument: expecting \"%s\", (%s)%s given", Sequence::class, typeof($newValue), human_readable_value($newValue)));
+            $newValue instanceof ArrayClass ?: fatal_error(sprintf("invalid argument: expecting \"%s\", (%s)%s given", ArrayClass::class, typeof($newValue), human_readable_value($newValue)));
             $value = new FaultingSet($this->object($objectID), $relationship);
             $value->setSet(new Set($newValue));
         } else {

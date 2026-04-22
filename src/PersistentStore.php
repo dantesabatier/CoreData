@@ -193,7 +193,7 @@ abstract class PersistentStore extends ObjectClass
         request_concrete_implementation($this, __FUNCTION__);
     }
 
-    public function newOrderedRelationshipInformationForRelationship(/** @noinspection PhpUnusedParameterInspection */ RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): Dictionary
+    public function newOrderedRelationshipInformationForRelationship(/** @noinspection PhpUnusedParameterInspection */ RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): mixed
     {
         request_concrete_implementation($this, __FUNCTION__);
     }

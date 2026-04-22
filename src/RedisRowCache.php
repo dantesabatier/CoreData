@@ -38,14 +38,14 @@ final class RedisRowCache extends RowCache
     public function currentGenerationForStore(string $storeIdentifier): int
     {
         $generation = $this->redis->get("generation:$storeIdentifier");
-        return is_numeric($generation) ? (int)$generation : 1;
+        return is_numeric($generation) ? (int)$generation : 0;
     }
 
     #[Override]
     public function advanceGenerationForStore(string $storeIdentifier): int
     {
         $generation = $this->redis->incr("generation:$storeIdentifier");
-        return is_int($generation) ? $generation : 1;
+        return is_int($generation) ? $generation : 0;
     }
 
     #[Override]

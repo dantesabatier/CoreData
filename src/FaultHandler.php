@@ -32,7 +32,6 @@ final readonly class FaultHandler
         $object->isSuppressingKVO = false;
         $object->awakeFromSnapshotEvents(SnapshotEventType::refresh);
         $object->isSuppressingChangeNotifications = false;
-        $object->faultingState = ManagedObjectFaultingStateStable;
     }
 
     public function turnObjectIntoFault(ManagedObject $object, ?ManagedObjectContext $context = null): void

@@ -39,6 +39,7 @@ final class ManagedObjectSerializationPreparer
         $serializationKeys->insertAt(ManagedObjectObjectIDKey, 0);
         $serializationKeys->insertAt(ManagedObjectEntityNameKey, 1);
         $this->serializationShapes[$object] = $serializationKeys;
+        $object->faultingState = ManagedObjectFaultingStateStable;
     }
 
     private function prepareObjectGraph(ManagedObject $object, Dictionary $shape): void

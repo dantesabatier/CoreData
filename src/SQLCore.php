@@ -287,7 +287,19 @@ final class SQLCore extends IncrementalStore
                 /** @var ArrayClass<ManagedObjectID> $insertedObjectIDs */
                 $insertedObjectIDs = $requestContext->result;
                 if (!$insertedObjectIDs->isEmpty) {
-                    $this->rowCache->deleteSnapshots($insertedObjectIDs);
+                    $this->rowCache->setSnapshots($insertedObjectIDs->reduce(new Dictionary(),
+                    /**
+                     * @param Dictionary<Dictionary<mixed>> $snapshots
+                     * @param ManagedObjectID $objectID
+                     * @return Dictionary<Dictionary<mixed>>
+                     */
+                    function(Dictionary $snapshots, ManagedObjectID $objectID) use ($requestContext): Dictionary {
+	                    $object = $requestContext->context->object($objectID);
+	                    if ($snapshot = $object->lastSnapshot) {
+	                        $snapshots[$object->objectID->uriRepresentation()->absoluteString] = $object->entity->sanitizeSnapshot($snapshot);
+	                    }
+                        return $snapshots;
+                    }));
                 }
             } elseif ($requestContext instanceof SQLBatchUpdateRequestContext && $requestContext->request->resultType === BatchUpdateRequestResultType::objectIDs) {
                 /** @var ArrayClass<ManagedObjectID> $updatedObjectIDs */
@@ -318,7 +330,7 @@ final class SQLCore extends IncrementalStore
                 if (($insertedObjects = $requestContext->request->insertedObjects) && !$insertedObjects->isEmpty) {
                     $this->rowCache->setSnapshots($insertedObjects->reduce(new Dictionary(),
                         /**
-                         * @param Dictionary<<Dictionary<mixed>> $snapshots
+                         * @param Dictionary<Dictionary<mixed>> $snapshots
                          * @param ManagedObject $object
                          * @return Dictionary<Dictionary<mixed>>
                          */
@@ -333,25 +345,21 @@ final class SQLCore extends IncrementalStore
                     $this->recomputePrimaryKeyMaxForEntities(new ArrayClass($deletedObjects->compactMap(fn(ManagedObject $object): ?SQLEntity => $this->model->entitiesByName[$object->entity->name])));
                     $this->rowCache->deleteSnapshots(new ArrayClass($deletedObjects->map(fn(ManagedObject $deletedObject): ManagedObjectID => $deletedObject->objectID)));
                 }
-                if ($updatedObjects = $requestContext->request->updatedObjects) {
-                    /** @var Dictionary<Dictionary<mixed>> $snapshotsToUpdate */
-                    $snapshotsToUpdate = new Dictionary();
-                    /** @var ArrayClass<ManagedObjectID> $deletedObjectIDs */
-                    $deletedObjectIDs = new ArrayClass();
-                    foreach ($updatedObjects as $updatedObject) {
-                        $objectID = $updatedObject->objectID;
-                        if ($snapshot = $updatedObject->lastSnapshot) {
-                            $snapshotsToUpdate[$objectID->uriRepresentation()->absoluteString] = $objectID->entity->sanitizeSnapshot($snapshot);
-                            continue;
-                        }
-                        $deletedObjectIDs->append($objectID);
-                    }
-                    if (!$snapshotsToUpdate->isEmpty) {
-                        $this->rowCache->setSnapshots($snapshotsToUpdate);
-                    }
-                    if (!$deletedObjectIDs->isEmpty) {
-                        $this->rowCache->deleteSnapshots($deletedObjectIDs);
-                    }
+                if (($updatedObjects = $requestContext->request->updatedObjects) && !$updatedObjects->isEmpty) {
+                	$this->rowCache->setSnapshots($updatedObjects->reduce(new Dictionary(),
+	                    /**
+	                     * @param Dictionary<Dictionary<mixed>> $snapshots
+	                     * @param ManagedObject $updatedObject
+	                     * @return Dictionary<Dictionary<mixed>>
+	                     */
+	                    function (Dictionary $snapshots, ManagedObject $updatedObject): Dictionary {
+							$snapshot = $updatedObject->dictionaryWithValues($updatedObject->modeledAttributes->map(fn(AttributeDescription $attribute): string => $attribute->name));
+							$snapshot[ManagedObjectObjectIDKey] = $updatedObject->objectID->referenceObject;
+							$snapshot[ManagedObjectEntityNameKey] = $updatedObject->entityName;
+							$snapshot[ManagedObjectVersionKey] = $updatedObject->version;
+							$snapshots[$updatedObject->objectID->uriRepresentation()->absoluteString] = $updatedObject->entity->sanitizeSnapshot($snapshot);
+	                        return $snapshots;
+	                    }), $this->stalenessInterval);
                 }
             }
             $this->currentGeneration = $this->rowCache->advanceGenerationForStore($this->identifier);
@@ -549,6 +557,29 @@ final class SQLCore extends IncrementalStore
         }
         $this->rowCache->setSnapshot(new Dictionary([ManagedObjectPropertyResultKey => $propertyResultValue]), $objectID, $this->stalenessInterval, $relationship);
         return $result;
+    }
+
+    /**
+     * @throws Exception
+     */
+    #[Override]
+    public function newOrderedRelationshipInformationForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): mixed
+    {
+        /** @var SQLEntity $entity */
+     	$entity = $this->model->entitiesByName[$relationship->entity->name];
+        /** @var SQLToMany $toMany */
+     	$toMany = $entity->propertiesByName[$relationship->name];
+      	$toOne = $toMany->inverseToOne;
+        /** @var SQLAttribute $attribute */
+        $attribute = $toOne->foreignOrderKey->entity->propertiesByName[$toOne->foreignOrderKey->columnName];
+        $columnName = $attribute->columnName;
+        /** @var ArrayClass<ManagedObjectID> $objectIDs */
+        $objectIDs = $this->newValueForRelationship($relationship, $objectID, $context);
+        $fetchRequest = new FetchRequest();
+        $fetchRequest->entity = $toOne->entity->entityDescription;
+        $requestContext = new SQLObjectIDSetFetchRequestContext($fetchRequest, $context, $this, $objectIDs, $columnName);
+        $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
+        return $requestContext->result;
     }
 
     /**

@@ -7,12 +7,15 @@ use Countable;
 use IteratorAggregate;
 use Override;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\KeyedUnarchiver;
+use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Set;
+use Sabatier\Foundation\UUID;
 use Traversable;
 use function Sabatier\Foundation\fatal_error;
 
@@ -260,10 +263,29 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
      */
     public function sanitizeSnapshot(Dictionary $snapshot): Dictionary
     {
-        return $snapshot->filter(fn(mixed $value, string $key): bool => $this->attributesByName->offsetExists($key) || match ($key) {
-                ManagedObjectObjectIDKey, ManagedObjectEntityNameKey, ManagedObjectVersionKey => true,
-                default => false
-            });
+        return $snapshot->reduce(new Dictionary(),
+        	/**
+	         * @param Dictionary<mixed> $result
+	         * @param mixed $value
+	         * @param string $key
+	         * @return Dictionary<mixed>
+	         */
+	        function(Dictionary $result, mixed $value, string $key): Dictionary {
+	            if (match ($key) {
+	                ManagedObjectObjectIDKey, ManagedObjectEntityNameKey, ManagedObjectVersionKey => true,
+	                default => false
+	            } || $this->attributesByName->offsetExists($key)) {
+	                if ($value instanceof ManagedObjectID) {
+	                    $value = $value->referenceObject;
+	                } elseif ($value instanceof Date || $value instanceof UUID) {
+	                    $value = $value->description;
+	                } elseif ($value instanceof Nil) {
+	                    $value = $value->value;
+	                }
+	                $result[$key] = $value;
+	            }
+	            return $result;
+	        });
     }
 
     /**
