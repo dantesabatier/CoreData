@@ -563,7 +563,7 @@ final class SQLCore extends IncrementalStore
      * @throws Exception
      */
     #[Override]
-    public function newOrderedRelationshipInformationForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): mixed
+    public function newOrderedRelationshipInformationForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass|Nil
     {
         /** @var SQLEntity $entity */
      	$entity = $this->model->entitiesByName[$relationship->entity->name];
@@ -573,11 +573,17 @@ final class SQLCore extends IncrementalStore
         /** @var SQLAttribute $attribute */
         $attribute = $toOne->foreignOrderKey->entity->propertiesByName[$toOne->foreignOrderKey->columnName];
         $columnName = $attribute->columnName;
-        /** @var ArrayClass<ManagedObjectID> $objectIDs */
-        $objectIDs = $this->newValueForRelationship($relationship, $objectID, $context);
+        /** @var ArrayClass<ManagedObjectID>|Nil $newValue */
+        $newValue = $this->newValueForRelationship($relationship, $objectID, $context);
+        if ($newValue instanceof Nil) {
+            return $newValue;
+        }
+        if ($newValue->isEmpty) {
+            return $newValue;
+        }
         $fetchRequest = new FetchRequest();
         $fetchRequest->entity = $toOne->entity->entityDescription;
-        $requestContext = new SQLObjectIDSetFetchRequestContext($fetchRequest, $context, $this, $objectIDs, $columnName);
+        $requestContext = new SQLObjectIDSetFetchRequestContext($fetchRequest, $context, $this, $newValue, $columnName);
         $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
         return $requestContext->result;
     }
