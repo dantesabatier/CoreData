@@ -558,10 +558,7 @@ final class SQLCore extends IncrementalStore
         $this->rowCache->setSnapshot(new Dictionary([ManagedObjectPropertyResultKey => $propertyResultValue]), $objectID, $this->stalenessInterval, $relationship);
         return $result;
     }
-
-    /**
-     * @throws Exception
-     */
+    
     #[Override]
     public function newOrderedRelationshipInformationForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass|Nil
     {
@@ -587,10 +584,7 @@ final class SQLCore extends IncrementalStore
         $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
         return $requestContext->result;
     }
-
-    /**
-     * @throws Exception
-     */
+    
     #[Override]
     public function newValueForFetchedProperty(FetchedPropertyDescription $fetchedProperty, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass
     {

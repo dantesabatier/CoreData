@@ -192,8 +192,15 @@ abstract class PersistentStore extends ObjectClass
     {
         request_concrete_implementation($this, __FUNCTION__);
     }
-
-    public function newOrderedRelationshipInformationForRelationship(/** @noinspection PhpUnusedParameterInspection */ RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): mixed
+    
+    /**
+     * @param RelationshipDescription $relationship
+     * @param ManagedObjectID $objectID
+     * @param ManagedObjectContext $context
+     * @return ArrayClass<ManagedObjectID>|Nil
+     * @throws Exception
+     */
+    public function newOrderedRelationshipInformationForRelationship(/** @noinspection PhpUnusedParameterInspection */ RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass|Nil
     {
         request_concrete_implementation($this, __FUNCTION__);
     }
@@ -203,6 +210,7 @@ abstract class PersistentStore extends ObjectClass
      * @param ManagedObjectID $objectID
      * @param ManagedObjectContext $context
      * @return ArrayClass<ManagedObjectID>
+     * @throws Exception
      */
     public function newValueForFetchedProperty(/** @noinspection PhpUnusedParameterInspection */ FetchedPropertyDescription $fetchedProperty, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass
     {
