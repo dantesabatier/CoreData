@@ -346,28 +346,31 @@ final class SQLCore extends IncrementalStore
                     $this->rowCache->deleteSnapshots(new ArrayClass($deletedObjects->map(fn(ManagedObject $deletedObject): ManagedObjectID => $deletedObject->objectID)));
                 }
                 if (($updatedObjects = $requestContext->request->updatedObjects) && !$updatedObjects->isEmpty) {
-                	$this->rowCache->setSnapshots($updatedObjects->reduce(new Dictionary(),
-	                    /**
-	                     * @param Dictionary<Dictionary<mixed>> $snapshots
-	                     * @param ManagedObject $updatedObject
-	                     * @return Dictionary<Dictionary<mixed>>
-	                     */
-	                    function (Dictionary $snapshots, ManagedObject $updatedObject): Dictionary {
-							$snapshot = $updatedObject->dictionaryWithValues($updatedObject->modeledAttributes->map(fn(AttributeDescription $attribute): string => $attribute->name));
-							$snapshot[ManagedObjectObjectIDKey] = $updatedObject->objectID->referenceObject;
-							$snapshot[ManagedObjectEntityNameKey] = $updatedObject->entityName;
-							$snapshot[ManagedObjectVersionKey] = $updatedObject->version;
-							$snapshots[$updatedObject->objectID->uriRepresentation()->absoluteString] = $updatedObject->entity->sanitizeSnapshot($snapshot);
-	                        return $snapshots;
-	                    }), $this->stalenessInterval);
+                    /** @var Dictionary<Dictionary<mixed>> $snapshots */
+                    $snapshots = new Dictionary();
+                    /** @var Dictionary<ArrayClass<PropertyDescription>> $propertySnapshots */
+                    $propertySnapshots = new Dictionary();
                     foreach ($updatedObjects as $updatedObject) {
-                        $modeledRelationships = $updatedObject->modeledRelationships;
+                        $uri = $updatedObject->objectID->uriRepresentation()->absoluteString;
+                        $snapshot = $updatedObject->dictionaryWithValues($updatedObject->modeledAttributes->map(fn(AttributeDescription $attribute): string => $attribute->name));
+                        $snapshot[ManagedObjectObjectIDKey] = $updatedObject->objectID->referenceObject;
+                        $snapshot[ManagedObjectEntityNameKey] = $updatedObject->entityName;
+                        $snapshot[ManagedObjectVersionKey] = $updatedObject->version;
+                        $snapshots[$uri] = $updatedObject->entity->sanitizeSnapshot($snapshot);
                         $changedValuesForCurrentEvent = $updatedObject->changedValuesForCurrentEvent();
                         foreach ($changedValuesForCurrentEvent->keys as $key) {
-                            if ($relationship = $modeledRelationships[$key]) {
-                                $this->rowCache->deleteSnapshot($updatedObject->objectID, $relationship);
+                            $property = $updatedObject->modeledProperties[$key];
+                            if ($property instanceof RelationshipDescription || $property instanceof FetchedPropertyDescription) {
+                                $propertySnapshots[$uri] ??= new ArrayClass();
+                                $propertySnapshots[$uri]->append($property);
                             }
                         }
+                    }
+                    if (!$propertySnapshots->isEmpty) {
+                        $this->rowCache->deletePropertySnapshots($propertySnapshots);
+                    }
+                    if (!$snapshots->isEmpty) {
+                        $this->rowCache->setSnapshots($snapshots, $this->stalenessInterval);
                     }
                 }
             }
@@ -567,7 +570,7 @@ final class SQLCore extends IncrementalStore
         $this->rowCache->setSnapshot(new Dictionary([ManagedObjectPropertyResultKey => $propertyResultValue]), $objectID, $this->stalenessInterval, $relationship);
         return $result;
     }
-    
+
     #[Override]
     public function newOrderedRelationshipInformationForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass|Nil
     {
@@ -593,7 +596,7 @@ final class SQLCore extends IncrementalStore
         $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
         return $requestContext->result;
     }
-    
+
     #[Override]
     public function newValueForFetchedProperty(FetchedPropertyDescription $fetchedProperty, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass
     {

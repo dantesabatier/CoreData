@@ -147,4 +147,13 @@ final class MemcachedRowCache extends RowCache
         $keys = $objectIDs->map(fn(ManagedObjectID $objectID): string => $this->cacheKey($objectID))->array;
         $this->memcached->deleteMulti($keys);
     }
+
+    #[Override]
+    public function deletePropertySnapshots(Dictionary $snapshots): void
+    {
+        if ($snapshots->isEmpty) {
+            return;
+        }
+        $this->memcached->deleteMulti($snapshots->flatMap(fn(ArrayClass $properties, string $uri): ArrayClass => $properties->map(fn(PropertyDescription $property): string => "$uri/$property->name"))->array);
+    }
 }

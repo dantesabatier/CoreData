@@ -133,4 +133,13 @@ final class RedisRowCache extends RowCache
         }
         $this->redis->del($objectIDs->map(fn(ManagedObjectID $objectID): string => $this->cacheKey($objectID))->array);
     }
+    
+    #[Override]
+    public function deletePropertySnapshots(Dictionary $snapshots): void
+    {
+        if ($snapshots->isEmpty) {
+            return;
+        }
+        $this->redis->del($snapshots->flatMap(fn(ArrayClass $properties, string $uri) => $properties->map(fn(PropertyDescription $property) => "$uri/$property->name"))->array);
+    }
 }

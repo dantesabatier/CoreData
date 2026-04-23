@@ -85,4 +85,15 @@ final class DefaultRowCache extends RowCache
     {
         $objectIDs->forEach(fn(ManagedObjectID $objectID): mixed => $this->storage->removeValueForKey($this->cacheKey($objectID)));
     }
+    
+    #[Override]
+    public function deletePropertySnapshots(Dictionary $snapshots): void
+    {
+        if ($snapshots->isEmpty) {
+            return;
+        }
+        $snapshots->forEach(function (ArrayClass $properties, string $uri): void {
+            $properties->forEach(fn(PropertyDescription $property) => $this->storage->removeValueForKey("$uri/$property->name"));
+        });
+    }
 }

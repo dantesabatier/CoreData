@@ -72,6 +72,11 @@ final class NullRowCache implements PersistentStoreCache
     public function deleteSnapshots(ArrayClass $objectIDs): void
     {
     }
+    
+    #[Override]
+    public function deletePropertySnapshots(Dictionary $snapshots): void
+    {
+    }
 
     #[Override]
     public function queryKeyForRequest(FetchRequest $request, QueryGenerationToken $token): string

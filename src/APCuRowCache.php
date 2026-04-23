@@ -134,4 +134,13 @@ final class APCuRowCache extends RowCache
         }
         apcu_delete($objectIDs->map(fn(ManagedObjectID $objectID): string => $this->cacheKey($objectID))->array);
     }
+    
+    #[Override]
+    public function deletePropertySnapshots(Dictionary $snapshots): void
+    {
+        if ($snapshots->isEmpty) {
+            return;
+        }
+        apcu_delete($snapshots->flatMap(fn(ArrayClass $properties, string $uri): ArrayClass => $properties->map(fn(PropertyDescription $property): string => "$uri/$property->name"))->array);
+    }
 }

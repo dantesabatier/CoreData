@@ -91,6 +91,13 @@ interface PersistentStoreCache
     public function deleteSnapshots(ArrayClass $objectIDs): void;
 
     /**
+     * Deletes multiple property snapshots.
+     *
+     * @param Dictionary<ArrayClass<PropertyDescription>> $snapshots Snapshots to delete.
+     */
+    public function deletePropertySnapshots(Dictionary $snapshots): void;
+
+    /**
      * Returns a deterministic cache key for a fetch request.
      *
      * @param FetchRequest $request Fetch request.
