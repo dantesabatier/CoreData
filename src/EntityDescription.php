@@ -264,28 +264,28 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
     public function sanitizeSnapshot(Dictionary $snapshot): Dictionary
     {
         return $snapshot->reduce(new Dictionary(),
-        	/**
-	         * @param Dictionary<mixed> $result
-	         * @param mixed $value
-	         * @param string $key
-	         * @return Dictionary<mixed>
-	         */
-	        function(Dictionary $result, mixed $value, string $key): Dictionary {
-	            if (match ($key) {
-	                ManagedObjectObjectIDKey, ManagedObjectEntityNameKey, ManagedObjectVersionKey => true,
-	                default => false
-	            } || $this->attributesByName->offsetExists($key)) {
-	                if ($value instanceof ManagedObjectID) {
-	                    $value = $value->referenceObject;
-	                } elseif ($value instanceof Date || $value instanceof UUID) {
-	                    $value = $value->description;
-	                } elseif ($value instanceof Nil) {
-	                    $value = $value->value;
-	                }
-	                $result[$key] = $value;
-	            }
-	            return $result;
-	        });
+            /**
+             * @param Dictionary<mixed> $result
+             * @param mixed $value
+             * @param string $key
+             * @return Dictionary<mixed>
+             */
+            function (Dictionary $result, mixed $value, string $key): Dictionary {
+                if (match ($key) {
+                        ManagedObjectObjectIDKey, ManagedObjectEntityNameKey, ManagedObjectVersionKey => true,
+                        default => false
+                    } || $this->attributesByName->offsetExists($key)) {
+                    if ($value instanceof ManagedObjectID) {
+                        $value = $value->referenceObject;
+                    } elseif ($value instanceof Date || $value instanceof UUID) {
+                        $value = $value->description;
+                    } elseif ($value instanceof Nil) {
+                        $value = $value->value;
+                    }
+                    $result[$key] = $value;
+                }
+                return $result;
+            });
     }
 
     /**
