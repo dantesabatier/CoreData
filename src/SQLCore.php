@@ -360,6 +360,15 @@ final class SQLCore extends IncrementalStore
 							$snapshots[$updatedObject->objectID->uriRepresentation()->absoluteString] = $updatedObject->entity->sanitizeSnapshot($snapshot);
 	                        return $snapshots;
 	                    }), $this->stalenessInterval);
+                    foreach ($updatedObjects as $updatedObject) {
+                        $modeledRelationships = $updatedObject->modeledRelationships;
+                        $changedValuesForCurrentEvent = $updatedObject->changedValuesForCurrentEvent();
+                        foreach ($changedValuesForCurrentEvent->keys as $key) {
+                            if ($relationship = $modeledRelationships[$key]) {
+                                $this->rowCache->deleteSnapshot($updatedObject->objectID, $relationship);
+                            }
+                        }
+                    }
                 }
             }
             $this->currentGeneration = $this->rowCache->advanceGenerationForStore($this->identifier);
