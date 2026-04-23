@@ -79,6 +79,7 @@ final class ManagedObjectSerializationPreparer
 
     private function prepareObjectGraph(ManagedObject $object, Dictionary $shape): void
     {
+        /** @var Dictionary<mixed> $currentShape */
         $currentShape = $this->preparedShapes[$object] ?? new Dictionary();
         if (!$this->shapeChanged($currentShape, $shape)) {
             return;
