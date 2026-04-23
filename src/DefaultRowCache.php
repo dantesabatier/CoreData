@@ -93,7 +93,7 @@ final class DefaultRowCache extends RowCache
             return;
         }
         $snapshots->forEach(function (ArrayClass $properties, string $uri): void {
-            $properties->forEach(fn(PropertyDescription $property) => $this->storage->removeValueForKey("$uri/$property->name"));
+            $properties->forEach(fn(PropertyDescription $property): mixed => $this->storage->removeValueForKey("$uri/$property->name"));
         });
     }
 }
