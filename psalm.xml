@@ -31,8 +31,9 @@
         </InvalidReturnType>
         <PossiblyNullReference>
             <errorLevel type="suppress">
+                <file name="src/ManagedObjectContext.php"/>
                 <file name="src/XMLObjectStore.php"/>
-                <file name="src\ManagedObjectContext.php"/>
+                <file name="src/SQLCore.php"/>
             </errorLevel>
         </PossiblyNullReference>
         <InternalClass errorLevel="suppress"/>
