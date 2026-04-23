@@ -6,16 +6,8 @@ use Override;
 use Sabatier\Foundation\Dictionary;
 use function Sabatier\Foundation\fatal_error;
 
-final class SQLFetchedPropertyFaultRequestContext extends SQLStoreRequestContext
+final class SQLFetchedPropertyFaultRequestContext extends SQLFetchRequestContext
 {
-    public FetchRequest $fetchRequest {
-        get {
-            /** @var FetchRequest $request */
-            $request = $this->persistentStoreRequest;
-            return $request;
-        }
-    }
-
     public function __construct(ManagedObjectID $objectID, FetchedPropertyDescription $fetchedProperty, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         $fetchRequest = $fetchedProperty->fetchRequest ?? fatal_error("Fetched property \"$fetchedProperty->name\" fetchRequest cannot be null.");
@@ -35,9 +27,7 @@ final class SQLFetchedPropertyFaultRequestContext extends SQLStoreRequestContext
     {
         $debugLevel = $this->debugLevel;
         $this->debugLevel = SQLDebugLevel::none;
-        $fetchRequestContext = new SQLFetchRequestContext($this->fetchRequest, $this->context, $this->sqlCore);
-        $fetchRequestContext->executeRequestUsingConnection($this->connection);
-        $this->result = $fetchRequestContext->result;
+        parent::executeRequestCore();
         $this->debugLevel = $debugLevel;
         return true;
     }

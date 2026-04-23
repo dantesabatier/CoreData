@@ -140,6 +140,6 @@ final class RedisRowCache extends RowCache
         if ($snapshots->isEmpty) {
             return;
         }
-        $this->redis->del($snapshots->flatMap(fn(ArrayClass $properties, string $uri) => $properties->map(fn(PropertyDescription $property) => "$uri/$property->name"))->array);
+        $this->redis->del($snapshots->flatMap(fn(ArrayClass $properties, string $uri): ArrayClass => $properties->map(fn(PropertyDescription $property) => "$uri/$property->name"))->array);
     }
 }

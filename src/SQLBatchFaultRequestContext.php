@@ -10,16 +10,8 @@ use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
-final class SQLBatchFaultRequestContext extends SQLStoreRequestContext
+final class SQLBatchFaultRequestContext extends SQLFetchRequestContext
 {
-    public FetchRequest $fetchRequest {
-        get {
-            /** @var FetchRequest $request */
-            $request = $this->persistentStoreRequest;
-            return $request;
-        }
-    }
-
     /**
      * @param ArrayClass<ManagedObjectID> $objectIDs
      * @param ManagedObjectContext $context
@@ -43,9 +35,7 @@ final class SQLBatchFaultRequestContext extends SQLStoreRequestContext
     {
         $debugLevel = $this->debugLevel;
         $this->debugLevel = SQLDebugLevel::none;
-        $context = new SQLFetchRequestContext($this->fetchRequest, $this->context, $this->sqlCore);
-        $context->executeRequestUsingConnection($this->connection);
-        $this->result = $context->result;
+        parent::executeRequestCore();
         $this->debugLevel = $debugLevel;
         return true;
     }

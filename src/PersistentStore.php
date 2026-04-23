@@ -192,7 +192,7 @@ abstract class PersistentStore extends ObjectClass
     {
         request_concrete_implementation($this, __FUNCTION__);
     }
-    
+
     /**
      * @param RelationshipDescription $relationship
      * @param ManagedObjectID $objectID
