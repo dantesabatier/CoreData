@@ -16,6 +16,10 @@ final class ManagedObjectSerializationPreparer
     private WeakMap $serializationShapes {
         get => $this->serializationShapes ??= new WeakMap();
     }
+    /** @var WeakMap<ManagedObject, Dictionary<mixed>> */
+    private WeakMap $preparedShapes {
+        get => $this->preparedShapes ??= new WeakMap();
+    }
 
     public static function shared(): ManagedObjectSerializationPreparer
     {
@@ -42,14 +46,48 @@ final class ManagedObjectSerializationPreparer
         $object->faultingState = ManagedObjectFaultingStateStable;
     }
 
+    private function mergeShape(Dictionary $current, Dictionary $incoming): Dictionary
+    {
+        $merged = clone $current;
+        foreach ($incoming as $key => $value) {
+            $currentValue = $merged[$key];
+            if ($currentValue instanceof Dictionary && $value instanceof Dictionary) {
+                $merged[$key] = $this->mergeShape($currentValue, $value);
+                continue;
+            }
+            $merged[$key] = $value;
+        }
+        return $merged;
+    }
+
+    private function shapeChanged(Dictionary $current, Dictionary $incoming): bool
+    {
+        foreach ($incoming as $key => $value) {
+            $currentValue = $current[$key];
+            if ($currentValue instanceof Dictionary && $value instanceof Dictionary) {
+                if ($this->shapeChanged($currentValue, $value)) {
+                    return true;
+                }
+                continue;
+            }
+            if ($currentValue !== $value) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private function prepareObjectGraph(ManagedObject $object, Dictionary $shape): void
     {
-        if (isset($this->serializationShapes[$object])) {
+        $currentShape = $this->preparedShapes[$object] ?? new Dictionary();
+        if (!$this->shapeChanged($currentShape, $shape)) {
             return;
         }
-        $this->applySerializationShape($object, $shape);
+        $mergedShape = $this->mergeShape($currentShape, $shape);
+        $this->preparedShapes[$object] = $mergedShape;
+        $this->applySerializationShape($object, $mergedShape);
         $context = $object->managedObjectContext;
-        foreach ($shape as $key => $subshape) {
+        foreach ($mergedShape as $key => $subshape) {
             if (!$subshape instanceof Dictionary) {
                 continue;
             }
