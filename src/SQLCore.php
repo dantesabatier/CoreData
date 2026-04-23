@@ -370,8 +370,6 @@ final class SQLCore extends IncrementalStore
                         $this->rowCache->setSnapshots($snapshots, $this->stalenessInterval);
                     }
                     if (!$propertySnapshots->isEmpty) {
-                        // Sorted fetched properties are excluded from the row cache (see newValueForFetchedProperty),
-                        // so any FetchedPropertyDescription entries with sort descriptors are no-ops here.
                         $this->rowCache->deletePropertySnapshots($propertySnapshots);
                     }
                 }
