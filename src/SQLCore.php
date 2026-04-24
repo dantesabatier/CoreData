@@ -20,7 +20,6 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\NotificationCenter;
 use Sabatier\Foundation\Number;
-use Sabatier\Foundation\Sequence;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
@@ -430,12 +429,29 @@ final class SQLCore extends IncrementalStore
             FetchRequestResultType::managedObjectResultType, FetchRequestResultType::managedObjectIDResultType, FetchRequestResultType::dictionaryResultType => new SQLFetchRequestContext($request, $context, $this),
             FetchRequestResultType::countResultType => new SQLCountRequestContext($request, $context, $this)
         });
-        if ($shouldCache && ($queryResultValue = match ($request->resultType) {
-                FetchRequestResultType::managedObjectResultType => $result->map(fn(ManagedObject $object): string => $object->objectID->uriRepresentation()->absoluteString),
-                FetchRequestResultType::managedObjectIDResultType => $result->map(fn(ManagedObjectID $objectID): string => $objectID->uriRepresentation()->absoluteString),
-                default => false
-            }) && $queryResultValue instanceof Sequence) {
-            $this->rowCache->setSnapshot(new Dictionary([ManagedObjectQueryResultKey => $queryResultValue->array, ManagedObjectQueryResultGenerationKey => $expectedToken]), $queryID, $this->stalenessInterval);
+        if ($shouldCache) {
+            /** @var ArrayClass<string> $queryResultValue */
+            $queryResultValue = new ArrayClass();
+            if ($request->resultType === FetchRequestResultType::managedObjectResultType) {
+                $queryResultValue = $result->map(fn(ManagedObject $object): string => $object->objectID->uriRepresentation()->absoluteString);
+                $this->rowCache->setSnapshots($result->reduce(new Dictionary(),
+                    /**
+                     * @param Dictionary<Dictionary<mixed>> $snapshots
+                     * @param ManagedObject $object
+                     * @return Dictionary<Dictionary<mixed>>
+                     */
+                    function (Dictionary $snapshots, ManagedObject $object): Dictionary {
+                        if ($snapshot = $object->lastSnapshot) {
+                            $snapshots[$object->objectID->uriRepresentation()->absoluteString] = $object->entity->sanitizeSnapshot($snapshot);
+                        }
+                        return $snapshots;
+                    }), $this->stalenessInterval);
+            } elseif ($request->resultType === FetchRequestResultType::managedObjectIDResultType) {
+                $queryResultValue = $result->map(fn(ManagedObjectID $objectID): string => $objectID->uriRepresentation()->absoluteString);
+            }
+            if (!$queryResultValue->isEmpty) {
+                $this->rowCache->setSnapshot(new Dictionary([ManagedObjectQueryResultKey => $queryResultValue->array, ManagedObjectQueryResultGenerationKey => $expectedToken]), $queryID, $this->stalenessInterval);
+            }
         }
         return $result;
     }
