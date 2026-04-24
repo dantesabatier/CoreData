@@ -225,6 +225,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     {
         return $snapshots->map(function (Dictionary $snapshot): ManagedObject {
             $serialization = $this->request->serialization;
+            /** @var string $entityName */
             $entityName = $snapshot[$this->sqlEntityForFetchRequest->entityKey->columnName] ?? fatal_error("invalid snapshot: {$this->sqlEntityForFetchRequest->entityKey->columnName} cannot be null");
             /** @var SQLEntity $entity */
             $entity = $this->sqlModel->entitiesByName[$entityName] ?? fatal_error("invalid snapshot: {$this->sqlEntityForFetchRequest->entityKey->columnName} $entityName cannot be null");

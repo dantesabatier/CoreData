@@ -25,7 +25,6 @@ use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\OperationQueue;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
-use Sabatier\Foundation\Sequence;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\UndoManager;
 use Sabatier\Foundation\URL;
@@ -185,6 +184,7 @@ final class ManagedObjectContext extends ObjectClass
      * @param FetchedPropertyDescription $fetchedProperty
      * @param ManagedObjectID $objectID
      * @return ArrayClass<ManagedObject>
+     * @throws Exception
      * @internal
      */
     public function newValueForFetchedProperty(FetchedPropertyDescription $fetchedProperty, ManagedObjectID $objectID): ArrayClass
@@ -523,7 +523,7 @@ final class ManagedObjectContext extends ObjectClass
     /**
      * Specifies the store in which a newly inserted object will be saved.
      *
-     * You can get a store from the persistent store coordinator, using, for example {@see PersistentStoreCoordinator::persistentStore()}.
+     * You can get a store from the persistent store coordinator, using, for example, {@see PersistentStoreCoordinator::persistentStore()}.
      * It is only necessary to use this method if the receiver's persistent store coordinator manages multiple writable stores that have $object's entity in their configuration. Maintaining configurations in the managed object model can eliminate the need to invoke this method directly in many situations. If the receiver's persistent store coordinator manages only a single writable store, or if only one store has $object's entity in its model, $object will automatically be assigned to that store.
      * @param ManagedObject $object A managed object.
      * @param PersistentStore $store A persistent store.
