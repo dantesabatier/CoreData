@@ -83,6 +83,8 @@ final class FetchRequest extends PersistentStoreRequest
                     $result[$property->name] = $property->type;
                 } elseif ($property instanceof RelationshipDescription) {
                     $result[$property->name] = $this->serializeRelationship($property);
+                } elseif ($property instanceof FetchedPropertyDescription) {
+                    $result[$property->name] = $this->serializeFetchedProperty($property);
                 }
                 return $result;
             });
@@ -173,6 +175,34 @@ final class FetchRequest extends PersistentStoreRequest
     private function serializeRelationship(RelationshipDescription $relationship): Dictionary
     {
         return $relationship->destinationEntity->attributesByName->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<mixed> $result
+             * @param AttributeDescription $attribute
+             * @return Dictionary<mixed>
+             */
+            function (Dictionary $result, AttributeDescription $attribute): Dictionary {
+                if ($this->isSerializableAttribute($attribute)) {
+                    $result[$attribute->name] = $attribute->type;
+                }
+                return $result;
+            });
+    }
+
+    /**
+     * @param FetchedPropertyDescription $fetchedProperty
+     * @return Dictionary<mixed>
+     */
+    private function serializeFetchedProperty(FetchedPropertyDescription $fetchedProperty): Dictionary
+    {
+        $entityName = $fetchedProperty->fetchRequest?->entityName;
+        if (!$entityName) {
+            return new Dictionary();
+        }
+        $entity = $this->entity->managedObjectModel->entitiesByName[$entityName];
+        if (!$entity) {
+            return new Dictionary();
+        }
+        return $entity->attributesByName->reduce(new Dictionary(),
             /**
              * @param Dictionary<mixed> $result
              * @param AttributeDescription $attribute
