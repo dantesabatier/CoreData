@@ -347,8 +347,8 @@ final class SQLCore extends IncrementalStore
                 if (($updatedObjects = $requestContext->request->updatedObjects) && !$updatedObjects->isEmpty) {
                     /** @var Dictionary<Dictionary<mixed>> $snapshots */
                     $snapshots = new Dictionary();
-                    /** @var Dictionary<ArrayClass<PropertyDescription>> $propertySnapshots */
-                    $propertySnapshots = new Dictionary();
+                    /** @var Dictionary<ArrayClass<RelationshipDescription>> $relationshipSnapshots */
+                    $relationshipSnapshots = new Dictionary();
                     foreach ($updatedObjects as $updatedObject) {
                         $uri = $updatedObject->objectID->uriRepresentation()->absoluteString;
                         $snapshot = $updatedObject->dictionaryWithValues($updatedObject->modeledAttributes->map(fn(AttributeDescription $attribute): string => $attribute->name));
@@ -358,18 +358,18 @@ final class SQLCore extends IncrementalStore
                         $snapshots[$uri] = $updatedObject->entity->sanitizeSnapshot($snapshot);
                         $changedValuesForCurrentEvent = $updatedObject->changedValuesForCurrentEvent();
                         foreach ($changedValuesForCurrentEvent->keys as $key) {
-                            $property = $updatedObject->modeledProperties[$key];
-                            if ($property instanceof RelationshipDescription || $property instanceof FetchedPropertyDescription) {
-                                $propertySnapshots[$uri] ??= new ArrayClass();
-                                $propertySnapshots[$uri]->append($property);
+                            $relationship = $updatedObject->modeledRelationships[$key];
+                            if ($relationship instanceof RelationshipDescription) {
+                                $relationshipSnapshots[$uri] ??= new ArrayClass();
+                                $relationshipSnapshots[$uri]->append($relationship);
                             }
                         }
                     }
                     if (!$snapshots->isEmpty) {
                         $this->rowCache->setSnapshots($snapshots, $this->stalenessInterval);
                     }
-                    if (!$propertySnapshots->isEmpty) {
-                        $this->rowCache->deletePropertySnapshots($propertySnapshots);
+                    if (!$relationshipSnapshots->isEmpty) {
+                        $this->rowCache->deletePropertySnapshots($relationshipSnapshots);
                     }
                 }
             }
@@ -617,10 +617,15 @@ final class SQLCore extends IncrementalStore
     public function newValueForFetchedProperty(FetchedPropertyDescription $fetchedProperty, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass
     {
         $isSorted = $fetchedProperty->fetchRequest?->sortDescriptors !== null;
+        $expectedToken = $context->queryGenerationToken?->value ?? new QueryGenerationToken($this->identifier, $this->storeGeneration, $this->currentGeneration);
         if (!$isSorted && ($cached = $this->rowCache->snapshot($objectID, $fetchedProperty))) {
-            /** @var list<string> $value */
-            $value = $cached[ManagedObjectPropertyResultKey];
-            return new ArrayClass($value)->map(fn(string $string) => $this->managedObjectID(new URL($string)));
+            /** @var QueryGenerationToken|null $cachedToken */
+            $cachedToken = $cached[ManagedObjectQueryResultGenerationKey];
+            if ($expectedToken->isCompatible($cachedToken)) {
+                /** @var list<string> $value */
+                $value = $cached[ManagedObjectPropertyResultKey];
+                return new ArrayClass($value)->map(fn(string $string) => $this->managedObjectID(new URL($string)));
+            }
         }
         $requestContext = new SQLFetchedPropertyFaultRequestContext($objectID, $fetchedProperty, $context, $this);
         $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
@@ -629,7 +634,7 @@ final class SQLCore extends IncrementalStore
         if (!$isSorted) {
             /** @var list<string> $propertyResultValue */
             $propertyResultValue = $result->map(fn(ManagedObjectID $objectID): string => $objectID->uriRepresentation()->absoluteString)->array;
-            $this->rowCache->setSnapshot(new Dictionary([ManagedObjectPropertyResultKey => $propertyResultValue]), $objectID, $this->stalenessInterval, $fetchedProperty);
+            $this->rowCache->setSnapshot(new Dictionary([ManagedObjectPropertyResultKey => $propertyResultValue, ManagedObjectQueryResultGenerationKey => $expectedToken]), $objectID, $this->stalenessInterval, $fetchedProperty);
         }
         return $result;
     }
