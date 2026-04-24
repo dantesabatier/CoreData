@@ -198,7 +198,7 @@ final class FetchRequest extends PersistentStoreRequest
         if (!$entityName) {
             return new Dictionary();
         }
-        $entity = $this->entity->managedObjectModel->entitiesByName[$entityName];
+        $entity = $this->entity?->managedObjectModel->entitiesByName[$entityName];
         if (!$entity) {
             return new Dictionary();
         }
