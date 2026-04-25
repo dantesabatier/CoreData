@@ -221,9 +221,9 @@ final class SQLFormatter extends Formatter
             if ($newline) {
                 $return .= "\n" . str_repeat($tab, $indentLevel);
                 $newline = false;
-                $added_newline = true;
+                $isNewLine = true;
             } else {
-                $added_newline = false;
+                $isNewLine = false;
             }
             if ($token->type === SQLFormatterTokenType::comment || $token->type === SQLFormatterTokenType::blockComment) {
                 if ($token->type === SQLFormatterTokenType::blockComment) {
@@ -303,7 +303,7 @@ final class SQLFormatter extends Formatter
                         continue;
                     }
                 }
-                if (!$added_newline) {
+                if (!$isNewLine) {
                     $return .= "\n" . str_repeat($tab, $indentLevel);
                 }
             } elseif ($token->type === SQLFormatterTokenType::reservedTopLevel) {
@@ -314,7 +314,7 @@ final class SQLFormatter extends Formatter
                     array_shift($indentTypes);
                 }
                 $newline = true;
-                if (!$added_newline) {
+                if (!$isNewLine) {
                     $return .= "\n" . str_repeat($tab, $indentLevel);
                 } else {
                     $return = rtrim($return, $tab) . str_repeat($tab, $indentLevel);
@@ -335,7 +335,7 @@ final class SQLFormatter extends Formatter
                     $newline = true;
                 }
             } elseif ($token->type === SQLFormatterTokenType::reservedNewline) {
-                if (!$added_newline) {
+                if (!$isNewLine) {
                     $return .= "\n" . str_repeat($tab, $indentLevel);
                 }
                 if (str_contains((string)$token->value, " ") || str_contains((string)$token->value, "\n") || str_contains((string)$token->value, "\t")) {
