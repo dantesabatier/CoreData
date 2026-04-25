@@ -353,7 +353,11 @@ final class SQLCore extends IncrementalStore
                     $relationshipSnapshots = new Dictionary();
                     foreach ($updatedObjects as $updatedObject) {
                         $uri = $updatedObject->objectID->uriRepresentation()->absoluteString;
-                        $snapshot = $updatedObject->dictionaryWithValues($updatedObject->modeledAttributes->map(fn(AttributeDescription $attribute): string => $attribute->name));
+                        // Runtime-only derived attributes (@count, @sum, @min, @max, etc.) are excluded here:
+                        // their value must come from a SQL correlated subquery, not from an in-memory KVC
+                        // evaluation that would load the entire relationship. They are recomputed by
+                        // SQLObjectFaultRequestContext the next time the object is fault-fulfilled.
+                        $snapshot = $updatedObject->dictionaryWithValues($updatedObject->modeledAttributes->filter(fn(AttributeDescription $attr): bool => !($attr instanceof DerivedAttributeDescription && $attr->isRuntimeOnly))->map(fn(AttributeDescription $attribute): string => $attribute->name));
                         $snapshot[ManagedObjectObjectIDKey] = $updatedObject->objectID->referenceObject;
                         $snapshot[ManagedObjectEntityNameKey] = $updatedObject->entityName;
                         $snapshot[ManagedObjectVersionKey] = $updatedObject->version;

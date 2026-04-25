@@ -799,7 +799,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             return;
         }
         $property = $this->persistentProperties[$propertyName];
-        if (!$property instanceof PropertyDescription || $property instanceof DerivedAttributeDescription) {
+        if (!$property instanceof PropertyDescription) {
             return;
         }
         $finalValue = $newValue ?? Nil::nil();
