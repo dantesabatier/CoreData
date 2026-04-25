@@ -12,10 +12,11 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\KeyedUnarchiver;
-use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\ObjectClass;
+use Sabatier\Foundation\SensitiveValue;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\UUID;
+use Sabatier\Foundation\Value;
 use Traversable;
 use function Sabatier\Foundation\fatal_error;
 
@@ -277,10 +278,14 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
                     } || $this->attributesByName->offsetExists($key)) {
                     if ($value instanceof ManagedObjectID) {
                         $value = $value->referenceObject;
-                    } elseif ($value instanceof Date || $value instanceof UUID) {
+                    } elseif ($value instanceof Date) {
                         $value = $value->description;
-                    } elseif ($value instanceof Nil) {
+                    } elseif ($value instanceof UUID) {
+                        $value = $value->uuidString;
+                    } elseif ($value instanceof Value) {
                         $value = $value->value;
+                    } elseif ($value instanceof SensitiveValue) {
+                        $value = null;
                     }
                     $result[$key] = $value;
                 }
