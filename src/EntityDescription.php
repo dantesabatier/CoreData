@@ -15,6 +15,7 @@ use Sabatier\Foundation\KeyedUnarchiver;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\SensitiveValue;
 use Sabatier\Foundation\Set;
+use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
 use Sabatier\Foundation\Value;
 use Traversable;
@@ -282,6 +283,8 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
                         $value = $value->description;
                     } elseif ($value instanceof UUID) {
                         $value = $value->uuidString;
+                    } elseif ($value instanceof URL) {
+                        $value = $value->absoluteString;
                     } elseif ($value instanceof Value) {
                         $value = $value->value;
                     } elseif ($value instanceof SensitiveValue) {
