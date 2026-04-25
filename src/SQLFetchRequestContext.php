@@ -47,7 +47,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         if ($description instanceof ExpressionDescription) {
             return ManagedObject::coercedValue($value, $description->resultType, isOptional: $description->isOptional);
         }
-        if ($description instanceof AttributeDescription && !$value instanceof Nil) {
+        if ($description instanceof AttributeDescription) {
             return ManagedObject::coercedValue($value, $description->type, isOptional: $description->isOptional);
         }
         return $value;

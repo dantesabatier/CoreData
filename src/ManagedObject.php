@@ -799,7 +799,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             return;
         }
         $property = $this->persistentProperties[$propertyName];
-        if (!$property instanceof PropertyDescription) {
+        if (!$property instanceof PropertyDescription || $property instanceof DerivedAttributeDescription) {
             return;
         }
         $finalValue = $newValue ?? Nil::nil();
@@ -872,6 +872,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 return $write ? new Number($value)->intValue : new Number($value)->boolValue;
             })(),
             "float", => (float)$value,
+            "string" => (string)$value,
             default => $value
         };
         $optionalValue = fn(string $type): mixed => match (typeof($value)) {
@@ -1148,7 +1149,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
              * @param string $key
              * @return Dictionary<mixed>
              */
-            function (Dictionary &$dictionary, string $key): Dictionary {
+            function (Dictionary $dictionary, string $key): Dictionary {
                 if ($property = $this->entity->propertiesByName[$key]) {
                     if ($property instanceof AttributeDescription) {
                         $value = $this->valueForKey($key) ?? Nil::nil();

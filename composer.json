@@ -27,10 +27,10 @@
     "ext-libxml": "*",
     "ext-pdo": "*",
     "ext-zlib": "*",
-    "sabatier/foundation": "@dev",
     "ext-apcu": "*",
     "ext-redis": "*",
-    "ext-memcached": "*"
+    "ext-memcached": "*",
+    "sabatier/foundation": "@dev"
   },
   "config": {
     "platform": {
