@@ -336,7 +336,7 @@ abstract class AtomicStore extends PersistentStore
         if ($newValue->isEmpty) {
             return $newValue;
         }
-        return $newValue->map(fn(ManagedObjectID $objectID) => $this->cacheNode($objectID))->sorted([new SortDescriptor($columnName)])->map(fn(AtomicStoreCacheNode $node) => $node->objectID);
+        return $newValue->map(fn(ManagedObjectID $objectID): AtomicStoreCacheNode => $this->cacheNode($objectID) ?? fatal_error("No cache node found for object ID: $objectID"))->sorted([new SortDescriptor($columnName)])->map(fn(AtomicStoreCacheNode $node) => $node->objectID);
     }
 
     #[Override]
