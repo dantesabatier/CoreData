@@ -390,9 +390,7 @@ abstract class AtomicStore extends PersistentStore
      */
     public function addCacheNodes(Set $cacheNodes): void
     {
-        foreach ($cacheNodes as $cacheNode) {
-            $this->nodeCache[(string)$cacheNode->objectID] = $cacheNode;
-        }
+        $cacheNodes->forEach(fn(AtomicStoreCacheNode $cacheNode) => $this->nodeCache[(string)$cacheNode->objectID] = $cacheNode);
     }
 
     /**
