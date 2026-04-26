@@ -41,17 +41,16 @@ final class XMLObjectStore extends AtomicStore
     }
     /** @var Dictionary<EntityDescription> */
     private Dictionary $entitiesForConfiguration {
-        get {
-            if (!isset($this->entitiesForConfiguration)) {
-                $model = $this->persistentStoreCoordinator->managedObjectModel;
-                $entities = $model->entities($this->configurationName) ?? $model->entities;
-                $this->entitiesForConfiguration = $entities->reduce(new Dictionary(), function (Dictionary $result, EntityDescription $entityDescription): Dictionary {
-                    $result[$entityDescription->name] = $entityDescription;
-                    return $result;
-                });
-            }
-            return $this->entitiesForConfiguration;
-        }
+        get => $this->entitiesForConfiguration ??= ($this->persistentStoreCoordinator->managedObjectModel->entities($this->configurationName) ?? $this->persistentStoreCoordinator->managedObjectModel->entities)->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<EntityDescription> $result
+             * @param EntityDescription $entityDescription
+             * @return Dictionary<EntityDescription>
+             */
+            function (Dictionary $result, EntityDescription $entityDescription): Dictionary {
+                $result[$entityDescription->name] = $entityDescription;
+                return $result;
+            });
     }
     private Dictionary $xmlInfo {
         get => $this->xmlInfo ??= new Dictionary();

@@ -33,17 +33,17 @@ final class EntityMapping extends ObjectClass
     /** @var string The name of the entity mapping. The name is used only as a means of distinguishing mappings in a model. If not specified, the value defaults to SOURCE->DESTINATION. */
     public string $name {
         get {
-            if (!isset($this->name)) {
-                $name = "";
-                if ($sourceEntityName = $this->sourceEntityName) {
-                    $name = $sourceEntityName;
-                }
-                if ($destinationEntityName = $this->destinationEntityName) {
-                    $name .= "To$destinationEntityName";
-                }
-                $this->name = $name;
+            if (isset($this->name)) {
+                return $this->name;
             }
-            return $this->name;
+            $name = "";
+            if ($sourceEntityName = $this->sourceEntityName) {
+                $name = $sourceEntityName;
+            }
+            if ($destinationEntityName = $this->destinationEntityName) {
+                $name .= "To$destinationEntityName";
+            }
+            return $this->name = $name;
         }
     }
     /** @var EntityMappingType The mapping type for the entity mapping. If you specify a custom entity mapping type, you must specify a value for the migration policy class name as well (see {@see entityMigrationPolicyClassName}). */

@@ -14,55 +14,55 @@ final class SQLEntity extends StoreMapping
     final public const string optimisticLockingKeyName = ManagedObjectVersionKey;
     private(set) string $tableName {
         get {
-            if (!isset($this->tableName)) {
-                /** @var SQLEntity $entity */
-                $entity = $this->isRootEntity ? $this : $this->rootEntity;
-                $this->tableName = $entity->entityDescription->name;
+            if (isset($this->tableName)) {
+                return $this->tableName;
             }
-            return $this->tableName;
+            /** @var SQLEntity $entity */
+            $entity = $this->isRootEntity ? $this : $this->rootEntity;
+            return $this->tableName = $entity->entityDescription->name;
         }
     }
     private(set) SQLPrimaryKey $primaryKey {
         get {
-            if (!isset($this->primaryKey)) {
-                $attribute = new AttributeDescription();
-                $attribute->entity = $this->entityDescription;
-                $attribute->name = match ($this->entityDescription->name) {
-                    "PersistentHistoryTransaction" => "transactionID",
-                    "PersistentHistoryChange" => "changeID",
-                    default => self::primaryKeyName,
-                };
-                $attribute->type = AttributeType::integer64;
-                $attribute->isOptional = false;
-                $this->primaryKey = new SQLPrimaryKey($this, $attribute);
+            if (isset($this->primaryKey)) {
+                return $this->primaryKey;
             }
-            return $this->primaryKey;
+            $attribute = new AttributeDescription();
+            $attribute->entity = $this->entityDescription;
+            $attribute->name = match ($this->entityDescription->name) {
+                "PersistentHistoryTransaction" => "transactionID",
+                "PersistentHistoryChange" => "changeID",
+                default => self::primaryKeyName,
+            };
+            $attribute->type = AttributeType::integer64;
+            $attribute->isOptional = false;
+            return $this->primaryKey = new SQLPrimaryKey($this, $attribute);
         }
     }
     private(set) SQLEntityKey $entityKey {
         get {
-            if (!isset($this->entityKey)) {
-                $attribute = new AttributeDescription();
-                $attribute->entity = $this->entityDescription;
-                $attribute->name = self::entityKeyName;
-                $attribute->type = AttributeType::string;
-                $attribute->isOptional = false;
-                $this->entityKey = new SQLEntityKey($this, $attribute);
+            if (isset($this->entityKey)) {
+                return $this->entityKey;
             }
-            return $this->entityKey;
+            $attribute = new AttributeDescription();
+            $attribute->entity = $this->entityDescription;
+            $attribute->name = self::entityKeyName;
+            $attribute->type = AttributeType::string;
+            $attribute->isOptional = false;
+            return $this->entityKey = new SQLEntityKey($this, $attribute);
         }
     }
     public SQLOptLockKey $optLockKey {
         get {
-            if (!isset($this->optLockKey)) {
-                $attribute = new AttributeDescription();
-                $attribute->entity = $this->entityDescription;
-                $attribute->name = self::optimisticLockingKeyName;
-                $attribute->type = AttributeType::integer64;
-                $attribute->isOptional = false;
-                $this->optLockKey = new SQLOptLockKey($this, $attribute);
+            if (isset($this->optLockKey)) {
+                return $this->optLockKey;
             }
-            return $this->optLockKey;
+            $attribute = new AttributeDescription();
+            $attribute->entity = $this->entityDescription;
+            $attribute->name = self::optimisticLockingKeyName;
+            $attribute->type = AttributeType::integer64;
+            $attribute->isOptional = false;
+            return $this->optLockKey = new SQLOptLockKey($this, $attribute);
         }
     }
     /** @var ArrayClass<SQLEntity> */
@@ -74,18 +74,18 @@ final class SQLEntity extends StoreMapping
     }
     private(set) ?SQLEntity $rootEntity {
         get {
-            if (!isset($this->rootEntity)) {
-                $superentity = $this->superentity;
-                $rootEntity = $superentity;
-                while ($superentity) {
-                    $superentity = $superentity->superentity;
-                    if ($superentity) {
-                        $rootEntity = $superentity;
-                    }
-                }
-                $this->rootEntity = $rootEntity;
+            if (isset($this->rootEntity)) {
+                return $this->rootEntity;
             }
-            return $this->rootEntity;
+            $superentity = $this->superentity;
+            $rootEntity = $superentity;
+            while ($superentity) {
+                $superentity = $superentity->superentity;
+                if ($superentity) {
+                    $rootEntity = $superentity;
+                }
+            }
+            return $this->rootEntity = $rootEntity;
         }
     }
     private(set) bool $isRootEntity {
@@ -100,30 +100,31 @@ final class SQLEntity extends StoreMapping
     /** @var Dictionary<SQLProperty> */
     private(set) Dictionary $propertiesByName {
         get {
-            if (!isset($this->propertiesByName)) {
-                $transform = function (PropertyDescription $propertyDescription): ?SQLProperty {
-                    if ($propertyDescription instanceof AttributeDescription) {
-                        return new SQLAttribute($this, $propertyDescription);
-                    }
-                    if ($propertyDescription instanceof RelationshipDescription) {
-                        if ($propertyDescription->isToMany) {
-                            if ($propertyDescription->inverseRelationship->isToMany) {
-                                return new SQLManyToMany($this, $propertyDescription);
-                            }
-                            return new SQLToMany($this, $propertyDescription);
-                        }
-                        return new SQLToOne($this, $propertyDescription);
-                    }
-                    return null;
-                };
-                /** @var Dictionary<SQLProperty> $propertiesByName */
-                $propertiesByName = $this->entityDescription->propertiesByName->compactMapValues($transform);
-                foreach ($this->entityDescription->subentities as $subentity) {
-                    /** @psalm-suppress InvalidArgument */
-                    $propertiesByName->merge($subentity->propertiesByName->compactMapValues($transform));
-                }
-                $this->propertiesByName = $propertiesByName;
+            if (isset($this->propertiesByName)) {
+                return $this->propertiesByName;
             }
+            $transform = function (PropertyDescription $propertyDescription): ?SQLProperty {
+                if ($propertyDescription instanceof AttributeDescription) {
+                    return new SQLAttribute($this, $propertyDescription);
+                }
+                if ($propertyDescription instanceof RelationshipDescription) {
+                    if ($propertyDescription->isToMany) {
+                        if ($propertyDescription->inverseRelationship->isToMany) {
+                            return new SQLManyToMany($this, $propertyDescription);
+                        }
+                        return new SQLToMany($this, $propertyDescription);
+                    }
+                    return new SQLToOne($this, $propertyDescription);
+                }
+                return null;
+            };
+            /** @var Dictionary<SQLProperty> $propertiesByName */
+            $propertiesByName = $this->entityDescription->propertiesByName->compactMapValues($transform);
+            foreach ($this->entityDescription->subentities as $subentity) {
+                /** @psalm-suppress InvalidArgument */
+                $propertiesByName->merge($subentity->propertiesByName->compactMapValues($transform));
+            }
+            $this->propertiesByName = $propertiesByName;
             return $this->propertiesByName;
         }
     }
@@ -150,29 +151,29 @@ final class SQLEntity extends StoreMapping
     /** @var Dictionary<SQLIndex> */
     private(set) Dictionary $indexes {
         get {
-            if (!isset($this->indexes)) {
-                /** @var Dictionary<SQLIndex> $indexes */
-                $indexes = new Dictionary();
-                if (!$this->entityDescription->isPersistentHistoryEntity) {
-                    $indexes[self::entityKeyName] = new SQLIndex(new FetchIndexDescription(self::entityKeyName, new ArrayClass([new FetchIndexElementDescription($this->entityKey->propertyDescription)])), $this);
-                }
-                /** @psalm-suppress PossiblyInvalidArgument */
-                $indexes->merge($this->entityDescription->indexes->reduce(new Dictionary(), function (Dictionary $result, FetchIndexDescription $indexDescription): Dictionary {
-                    if ($indexDescription->isSpatial) {
-                        /** @psalm-suppress InvalidArgument */
-                        $result[$indexDescription->name] = new SQLRTreeIndex($indexDescription, $this);
-                    } elseif ($indexDescription->isBinary) {
-                        /** @psalm-suppress InvalidArgument */
-                        $result[$indexDescription->name] = new SQLBinaryIndex($indexDescription, $this);
-                    } else {
-                        /** @psalm-suppress InvalidArgument */
-                        $result[$indexDescription->name] = new SQLIndex($indexDescription, $this);
-                    }
-                    return $result;
-                }));
-                $this->indexes = $indexes;
+            if (isset($this->indexes)) {
+                return $this->indexes;
             }
-            return $this->indexes;
+            /** @var Dictionary<SQLIndex> $indexes */
+            $indexes = new Dictionary();
+            if (!$this->entityDescription->isPersistentHistoryEntity) {
+                $indexes[self::entityKeyName] = new SQLIndex(new FetchIndexDescription(self::entityKeyName, new ArrayClass([new FetchIndexElementDescription($this->entityKey->propertyDescription)])), $this);
+            }
+            /** @psalm-suppress PossiblyInvalidArgument */
+            $indexes->merge($this->entityDescription->indexes->reduce(new Dictionary(), function (Dictionary $result, FetchIndexDescription $indexDescription): Dictionary {
+                if ($indexDescription->isSpatial) {
+                    /** @psalm-suppress InvalidArgument */
+                    $result[$indexDescription->name] = new SQLRTreeIndex($indexDescription, $this);
+                } elseif ($indexDescription->isBinary) {
+                    /** @psalm-suppress InvalidArgument */
+                    $result[$indexDescription->name] = new SQLBinaryIndex($indexDescription, $this);
+                } else {
+                    /** @psalm-suppress InvalidArgument */
+                    $result[$indexDescription->name] = new SQLIndex($indexDescription, $this);
+                }
+                return $result;
+            }));
+            return $this->indexes = $indexes;
         }
     }
     /** @var Dictionary<SQLRTreeIndex> */
@@ -214,24 +215,26 @@ final class SQLEntity extends StoreMapping
     /** @var ArrayClass<SQLColumn> */
     private(set) ArrayClass $columnsToFetch {
         get {
-            if (!isset($this->columnsToFetch)) {
-                $columns = $this->properties->filter(fn(SQLProperty $property): bool => !($property->isTransient || $property instanceof SQLRelationship || $property instanceof SQLForeignKey) && (!$property instanceof SQLAttribute || (($property->isDerivedAttribute ? !$property->isRuntimeOnly : !$property->isCompositeAttribute))));
-                $columns->appendContentsOf($this->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary
-                ): ArrayClass => $dictionary->values));
-                $this->columnsToFetch = $columns;
+            if (isset($this->columnsToFetch)) {
+                return $this->columnsToFetch;
             }
+            $columns = $this->properties->filter(fn(SQLProperty $property): bool => !($property->isTransient || $property instanceof SQLRelationship || $property instanceof SQLForeignKey) && (!$property instanceof SQLAttribute || (($property->isDerivedAttribute ? !$property->isRuntimeOnly : !$property->isCompositeAttribute))));
+            $columns->appendContentsOf($this->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary
+            ): ArrayClass => $dictionary->values));
+            $this->columnsToFetch = $columns;
             return $this->columnsToFetch;
         }
     }
     /** @var ArrayClass<SQLColumn> */
     private(set) ArrayClass $columnsToCreate {
         get {
-            if (!isset($this->columnsToCreate)) {
-                $columns = $this->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient && !$property instanceof SQLRelationship && ((!$property instanceof SQLAttribute || (($property->isDerivedAttribute ? !$property->isRuntimeOnly : !$property->isCompositeAttribute)))));
-                $columns->appendContentsOf($this->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary
-                ): ArrayClass => $dictionary->values));
-                $this->columnsToCreate = $columns;
+            if (isset($this->columnsToCreate)) {
+               return $this->columnsToCreate;
             }
+            $columns = $this->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient && !$property instanceof SQLRelationship && ((!$property instanceof SQLAttribute || (($property->isDerivedAttribute ? !$property->isRuntimeOnly : !$property->isCompositeAttribute)))));
+            $columns->appendContentsOf($this->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary
+            ): ArrayClass => $dictionary->values));
+            $this->columnsToCreate = $columns;
             return $this->columnsToCreate;
         }
     }

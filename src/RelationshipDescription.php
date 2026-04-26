@@ -22,27 +22,23 @@ final class RelationshipDescription extends PropertyDescription
     /** @var EntityDescription The entity description of the receiver's destination. */
     private(set) EntityDescription $destinationEntity {
         get {
-            if (!isset($this->destinationEntity)) {
-                if ($this->entity->isEditable) {
-                    fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
-                }
-                /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-                $this->destinationEntity = $this->entity->managedObjectModel->entitiesByName[$this->lazyDestinationEntityName] ?? $this->entity->managedObjectModel->entitiesByName->first(fn(EntityDescription $entity): bool => $entity->renamingIdentifier === $this->lazyDestinationEntityName) ?? fatal_error("$this->name, destination entity \"$this->lazyDestinationEntityName\" does not exists");
+            if (isset($this->destinationEntity)) {
+                return $this->destinationEntity;
             }
-            return $this->destinationEntity;
+            !$this->entity->isEditable ?: fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
+            /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
+            return $this->destinationEntity = $this->entity->managedObjectModel->entitiesByName[$this->lazyDestinationEntityName] ?? $this->entity->managedObjectModel->entitiesByName->first(fn(EntityDescription $entity): bool => $entity->renamingIdentifier === $this->lazyDestinationEntityName) ?? fatal_error("$this->name, destination entity \"$this->lazyDestinationEntityName\" does not exists");
         }
     }
     /** @var RelationshipDescription The relationship that represents the inverse of the receiver. */
     private(set) RelationshipDescription $inverseRelationship {
         get {
-            if (!isset($this->inverseRelationship)) {
-                if ($this->entity->isEditable) {
-                    fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
-                }
-                /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-                $this->inverseRelationship = $this->destinationEntity->relationshipsByName[$this->lazyInverseRelationshipName] ?? $this->destinationEntity->relationshipsByName->first(fn(RelationshipDescription $relationship): bool => $relationship->renamingIdentifier === $this->lazyInverseRelationshipName) ?? fatal_error("$this->name, inverse relationship \"$this->lazyInverseRelationshipName\" does not exists");
+            if (isset($this->inverseRelationship)) {
+                return $this->inverseRelationship;
             }
-            return $this->inverseRelationship;
+            !$this->entity->isEditable ?: fatal_error(sprintf("%s property \"%s\" cannot be accessed before initialization", $this->debugDescription, __PROPERTY__));
+            /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
+            return $this->inverseRelationship = $this->destinationEntity->relationshipsByName[$this->lazyInverseRelationshipName] ?? $this->destinationEntity->relationshipsByName->first(fn(RelationshipDescription $relationship): bool => $relationship->renamingIdentifier === $this->lazyInverseRelationshipName) ?? fatal_error("$this->name, inverse relationship \"$this->lazyInverseRelationshipName\" does not exists");
         }
     }
     /** @var bool Returns a Boolean value that indicates whether the relationship can contain many managed objects. If {@see maxCount} is equal to 1, implying a to-one relationship, this property returns false; otherwise, it returns true. */

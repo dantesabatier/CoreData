@@ -39,14 +39,14 @@ class SQLColumn extends SQLProperty
     }
     public string $length {
         get {
-            if (!isset($this->length)) {
-                $length = $this->precision ? "$this->precision" : "";
-                if ($length && $this->scale) {
-                    $length .= ",$this->scale";
-                }
-                $this->length = $length;
+            if (isset($this->length)) {
+                return $this->length;
             }
-            return $this->length;
+            $length = $this->precision ? "$this->precision" : "";
+            if ($length && $this->scale) {
+                $length .= ",$this->scale";
+            }
+            return $this->length = $length;
         }
     }
     public mixed $defaultValue {

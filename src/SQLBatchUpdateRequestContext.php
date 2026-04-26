@@ -18,17 +18,17 @@ final class SQLBatchUpdateRequestContext extends SQLBatchOperationRequestContext
     }
     private(set) SQLFetchRequestContext $fetchContext {
         get {
-            if (!isset($this->fetchContext)) {
-                /** @var FetchRequest<ManagedObjectID> $fetchRequest */
-                $fetchRequest = new FetchRequest();
-                $fetchRequest->entity = $this->request->entity;
-                $fetchRequest->predicate = $this->request->predicate;
-                $fetchRequest->propertiesToFetch = $this->request->propertiesToUpdate->keys;
-                $fetchRequest->includesSubentities = $this->request->includesSubentities;
-                $fetchRequest->resultType = FetchRequestResultType::managedObjectIDResultType;
-                $this->fetchContext = new SQLFetchRequestContext($fetchRequest, $this->context, $this->sqlCore);
+            if (isset($this->fetchContext)) {
+                return $this->fetchContext;
             }
-            return $this->fetchContext;
+            /** @var FetchRequest<ManagedObjectID> $fetchRequest */
+            $fetchRequest = new FetchRequest();
+            $fetchRequest->entity = $this->request->entity;
+            $fetchRequest->predicate = $this->request->predicate;
+            $fetchRequest->propertiesToFetch = $this->request->propertiesToUpdate->keys;
+            $fetchRequest->includesSubentities = $this->request->includesSubentities;
+            $fetchRequest->resultType = FetchRequestResultType::managedObjectIDResultType;
+            return $this->fetchContext = new SQLFetchRequestContext($fetchRequest, $this->context, $this->sqlCore);
         }
     }
     private(set) ?SQLStatement $updateStatement {

@@ -32,24 +32,24 @@ abstract class PropertyDescription extends ObjectClass
     /** @var ArrayClass<Predicate> The validation predicates of the receiver. */
     private(set) ArrayClass $validationPredicates {
         get {
-            if (!isset($this->validationPredicates)) {
-                /** @var ArrayClass<Predicate> $validationPredicates */
-                $validationPredicates = new ArrayClass();
-                $minValue = $this->minValue;
-                if (is_numeric($minValue)) {
-                    $validationPredicates->append(new ComparisonPredicate(Expression::expressionForKeyPath($this->name), Expression::expressionForConstantValue($minValue), PredicateOperatorType::greaterThanOrEqualTo));
-                }
-                $maxValue = $this->maxValue;
-                if (is_numeric($maxValue)) {
-                    $validationPredicates->append(new ComparisonPredicate(Expression::expressionForKeyPath($this->name), Expression::expressionForConstantValue($maxValue), PredicateOperatorType::lessThanOrEqualTo));
-                }
-                $regex = $this->regex;
-                if (is_string($regex)) {
-                    $validationPredicates->append(new ComparisonPredicate(Expression::expressionForKeyPath($this->name), Expression::expressionForConstantValue($regex), PredicateOperatorType::matches));
-                }
-                $this->validationPredicates = $validationPredicates;
+            if (isset($this->validationPredicates)) {
+                return $this->validationPredicates;
             }
-            return $this->validationPredicates;
+            /** @var ArrayClass<Predicate> $validationPredicates */
+            $validationPredicates = new ArrayClass();
+            $minValue = $this->minValue;
+            if (is_numeric($minValue)) {
+                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForKeyPath($this->name), Expression::expressionForConstantValue($minValue), PredicateOperatorType::greaterThanOrEqualTo));
+            }
+            $maxValue = $this->maxValue;
+            if (is_numeric($maxValue)) {
+                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForKeyPath($this->name), Expression::expressionForConstantValue($maxValue), PredicateOperatorType::lessThanOrEqualTo));
+            }
+            $regex = $this->regex;
+            if (is_string($regex)) {
+                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForKeyPath($this->name), Expression::expressionForConstantValue($regex), PredicateOperatorType::matches));
+            }
+            return $this->validationPredicates = $validationPredicates;
         }
     }
     /** @var ArrayClass<string> The error strings associated with the receiver's validation predicates. */

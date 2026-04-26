@@ -8,6 +8,7 @@ declare(strict_types=1);
  * Date: 14/12/20
  * Time: 14:32
  */
+
 namespace Sabatier\CoreData;
 
 use Override;
@@ -55,17 +56,17 @@ final class SQLAttribute extends SQLColumn
     }
     private mixed $coercedDefaultValue {
         get {
-            if (!isset($this->coercedDefaultValue)) {
-                $coercedValue = ManagedObject::coercedValue($this->attributeDescription->defaultValue, $this->attributeDescription->type, $this->attributeDescription->attributeValueClassName, $this->attributeDescription->valueTransformerName, $this->attributeDescription->isOptional, true);
-                if (is_string($coercedValue)) {
-                    $coercedValue = match ($coercedValue) {
-                        "" => $coercedValue,
-                        default => "'$coercedValue'"
-                    };
-                }
-                $this->coercedDefaultValue = $coercedValue;
+            if (isset($this->coercedDefaultValue)) {
+                return $this->coercedDefaultValue;
             }
-            return $this->coercedDefaultValue;
+            $coercedValue = ManagedObject::coercedValue($this->attributeDescription->defaultValue, $this->attributeDescription->type, $this->attributeDescription->attributeValueClassName, $this->attributeDescription->valueTransformerName, $this->attributeDescription->isOptional, true);
+            if (is_string($coercedValue)) {
+                $coercedValue = match ($coercedValue) {
+                    "" => $coercedValue,
+                    default => "'$coercedValue'"
+                };
+            }
+            return $this->coercedDefaultValue = $coercedValue;
         }
     }
     #[Override]

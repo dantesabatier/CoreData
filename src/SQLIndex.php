@@ -14,17 +14,17 @@ class SQLIndex extends ObjectClass
     /** @var ArrayClass<SQLStatement> */
     protected(set) ArrayClass $createTableStatements {
         get {
-            if (!isset($this->createTableStatements)) {
-                $createTableStatements = new ArrayClass();
-                $elements = $this->indexDescription->elements->map(fn(FetchIndexElementDescription $element): string => "`{$element->property->name}` $element->order");
-                if ($this->isUnique) {
-                    $createTableStatements->append(new SQLStatement("ALTER TABLE `{$this->entity->tableName}` ADD CONSTRAINT `{$this->indexDescription->name}` UNIQUE INDEX IF NOT EXISTS ({$elements->join(", ")}) USING BTREE"));
-                } else {
-                    $createTableStatements->append(new SQLStatement("ALTER TABLE `{$this->entity->tableName}` ADD INDEX IF NOT EXISTS `{$this->indexDescription->name}` ({$elements->join(", ")}) USING BTREE"));
-                }
-                $this->createTableStatements = $createTableStatements;
+            if (isset($this->createTableStatements)) {
+                return $this->createTableStatements;
             }
-            return $this->createTableStatements;
+            $createTableStatements = new ArrayClass();
+            $elements = $this->indexDescription->elements->map(fn(FetchIndexElementDescription $element): string => "`{$element->property->name}` $element->order");
+            if ($this->isUnique) {
+                $createTableStatements->append(new SQLStatement("ALTER TABLE `{$this->entity->tableName}` ADD CONSTRAINT `{$this->indexDescription->name}` UNIQUE INDEX IF NOT EXISTS ({$elements->join(", ")}) USING BTREE"));
+            } else {
+                $createTableStatements->append(new SQLStatement("ALTER TABLE `{$this->entity->tableName}` ADD INDEX IF NOT EXISTS `{$this->indexDescription->name}` ({$elements->join(", ")}) USING BTREE"));
+            }
+            return $this->createTableStatements = $createTableStatements;
         }
     }
     /** @var ArrayClass<SQLStatement> */
