@@ -33,7 +33,12 @@ final class XMLObjectStore extends AtomicStore
     public string $type {
         get => XMLStoreType;
     }
-    private ?DOMDocument $document = null;
+    private DOMDocument $document {
+        /**
+         * @throws Exception
+         */
+        get => $this->document ??= $this->createDocument();
+    }
     /** @var Dictionary<EntityDescription> */
     private Dictionary $entitiesForConfiguration {
         get {
@@ -176,7 +181,7 @@ final class XMLObjectStore extends AtomicStore
     #[Override]
     public function newCacheNode(ManagedObject $object): AtomicStoreCacheNode
     {
-        $document = $this->document();
+        $document = $this->document;
         $objectID = $object->objectID;
         $parent = $document->getElementsByTagName("elements")->item(0);
         $element = $document->createElement("element");
@@ -263,7 +268,7 @@ final class XMLObjectStore extends AtomicStore
         assert($node instanceof DOMElement);
         if (!($element = new ArrayClass($node->getElementsByTagName("relationship"))->first(fn(DOMElement $element): bool => $element->getAttribute("name") === $relationship->name))) {
             $destinationEntity = $relationship->destinationEntity;
-            $document = $this->document();
+            $document = $this->document;
             $element = $document->createElement("relationship");
             assert($element instanceof DOMElement);
             $element->setAttribute("name", $relationship->name);
@@ -280,7 +285,7 @@ final class XMLObjectStore extends AtomicStore
     {
         assert($node instanceof DOMElement);
         if (!($element = new ArrayClass($node->getElementsByTagName("attribute"))->first(fn(DOMElement $element): bool => $element->getAttribute("name") === $attribute->name))) {
-            $element = $this->document()->createElement("attribute", $value ?? "");
+            $element = $this->document->createElement("attribute", $value ?? "");
             assert($element instanceof DOMElement);
             $element->setAttribute("name", $attribute->name);
             $element->setAttribute("type", $attribute->type->name);
@@ -404,7 +409,7 @@ final class XMLObjectStore extends AtomicStore
     #[Override]
     public function willRemoveCacheNodes(Set $cacheNodes): void
     {
-        $document = $this->document();
+        $document = $this->document;
         $model = $document->getElementsByTagName("model")->item(0);
         assert($model instanceof DOMElement);
         $parent = $model->getElementsByTagName("elements")->item(0);
@@ -463,21 +468,10 @@ final class XMLObjectStore extends AtomicStore
     {
     }
 
-    /**
-     * @throws Exception
-     */
-    public function document(): DOMDocument
-    {
-        if ($this->document === null) {
-            $this->document = $this->createDocument();
-        }
-        return $this->document;
-    }
-
     #[Override]
     public function load(): bool
     {
-        $document = $this->document();
+        $document = $this->document;
         $this->metadata = self::loadMetadataFromDocument($document);
         $this->identifier = $this->metadata[StoreUUIDKey];
         $this->loadFromDocument($document);
@@ -487,6 +481,6 @@ final class XMLObjectStore extends AtomicStore
     #[Override]
     public function save(): bool
     {
-        return (bool)$this->document()->save($this->url->path);
+        return (bool)$this->document->save($this->url->path);
     }
 }
