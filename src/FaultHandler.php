@@ -18,11 +18,8 @@ final readonly class FaultHandler
             return;
         }
         $context ??= $object->managedObjectContext;
-        /** @var IncrementalStoreNode|AtomicStoreCacheNode|null $node */
+        /** @var IncrementalStoreNode|AtomicStoreCacheNode $node */
         $node = $this->persistentStore->newValuesForObjectWithID($object->objectID, $context);
-        if ($node === null) {
-            return;
-        }
         /** @var Dictionary<mixed> $snapshot */
         $snapshot = $node instanceof AtomicStoreCacheNode ? $node->propertyCache : $node->values;
         $object->isFault = false;

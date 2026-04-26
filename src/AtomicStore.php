@@ -15,6 +15,7 @@ use Sabatier\Foundation\Predicates\ExpressionType;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Set;
+use Sabatier\Foundation\SortDescriptor;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\request_concrete_implementation;
@@ -293,16 +294,14 @@ abstract class AtomicStore extends PersistentStore
     }
 
     #[Override]
-    public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): ?AtomicStoreCacheNode
+    public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): AtomicStoreCacheNode
     {
-        if (!($object = $context->existingObject($objectID))) {
-            return null;
-        }
+        $object = $context->existingObject($objectID) ?? fatal_error("Unable to find object with ID $objectID");
         return $this->newCacheNode($object);
     }
 
     #[Override]
-    public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context):  ArrayClass|ManagedObjectID|Nil
+    public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass|ManagedObjectID|Nil
     {
         $entity = $objectID->entity;
         $destinationEntity = $relationship->destinationEntity;
@@ -322,6 +321,37 @@ abstract class AtomicStore extends PersistentStore
             return new ArrayClass();
         }
         return Nil::nil();
+    }
+
+    #[Override]
+    public function newOrderedRelationshipInformationForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass|Nil
+    {
+        $toOne = $relationship->inverseRelationship;
+        $columnName = $toOne->destinationEntity->attributesByName->first?->name ?? ManagedObjectObjectIDKey;
+        /** @var ArrayClass<ManagedObjectID>|Nil $newValue */
+        $newValue = $this->newValueForRelationship($relationship, $objectID, $context);
+        if ($newValue instanceof Nil) {
+            return $newValue;
+        }
+        if ($newValue->isEmpty) {
+            return $newValue;
+        }
+        return $newValue->map(fn(ManagedObjectID $objectID) => $this->cacheNode($objectID))->sorted([new SortDescriptor($columnName)])->map(fn(AtomicStoreCacheNode $node) => $node->objectID);
+    }
+
+    #[Override]
+    public function newValueForFetchedProperty(FetchedPropertyDescription $fetchedProperty, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass
+    {
+        $fetchRequest = $fetchedProperty->fetchRequest ?? fatal_error("Fetched property \"$fetchedProperty->name\" fetchRequest cannot be null.");
+        $entityName = $fetchRequest->entityName ?? fatal_error("FetchRequest for fetched property \"$fetchedProperty->name\" entityName cannot be null.");
+        $predicate = $fetchRequest->predicate ?? fatal_error("FetchRequest for fetched property \"$fetchedProperty->name\" predicate cannot be null.");
+        /** @var FetchRequest<ManagedObjectID> $request */
+        $request = clone($fetchRequest, [
+            "entity" => EntityDescription::entity($entityName, $context),
+            "predicate" => $predicate->withSubstitutionVariables(new Dictionary(["\$FETCH_SOURCE" => $context->object($objectID), "\$FETCHED_PROPERTY" => $fetchedProperty])),
+            "resultType" => FetchRequestResultType::managedObjectIDResultType,
+        ]);
+        return $this->executeFetchRequest($request, $context);
     }
 
     #[Override]
