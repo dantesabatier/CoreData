@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Created by PhpStorm.
  * User: dante
  * Date: 30/06/20
  * Time: 16:51
  */
-
 namespace Sabatier\CoreData;
 
 use Exception;

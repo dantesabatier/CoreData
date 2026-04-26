@@ -158,11 +158,11 @@ final class ManagedObjectContext extends ObjectClass
     /**
      * @param RelationshipDescription $relationship
      * @param ManagedObjectID $objectID
-     * @return FaultingSet|ManagedObject|ManagedObjectID|Nil
+     * @return FaultingSet|ManagedObjectID|Nil
      * @throws Exception
      * @internal
      */
-    public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID): FaultingSet|ManagedObject|ManagedObjectID|Nil
+    public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID): FaultingSet|ManagedObjectID|Nil
     {
         $persistentStore = $this->persistentStoreCoordinator?->persistentStoreForObjectID($objectID) ?? fatal_error(sprintf("no persistent store found for object ID %s", $objectID->entityName));
         $newValue = $relationship->isOrdered ? $persistentStore->newOrderedRelationshipInformationForRelationship($relationship, $objectID, $this) : $persistentStore->newValueForRelationship($relationship, $objectID, $this);

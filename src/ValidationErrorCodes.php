@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Sabatier\CoreData;
 
 /** @var int An error code that indicates a nonspecific Core Data error. */

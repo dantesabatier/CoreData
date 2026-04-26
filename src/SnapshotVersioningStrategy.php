@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Sabatier\CoreData;
 
 use Override;
@@ -25,4 +27,3 @@ final class SnapshotVersioningStrategy implements VersioningStrategy
         return $store[ManagedObjectVersionKey] !== $baseline[ManagedObjectVersionKey];
     }
 }
-

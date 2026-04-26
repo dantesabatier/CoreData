@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\Dictionary;
@@ -14,4 +16,3 @@ interface MergeStrategy
      */
     public function merge(Dictionary $cachedSnapshot, Dictionary $persistedSnapshot): Dictionary;
 }
-

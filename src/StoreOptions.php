@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Sabatier\CoreData;
 
 /** @var string Options key used to specify a unique string identifier for the persistent store. This identifier is used to construct ManagedObjectIDs and as a namespace for caching mechanisms. If this option is not provided, the framework generates a deterministic identifier based on the store's URL. */

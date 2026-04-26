@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Sabatier\CoreData;
 
 /** @var string Key to represent the version hash information for the model used to create the store. This key is used in the metadata for a persistent store. */

@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Created by PhpStorm.
  * User: dante
  * Date: 28/06/20
  * Time: 19:04
  */
-
 namespace Sabatier\CoreData;
 
 /**

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Sabatier\CoreData;
 
 use Override;
@@ -14,4 +16,3 @@ final class OverwriteStrategy implements MergeStrategy
         return $cachedSnapshot;
     }
 }
-

@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Created by PhpStorm.
  * User: dante
  * Date: 14/06/20
  * Time: 16:35
  */
-
 namespace Sabatier\CoreData;
 
 use Override;

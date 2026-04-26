@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Created by PhpStorm.
  * User: dante
  * Date: 23/07/20
  * Time: 12:07
  */
-
 namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;

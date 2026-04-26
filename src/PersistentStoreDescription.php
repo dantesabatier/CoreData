@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Created by PhpStorm.
  * User: dante
  * Date: 05/07/20
  * Time: 08:17
  */
-
 namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\Dictionary;
