@@ -861,6 +861,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $value = $value->value;
         }
         $coercedValue = fn(string $type): string|int|bool|float|BackedEnum|null => match ($type) {
+            "string" => $value instanceof BackedEnum ? $value : (string)$value,
             "int" => $value instanceof BackedEnum ? $value : (int)$value,
             "bool" => (function () use ($value, $write): bool|int {
                 if ($value === null) {
@@ -872,7 +873,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 return $write ? new Number($value)->intValue : new Number($value)->boolValue;
             })(),
             "float", => (float)$value,
-            "string" => (string)$value,
             default => $value
         };
         $optionalValue = fn(string $type): mixed => match (typeof($value)) {
