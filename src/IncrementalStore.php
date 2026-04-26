@@ -20,7 +20,7 @@ use function Sabatier\Foundation\request_concrete_implementation;
 abstract class IncrementalStore extends PersistentStore
 {
     #[Override]
-    public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): ?IncrementalStoreNode
+    public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): IncrementalStoreNode
     {
         request_concrete_implementation($this, __FUNCTION__);
     }
