@@ -189,8 +189,8 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function newValueForFetchedProperty(FetchedPropertyDescription $fetchedProperty, ManagedObjectID $objectID): ArrayClass
     {
-        /** @var ArrayClass<ManagedObjectID> $newValue */
-        $newValue = $this->persistentStoreCoordinator?->persistentStoreForObjectID($objectID)?->newValueForFetchedProperty($fetchedProperty, $objectID, $this) ?? new ArrayClass();
+        $persistentStore = $this->persistentStoreCoordinator?->persistentStoreForObjectID($objectID) ?? fatal_error(sprintf("no persistent store found for object ID %s", $objectID->entityName));
+        $newValue = $persistentStore->newValueForFetchedProperty($fetchedProperty, $objectID, $this);
         $value = new FaultingArray($this->object($objectID), $fetchedProperty);
         $value->setArray($newValue->map(fn(ManagedObjectID $objectID): ManagedObject => $this->object($objectID)));
         return $value;
