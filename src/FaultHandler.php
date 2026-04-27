@@ -31,12 +31,11 @@ final readonly class FaultHandler
         $object->isSuppressingChangeNotifications = false;
     }
 
-    public function turnObjectIntoFault(ManagedObject $object, ?ManagedObjectContext $context = null): void
+    public function turnObjectIntoFault(/** @noinspection PhpUnusedParameterInspection */ ManagedObject $object, ?ManagedObjectContext $context = null): void
     {
         if ($object->isFault) {
             return;
         }
-        $context ??= $object->managedObjectContext;
         $object->isSuppressingChangeNotifications = true;
         $object->isSuppressingKVO = true;
         $object->willTurnIntoFault();
