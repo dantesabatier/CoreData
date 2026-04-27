@@ -93,7 +93,7 @@ final class FaultingSet extends Set implements Materializable
     public function setSet(Set $set): void
     {
         parent::setSet($set->map(fn(ManagedObject|ManagedObjectID $e): ManagedObjectID => $e instanceof ManagedObject ? $e->objectID : $e));
-        $this->isFault = !$this->isEmpty;
+        $this->isFault = false;
     }
 
     #[Override]
