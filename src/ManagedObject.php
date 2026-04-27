@@ -88,6 +88,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public bool $isDeleted {
         get => $this->isDeleted ??= $this->managedObjectContext->deletedObjects->containsElement($this);
     }
+    /** @var bool A Boolean value that indicates whether the managed object has been inserted, has been deleted, or has unsaved changes, true if the receiver has been inserted, has been deleted, or has unsaved changes, otherwise false. The result is the equivalent of OR-ing the values of isInserted, isDeleted, and isUpdated. */
+    public bool $hasChanges {
+        get => $this->isInserted || $this->isUpdated || $this->isDeleted;
+    }
     public readonly ManagedObjectContext $managedObjectContext;
     /** @var Dictionary<mixed> */
     private Dictionary $changedValues {
