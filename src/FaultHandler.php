@@ -47,7 +47,7 @@ final readonly class FaultHandler
             $committedValue = $committedValues[$key];
             if ($property instanceof AttributeDescription) {
                 $object->setPrimitiveValueForKey($committedValue, $key);
-            } elseif (!$committedValue && $property instanceof FetchedPropertyDescription || $property instanceof RelationshipDescription) {
+            } elseif ($property instanceof FetchedPropertyDescription || $property instanceof RelationshipDescription) {
                 if (($value = $object->primitiveValueForKey($key)) && ($value instanceof FaultingSet || $value instanceof FaultingArray)) {
                     $value->turnIntoFault();
                 }
