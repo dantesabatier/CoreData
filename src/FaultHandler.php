@@ -37,7 +37,6 @@ final readonly class FaultHandler
             return;
         }
         $context ??= $object->managedObjectContext;
-        $context->persistentStoreCoordinator?->persistentStoreForObject($object)?->rowCache?->deleteSnapshot($object->objectID);
         $object->isSuppressingChangeNotifications = true;
         $object->isSuppressingKVO = true;
         $object->willTurnIntoFault();
