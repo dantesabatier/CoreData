@@ -15,16 +15,16 @@ The sibling package `sabatier/foundation` (at `../Foundation`) must be present; 
 composer install
 
 # Code style (PSR-12, short arrays, strict params)
-vendor/bin/php-cs-fixer fix
+php-cs-fixer fix
 
 # Static analysis — level 3 with Foundation plugin
-vendor/bin/psalm
+psalm
 
 # Static analysis — level 2
-vendor/bin/phpstan analyse
+phpstan analyse
 
 # Automated refactoring to modern PHP (readonly, property promotion, etc.)
-vendor/bin/rector process
+rector process
 ```
 
 There is no test suite in this repository.
