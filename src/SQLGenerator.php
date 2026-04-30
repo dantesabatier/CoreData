@@ -418,6 +418,9 @@ final class SQLGenerator
                 }
                 return null;
             }));
+            if ($expressionDescriptions = $this->request->propertiesToFetch?->filter(fn(PropertyDescription|string $property): bool => $property instanceof ExpressionDescription)) {
+                $columnNames->formUnion($expressionDescriptions->map(fn(ExpressionDescription $expressionDescription): string => "{$this->buildExpression($expressionDescription->expression ?? fatal_error("ExpressionDescription \"$expressionDescription->name\" has no expression"))} AS $expressionDescription->name"));
+            }
         }
         if ($columnNames->isEmpty) {
             $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
