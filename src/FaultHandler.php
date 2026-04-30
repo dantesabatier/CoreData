@@ -26,19 +26,30 @@ final readonly class FaultHandler
         $object->isSuppressingChangeNotifications = true;
         $object->isSuppressingKVO = true;
         $object->updateFromRefreshSnapshot($snapshot);
+        $properties = $object->persistentProperties;
+        foreach ($properties as $property) {
+            if ($property instanceof FetchedPropertyDescription || $property instanceof RelationshipDescription) {
+                $value = $object->primitiveValueForKey($property->name);
+                if ($value instanceof FaultingSet || $value instanceof FaultingArray) {
+                    $value->turnIntoFault();
+                }
+            }
+        }
         $object->isSuppressingKVO = false;
         $object->awakeFromSnapshotEvents(SnapshotEventType::refresh);
         $object->isSuppressingChangeNotifications = false;
     }
 
-    public function turnObjectIntoFault(/** @noinspection PhpUnusedParameterInspection */ ManagedObject $object, ?ManagedObjectContext $context = null): void
+    public function turnObjectIntoFault(ManagedObject $object, ?ManagedObjectContext $context = null): void
     {
         if ($object->isFault) {
             return;
         }
+        $context ??= $object->managedObjectContext;
         $object->isSuppressingChangeNotifications = true;
         $object->isSuppressingKVO = true;
         $object->willTurnIntoFault();
+        $context->persistentStoreCoordinator?->persistentStoreForObject($object)?->rowCache?->deleteSnapshot($object->objectID);
         $committedValues = $object->committedValues(null);
         $properties = $object->persistentProperties;
         foreach ($properties as $property) {
@@ -47,7 +58,8 @@ final readonly class FaultHandler
             if ($property instanceof AttributeDescription) {
                 $object->setPrimitiveValueForKey($committedValue, $key);
             } elseif ($property instanceof FetchedPropertyDescription || $property instanceof RelationshipDescription) {
-                if (($value = $object->primitiveValueForKey($key)) && ($value instanceof FaultingSet || $value instanceof FaultingArray)) {
+                $value = $object->primitiveValueForKey($key);
+                if ($value instanceof FaultingSet || $value instanceof FaultingArray) {
                     $value->turnIntoFault();
                 }
             }
