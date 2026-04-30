@@ -418,7 +418,7 @@ final class SQLGenerator
                 }
                 return null;
             }));
-            if ($expressionDescriptions = $this->request->propertiesToFetch?->filter(fn(PropertyDescription|string $property): bool => $property instanceof ExpressionDescription)) {
+            if ($expressionDescriptions = $request->propertiesToFetch?->filter(fn(PropertyDescription|string $property): bool => $property instanceof ExpressionDescription)) {
                 $columnNames->formUnion($expressionDescriptions->map(fn(ExpressionDescription $expressionDescription): string => "{$this->buildExpression($expressionDescription->expression ?? fatal_error("ExpressionDescription \"$expressionDescription->name\" has no expression"))} AS $expressionDescription->name"));
             }
         }
@@ -1592,9 +1592,9 @@ final class SQLGenerator
                     break;
                 }
                 $managedObject = EntityDescription::insertNewObject($entity->tableName, $requestContext->context);
-                $managedObject->isSuppressingKVO = true;
+                $managedObject->willRefresh();
                 $managedObject->updateFromSnapshot($snapshot);
-                $managedObject->isSuppressingKVO = false;
+                $managedObject->didRefresh();
                 $objectsToInsert->append($managedObject);
             }
         } elseif ($managedObjectHandler = $request->managedObjectHandler) {
