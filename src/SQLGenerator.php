@@ -814,8 +814,8 @@ final class SQLGenerator
         $description = $expression->description;
         $properties = $this->propertiesFromKeyPathExpression($expression);
         if ($properties->isEmpty && $this->isSubquery) {
-            return new Set($compatibility->analyser->keyPathExpressions)->filter(fn(Expression $keyPathExpression): bool => str_contains($keyPathExpression->keyPath, "."))->map(function (Expression $expression) use ($tableName): string {
-                $keyPathComponents = components_from_key_path($expression->keyPath);
+            return new Set($compatibility->analyser->keyPathExpressions)->filter(fn(Expression $keyPathExpression): bool => str_contains($keyPathExpression->description, "."))->map(function (Expression $expression) use ($tableName): string {
+                $keyPathComponents = components_from_key_path($expression->description);
                 $propertyName = $keyPathComponents->remainderPath ?? $keyPathComponents->key;
                 return "$tableName.$propertyName";
             })->join(", ");
@@ -1592,9 +1592,9 @@ final class SQLGenerator
                     break;
                 }
                 $managedObject = EntityDescription::insertNewObject($entity->tableName, $requestContext->context);
-                $managedObject->willRefresh();
+                $managedObject->isSuppressingKVO = true;
                 $managedObject->updateFromSnapshot($snapshot);
-                $managedObject->didRefresh();
+                $managedObject->isSuppressingKVO = false;
                 $objectsToInsert->append($managedObject);
             }
         } elseif ($managedObjectHandler = $request->managedObjectHandler) {
