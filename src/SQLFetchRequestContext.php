@@ -13,7 +13,6 @@ use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
 use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\pluralize;
-use function Sabatier\Foundation\substring_to_index;
 
 /** @internal */
 class SQLFetchRequestContext extends SQLStoreRequestContext
@@ -66,34 +65,16 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                 $root = $byRootIDResult[$rootID] ?? new Dictionary();
                 foreach ($row as $pattern => $value) {
                     $value ??= Nil::nil();
-                    $keyPathComponents = $this->splitKeyPathPattern($pattern);
-                    $propertyKeyPathComponents = $keyPathComponents->dropLast(1);
+                    $descriptor = ColumnDescriptor::forPattern($pattern);
+                    $keyPathComponents = clone $descriptor->keyPathComponents;
                     $primaryKeyName = $cursorEntity->primaryKey->columnName;
-                    if ($keyPathComponents[$keyPathComponents->indexBefore($keyPathComponents->endIndex)] === $primaryKeyName) {
-                        $propertyKeyPath = $propertyKeyPathComponents->join(".");
-                        if ($value instanceof Nil) {
-                            $nullPropertyPrefixes->insert($propertyKeyPath);
-                        } else {
-                            $nullPropertyPrefixes->remove($propertyKeyPath);
-                        }
-                    }
-                    $keyPath = $keyPathComponents->join(".");
-                    if ($nullPropertyPrefixes->contains(fn(string $prefix): bool => $keyPath === $prefix || str_starts_with($keyPath, "$prefix."))) {
+                    $this->updateNullPropertyPrefixes($keyPathComponents, $primaryKeyName, $value, $nullPropertyPrefixes);
+                    if ($nullPropertyPrefixes->contains(fn(string $prefix): bool => $descriptor->keyPath === $prefix || str_starts_with($descriptor->keyPath, "$prefix."))) {
                         continue;
                     }
                     $cursor = &$root;
-                    $lastUnderscorePos = strrpos($pattern, "_");
-                    $basePathPrefix = substring_to_index($pattern, $lastUnderscorePos);
-                    $childIDKey = "{$basePathPrefix}_$primaryKeyName";
-                    $childrenID = $row[$childIDKey] ?? null;
-                    $secondLastUnderscorePos = strrpos($basePathPrefix, "_");
-                    if ($secondLastUnderscorePos !== false) {
-                        $parentPathPrefix = substring_to_index($basePathPrefix, $secondLastUnderscorePos);
-                        $parentIDKey = "{$parentPathPrefix}_$primaryKeyName";
-                        $parentID = $row[$parentIDKey] ?? null;
-                    } else {
-                        $parentID = $rootID;
-                    }
+                    $childrenID = $row["{$descriptor->basePathPrefix}_$primaryKeyName"] ?? null;
+                    $parentID = $descriptor->hasParentPrefix ? ($row["{$descriptor->parentPathPrefix}_$primaryKeyName"] ?? null) : $rootID;
                     $isInsideCompositeAttribute = false;
                     foreach ($keyPathComponents as $key) {
                         $property = $cursorEntity->propertiesByName[$key] ?? $cursorEntity->compositeAttributeNameToSQLProperty[$key];
@@ -177,21 +158,18 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     }
 
     /**
-     * @param string $pattern
-     * @return ArrayClass<string>
+     * @param ArrayClass<string> $keyPathComponents
+     * @param Set<string> $nullPropertyPrefixes
      */
-    private function splitKeyPathPattern(string $pattern): ArrayClass
-    {
-        /** @var array<string, ArrayClass<string>> $cache */
-        static $cache = [];
-        if (isset($cache[$pattern])) {
-            return clone $cache[$pattern];
+    private function updateNullPropertyPrefixes(ArrayClass $keyPathComponents, string $primaryKeyName, mixed $value, Set $nullPropertyPrefixes): void {
+        if ($keyPathComponents[$keyPathComponents->indexBefore($keyPathComponents->endIndex)] === $primaryKeyName) {
+            $propertyKeyPath = $keyPathComponents->dropLast(1)->join(".");
+            if ($value instanceof Nil) {
+                $nullPropertyPrefixes->insert($propertyKeyPath);
+            } else {
+                $nullPropertyPrefixes->remove($propertyKeyPath);
+            }
         }
-        $parts = explode("_", $pattern);
-        if (count($parts) >= 3) {
-            array_shift($parts);
-        }
-        return $cache[$pattern] = new ArrayClass($parts);
     }
 
     private function coerceExpressionValue(mixed $value, PropertyDescription $description): mixed
