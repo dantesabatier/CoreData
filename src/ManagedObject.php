@@ -642,6 +642,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $this->resolvedKeys[$key] = true;
                 $value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional);
                 $this->setPrimitiveValueForKey($value, $key);
+                unset($this->resolvedKeys[$key]);
             }
             return $value;
         }
@@ -653,6 +654,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $this->resolvedKeys[$key] = true;
                 $value = $context->newValueForFetchedProperty($property, $this->objectID);
                 $this->setPrimitiveValueForKey($value, $key);
+                unset($this->resolvedKeys[$key]);
             }
             return $value ?? $this->mutableArrayValueForKey($key);
         }
@@ -664,6 +666,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $this->resolvedKeys[$key] = true;
                 $value = $context->newValueForRelationship($property, $this->objectID);
                 $this->setPrimitiveValueForKey($value, $key);
+                unset($this->resolvedKeys[$key]);
             }
             if ($value instanceof FaultingArray || $value instanceof FaultingSet || $value instanceof ManagedObject) {
                 return $value;
