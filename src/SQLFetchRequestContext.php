@@ -42,35 +42,6 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         parent::__construct($request, $context, $sqlCore);
     }
 
-    private function coerceExpressionValue(mixed $value, PropertyDescription $description): mixed
-    {
-        if ($description instanceof ExpressionDescription) {
-            return ManagedObject::coercedValue($value, $description->resultType, isOptional: $description->isOptional);
-        }
-        if ($description instanceof AttributeDescription) {
-            return ManagedObject::coercedValue($value, $description->type, isOptional: $description->isOptional);
-        }
-        return $value;
-    }
-
-    /**
-     * @param string $pattern
-     * @return ArrayClass<string>
-     */
-    private function splitKeyPathPattern(string $pattern): ArrayClass
-    {
-        /** @var array<string, ArrayClass<string>> $cache */
-        static $cache = [];
-        if (isset($cache[$pattern])) {
-            return clone $cache[$pattern];
-        }
-        $parts = explode("_", $pattern);
-        if (count($parts) >= 3) {
-            array_shift($parts);
-        }
-        return $cache[$pattern] = new ArrayClass($parts);
-    }
-
     /**
      * @param PDOStatement $statement
      * @return ArrayClass<Dictionary<mixed>>
@@ -203,6 +174,35 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
             }
         } while ($statement->nextRowset() && $statement->columnCount());
         return $byRootIDResult->values;
+    }
+
+    /**
+     * @param string $pattern
+     * @return ArrayClass<string>
+     */
+    private function splitKeyPathPattern(string $pattern): ArrayClass
+    {
+        /** @var array<string, ArrayClass<string>> $cache */
+        static $cache = [];
+        if (isset($cache[$pattern])) {
+            return clone $cache[$pattern];
+        }
+        $parts = explode("_", $pattern);
+        if (count($parts) >= 3) {
+            array_shift($parts);
+        }
+        return $cache[$pattern] = new ArrayClass($parts);
+    }
+
+    private function coerceExpressionValue(mixed $value, PropertyDescription $description): mixed
+    {
+        if ($description instanceof ExpressionDescription) {
+            return ManagedObject::coercedValue($value, $description->resultType, isOptional: $description->isOptional);
+        }
+        if ($description instanceof AttributeDescription) {
+            return ManagedObject::coercedValue($value, $description->type, isOptional: $description->isOptional);
+        }
+        return $value;
     }
 
     /**
