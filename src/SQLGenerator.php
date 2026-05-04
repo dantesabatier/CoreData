@@ -1466,7 +1466,7 @@ final class SQLGenerator
         /** @var Set<string> $columnNames */
         $columnNames = new Set([$entity->primaryKey->columnName, $entity->entityKey->columnName, $entity->optLockKey->columnName]);
         foreach ($insertedObjects as $insertedObject) {
-            foreach ($entity->properties as $property) {
+            foreach ($entity->persistentProperties as $property) {
                 if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLOptLockKey) {
                     $columnNames->insert($property->name);
                 } elseif ($property instanceof SQLAttribute) {
