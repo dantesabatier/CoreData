@@ -1,6 +1,7 @@
 {
   "name": "sabatier/coredata",
   "description": "Core Data is an Object graph and Persistence framework that enables the organization and manipulation of data from an entity-attribute relational model.",
+  "version": "0.3.0",
   "keywords": [
     "sabatier",
     "coredata",
