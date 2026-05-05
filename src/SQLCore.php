@@ -560,16 +560,21 @@ final class SQLCore extends IncrementalStore
     #[Override]
     public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass|ManagedObjectID|Nil
     {
+        $expectedToken = $context->queryGenerationToken?->value ?? new QueryGenerationToken($this->identifier, $this->storeGeneration, $this->currentGeneration);
         if ($cached = $this->rowCache->snapshot($objectID, $relationship)) {
-            /** @var list<string>|string|Nil $value */
-            $value = $cached[ManagedObjectPropertyResultKey];
-            if (is_array($value)) {
-                return new ArrayClass($value)->map(fn(string $string) => $this->managedObjectID(new URL($string)));
+            /** @var QueryGenerationToken|null $cachedToken */
+            $cachedToken = $cached[ManagedObjectQueryResultGenerationKey];
+            if ($expectedToken->isCompatible($cachedToken)) {
+                /** @var list<string>|string|Nil $value */
+                $value = $cached[ManagedObjectPropertyResultKey];
+                if (is_array($value)) {
+                    return new ArrayClass($value)->map(fn(string $string) => $this->managedObjectID(new URL($string)));
+                }
+                if (is_string($value)) {
+                    return $this->managedObjectID(new URL($value));
+                }
+                return $value;
             }
-            if (is_string($value)) {
-                return $this->managedObjectID(new URL($value));
-            }
-            return $value;
         }
         $requestContext = new SQLRelationshipFaultRequestContext($objectID, $relationship, $context, $this);
         $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
@@ -585,7 +590,7 @@ final class SQLCore extends IncrementalStore
         } elseif ($result instanceof ManagedObjectID) {
             $propertyResultValue = $result->uriRepresentation()->absoluteString;
         }
-        $this->rowCache->setSnapshot(new Dictionary([ManagedObjectPropertyResultKey => $propertyResultValue]), $objectID, $this->stalenessInterval, $relationship);
+        $this->rowCache->setSnapshot(new Dictionary([ManagedObjectPropertyResultKey => $propertyResultValue, ManagedObjectQueryResultGenerationKey => $expectedToken]), $objectID, $this->stalenessInterval, $relationship);
         return $result;
     }
 
