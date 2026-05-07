@@ -957,7 +957,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => is_int($value) || is_float($value) || $value instanceof Number || $value instanceof BackedEnum,
                         AttributeType::string, AttributeType::binaryData => is_string($value) || $value instanceof BackedEnum,
                         AttributeType::boolean => is_bool($value) || is_int($value) || $value instanceof Number,
-                        AttributeType::transformable => $write ? is_string($value) || $value === null : ($attributeValueClassName === null || (class_exists($attributeValueClassName) && is_a($value, $attributeValueClassName, true))),
+                        AttributeType::date, AttributeType::uuid, AttributeType::uri => is_string($value) || $value instanceof Date || $value instanceof UUID || $value instanceof URL,
+                        AttributeType::transformable => ($attributeValueClassName === null || (class_exists($attributeValueClassName) && is_a($value, $attributeValueClassName, true))),
                         AttributeType::compositeAttributeType => $value instanceof Dictionary,
                         default => false,
                     } && !$property->isOptional) {
