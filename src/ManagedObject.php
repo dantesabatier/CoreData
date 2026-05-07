@@ -953,18 +953,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     AttributeType::string, AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float, AttributeType::boolean => $isOptional && $value === "" ? null : self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $write),
                     default => self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $write),
                 };
-                if ($attributeValueClassName !== null) {
-                    if ($value && class_exists($attributeValueClassName) && !is_a($value, $attributeValueClassName, true)) {
-                        $value
-                            |> typeof(...)
-                            |> (fn(string $x): string => sprintf("Invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $attributeValueClassName, $x))
-                            |> fatal_error(...);
-                    }
-                } elseif (!match ($type) {
+                if (!match ($type) {
                         AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => is_int($value) || is_float($value) || $value instanceof Number || $value instanceof BackedEnum,
                         AttributeType::string, AttributeType::binaryData => is_string($value) || $value instanceof BackedEnum,
                         AttributeType::boolean => is_bool($value) || is_int($value) || $value instanceof Number,
-                        AttributeType::transformable => true,
+                        AttributeType::transformable => $write ? is_string($value) || $value === null : ($attributeValueClassName === null || (class_exists($attributeValueClassName) && is_a($value, $attributeValueClassName, true))),
                         AttributeType::compositeAttributeType => $value instanceof Dictionary,
                         default => false,
                     } && !$property->isOptional) {
