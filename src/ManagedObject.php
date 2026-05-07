@@ -886,6 +886,13 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             "null" => $isOptional ? null : $coercedValue($type),
             default => $coercedValue($type)
         };
+        if ($type === AttributeType::uri && !$isOptional) {
+            $value
+                |> human_readable_value(...)
+                |> (fn(string $x): string => sprintf("Warning: coercing null value to non-optional URI attribute, this will raise an exception in future versions of Core Data. Value: %s", $x))
+                |> error_log(...);
+            $isOptional = true;
+        }
         /** @noinspection PhpVoidFunctionResultUsedInspection */
         return match ($type) {
             AttributeType::integer16, AttributeType::integer32, AttributeType::integer64 => $optionalValue("int"),

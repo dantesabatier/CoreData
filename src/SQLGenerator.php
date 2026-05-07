@@ -1466,10 +1466,10 @@ final class SQLGenerator
         /** @var Set<string> $columnNames */
         $columnNames = new Set([$entity->primaryKey->columnName, $entity->entityKey->columnName, $entity->optLockKey->columnName]);
         foreach ($insertedObjects as $insertedObject) {
-            foreach ($entity->persistentProperties as $property) {
+            foreach ($entity->properties as $property) {
                 if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLOptLockKey) {
                     $columnNames->insert($property->name);
-                } elseif ($property instanceof SQLAttribute) {
+                } elseif ($property instanceof SQLAttribute && !$property->isCompositeAttribute) {
                     if ($insertedObject->changedValuesForCurrentEvent()->offsetExists($property->name)) {
                         $columnNames->insert($property->columnName);
                     }

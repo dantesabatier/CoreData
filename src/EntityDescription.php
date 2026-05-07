@@ -3,6 +3,7 @@
 namespace Sabatier\CoreData;
 
 use ArrayIterator;
+use BackedEnum;
 use Countable;
 use IteratorAggregate;
 use Override;
@@ -289,6 +290,8 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
                         $value = $value->value;
                     } elseif ($value instanceof SensitiveValue) {
                         $value = null;
+                    } elseif ($value instanceof BackedEnum) {
+                        $value = $value->value;
                     }
                     $result[$key] = $value;
                 }
