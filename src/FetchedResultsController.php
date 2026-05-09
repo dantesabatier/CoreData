@@ -85,10 +85,7 @@ final class FetchedResultsController extends ObjectClass
         /** @var Set<ResultType> $deleted */
         $deleted = $userInfo[DeletedObjectsKey] ?? new Set();
         /** @var ArrayClass<ResultType> $affected */
-        $affected = new ArrayClass($inserted);
-        $affected->appendContentsOf($updated);
-        $affected->appendContentsOf($deleted);
-        $affected = $affected->filter(
+        $affected = new ArrayClass($inserted)->appendingContentsOf($updated)->appendingContentsOf($deleted)->filter(
         /**
          * @param ResultType $object
          * @return bool
@@ -103,8 +100,7 @@ final class FetchedResultsController extends ObjectClass
          * @param ResultType $object
          * @return bool
          */
-            fn(mixed $object): bool => !$deleted->containsElement($object));
-        $newFetched->appendContentsOf($inserted);
+            fn(mixed $object): bool => !$deleted->containsElement($object))->appendingContentsOf($inserted);
         if ($sortDescriptors = $this->fetchRequest->sortDescriptors) {
             $newFetched = $newFetched->sorted($sortDescriptors);
         }

@@ -218,8 +218,7 @@ final class SQLEntity extends StoreMapping
             if (isset($this->columnsToFetch)) {
                 return $this->columnsToFetch;
             }
-            $columns = $this->properties->filter(fn(SQLProperty $property): bool => !($property->isTransient || $property instanceof SQLRelationship || $property instanceof SQLForeignKey) && (!$property instanceof SQLAttribute || (($property->isDerivedAttribute ? !$property->isRuntimeOnly : !$property->isCompositeAttribute))));
-            $columns->appendContentsOf($this->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary
+            $columns = $this->properties->filter(fn(SQLProperty $property): bool => !($property->isTransient || $property instanceof SQLRelationship || $property instanceof SQLForeignKey) && (!$property instanceof SQLAttribute || (($property->isDerivedAttribute ? !$property->isRuntimeOnly : !$property->isCompositeAttribute))))->appendingContentsOf($this->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary
             ): ArrayClass => $dictionary->values));
             $this->columnsToFetch = $columns;
             return $this->columnsToFetch;
@@ -229,10 +228,9 @@ final class SQLEntity extends StoreMapping
     private(set) ArrayClass $columnsToCreate {
         get {
             if (isset($this->columnsToCreate)) {
-               return $this->columnsToCreate;
+                return $this->columnsToCreate;
             }
-            $columns = $this->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient && !$property instanceof SQLRelationship && ((!$property instanceof SQLAttribute || (($property->isDerivedAttribute ? !$property->isRuntimeOnly : !$property->isCompositeAttribute)))));
-            $columns->appendContentsOf($this->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary
+            $columns = $this->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient && !$property instanceof SQLRelationship && ((!$property instanceof SQLAttribute || (($property->isDerivedAttribute ? !$property->isRuntimeOnly : !$property->isCompositeAttribute)))))->appendingContentsOf($this->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary
             ): ArrayClass => $dictionary->values));
             $this->columnsToCreate = $columns;
             return $this->columnsToCreate;

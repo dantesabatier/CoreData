@@ -353,10 +353,7 @@ final class SQLCore extends IncrementalStore
                     $relationshipSnapshots = new Dictionary();
                     foreach ($updatedObjects as $updatedObject) {
                         $uri = $updatedObject->objectID->uriRepresentation()->absoluteString;
-                        $snapshot = $updatedObject->dictionaryWithValues($updatedObject->modeledAttributes->map(fn(AttributeDescription $attribute): string => $attribute->name));
-                        $snapshot[ManagedObjectObjectIDKey] = $updatedObject->objectID->referenceObject;
-                        $snapshot[ManagedObjectEntityNameKey] = $updatedObject->entityName;
-                        $snapshot[ManagedObjectVersionKey] = $updatedObject->version;
+                        $snapshot = $updatedObject->dictionaryWithValues(new ArrayClass([ManagedObjectObjectIDKey, ManagedObjectEntityNameKey, ManagedObjectVersionKey])->appendingContentsOf($updatedObject->modeledAttributes->map(fn(AttributeDescription $attribute): string => $attribute->name)));
                         $snapshots[$uri] = $updatedObject->entity->sanitizeSnapshot($snapshot);
                         $changedValuesForCurrentEvent = $updatedObject->changedValuesForCurrentEvent();
                         foreach ($changedValuesForCurrentEvent->keys as $key) {

@@ -253,8 +253,7 @@ final readonly class SQLAdapter
     public function newDropIndexesStatement(SQLEntity $entity): ?SQLStatement
     {
         /** @var ArrayClass<SQLStatement> $statements */
-        $statements = $entity->indexes->flatMap(fn(SQLIndex $index): ArrayClass => $index->dropTableStatements);
-        $statements->appendContentsOf($entity->foreignKeyColumns->flatMap(fn(SQLForeignKey $foreignKey): ArrayClass => $this->newDropIndexStatementsForForeignKey($foreignKey, $entity)));
+        $statements = $entity->indexes->flatMap(fn(SQLIndex $index): ArrayClass => $index->dropTableStatements)->appendingContentsOf($entity->foreignKeyColumns->flatMap(fn(SQLForeignKey $foreignKey): ArrayClass => $this->newDropIndexStatementsForForeignKey($foreignKey, $entity)));
         if (!$statements->isEmpty) {
             return SQLStatement::merging($statements);
         }
@@ -280,8 +279,7 @@ final readonly class SQLAdapter
     public function newCreateIndexesStatement(SQLEntity $entity): ?SQLStatement
     {
         /** @var ArrayClass<SQLStatement> $statements */
-        $statements = $entity->indexes->flatMap(fn(SQLIndex $index): ArrayClass => $index->createTableStatements);
-        $statements->appendContentsOf($entity->foreignKeyColumns->map(fn(SQLForeignKey $foreignKey): SQLStatement => $this->newCreateIndexStatementForForeignKey($foreignKey, $entity)));
+        $statements = $entity->indexes->flatMap(fn(SQLIndex $index): ArrayClass => $index->createTableStatements)->appendingContentsOf($entity->foreignKeyColumns->map(fn(SQLForeignKey $foreignKey): SQLStatement => $this->newCreateIndexStatementForForeignKey($foreignKey, $entity)));
         if (!$statements->isEmpty) {
             return SQLStatement::merging($statements);
         }
