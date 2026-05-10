@@ -227,9 +227,9 @@ final class SQLGenerator
         if ($request instanceof FetchRequest) {
             /** @var EntityDescription $entity */
             $entity = $request->entity;
-            /** @var ArrayClass<PropertyDescription> $propertiesToGroupBy */
-            $propertiesToGroupBy = $request->propertiesToGroupBy?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $entity->propertiesByName[$property]) ?? new ArrayClass();
-            if (!$propertiesToGroupBy->isEmpty && $request->resultType !== FetchRequestResultType::dictionaryResultType) {
+            /** @var ArrayClass<string> $groupByKeypaths */
+            $groupByKeypaths = $request->propertiesToGroupBy?->map(fn(PropertyDescription|string $property): string => $property instanceof PropertyDescription ? $property->name : $property) ?? new ArrayClass();
+            if (!$groupByKeypaths->isEmpty && $request->resultType !== FetchRequestResultType::dictionaryResultType) {
                 fatal_error(sprintf("Invalid fetch request: GROUP BY requires %s, %s given", human_readable_value(FetchRequestResultType::dictionaryResultType), human_readable_value($request->resultType)));
             }
             $this->useDistinct = $request->returnsDistinctResults;
@@ -247,8 +247,8 @@ final class SQLGenerator
             $this->appendSQL($this->selectList);
             $this->appendSQL($this->joinClause);
             $this->appendSQL($this->whereClause);
-            if (!$propertiesToGroupBy->isEmpty) {
-                $this->buildGroupByClause($propertiesToGroupBy);
+            if (!$groupByKeypaths->isEmpty) {
+                $this->buildGroupByClause($groupByKeypaths);
                 $this->appendSQL($this->groupByClause);
                 if ($havingPredicate = $request->havingPredicate) {
                     $this->appendHavingClauseToSQL();
@@ -421,6 +421,9 @@ final class SQLGenerator
             if ($expressionDescriptions = $request->propertiesToFetch?->filter(fn(PropertyDescription|string $property): bool => $property instanceof ExpressionDescription)) {
                 $columnNames->formUnion($expressionDescriptions->map(fn(ExpressionDescription $expressionDescription): string => "{$this->buildExpression($expressionDescription->expression ?? fatal_error("ExpressionDescription \"$expressionDescription->name\" has no expression"))} AS $expressionDescription->name"));
             }
+            if ($keypathStrings = $request->propertiesToFetch?->filter(fn(PropertyDescription|string $property): bool => is_string($property) && str_contains($property, "."))) {
+                $columnNames->formUnion($keypathStrings->map(fn(string $keypath): string => $this->buildKeyPathExpression(Expression::expressionForKeyPath($keypath)) . " AS " . str_replace(".", "_", $keypath)));
+            }
         }
         if ($columnNames->isEmpty) {
             $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
@@ -440,7 +443,28 @@ final class SQLGenerator
         foreach ($expressions as $expression) {
             $this->appendJoinsForRelationships($this->relationshipsFromKeyPathExpression($expression));
         }
-
+        /** @var Set<string> $relationshipKeypaths */
+        $relationshipKeypaths = new Set();
+        foreach ($this->request->propertiesToFetch ?? [] as $property) {
+            if (is_string($property) && str_contains($property, ".")) {
+                $relationshipKeypaths->insert($property);
+            }
+        }
+        foreach ($this->request->propertiesToGroupBy ?? [] as $property) {
+            $keypath = $property instanceof PropertyDescription ? $property->name : (string)$property;
+            if (str_contains($keypath, ".")) {
+                $relationshipKeypaths->insert($keypath);
+            }
+        }
+        foreach ($relationshipKeypaths as $keypath) {
+            $parts = explode(".", $keypath);
+            $alias = $this->tableReference;
+            for ($i = 0; $i < count($parts) - 1; $i++) {
+                $alias .= "_$parts[$i]";
+                $this->processedColumnAliasesMap[$alias] = true;
+            }
+            $this->appendJoinsForRelationships($this->relationshipsFromKeyPathExpression(Expression::expressionForKeyPath($keypath)));
+        }
         $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
     }
 
@@ -1409,10 +1433,10 @@ final class SQLGenerator
         return $expression->collection->map(fn(Expression $argument): string => $this->buildExpression($argument, $isDeterministic))->join(", ");
     }
 
-    private function buildGroupByClause(ArrayClass $propertiesToGroupBy): void
+    private function buildGroupByClause(ArrayClass $groupByKeypaths): void
     {
         $this->appendGroupByClauseToSQL();
-        $this->groupByClause .= $propertiesToGroupBy->map(fn(PropertyDescription $property): string => "$this->tableReference.$property->name")->join(", ");
+        $this->groupByClause .= $groupByKeypaths->map(fn(string $keypath): string => $this->buildKeyPathExpression(Expression::expressionForKeyPath($keypath)))->join(", ");
     }
 
     private function buildOrderByClause(ArrayClass $descriptors): void
