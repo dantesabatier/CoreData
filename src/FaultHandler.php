@@ -64,13 +64,15 @@ final readonly class FaultHandler
                 $value = $object->primitiveValueForKey($key);
                 if ($value instanceof FaultingSet || $value instanceof FaultingArray) {
                     $value->turnIntoFault();
+                } else {
+                    $object->setPrimitiveValueForKey($committedValue, $property->name);
                 }
             }
         }
         $object->isFault = true;
         $object->faultingState = ManagedObjectFaultingStateUnstable;
-        $object->didTurnIntoFault();
         $object->isSuppressingKVO = false;
+        $object->didTurnIntoFault();
         $object->isSuppressingChangeNotifications = false;
     }
 }
