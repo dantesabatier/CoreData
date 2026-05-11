@@ -163,7 +163,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         get => $this->modeledFetchedProperties ??= $this->modeledProperties->filter(fn(PropertyDescription $property): bool => $property instanceof FetchedPropertyDescription);
     }
     /** @var array<string, bool> */
-    private array $resolvedKeys = [];
+    private array $resolvingKeys = [];
     /** @internal */
     public bool $isSuppressingKVO = false;
     /** @internal */
@@ -638,11 +638,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($flag ? null : $key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if ($property instanceof DerivedAttributeDescription && !isset($this->resolvedKeys[$key]) && !$this->isSuppressingKVO && $this->isPropertyForKeyFault($key) && $this->isInserted) {
-                $this->resolvedKeys[$key] = true;
+            if ($property instanceof DerivedAttributeDescription && !isset($this->resolvingKeys[$key]) && !$this->isSuppressingKVO && $this->isPropertyForKeyFault($key) && $this->isInserted) {
+                $this->resolvingKeys[$key] = true;
                 $value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional);
                 $this->setPrimitiveValueForKey($value, $key);
-                unset($this->resolvedKeys[$key]);
+                unset($this->resolvingKeys[$key]);
             }
             return $value;
         }
@@ -650,11 +650,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if (!isset($this->resolvedKeys[$key]) && !$this->isSuppressingKVO && $this->isPropertyForKeyFault($key) && $this->isInserted) {
-                $this->resolvedKeys[$key] = true;
+            if (!isset($this->resolvingKeys[$key]) && !$this->isSuppressingKVO && $this->isPropertyForKeyFault($key) && $this->isInserted) {
+                $this->resolvingKeys[$key] = true;
                 $value = $context->newValueForFetchedProperty($property, $this->objectID);
                 $this->setPrimitiveValueForKey($value, $key);
-                unset($this->resolvedKeys[$key]);
+                unset($this->resolvingKeys[$key]);
             }
             return $value ?? $this->mutableArrayValueForKey($key);
         }
@@ -662,11 +662,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if (!isset($this->resolvedKeys[$key]) && !$this->isSuppressingKVO && $this->hasFaultForRelationshipNamed($key) && $this->isInserted) {
-                $this->resolvedKeys[$key] = true;
+            if (!isset($this->resolvingKeys[$key]) && !$this->isSuppressingKVO && $this->hasFaultForRelationshipNamed($key) && $this->isInserted) {
+                $this->resolvingKeys[$key] = true;
                 $value = $context->newValueForRelationship($property, $this->objectID);
                 $this->setPrimitiveValueForKey($value, $key);
-                unset($this->resolvedKeys[$key]);
+                unset($this->resolvingKeys[$key]);
             }
             if ($value instanceof FaultingArray || $value instanceof FaultingSet || $value instanceof ManagedObject) {
                 return $value;
