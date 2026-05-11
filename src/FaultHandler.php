@@ -33,7 +33,7 @@ final readonly class FaultHandler
                 $value = $object->primitiveValueForKey($property->name);
                 if ($value instanceof FaultingSet || $value instanceof FaultingArray) {
                     $value->turnIntoFault();
-                } elseif ($value instanceof Nil) {
+                } elseif ($value instanceof ManagedObject || $value instanceof ManagedObjectID || $value instanceof Nil) {
                     $object->setPrimitiveValueForKey(null, $property->name);
                 }
             }
