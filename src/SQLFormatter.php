@@ -31,6 +31,7 @@ final class SQLFormatter extends Formatter
     /** @var array<string, SQLFormatterToken> $tokenCache */
     private static array $tokenCache = [];
     public static int $maxCacheSize = 15;
+    public static int $maxCacheEntries = 200;
     public static string $indent = "    ";
 
     public function __construct(#[ExpectedValues(flagsFromClass: SQLFormatterStyle::class)] public int $style = SQLFormatterStyle::highlighted)
@@ -81,12 +82,13 @@ final class SQLFormatter extends Formatter
         if (preg_match("/^\s+/", $string, $matches)) {
             return new SQLFormatterToken(SQLFormatterTokenType::whitespace, $matches[0]);
         }
-        if ($string[0] === "#" || (isset($string[1]) && ($string[0] === "-" && $string[1] === "-") || ($string[0] === "/" && $string[1] === "*"))) {
+        if ($string[0] === "#" || (isset($string[1]) && (($string[0] === "-" && $string[1] === "-") || ($string[0] === "/" && $string[1] === "*")))) {
             if ($string[0] === "-" || $string[0] === "#") {
                 $last = strpos($string, "\n");
                 $type = SQLFormatterTokenType::comment;
             } else {
-                $last = (int)strpos($string, "*/", 2) + 2;
+                $pos = strpos($string, "*/", 2);
+                $last = $pos !== false ? $pos + 2 : false;
                 $type = SQLFormatterTokenType::blockComment;
             }
             if ($last === false) {
@@ -165,6 +167,9 @@ final class SQLFormatter extends Formatter
                 $token = $this->token($string, $token);
                 $tokenLength = strlen((string)$token->value);
                 if ($cacheKey && $tokenLength < self::$maxCacheSize) {
+                    if (count(self::$tokenCache) >= self::$maxCacheEntries) {
+                        self::$tokenCache = [];
+                    }
                     self::$tokenCache[$cacheKey] = $token;
                 }
             }
