@@ -3,6 +3,7 @@
 namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Nil;
 
 /** @internal */
 final readonly class FaultHandler
@@ -32,6 +33,8 @@ final readonly class FaultHandler
                 $value = $object->primitiveValueForKey($property->name);
                 if ($value instanceof FaultingSet || $value instanceof FaultingArray) {
                     $value->turnIntoFault();
+                } elseif ($value instanceof Nil) {
+                    $object->setPrimitiveValueForKey(null, $property->name);
                 }
             }
         }
