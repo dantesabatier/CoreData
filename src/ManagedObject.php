@@ -292,7 +292,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if (($property instanceof FetchedPropertyDescription && $value instanceof FaultingArray) || ($property instanceof RelationshipDescription && $value instanceof FaultingSet)) {
             return $value->isFault;
         }
-        return is_null($value);
+        return $value === null;
     }
 
     /**
