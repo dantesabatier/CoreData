@@ -9,16 +9,8 @@ use Sabatier\Foundation\Predicates\Expression;
 use function Sabatier\Foundation\fatal_error;
 
 /** @internal */
-final class SQLObjectFaultRequestContext extends SQLStoreRequestContext
+final class SQLObjectFaultRequestContext extends SQLFetchRequestContext
 {
-    public FetchRequest $fetchRequest {
-        get {
-            /** @var FetchRequest $request */
-            $request = $this->persistentStoreRequest;
-            return $request;
-        }
-    }
-
     public function __construct(private readonly ManagedObjectID $objectID, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         /** @var SQLEntity $entity */
@@ -37,9 +29,8 @@ final class SQLObjectFaultRequestContext extends SQLStoreRequestContext
     {
         $debugLevel = $this->debugLevel;
         $this->debugLevel = SQLDebugLevel::none;
-        $context = new SQLFetchRequestContext($this->fetchRequest, $this->context, $this->sqlCore);
-        $context->executeRequestUsingConnection($this->connection);
-        $this->result = $context->result->first ?? fatal_error("Object not found: {$this->objectID->entityName} {$this->objectID->referenceObject}");
+        parent::executeRequestCore();
+        $this->result = $this->result->first ?? fatal_error("Object not found: {$this->objectID->entityName} {$this->objectID->referenceObject}");
         $this->debugLevel = $debugLevel;
         return true;
     }

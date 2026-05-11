@@ -210,7 +210,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
             $objectID = $this->sqlCore->objectID($entity->entityDescription, $snapshot[$entity->primaryKey->columnName]);
             $object = $this->context->object($objectID);
             if ($this->request->includesPendingChanges && $object->isStable) {
-                return $object->serialized($serialization);
+                return $object;
             }
             $object->isSuppressingChangeNotifications = true;
             $object->isSuppressingKVO = true;
