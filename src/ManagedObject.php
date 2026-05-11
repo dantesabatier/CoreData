@@ -292,7 +292,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if (($property instanceof FetchedPropertyDescription && $value instanceof FaultingArray) || ($property instanceof RelationshipDescription && $value instanceof FaultingSet)) {
             return $value->isFault;
         }
-        return is_null($value) || $value instanceof Nil;
+        return is_null($value);
     }
 
     /**
@@ -762,9 +762,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         |> typeof(...)
                         |> (fn(string $x): string => sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $this->entityName, $key, ManagedObject::class, ManagedObjectID::class, $x))
                         |> fatal_error(...);
-                $change = $value;
                 $current = $this->primitiveValueForKey($key);
-                if ($this->isInserted && $this->isPropertyForKeyFault($key)) {
+                if (!$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications && $this->isAwakeFromFetch && $this->isInserted) {
                     $current = $this->valueForKey($key);
                 }
                 $current instanceof ManagedObject || $current instanceof ManagedObjectID || $current === null ?: $current
@@ -775,9 +774,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     $changeKind = KeyValueChange::insertion;
                 } elseif ($current !== null && $value === null) {
                     $changeKind = KeyValueChange::removal;
-                    $change = $current;
-                } else {
+                } elseif (!$current?->isEqual($value)) {
                     $changeKind = KeyValueChange::replacement;
+                } else {
+                    $changeKind = KeyValueChange::setting;
                 }
                 if ($value instanceof ManagedObjectID) {
                     $value = $this->managedObjectContext->object($value);
@@ -787,6 +787,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 } elseif ($value instanceof ManagedObject) {
                     $value->setPrimitiveValueForKey($this->objectID, $inverseRelationship->name);
                 }
+                $change = $value;
             }
             $this->willChangeValueForKey($key, $changeKind, $change);
             $this->setPrimitiveValueForKey($value, $key);
