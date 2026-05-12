@@ -766,6 +766,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 if (!$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications && $this->isAwakeFromFetch && $this->isInserted) {
                     $current = $this->valueForKey($key);
                 }
+                if ($current instanceof Value) {
+                    $current = $current->value;
+                }
                 $current instanceof ManagedObject || $current instanceof ManagedObjectID || $current === null ?: $current
                         |> typeof(...)
                         |> (fn(string $x): string => sprintf("invalid argument: %s->%s expecting \"%s|%s|null\", \"%s\" given", $this->entityName, $key, ManagedObject::class, ManagedObjectID::class, $x))
