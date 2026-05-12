@@ -662,7 +662,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willAccessValueForKey($key);
             $value = $this->primitiveValueForKey($key);
             $this->didAccessValueForKey($key);
-            if (!isset($this->resolvingKeys[$key]) && !$this->isSuppressingKVO && $this->hasFaultForRelationshipNamed($key) && $this->isInserted) {
+            if (!isset($this->resolvingKeys[$key]) && !$this->isSuppressingKVO && $this->isPropertyForKeyFault($key) && $this->isInserted) {
                 $this->resolvingKeys[$key] = true;
                 $value = $context->newValueForRelationship($property, $this->objectID);
                 $this->setPrimitiveValueForKey($value, $key);
