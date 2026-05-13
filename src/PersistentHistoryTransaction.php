@@ -127,4 +127,10 @@ final class PersistentHistoryTransaction extends ObjectClass
     {
         return $context->persistentStoreCoordinator?->managedObjectModel?->entitiesByName["PersistentHistoryTransaction"];
     }
+
+    #[Override]
+    public function jsonSerialize(): Dictionary
+    {
+        return new Dictionary(["transactionID" => $this->transactionNumber, "author" => $this->author, "bundleID" => $this->bundleID, "contextName" => $this->contextName, "processID", $this->processID, "storeID" => $this->storeID, "changes" => $this->changes?->map(fn(PersistentHistoryChange $change): Dictionary => $change->jsonSerialize())]);
+    }
 }

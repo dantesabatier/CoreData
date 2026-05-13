@@ -84,7 +84,7 @@ final class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestCont
                 PersistentHistoryResultType::transactionsOnly, PersistentHistoryResultType::changesOnly, PersistentHistoryResultType::transactionsAndChanges => FetchRequestResultType::dictionaryResultType,
             };
             /** @var EntityDescription $entity */
-            $entity = $fetchRequest->entity;
+            $entity = $fetchRequest->entity ?? fatal_error("Entity cannot be null");
             /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
             $fetchRequest->propertiesToFetch = match ($request->resultType) {
                 PersistentHistoryResultType::transactionsOnly => $entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute instanceof DerivedAttributeDescription)->keys,

@@ -418,10 +418,12 @@ final class SQLGenerator
                 }
                 return null;
             }));
-            if ($expressionDescriptions = $request->propertiesToFetch?->filter(fn(PropertyDescription|string $property): bool => $property instanceof ExpressionDescription)) {
-                $columnNames->formUnion($expressionDescriptions->map(fn(ExpressionDescription $expressionDescription): string => "{$this->buildExpression($expressionDescription->expression ?? fatal_error("ExpressionDescription \"$expressionDescription->name\" has no expression"))} AS $expressionDescription->name"));
-            }
-            if ($keypathStrings = $request->propertiesToFetch?->filter(fn(PropertyDescription|string $property): bool => is_string($property) && str_contains($property, "."))) {
+            if ($propertiesToFetch = $request->propertiesToFetch) {
+                if ($expressionDescriptions = $propertiesToFetch->filter(fn(PropertyDescription|string $property): bool => $property instanceof ExpressionDescription)) {
+                    $columnNames->formUnion($expressionDescriptions->map(fn(ExpressionDescription $expressionDescription): string => "{$this->buildExpression($expressionDescription->expression ?? fatal_error("ExpressionDescription \"$expressionDescription->name\" has no expression"))} AS $expressionDescription->name"));
+                }
+                /** @var ArrayClass<string> $keypathStrings */
+                $keypathStrings = $propertiesToFetch->filter(fn(PropertyDescription|string $property): bool => is_string($property) && str_contains($property, "."));
                 $columnNames->formUnion($keypathStrings->map(fn(string $keypath): string => $this->buildKeyPathExpression(Expression::expressionForKeyPath($keypath)) . " AS " . str_replace(".", "_", $keypath)));
             }
         }
@@ -451,7 +453,7 @@ final class SQLGenerator
             }
         }
         foreach ($this->request->propertiesToGroupBy ?? [] as $property) {
-            $keypath = $property instanceof PropertyDescription ? $property->name : (string)$property;
+            $keypath = $property instanceof PropertyDescription ? $property->name : $property;
             if (str_contains($keypath, ".")) {
                 $relationshipKeypaths->insert($keypath);
             }
