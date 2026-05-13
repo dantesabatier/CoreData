@@ -36,9 +36,7 @@ abstract class SQLStoreRequestContext extends ObjectClass
     public bool $isWritingRequest {
         get => false;
     }
-    public bool $hasHistoryTracking {
-        get => false;
-    }
+    public bool $hasHistoryTracking = false;
 
     public function __construct(public readonly PersistentStoreRequest $persistentStoreRequest, public readonly ManagedObjectContext $context, public readonly SQLCore $sqlCore)
     {

@@ -31,9 +31,7 @@ final class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestCont
         get => $this->request->isDelete;
     }
     #[Override]
-    public bool $hasHistoryTracking {
-        get => true;
-    }
+    public bool $hasHistoryTracking = true;
     private FetchRequest $fetchRequestDescribingChanges {
         get {
             if (isset($this->fetchRequestDescribingChanges)) {
@@ -116,7 +114,9 @@ final class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestCont
             }
             $context = new SQLPersistentHistoryChangeRequestContext($request, $this->context, $this->sqlCore);
             $context->executeRequestUsingConnection($this->connection);
-            return $this->deleteTransactionsRequestContext = new SQLSaveChangesRequestContext(new SaveChangesRequest(deletedObjects: new Set($context->result)), $this->context, $this->sqlCore);
+            $deleteTransactionsRequestContext = new SQLSaveChangesRequestContext(new SaveChangesRequest(deletedObjects: new Set($context->result)), $this->context, $this->sqlCore);
+            $deleteTransactionsRequestContext->hasHistoryTracking = true;
+            return $this->deleteTransactionsRequestContext = $deleteTransactionsRequestContext;
         }
     }
 
@@ -133,8 +133,7 @@ final class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestCont
             if ($transactionNumber = $this->request->transactionNumber) {
                 $this->connection->dropHistoryBeforeTransactionID($transactionNumber->intValue);
             } else {
-                $context = $this->deleteTransactionsRequestContext;
-                $context->executeRequestUsingConnection($this->connection);
+                $this->deleteTransactionsRequestContext->executeRequestUsingConnection($this->connection);
             }
             if ($this->connection->hasHistoryRows()) {
                 $this->sqlCore->recomputePrimaryKeyMaxForEntities($this->sqlCore->model->entities->filter(fn(SQLEntity $entity): bool => $entity->entityDescription->isPersistentHistoryEntity));
