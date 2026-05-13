@@ -95,6 +95,6 @@ final class PersistentHistoryChange extends ObjectClass
     #[Override]
     public function jsonSerialize(): Dictionary
     {
-        return new Dictionary(["changeID" => $this->changeID, "changeType" => $this->changeType]);
+        return new Dictionary(["changeID" => $this->changeID, "changeType" => $this->changeType, "entityName" => $this->changedObjectID->entity->name, "changedObjectID" => $this->changedObjectID]);
     }
 }

@@ -131,6 +131,6 @@ final class PersistentHistoryTransaction extends ObjectClass
     #[Override]
     public function jsonSerialize(): Dictionary
     {
-        return new Dictionary(["transactionID" => $this->transactionNumber, "author" => $this->author, "bundleID" => $this->bundleID, "contextName" => $this->contextName, "processID", $this->processID, "storeID" => $this->storeID, "changes" => $this->changes?->map(fn(PersistentHistoryChange $change): Dictionary => $change->jsonSerialize())]);
+        return new Dictionary(["transactionID" => $this->transactionNumber, "timestamp" => $this->timestamp, "author" => $this->author, "bundleID" => $this->bundleID, "contextName" => $this->contextName, "processID" => $this->processID, "storeID" => $this->storeID, "changes" => $this->changes?->map(fn(PersistentHistoryChange $change): Dictionary => $change->jsonSerialize())]);
     }
 }
