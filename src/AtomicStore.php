@@ -177,21 +177,20 @@ abstract class AtomicStore extends PersistentStore
                 /** @var Dictionary<ArrayClass<ManagedObject>> $dictionary */
                 $dictionary = new Dictionary();
                 foreach ($objects as $object) {
-                    foreach ($propertiesToGroupBy as $property) {
-                        $key = $property instanceof PropertyDescription ? $property->name : $property;
-                        $value = $dictionary[$key];
-                        if ($value instanceof ArrayClass) {
-                            $value->append($object);
-                        } else {
-                            $dictionary[$key] = new ArrayClass([$object]);
-                        }
+                    $keyParts = $propertiesToGroupBy->map(fn(PropertyDescription|string $property): mixed => $object->valueForKey($property instanceof PropertyDescription ? $property->name : $property));
+                    $groupKey = $keyParts->description;
+                    $groupObjects = $dictionary[$groupKey];
+                    if ($groupObjects instanceof ArrayClass) {
+                        $groupObjects->append($object);
+                    } else {
+                        $dictionary[$groupKey] = new ArrayClass([$object]);
                     }
+                }
+                if ($havingPredicate = $request->havingPredicate) {
+                    $dictionary = $dictionary->filter(fn(ArrayClass $groupObjects): bool => $groupObjects->contains(fn(ManagedObject $obj): bool => $havingPredicate->evaluate($obj)));
                 }
                 /** @var ArrayClass<ManagedObject> $objects */
                 $objects = new ArrayClass($dictionary->joined());
-                if ($havingPredicate = $request->havingPredicate) {
-                    $objects = $objects->filtered($havingPredicate);
-                }
             }
             if ($predicate) {
                 $objects = $objects->filtered($predicate);

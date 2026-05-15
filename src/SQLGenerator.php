@@ -392,6 +392,31 @@ final class SQLGenerator
         if ($this->keyValueOperator === KeyValueOperator::countKeyValueOperator) {
             $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
         }
+        /** @var ArrayClass<PropertyDescription|string> $groupByProperties */
+        $groupByProperties = $request->propertiesToGroupBy ?? new ArrayClass();
+        if (!$groupByProperties->isEmpty) {
+            $columnNames->formUnion($groupByProperties->map(function (PropertyDescription|string $property): string {
+                if ($property instanceof FetchedPropertyDescription) {
+                    fatal_error("Invalid fetch request: FetchedPropertyDescription \"$property->name\" cannot be used in GROUP BY");
+                }
+                if ($property instanceof ExpressionDescription) {
+                    return $this->buildExpression($property->expression ?? fatal_error("ExpressionDescription \"$property->name\" has no expression"));
+                }
+                $keypath = $property instanceof PropertyDescription ? $property->name : $property;
+                return $this->buildKeyPathExpression(Expression::expressionForKeyPath($keypath));
+            }));
+            if ($propertiesToFetch = $request->propertiesToFetch) {
+                if ($expressionDescriptions = $propertiesToFetch->filter(fn(PropertyDescription|string $property): bool => $property instanceof ExpressionDescription)) {
+                    $columnNames->formUnion($expressionDescriptions->map(fn(ExpressionDescription $expressionDescription): string => "{$this->buildExpression($expressionDescription->expression ?? fatal_error("ExpressionDescription \"$expressionDescription->name\" has no expression"))} AS $expressionDescription->name"));
+                }
+            }
+            if ($columnNames->isEmpty) {
+                $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
+            }
+            $columnNames->forEach(fn(string $columnName) => $this->selectedColumnsMap[$columnName] = true);
+            $this->selectList .= $columnNames->join(", ");
+            return;
+        }
         $appendBaseColumns = !$this->isSubquery && !$request->returnsObjectsAsFaults && !($request->resultType === FetchRequestResultType::countResultType && $this->keyValueOperator === KeyValueOperator::countKeyValueOperator);
         if ($appendBaseColumns) {
             if ($request->resultType !== FetchRequestResultType::countResultType) {
