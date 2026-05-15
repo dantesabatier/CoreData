@@ -93,7 +93,11 @@ final class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestCont
         }
     }
     private SQLFetchRequestContext $fetchRequestContextForChanges {
-        get => $this->fetchRequestContextForChanges ??= new SQLFetchRequestContext($this->fetchRequestDescribingChanges, $this->context, $this->sqlCore);
+        get => $this->fetchRequestContextForChanges ??= match ($this->fetchRequestDescribingChanges->resultType) {
+            FetchRequestResultType::countResultType => new SQLCountRequestContext($this->fetchRequestDescribingChanges, $this->context, $this->sqlCore),
+            default => new SQLFetchRequestContext($this->fetchRequestDescribingChanges, $this->context, $this->sqlCore)
+
+        };
     }
     private SQLSaveChangesRequestContext $deleteTransactionsRequestContext {
         /**

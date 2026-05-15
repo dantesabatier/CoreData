@@ -227,9 +227,9 @@ final class SQLGenerator
         if ($request instanceof FetchRequest) {
             /** @var EntityDescription $entity */
             $entity = $request->entity;
-            /** @var ArrayClass<string> $groupByKeypaths */
-            $groupByKeypaths = $request->propertiesToGroupBy?->map(fn(PropertyDescription|string $property): string => $property instanceof PropertyDescription ? $property->name : $property) ?? new ArrayClass();
-            if (!$groupByKeypaths->isEmpty && $request->resultType !== FetchRequestResultType::dictionaryResultType) {
+            /** @var ArrayClass<PropertyDescription|string> $groupByProperties */
+            $groupByProperties = $request->propertiesToGroupBy ?? new ArrayClass();
+            if (!$groupByProperties->isEmpty && $request->resultType !== FetchRequestResultType::dictionaryResultType) {
                 fatal_error(sprintf("Invalid fetch request: GROUP BY requires %s, %s given", human_readable_value(FetchRequestResultType::dictionaryResultType), human_readable_value($request->resultType)));
             }
             $this->useDistinct = $request->returnsDistinctResults;
@@ -247,8 +247,8 @@ final class SQLGenerator
             $this->appendSQL($this->selectList);
             $this->appendSQL($this->joinClause);
             $this->appendSQL($this->whereClause);
-            if (!$groupByKeypaths->isEmpty) {
-                $this->buildGroupByClause($groupByKeypaths);
+            if (!$groupByProperties->isEmpty) {
+                $this->buildGroupByClause($groupByProperties);
                 $this->appendSQL($this->groupByClause);
                 if ($havingPredicate = $request->havingPredicate) {
                     $this->appendHavingClauseToSQL();
@@ -441,6 +441,11 @@ final class SQLGenerator
         $expressions = $this->keyPathExpressionsForFetchRequestSerialization();
         if (($predicate = $this->request->predicate) && $this->predicateTraversesRelationships($predicate)) {
             $expressions->formUnion($this->keyPathExpressionsForFetchRequestPredicate());
+        }
+        foreach ($this->request->sortDescriptors ?? [] as $descriptor) {
+            if ($this->keyPathTraversesRelationship($descriptor->key)) {
+                $expressions->insert(Expression::expressionForKeyPath($descriptor->key));
+            }
         }
         foreach ($expressions as $expression) {
             $this->appendJoinsForRelationships($this->relationshipsFromKeyPathExpression($expression));
@@ -1435,10 +1440,19 @@ final class SQLGenerator
         return $expression->collection->map(fn(Expression $argument): string => $this->buildExpression($argument, $isDeterministic))->join(", ");
     }
 
-    private function buildGroupByClause(ArrayClass $groupByKeypaths): void
+    private function buildGroupByClause(ArrayClass $groupByProperties): void
     {
         $this->appendGroupByClauseToSQL();
-        $this->groupByClause .= $groupByKeypaths->map(fn(string $keypath): string => $this->buildKeyPathExpression(Expression::expressionForKeyPath($keypath)))->join(", ");
+        $this->groupByClause .= $groupByProperties->map(function (PropertyDescription|string $property): string {
+            if ($property instanceof FetchedPropertyDescription) {
+                fatal_error("Invalid fetch request: FetchedPropertyDescription \"$property->name\" cannot be used in GROUP BY");
+            }
+            if ($property instanceof ExpressionDescription) {
+                return $this->buildExpression($property->expression ?? fatal_error("ExpressionDescription \"$property->name\" has no expression"));
+            }
+            $keypath = $property instanceof PropertyDescription ? $property->name : $property;
+            return $this->buildKeyPathExpression(Expression::expressionForKeyPath($keypath));
+        })->join(", ");
     }
 
     private function buildOrderByClause(ArrayClass $descriptors): void
