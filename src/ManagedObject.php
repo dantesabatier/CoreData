@@ -926,7 +926,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             },
             AttributeType::transformable, AttributeType::objectID => (function () use ($value, $attributeValueClassName, $isOptional, $write, $valueTransformerName): mixed {
                 if ($value === null) {
-                    return $isOptional ? null : ($attributeValueClassName !== null && class_exists($attributeValueClassName) ? new $attributeValueClassName() : []);
+                    $value = $isOptional ? null : ($attributeValueClassName !== null && class_exists($attributeValueClassName) ? new $attributeValueClassName() : []);
                 }
                 if ($transformer = ValueTransformer::valueTransformerForName($valueTransformerName ?? SecureUnarchiveFromDataTransformerName)) {
                     return $write ? $transformer->transformedValue($value) : $transformer->reverseTransformedValue($value);
