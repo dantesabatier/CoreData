@@ -155,11 +155,13 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
 
     public function localizedEntityName(string $entityName): string
     {
+        /** @var string */
         return $this->localizationDictionary["Entity/$entityName"] ?? $entityName;
     }
 
     public function localizedPropertyName(string $propertyName, string $entityName): string
     {
+        /** @var string */
         return $this->localizationDictionary["Property/$propertyName/Entity/$entityName"] ?? $this->localizationDictionary["Property/$propertyName"] ?? $propertyName;
     }
 
