@@ -389,35 +389,11 @@ final class SQLGenerator
         $entity = $this->entity;
         /** @var Set<string> $columnNames */
         $columnNames = new Set();
+        $hasGroupBy = !($request->propertiesToGroupBy ?? new ArrayClass())->isEmpty;
         if ($this->keyValueOperator === KeyValueOperator::countKeyValueOperator) {
             $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
         }
-        /** @var ArrayClass<PropertyDescription|string> $groupByProperties */
-        $groupByProperties = $request->propertiesToGroupBy ?? new ArrayClass();
-        if (!$groupByProperties->isEmpty) {
-            $columnNames->formUnion($groupByProperties->map(function (PropertyDescription|string $property): string {
-                if ($property instanceof FetchedPropertyDescription) {
-                    fatal_error("Invalid fetch request: FetchedPropertyDescription \"$property->name\" cannot be used in GROUP BY");
-                }
-                if ($property instanceof ExpressionDescription) {
-                    return $this->buildExpression($property->expression ?? fatal_error("ExpressionDescription \"$property->name\" has no expression"));
-                }
-                $keypath = $property instanceof PropertyDescription ? $property->name : $property;
-                return $this->buildKeyPathExpression(Expression::expressionForKeyPath($keypath));
-            }));
-            if ($propertiesToFetch = $request->propertiesToFetch) {
-                if ($expressionDescriptions = $propertiesToFetch->filter(fn(PropertyDescription|string $property): bool => $property instanceof ExpressionDescription)) {
-                    $columnNames->formUnion($expressionDescriptions->map(fn(ExpressionDescription $expressionDescription): string => "{$this->buildExpression($expressionDescription->expression ?? fatal_error("ExpressionDescription \"$expressionDescription->name\" has no expression"))} AS $expressionDescription->name"));
-                }
-            }
-            if ($columnNames->isEmpty) {
-                $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
-            }
-            $columnNames->forEach(fn(string $columnName) => $this->selectedColumnsMap[$columnName] = true);
-            $this->selectList .= $columnNames->join(", ");
-            return;
-        }
-        $appendBaseColumns = !$this->isSubquery && !$request->returnsObjectsAsFaults && !($request->resultType === FetchRequestResultType::countResultType && $this->keyValueOperator === KeyValueOperator::countKeyValueOperator);
+        $appendBaseColumns = !$hasGroupBy && !$this->isSubquery && !$request->returnsObjectsAsFaults && !($request->resultType === FetchRequestResultType::countResultType && $this->keyValueOperator === KeyValueOperator::countKeyValueOperator);
         if ($appendBaseColumns) {
             if ($request->resultType !== FetchRequestResultType::countResultType) {
                 /** @var ArrayClass<SQLColumn> $entityColumns */
@@ -433,16 +409,18 @@ final class SQLGenerator
         }
         $appendBaseColumns = $this->keyValueOperator !== KeyValueOperator::countKeyValueOperator && $request->includesPropertyValues;
         if ($appendBaseColumns) {
-            $columnNames->formUnion($request->serialization->keys->compactMap(function (string $key) use ($entity): ?string {
-                $property = $entity->propertiesByName[$key];
-                if ($property instanceof SQLAttribute && !$property->isTransient && !$property->isCompositeAttribute) {
-                    if ($property->isDerivedAttribute && $property->isRuntimeOnly) {
-                        return "{$this->buildDerivationExpression($property->derivationExpression)} AS $property->name";
+            if (!$hasGroupBy) {
+                $columnNames->formUnion($request->serialization->keys->compactMap(function (string $key) use ($entity): ?string {
+                    $property = $entity->propertiesByName[$key];
+                    if ($property instanceof SQLAttribute && !$property->isTransient && !$property->isCompositeAttribute) {
+                        if ($property->isDerivedAttribute && $property->isRuntimeOnly) {
+                            return "{$this->buildDerivationExpression($property->derivationExpression)} AS $property->name";
+                        }
+                        return "$this->tableReference.$property->name";
                     }
-                    return "$this->tableReference.$property->name";
-                }
-                return null;
-            }));
+                    return null;
+                }));
+            }
             if ($propertiesToFetch = $request->propertiesToFetch) {
                 if ($expressionDescriptions = $propertiesToFetch->filter(fn(PropertyDescription|string $property): bool => $property instanceof ExpressionDescription)) {
                     $columnNames->formUnion($expressionDescriptions->map(fn(ExpressionDescription $expressionDescription): string => "{$this->buildExpression($expressionDescription->expression ?? fatal_error("ExpressionDescription \"$expressionDescription->name\" has no expression"))} AS $expressionDescription->name"));
@@ -450,6 +428,19 @@ final class SQLGenerator
                 /** @var ArrayClass<string> $keypathStrings */
                 $keypathStrings = $propertiesToFetch->filter(fn(PropertyDescription|string $property): bool => is_string($property) && str_contains($property, "."));
                 $columnNames->formUnion($keypathStrings->map(fn(string $keypath): string => $this->buildKeyPathExpression(Expression::expressionForKeyPath($keypath)) . " AS " . str_replace(".", "_", $keypath)));
+                if ($hasGroupBy) {
+                    $columnNames->formUnion($propertiesToFetch->compactMap(function (PropertyDescription|string $property) use ($entity): ?string {
+                        if ($property instanceof ExpressionDescription || (is_string($property) && str_contains($property, "."))) {
+                            return null;
+                        }
+                        $keypath = $property instanceof PropertyDescription ? $property->name : $property;
+                        $sqlProperty = $entity->propertiesByName[$keypath];
+                        if ($sqlProperty instanceof SQLAttribute && !$sqlProperty->isTransient && !$sqlProperty->isCompositeAttribute) {
+                            return "$this->tableReference.$sqlProperty->columnName";
+                        }
+                        return null;
+                    }));
+                }
             }
         }
         if ($columnNames->isEmpty) {
@@ -1535,7 +1526,10 @@ final class SQLGenerator
                 if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLOptLockKey) {
                     $columnNames->insert($property->name);
                 } elseif ($property instanceof SQLAttribute && !$property->isCompositeAttribute) {
-                    if ($insertedObject->changedValuesForCurrentEvent()->offsetExists($property->name)) {
+                    if (!($exist = $insertedObject->changedValuesForCurrentEvent()->offsetExists($property->name)) && !$property->isOptional) {
+                        $exist = $insertedObject->changedValues()->offsetExists($property->name);
+                    }
+                    if ($exist) {
                         $columnNames->insert($property->columnName);
                     }
                 } elseif ($property instanceof SQLToOne) {

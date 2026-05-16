@@ -60,7 +60,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                 /** @var SQLEntity $entity */
                 $entity = $this->sqlModel->entitiesByName[$entityNameFromRow] ?? fatal_error("Entity \"$entityNameFromRow\" does not exist");
                 $cursorEntity = $entity;
-                $rootID = (string)$row[$entity->primaryKey->columnName];
+                $rootID = (string)($row[$entity->primaryKey->columnName] ?? "row_$byRootIDResult->count");
                 /** @var Dictionary<mixed> $root */
                 $root = $byRootIDResult[$rootID] ?? new Dictionary();
                 foreach ($row as $pattern => $value) {
@@ -161,7 +161,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
      * @param ArrayClass<string> $keyPathComponents
      * @param Set<string> $nullPropertyPrefixes
      */
-    private function updateNullPropertyPrefixes(ArrayClass $keyPathComponents, string $primaryKeyName, mixed $value, Set $nullPropertyPrefixes): void {
+    private function updateNullPropertyPrefixes(ArrayClass $keyPathComponents, string $primaryKeyName, mixed $value, Set $nullPropertyPrefixes): void
+    {
         if ($keyPathComponents[$keyPathComponents->indexBefore($keyPathComponents->endIndex)] === $primaryKeyName) {
             $propertyKeyPath = $keyPathComponents->dropLast(1)->join(".");
             if ($value instanceof Nil) {
