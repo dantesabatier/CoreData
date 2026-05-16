@@ -866,7 +866,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /**
      * @internal
      */
-    public static function coercedValue(/** @noinspection PhpUnusedParameterInspection */ mixed $value, AttributeType $type, ?string $attributeValueClassName = null, ?string $valueTransformerName = null, bool $isOptional = true, bool $write = false): mixed
+    public static function coercedValue(mixed $value, AttributeType $type, ?string $attributeValueClassName = null, ?string $valueTransformerName = null, bool $isOptional = true, bool $write = false): mixed
     {
         if ($value instanceof Value) {
             $value = $value->value;
@@ -924,7 +924,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         |> fatal_error(...),
                 default => fatal_error(sprintf("Invalid argument: invalid value %s(%s) for type %s", human_readable_value($value), typeof($value), human_readable_value($type)))
             },
-            AttributeType::transformable, AttributeType::objectID => (function () use ($value, $write, $valueTransformerName): mixed {
+            AttributeType::transformable, AttributeType::objectID => (function () use ($value, $attributeValueClassName, $isOptional, $write, $valueTransformerName): mixed {
+                if ($value === null) {
+                    return $isOptional ? null : ($attributeValueClassName !== null && class_exists($attributeValueClassName) ? new $attributeValueClassName() : []);
+                }
                 if ($transformer = ValueTransformer::valueTransformerForName($valueTransformerName ?? SecureUnarchiveFromDataTransformerName)) {
                     return $write ? $transformer->transformedValue($value) : $transformer->reverseTransformedValue($value);
                 }
