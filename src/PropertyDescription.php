@@ -21,6 +21,15 @@ abstract class PropertyDescription extends ObjectClass
 {
     /** @var string The name of the receiver. A property name cannot be the same as any no-parameter method name of Object or ManagedObject. */
     public string $name = UnknownName;
+    /** @var string The localized name of the property. */
+    public string $localizedName {
+        get {
+            if (isset($this->entity->managedObjectModel)) {
+                return $this->entity->managedObjectModel->localizedPropertyName($this->name, $this->entity->name);
+            }
+            return $this->name;
+        }
+    }
     /** @var EntityDescription The entity description of the receiver. */
     public EntityDescription $entity;
     /** @var Dictionary<mixed>|null The user info dictionary of the receiver. */

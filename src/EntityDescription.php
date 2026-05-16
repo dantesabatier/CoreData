@@ -31,6 +31,10 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
 {
     /** @var string The entity name of the receiver. */
     public string $name = UnknownName;
+    /** @var string The localized name of the entity. */
+    public string $localizedName {
+        get => isset($this->managedObjectModel) ? $this->managedObjectModel->localizedEntityName($this->name) : $this->name;
+    }
     /** @var ManagedObjectModel The managed object model with which the receiver is associated. */
     public ManagedObjectModel $managedObjectModel;
     /** @var class-string<ManagedObject>|null $managedObjectClassName The name of the class that represents the receiver's entity. The class specified by name must be {@see ManagedObject} or a subclass of ManagedObject. */

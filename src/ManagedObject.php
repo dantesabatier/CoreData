@@ -1046,7 +1046,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             if (!($predicate = $property->validationPredicates->first(fn(Predicate $predicate) => !$predicate->evaluate($this)))) {
                 continue;
             }
-            $error = new Error(CoreDataErrorDomain, ManagedObjectConstraintValidationError, new Dictionary([LocalizedDescriptionKey => localized_string("Constraint Violation"), LocalizedFailureReasonErrorKey => sprintf(localized_string("The value being assigned does not satisfy the constraints (%s) defined for $property \"%s\" on entity \"%s\"."), $predicate, $key, $this->entity->name), ValidationObjectErrorKey => $this, ValidationValueErrorKey => $value, ValidationKeyErrorKey => $key, ValidationPredicateErrorKey => $predicate]));
+            $error = new Error(CoreDataErrorDomain, ManagedObjectConstraintValidationError, new Dictionary([LocalizedDescriptionKey => localized_string("Constraint Violation"), LocalizedFailureReasonErrorKey => sprintf(localized_string("The value being assigned does not satisfy the constraints (%s) defined for property \"%s\" on entity \"%s\"."), $predicate, $property->localizedName, $this->entity->localizedName), ValidationObjectErrorKey => $this, ValidationValueErrorKey => $value, ValidationKeyErrorKey => $key, ValidationPredicateErrorKey => $predicate]));
             throw new InternalInconsistencyException(error: $error);
         }
     }

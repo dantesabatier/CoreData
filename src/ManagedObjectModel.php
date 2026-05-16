@@ -13,6 +13,7 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\KeyedUnarchiver;
+use Locale;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
@@ -55,8 +56,10 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
     public ArrayClass $configurations {
         get => $this->entitiesByConfigurationName->keys;
     }
-    /** @var Dictionary<string>|null The localization dictionary of the model. */
-    public ?Dictionary $localizationDictionary = null;
+    /** @var Dictionary<string> The localization dictionary of the model. */
+    public Dictionary $localizationDictionary {
+        get => $this->localizationDictionary ??= new Dictionary();
+    }
     /** @var Dictionary<string> A dictionary of the version hashes for the entities in the model, keyed by entity name. The dictionary of version hash information is used by Core Data to determine schema compatibility. */
     private(set) Dictionary $entityVersionHashesByName {
         get => $this->entityVersionHashesByName ??= new Dictionary();
@@ -96,6 +99,12 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
             /** @var ManagedObjectModel $unarchivedModel */
             $unarchivedModel = KeyedUnarchiver::unarchiveTopLevelObjectWithData($data);
             $this->setValuesForKeys($unarchivedModel->dictionaryWithValues($this->archivableModelKeys));
+            $bundle = Bundle::bundleWithURL($url->deletingLastPathComponent()->deletingLastPathComponent());
+            $name = $url->deletingPathExtension()->lastPathComponent;
+            $poURL = $bundle->url("{$name}Model", "po", null, Locale::getPrimaryLanguage(Locale::getDefault()));
+            if ($poURL && ($content = FileManager::default()->contents($poURL->path))) {
+                $this->localizationDictionary = new StringsFileParser($content)->dictionary;
+            }
             $this->isEditable = false;
         }
     }
@@ -142,6 +151,16 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
         $managedObjectModel = new ManagedObjectModel();
         $managedObjectModel->entities = $models->flatMap(fn(ManagedObjectModel $model): ArrayClass => $model->entities);
         return $managedObjectModel;
+    }
+
+    public function localizedEntityName(string $entityName): string
+    {
+        return $this->localizationDictionary["Entity/$entityName"] ?? $entityName;
+    }
+
+    public function localizedPropertyName(string $propertyName, string $entityName): string
+    {
+        return $this->localizationDictionary["Property/$propertyName/Entity/$entityName"] ?? $this->localizationDictionary["Property/$propertyName"] ?? $propertyName;
     }
 
     private function throwIfNotEditable(): void
