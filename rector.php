@@ -18,6 +18,7 @@ use Rector\DeadCode\Rector\ClassMethod\RemoveUselessReturnTagRector;
 use Rector\DeadCode\Rector\If_\RemoveAlwaysTrueIfConditionRector;
 use Rector\DeadCode\Rector\Node\RemoveNonExistingVarAnnotationRector;
 use Rector\DeadCode\Rector\Property\RemoveUnusedPrivatePropertyRector;
+use Rector\DeadCode\Rector\Property\RemoveUselessVarTagRector;
 use Rector\EarlyReturn\Rector\Return_\ReturnBinaryOrToEarlyReturnRector;
 use Rector\Exception\Configuration\InvalidConfigurationException;
 use Rector\Php73\Rector\ConstFetch\SensitiveConstantNameRector;
@@ -51,7 +52,9 @@ try {
                 __DIR__ . "/src/SQLAdapter.php"
             ],
             RemoveNonExistingVarAnnotationRector::class => [
+                __DIR__ . "/src/ManagedObjectModel.php",
                 __DIR__ . "/src/MigrationManager.php",
+                __DIR__ . "/src/SQLGenerator.php",
             ],
             RestoreDefaultNullToNullableTypePropertyRector::class,
             ReadOnlyPropertyRector::class,
@@ -65,6 +68,9 @@ try {
             IssetOnPropertyObjectToPropertyExistsRector::class,
             RemoveEmptyClassMethodRector::class,
             RemoveUnusedPublicMethodParameterRector::class,
+            RemoveUselessVarTagRector::class => [
+                __DIR__ . "/src/SQLPersistentHistoryChangeRequestContext.php",
+            ]
         ])->withPreparedSets(deadCode: true, codeQuality: true, earlyReturn: true);
 } catch (InvalidConfigurationException $e) {
     error_log($e->getMessage());
