@@ -925,8 +925,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 default => fatal_error(sprintf("Invalid argument: invalid value %s(%s) for type %s", human_readable_value($value), typeof($value), human_readable_value($type)))
             },
             AttributeType::transformable, AttributeType::objectID => (function () use ($value, $attributeValueClassName, $isOptional, $write, $valueTransformerName): mixed {
-                if ($value === null) {
-                    $value = $isOptional ? null : ($attributeValueClassName !== null && class_exists($attributeValueClassName) ? new $attributeValueClassName() : []);
+                if ($value === null && !$isOptional && $attributeValueClassName !== null && class_exists($attributeValueClassName) && $attributeValueClassName !== ManagedObjectID::class) {
+                    $value = new $attributeValueClassName();
                 }
                 if ($transformer = ValueTransformer::valueTransformerForName($valueTransformerName ?? SecureUnarchiveFromDataTransformerName)) {
                     return $write ? $transformer->transformedValue($value) : $transformer->reverseTransformedValue($value);
