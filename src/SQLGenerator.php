@@ -1476,32 +1476,60 @@ final class SQLGenerator
         $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
         $this->raisesForNotApplicableKeys = false;
         if (SS_COREDATA_USES_RELATIONSHIPS_SORT_DESCRIPTORS):
-            /** @var Set<SQLToMany> $toManyRelationships */
-            $toManyRelationships = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->flatMap(fn(Expression $expression): ArrayClass => $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLForeignKey || $property instanceof SQLToMany)->compactMap(function (SQLProperty $property): ?SQLProperty {
-                $toMany = null;
-                if ($property instanceof SQLForeignKey) {
-                    $toMany = $property->toOneRelationship->inverseRelationship;
-                } elseif ($property instanceof SQLToMany) {
-                    $toMany = $property;
-                }
-                if ($toMany instanceof SQLToMany && $toMany->isOrdered) {
-                    $property = $toMany->inverseToOne->foreignOrderKey->entity->propertiesByName[$toMany->inverseToOne->foreignOrderKey->columnName];
-                    if ($property instanceof SQLProperty && !$property->isTransient) {
-                        return $toMany;
-                    }
-                }
-                return null;
-            }));
-            $descriptors->appendContentsOf($toManyRelationships->map(fn(SQLToMany $toMany) => new SortDescriptor($toMany->inverseToOne->foreignOrderKey->columnName)));
+            $descriptors->appendContentsOf($this->sortDescriptorsForOrderedRelationships());
         endif;
         if (!$descriptors->isEmpty) {
-            $clauses = new Set($descriptors->map(fn(SortDescriptor $descriptor): string => sprintf("%s %s", $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)), $descriptor->ascending ? "ASC" : "DESC"))->filter(fn(string $string): bool => str_contains($string, ".")));
+            $expressionAliases = $this->expressionAliasesForRequest();
+            $clauses = new Set($descriptors->compactMap(fn(SortDescriptor $descriptor): ?string => $this->buildSortClause($descriptor, $expressionAliases)));
             if (!$clauses->isEmpty) {
                 $this->appendOrderByClauseToSQL();
                 $this->orderByClause .= $clauses->join(", ");
             }
         }
         $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
+    }
+
+    /**
+     * @return Set<SortDescriptor>
+     */
+    private function sortDescriptorsForOrderedRelationships(): Set
+    {
+        /** @var Set<SQLToMany> $toManyRelationships */
+        $toManyRelationships = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->flatMap(fn(Expression $expression): ArrayClass => $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLForeignKey || $property instanceof SQLToMany)->compactMap(function (SQLProperty $property): ?SQLToMany {
+            $toMany = match (true) {
+                $property instanceof SQLForeignKey => $property->toOneRelationship->inverseRelationship,
+                $property instanceof SQLToMany => $property,
+                default => null,
+            };
+            if (!$toMany instanceof SQLToMany || !$toMany->isOrdered) {
+                return null;
+            }
+            $orderKeyProperty = $toMany->inverseToOne->foreignOrderKey->entity->propertiesByName[$toMany->inverseToOne->foreignOrderKey->columnName];
+            return $orderKeyProperty instanceof SQLProperty && !$orderKeyProperty->isTransient ? $toMany : null;
+        }));
+        return $toManyRelationships->map(fn(SQLToMany $toMany): SortDescriptor => new SortDescriptor($toMany->inverseToOne->foreignOrderKey->columnName));
+    }
+
+    /**
+     * @return ArrayClass<string>
+     */
+    private function expressionAliasesForRequest(): ArrayClass
+    {
+        // Expression aliases are only in scope for ORDER BY when GROUP BY is present; without it, they resolve as key paths and get silently dropped.
+        if (($this->request->propertiesToGroupBy ?? new ArrayClass())->isEmpty) {
+            return new ArrayClass();
+        }
+        return ($this->request->propertiesToFetch ?? new ArrayClass())->filter(fn(PropertyDescription|string $p): bool => $p instanceof ExpressionDescription)->map(fn(ExpressionDescription $p): string => $p->name);
+    }
+
+    private function buildSortClause(SortDescriptor $descriptor, ArrayClass $expressionAliases): ?string
+    {
+        $direction = $descriptor->ascending ? "ASC" : "DESC";
+        if ($expressionAliases->contains(fn(string $alias): bool => $alias === $descriptor->key)) {
+            return "$descriptor->key $direction";
+        }
+        $clause = $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)) . " $direction";
+        return str_contains($clause, ".") ? $clause : null;
     }
 
     private function coercedValue(ManagedObject|Dictionary $object, AttributeDescription $attribute): mixed
@@ -1751,7 +1779,16 @@ final class SQLGenerator
         } elseif ($first instanceof PersistentHistoryChange) {
             $map["PersistentHistoryChange"] = new ArrayClass($objects);
         } elseif ($first instanceof ManagedObject) {
-            $objects = $objects->sort(fn(ManagedObject $e0, ManagedObject $e1): int => $e0->entity->relationshipsByName->compactMap(fn(RelationshipDescription $relationship): ?EntityDescription => $e0->hasFaultForRelationshipNamed($relationship->name) ? $relationship->destinationEntity : null)->containsElement($e1->entity) ? ComparisonResult::orderedDescending->value : ComparisonResult::orderedAscending->value);
+            $dependsOn = fn(ManagedObject $source, ManagedObject $target): bool => $source->entity->relationshipsByName->compactMap(fn(RelationshipDescription $relationship): ?EntityDescription => $source->hasFaultForRelationshipNamed($relationship->name) ? $relationship->destinationEntity : null)->containsElement($target->entity);
+            $objects = $objects->sort(function (ManagedObject $e0, ManagedObject $e1) use ($dependsOn): int {
+                if ($dependsOn($e0, $e1)) {
+                    return ComparisonResult::orderedDescending->value;
+                }
+                if ($dependsOn($e1, $e0)) {
+                    return ComparisonResult::orderedAscending->value;
+                }
+                return ComparisonResult::orderedSame->value;
+            });
             foreach ($objects as $object) {
                 /** @var ArrayClass $value */
                 $value = $map[$object->entity->name] ?? new ArrayClass();
