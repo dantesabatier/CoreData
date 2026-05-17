@@ -1516,10 +1516,11 @@ final class SQLGenerator
     private function expressionAliasesForRequest(): ArrayClass
     {
         // Expression aliases are only in scope for ORDER BY when GROUP BY is present; without it, they resolve as key paths and get silently dropped.
-        if (($this->request->propertiesToGroupBy ?? new ArrayClass())->isEmpty) {
+        if ($this->request->propertiesToGroupBy?->isEmpty) {
             return new ArrayClass();
         }
-        return ($this->request->propertiesToFetch ?? new ArrayClass())->filter(fn(PropertyDescription|string $p): bool => $p instanceof ExpressionDescription)->map(fn(ExpressionDescription $p): string => $p->name);
+        /** @var ArrayClass<string> */
+        return $this->request->propertiesToFetch?->filter(fn(PropertyDescription|string $p): bool => $p instanceof ExpressionDescription)?->map(fn(ExpressionDescription $p): string => $p->name) ?? new ArrayClass();
     }
 
     private function buildSortClause(SortDescriptor $descriptor, ArrayClass $expressionAliases): ?string
