@@ -1362,6 +1362,9 @@ final class SQLGenerator
             case ExpressionOperatorType::dateDiff:
                 $function = "TIMESTAMPDIFF";
                 break;
+            case ExpressionOperatorType::dateAdd:
+                $function = "DATE_ADD";
+                break;
             default:
                 $function = "";
                 break;
