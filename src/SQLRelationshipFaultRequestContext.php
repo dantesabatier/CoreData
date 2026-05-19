@@ -4,7 +4,6 @@ namespace Sabatier\CoreData;
 
 use Override;
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
@@ -65,19 +64,13 @@ final class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
             $fetchRequestContext->executeRequestUsingConnection($this->connection);
             $this->result = $fetchRequestContext->result;
         } elseif ($property instanceof SQLManyToMany) {
-            /** @var FetchRequest<ManagedObject> $fetchRequest */
-            $fetchRequest = new FetchRequest();
-            $fetchRequest->entity = $entity->entityDescription;
-            $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($this->objectID->referenceObject));
-            $fetchRequest->includesPendingChanges = true;
-            $fetchRequest->propertiesToFetch = new ArrayClass([$property->relationshipDescription->name]);
-            $fetchRequest->serialization = new Dictionary();
-            $fetchRequestContext = new SQLFetchRequestContext($fetchRequest, $this->context, $this->sqlCore);
-            $fetchRequestContext->executeRequestUsingConnection($this->connection);
-            $first = $fetchRequestContext->result->first;
-            if ($first instanceof ManagedObject) {
-                $this->result = new ArrayClass($first->valueForKey($property->name)?->map(fn(ManagedObject $object): ManagedObjectID => $object->objectID) ?? []);
+            $statement = $this->sqlCore->queryGenerationTrackingConnection->execute(new SQLStatement("SELECT `$property->columnName` FROM `$property->correlationTableName` WHERE `$property->inverseColumnName` = ?", new ArrayClass([$this->objectID->referenceObject])));
+            /** @var ArrayClass<ManagedObjectID> $objectIDs */
+            $objectIDs = new ArrayClass();
+            while ($id = $statement->fetchColumn()) {
+                $objectIDs->append($this->sqlCore->objectID($property->destinationEntity->entityDescription, $id));
             }
+            $this->result = $objectIDs;
         }
         $this->debugLevel = $debugLevel;
         return true;
