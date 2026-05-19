@@ -210,12 +210,13 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
             $entity = $this->sqlModel->entitiesByName[$entityName] ?? fatal_error("invalid snapshot: {$this->sqlEntityForFetchRequest->entityKey->columnName} $entityName cannot be null");
             $objectID = $this->sqlCore->objectID($entity->entityDescription, $snapshot[$entity->primaryKey->columnName]);
             $object = $this->context->object($objectID);
-            if ($this->request->includesPendingChanges && $object->isStable) {
-                return $object;
-            }
             $object->isSuppressingChangeNotifications = true;
             $object->isSuppressingKVO = true;
-            $object->updateFromSnapshot($snapshot);
+            if ($object->isStable) {
+                $object->materializeFaultsFromSnapshot($snapshot);
+            } else {
+                $object->updateFromSnapshot($snapshot);
+            }
             $object->isSuppressingKVO = false;
             if (!$object->isAwakeFromFetch) {
                 $object->isAwakeFromFetch = true;

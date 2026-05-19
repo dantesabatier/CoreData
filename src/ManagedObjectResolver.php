@@ -30,10 +30,11 @@ final readonly class ManagedObjectResolver
         } elseif ($objectID = $this->idResolver->resolve($entity, $object)) {
             $isStable = $object[ManagedObjectFaultingStateKey] === ManagedObjectFaultingStateStable;
             $targetObject = $this->context->object($objectID);
+            $wasSuppressingKVO = $targetObject->isSuppressingKVO;
             $targetObject->isSuppressingChangeNotifications = $isStable;
-            $targetObject->isSuppressingKVO = $isStable;
+            $targetObject->isSuppressingKVO = $wasSuppressingKVO || $isStable;
             $targetObject->updateFromSnapshot($object);
-            $targetObject->isSuppressingKVO = false;
+            $targetObject->isSuppressingKVO = $wasSuppressingKVO;
         }
         if ($targetObject instanceof ManagedObject) {
             if ($targetObject->isStable && !$targetObject->isAwakeFromFetch) {

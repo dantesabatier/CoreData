@@ -421,6 +421,15 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     }
 
     /**
+     * @param Dictionary<mixed> $snapshot
+     * @internal
+     */
+    public function materializeFaultsFromSnapshot(Dictionary $snapshot): void
+    {
+        $this->genericUpdateFromSnapshot($snapshot->filter(fn(mixed $value, string $key): bool => $this->isPropertyForKeyFault($key)));
+    }
+
+    /**
      * Provides an opportunity to add code into the life cycle of the managed object when fulfilling it from a snapshot.
      *
      * You typically use this method to compute derived values or to recreate transient relationships from the receiver's persistent properties. If you want to set attribute values and need to avoid emitting key-value observation change notifications, you should use primitive accessor methods (either {@see setPrimitiveValue()} or better the appropriate custom primitive accessors). This ensures that the new values are treated as baseline values rather than being recorded as undoable changes for the properties in question. Subclasses must invoke super's implementation before performing their own initialization.
