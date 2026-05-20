@@ -32,4 +32,11 @@ final class FaultingArray extends ArrayClass
         parent::setArray($array);
         $this->isFault = false;
     }
+
+    #[Override]
+    public function appendContentsOf(iterable $newElements): void
+    {
+        parent::appendContentsOf($newElements);
+        $this->isFault = false;
+    }
 }

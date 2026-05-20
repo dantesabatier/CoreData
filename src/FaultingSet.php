@@ -97,6 +97,27 @@ final class FaultingSet extends Set implements Materializable
     }
 
     #[Override]
+    public function formUnion(iterable $other): void
+    {
+        parent::formUnion($other);
+        $this->isFault = false;
+    }
+
+    #[Override]
+    public function subtract(iterable $other): void
+    {
+        parent::subtract($other);
+        $this->isFault = false;
+    }
+
+    #[Override]
+    public function formIntersection(iterable $other): void
+    {
+        parent::formIntersection($other);
+        $this->isFault = false;
+    }
+
+    #[Override]
     public function sort(?Closure $by = null): self
     {
         if ($this->count <= 1) {
