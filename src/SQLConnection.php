@@ -331,7 +331,7 @@ final class SQLConnection
             if ($type === PersistentHistoryChangeType::update) {
                 $updatedProperties = new Set($managedObject->changedValuesForCurrentEvent()->compactMap(fn(mixed $value, string $key): ?string => $managedObject->entity->propertiesByName->valueForKey($key)?->name));
             } elseif ($type === PersistentHistoryChangeType::delete) {
-                $attributesByName = $managedObject->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => $attribute->preservesValueInHistoryOnDeletion);
+                $attributesByName = $managedObject->entity->attributesByName->filter(fn(AttributeDescription $attribute): bool => $attribute->preservesValueInHistoryOnDeletion && !($attribute instanceof DerivedAttributeDescription));
                 if (!$attributesByName->isEmpty) {
                     $dictionary = $managedObject->dictionaryWithValues($attributesByName->map(fn(AttributeDescription $attribute): string => $attribute->name));
                     if (!$dictionary->isEmpty) {

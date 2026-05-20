@@ -285,7 +285,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         return $this->isPropertyForKeyFault($key);
     }
 
-    private function isPropertyForKeyFault(string $key): bool
+    /** @internal */
+    public function isPropertyForKeyFault(string $key): bool
     {
         $value = $this->primitiveValueForKey($key);
         $property = $this->entity->propertiesByName[$key];

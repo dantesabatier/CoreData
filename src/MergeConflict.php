@@ -27,7 +27,7 @@ final class MergeConflict extends ObjectClass
 {
     /** @var Dictionary<mixed> A dictionary containing the values of the source object. */
     private(set) Dictionary $objectSnapshot {
-        get => $this->objectSnapshot ??= $this->sourceObject->dictionaryWithValues($this->sourceObject->persistentProperties->keys);
+        get => $this->objectSnapshot ??= $this->sourceObject->dictionaryWithValues($this->sourceObject->persistentProperties->keys->filter(fn(string $key): bool => !$this->sourceObject->isPropertyForKeyFault($key)));
     }
     #[Override]
     public string $description {
