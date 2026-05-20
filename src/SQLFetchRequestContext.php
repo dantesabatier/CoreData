@@ -234,7 +234,12 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
      */
     private function managedObjectIDsFromSnapshots(ArrayClass $snapshots): ArrayClass
     {
-        return $snapshots->map(fn(Dictionary $snapshot): ManagedObjectID => $this->sqlCore->objectID($this->sqlEntityForFetchRequest->entityDescription, $snapshot[$this->sqlEntityForFetchRequest->primaryKey->columnName]));
+        return $snapshots->map(function (Dictionary $snapshot): ManagedObjectID {
+            $entityName = $snapshot[$this->sqlEntityForFetchRequest->entityKey->columnName] ?? $this->sqlEntityForFetchRequest->entityDescription->name;
+            /** @var SQLEntity $entity */
+            $entity = $this->sqlModel->entitiesByName[$entityName] ?? fatal_error("invalid snapshot: entity \"$entityName\" does not exist");
+            return $this->sqlCore->objectID($entity->entityDescription, $snapshot[$entity->primaryKey->columnName]);
+        });
     }
 
     /**
