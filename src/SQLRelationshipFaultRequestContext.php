@@ -33,14 +33,12 @@ final class SQLRelationshipFaultRequestContext extends SQLStoreRequestContext
             if ($destinationEntity->isRootEntity && $destinationEntity->entityDescription->isAbstract && $destinationEntity->subentities->count === 1) {
                 $destinationEntity = $destinationEntity->subentities[0];
             }
-            /** @var SQLEntity $entity */
-            $entity = $this->sqlModel->entity($entity->tableName);
-            $statement = $this->sqlCore->queryGenerationTrackingConnection->execute(new SQLStatement("SELECT $entity->tableName.$foreignKey->columnName FROM `$entity->tableName` WHERE $entity->tableName.$columnName = ?", new ArrayClass([$this->objectID])));
+            $statement = $this->sqlCore->queryGenerationTrackingConnection->execute(new SQLStatement("SELECT $sourceEntity->tableName.$foreignKey->columnName FROM `$sourceEntity->tableName` WHERE $sourceEntity->tableName.$columnName = ?", new ArrayClass([$this->objectID])));
             if ($referenceObject = $statement->fetchColumn()) {
                 /** @var FetchRequest<ManagedObject> $fetchRequest */
                 $fetchRequest = new FetchRequest();
                 $fetchRequest->entity = $destinationEntity->entityDescription;
-                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($entity->primaryKey->columnName), Expression::expressionForConstantValue($referenceObject));
+                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath($destinationEntity->primaryKey->columnName), Expression::expressionForConstantValue($referenceObject));
                 $fetchRequest->includesPendingChanges = true;
                 $fetchRequest->resultType = FetchRequestResultType::managedObjectIDResultType;
                 $fetchRequestContext = new SQLFetchRequestContext($fetchRequest, $this->context, $this->sqlCore);

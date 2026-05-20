@@ -46,7 +46,8 @@ final class SQLBatchDeleteRequestContext extends SQLBatchOperationRequestContext
         if (!($deleteStatement = $this->deleteStatement)) {
             return false;
         }
-        $execute = $this->connection->execute($this->fetchContext->fetchStatement);
+        $statement = SQLStatement::merging(new ArrayClass([new SQLStatement("{$this->fetchContext->fetchStatement->string} FOR UPDATE", $this->fetchContext->fetchStatement->arguments), $deleteStatement]));
+        $execute = $this->connection->execute($statement);
         /** @return ArrayClass<ManagedObjectID> */
         $objectIDs = function () use ($execute): ArrayClass {
             /** @var SQLEntity $entity */
@@ -67,7 +68,6 @@ final class SQLBatchDeleteRequestContext extends SQLBatchOperationRequestContext
         };
         /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
         $this->affectedObjectIDs = $this->sqlCore->options?->valueForKey(PersistentHistoryTrackingKey) ? ($this->request->resultType === BatchDeleteRequestResultType::objectIDs ? $this->result : $objectIDs()) : new ArrayClass();
-        $this->connection->execute($deleteStatement);
         $this->transactionID = new Number($this->connection->insertTransactionForRequestContext($this));
         return true;
     }

@@ -1761,12 +1761,10 @@ final class SQLGenerator
         return $this->buildExpression($expression);
     }
 
-    private function prepareStatementForBatchDeleteRequest(BatchDeleteRequest $request): void
+    private function prepareStatementForBatchDeleteRequest(/** @noinspection PhpUnusedParameterInspection */ BatchDeleteRequest $request): void
     {
-        /** @var EntityDescription $entity */
-        $entity = $request->fetchRequest->entity?->isRootEntity ? $request->fetchRequest->entity : $request->fetchRequest->entity?->rootEntity;
         /** @noinspection SqlWithoutWhere */
-        $this->string = "DELETE `$entity->name` FROM `$entity->name`";
+        $this->string = "DELETE `{$this->entity->tableName}` FROM `{$this->entity->tableName}`";
     }
 
     /**
