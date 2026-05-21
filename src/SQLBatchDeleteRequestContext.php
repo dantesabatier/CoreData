@@ -46,7 +46,7 @@ final class SQLBatchDeleteRequestContext extends SQLBatchOperationRequestContext
         if (!($deleteStatement = $this->deleteStatement)) {
             return false;
         }
-        $statement = SQLStatement::merging(new ArrayClass([new SQLStatement("{$this->fetchContext->fetchStatement->string} FOR UPDATE", $this->fetchContext->fetchStatement->arguments), $deleteStatement]));
+        $statement = SQLStatement::merging(new ArrayClass([new SQLStatement("START TRANSACTION"), new SQLStatement("{$this->fetchContext->fetchStatement->string} FOR UPDATE", $this->fetchContext->fetchStatement->arguments), $deleteStatement, new SQLStatement("COMMIT")]));
         $execute = $this->connection->execute($statement);
         /** @return ArrayClass<ManagedObjectID> */
         $objectIDs = function () use ($execute): ArrayClass {
