@@ -22,6 +22,7 @@ use Sabatier\Foundation\KeyedUnarchiver;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ProcessInfo;
+use Sabatier\Foundation\Sequence;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\ValueTransformer;
@@ -233,7 +234,10 @@ final class SQLConnection
             return $pdoStatement;
         }
         $pdoStatement = $mysql->prepare($statement->string);
-        $pdoStatement->execute($statement->arguments->map(function (mixed $e): mixed {
+        $transform = function (mixed $e) use (&$transform): mixed {
+            if ($e instanceof Sequence) {
+                return $e->map($transform);
+            }
             if ($e instanceof Nil || $e instanceof BackedEnum) {
                 return $e->value;
             }
@@ -250,7 +254,8 @@ final class SQLConnection
                 return (int)$e;
             }
             return $e;
-        })->array);
+        };
+        $pdoStatement->execute($statement->arguments->map($transform)->array);
         if (SQLCore::$debugLevel->value) {
             error_log(sprintf("CoreData: annotation: execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $pdoStatement->rowCount(), pluralize("row", $pdoStatement->rowCount())));
         }
