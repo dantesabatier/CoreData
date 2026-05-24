@@ -5,6 +5,7 @@ namespace Sabatier\CoreData;
 use Closure;
 use Override;
 use Sabatier\Foundation\Set;
+use Sabatier\Foundation\SetAlgebra;
 use function Sabatier\Foundation\compare;
 
 /**
@@ -104,16 +105,22 @@ final class FaultingSet extends Set implements Materializable
     }
 
     #[Override]
-    public function subtract(iterable $other): void
+    public function formIntersection(iterable $other): void
     {
-        parent::subtract($other);
+        parent::formIntersection($other);
+        $this->isFault = false;
+    }
+
+    public function formSymmetricDifference(SetAlgebra $other): void
+    {
+        parent::formSymmetricDifference($other);
         $this->isFault = false;
     }
 
     #[Override]
-    public function formIntersection(iterable $other): void
+    public function subtract(iterable $other): void
     {
-        parent::formIntersection($other);
+        parent::subtract($other);
         $this->isFault = false;
     }
 
