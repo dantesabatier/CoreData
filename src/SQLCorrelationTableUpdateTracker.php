@@ -23,7 +23,9 @@ final class SQLCorrelationTableUpdateTracker extends ObjectClass
 
     public function track(ManagedObjectID $objectID, ?Set $inserts = null, ?Set $deletes = null, ?Set $reorders = null): void
     {
-        NotificationCenter::default()->addObserverForName(ManagedObjectContext::didSaveObjectsNotification, null, function (Notification $notification) use ($inserts, $deletes, $reorders, $objectID): void {
+        $observer = null;
+        $observer = NotificationCenter::default()->addObserverForName(ManagedObjectContext::didSaveObjectsNotification, null, function (Notification $notification) use ($inserts, $deletes, $reorders, $objectID, &$observer): void {
+            NotificationCenter::default()->removeObserver($observer);
             /** @var ManagedObjectContext $context */
             $context = $notification->object;
             $transform = fn(ManagedObject|ManagedObjectID $e): ManagedObject => $e instanceof ManagedObject ? $e : $context->object($e);

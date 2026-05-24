@@ -469,10 +469,10 @@ final class SQLConnection
      */
     public function writeCorrelationChangesFromTracker(SQLCorrelationTableUpdateTracker $tracker): void
     {
-        if (($inserts = $tracker->inserts) && ($statement = $this->adapter?->newCorrelationInsertStatementForRelationship($tracker->relationship, new ArrayClass($inserts)))) {
+        if (($deletes = $tracker->deletes) && ($statement = $this->adapter?->newCorrelationDeleteStatementForRelationship($tracker->relationship, new ArrayClass($deletes)))) {
             $this->execute($statement);
         }
-        if (($deletes = $tracker->deletes) && ($statement = $this->adapter?->newCorrelationDeleteStatementForRelationship($tracker->relationship, new ArrayClass($deletes)))) {
+        if (($inserts = $tracker->inserts) && ($statement = $this->adapter?->newCorrelationInsertStatementForRelationship($tracker->relationship, new ArrayClass($inserts)))) {
             $this->execute($statement);
         }
         if (($reorders = $tracker->reorders) && ($statement = $this->adapter?->newCorrelationReorderStatementForRelationship($tracker->relationship, new ArrayClass($reorders)))) {
