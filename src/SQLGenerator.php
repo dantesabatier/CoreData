@@ -1321,9 +1321,19 @@ final class SQLGenerator
             case ExpressionOperatorType::replace:
             case ExpressionOperatorType::length:
             case ExpressionOperatorType::trim:
+            case ExpressionOperatorType::lpad:
+            case ExpressionOperatorType::rpad:
+            case ExpressionOperatorType::left:
+            case ExpressionOperatorType::right:
+            case ExpressionOperatorType::instr:
+            case ExpressionOperatorType::reverse:
+            case ExpressionOperatorType::repeat:
             case ExpressionOperatorType::isNull:
             case ExpressionOperatorType::ifNull:
             case ExpressionOperatorType::nullIf:
+            case ExpressionOperatorType::coalesce:
+            case ExpressionOperatorType::greatest:
+            case ExpressionOperatorType::least:
                 $function = strtoupper($operator->operatorSymbol);
                 break;
             case ExpressionOperatorType::average:
@@ -1364,6 +1374,39 @@ final class SQLGenerator
                 break;
             case ExpressionOperatorType::dateAdd:
                 $function = "DATE_ADD";
+                break;
+            case ExpressionOperatorType::dateSub:
+                $function = "DATE_SUB";
+                break;
+            case ExpressionOperatorType::quarter:
+                $function = "QUARTER";
+                break;
+            case ExpressionOperatorType::lastDay:
+                $function = "LAST_DAY";
+                break;
+            case ExpressionOperatorType::dayOfWeek:
+                $function = "DAYOFWEEK";
+                break;
+            case ExpressionOperatorType::dayOfYear:
+                $function = "DAYOFYEAR";
+                break;
+            case ExpressionOperatorType::fromUnixtime:
+                $function = "FROM_UNIXTIME";
+                break;
+            case ExpressionOperatorType::unixTimestamp:
+                $function = "UNIX_TIMESTAMP";
+                break;
+            case ExpressionOperatorType::addTime:
+                $function = "ADDTIME";
+                break;
+            case ExpressionOperatorType::subTime:
+                $function = "SUBTIME";
+                break;
+            case ExpressionOperatorType::round:
+                $function = "ROUND";
+                break;
+            case ExpressionOperatorType::coalesce:
+                $function = "COALESCE";
                 break;
             default:
                 $function = "";
