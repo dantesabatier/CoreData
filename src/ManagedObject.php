@@ -351,10 +351,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
 
     private function resolveInitialAttributeValue(AttributeDescription $attribute, mixed $value, bool $shouldValidate): mixed
     {
-        $value ??= $attribute->defaultValue;
-        if (!$attribute->isOptional) {
-            $value = $this->applyTypeCoercionFallback($attribute, $value);
-        }
+        $value ??= $attribute->defaultValue ?? $this->applyTypeCoercionFallback($attribute, $value);
         if ($shouldValidate) {
             $this->dispatchValidationHook($attribute->name, $value);
         }

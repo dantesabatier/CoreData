@@ -1334,6 +1334,7 @@ final class SQLGenerator
             case ExpressionOperatorType::coalesce:
             case ExpressionOperatorType::greatest:
             case ExpressionOperatorType::least:
+            case ExpressionOperatorType::round:
                 $function = strtoupper($operator->operatorSymbol);
                 break;
             case ExpressionOperatorType::average:
@@ -1390,7 +1391,7 @@ final class SQLGenerator
             case ExpressionOperatorType::dayOfYear:
                 $function = "DAYOFYEAR";
                 break;
-            case ExpressionOperatorType::fromUnixtime:
+            case ExpressionOperatorType::fromUnixTime:
                 $function = "FROM_UNIXTIME";
                 break;
             case ExpressionOperatorType::unixTimestamp:
@@ -1401,12 +1402,6 @@ final class SQLGenerator
                 break;
             case ExpressionOperatorType::subTime:
                 $function = "SUBTIME";
-                break;
-            case ExpressionOperatorType::round:
-                $function = "ROUND";
-                break;
-            case ExpressionOperatorType::coalesce:
-                $function = "COALESCE";
                 break;
             default:
                 $function = "";
