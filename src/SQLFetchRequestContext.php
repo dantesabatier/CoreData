@@ -49,6 +49,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     {
         /** @var Dictionary<Dictionary<mixed>> $byRootIDResult */
         $byRootIDResult = new Dictionary();
+        /** @var Dictionary<Dictionary<mixed>> $snapshotIndex */
+        $snapshotIndex = new Dictionary();
         /** @var Set<string> $nullPropertyPrefixes */
         $nullPropertyPrefixes = new Set();
         do {
@@ -87,18 +89,11 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                             if ($cursor instanceof ArrayClass) {
                                 $element = $cursor->first(fn(Dictionary $dictionary): bool => $dictionary[$primaryKeyName] === $parentID);
                                 if (!$element) {
-                                    $last = $cursor->last;
-                                    if ($last instanceof Dictionary) {
-                                        $lastID = $last[$primaryKeyName];
-                                        $lastValue = $last[$key];
-                                        if ($lastValue instanceof ArrayClass) {
-                                            $last[$key] = $lastValue->filter(fn(Dictionary $dictionary): bool => $dictionary[ManagedObjectParentIDKey] === $lastID);
-                                        } elseif ($lastValue instanceof Dictionary) {
-                                            if ($lastValue[ManagedObjectParentIDKey] !== $lastID) {
-                                                $last->removeValueForKey($key);
-                                            }
-                                        }
-                                        $element = $last;
+                                    $element = $this->cloneFromIndex($snapshotIndex, $cursorEntity->entityDescription->name, $parentID);
+                                    if ($element !== null) {
+                                        $cursor->append($element);
+                                    } else {
+                                        $element = new Dictionary([$primaryKeyName => $parentID]);
                                     }
                                 }
                                 $cursor = &$element;
@@ -142,6 +137,9 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                                         $cursor[ManagedObjectParentIDKey] = $parentID;
                                     }
                                     $this->registerSnapshot($cursor);
+                                    if (($entityName = $cursor[ManagedObjectEntityNameKey]) && ($id = $cursor[ManagedObjectObjectIDKey])) {
+                                        $snapshotIndex["$entityName:$id"] = $cursor;
+                                    }
                                 }
                             }
                         }
@@ -171,6 +169,43 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                 $nullPropertyPrefixes->remove($propertyKeyPath);
             }
         }
+    }
+
+    /**
+     * O(1) lookup in the snapshot index. Returns a shallow clone with to-many
+     * collections and to-one snapshots reset so each root builds its own subgraph.
+     *
+     * @param Dictionary<Dictionary<mixed>> $snapshotIndex
+     * @return Dictionary<mixed>|null
+     */
+    private function cloneFromIndex(Dictionary $snapshotIndex, string $entityName, mixed $targetID): ?Dictionary
+    {
+        $snapshot = $snapshotIndex["$entityName:$targetID"];
+        return $snapshot instanceof Dictionary ? $this->cloneSnapshotShallow($snapshot) : null;
+    }
+
+    /**
+     * Copies scalar/atomic attributes and composite-attribute sub-Dictionaries
+     * (those lacking an objectID). Skips to-many ArrayClass collections and
+     * to-one snapshot Dictionaries (those with objectID): each root must rebuild
+     * its own subgraph beneath the clone, otherwise mutations bleed across roots.
+     *
+     * @param Dictionary<mixed> $source
+     * @return Dictionary<mixed>
+     */
+    private function cloneSnapshotShallow(Dictionary $source): Dictionary
+    {
+        $clone = new Dictionary();
+        foreach ($source as $key => $value) {
+            if ($value instanceof ArrayClass) {
+                continue;
+            }
+            if ($value instanceof Dictionary && $value[ManagedObjectObjectIDKey]) {
+                continue;
+            }
+            $clone[$key] = $value;
+        }
+        return $clone;
     }
 
     private function coerceExpressionValue(mixed $value, PropertyDescription $description): mixed

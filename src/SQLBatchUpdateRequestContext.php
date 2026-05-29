@@ -46,7 +46,7 @@ final class SQLBatchUpdateRequestContext extends SQLBatchOperationRequestContext
         if (!($updateStatement = $this->updateStatement)) {
             return false;
         }
-        $statement = SQLStatement::merging(new ArrayClass([new SQLStatement("START TRANSACTION"), new SQLStatement("{$this->fetchContext->fetchStatement->string} FOR UPDATE", $this->fetchContext->fetchStatement->arguments), $updateStatement, new SQLStatement("COMMIT")]));
+        $statement = SQLStatement::merging(new ArrayClass([new SQLStatement("{$this->fetchContext->fetchStatement->string} FOR UPDATE", $this->fetchContext->fetchStatement->arguments), $updateStatement]));
         $execute = $this->connection->execute($statement);
         /** @return ArrayClass<ManagedObjectID> */
         $objectIDs = function () use ($execute): ArrayClass {
