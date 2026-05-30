@@ -111,6 +111,7 @@ final class FaultingSet extends Set implements Materializable
         $this->isFault = false;
     }
 
+    #[Override]
     public function formSymmetricDifference(SetAlgebra $other): void
     {
         parent::formSymmetricDifference($other);
