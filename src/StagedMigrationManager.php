@@ -66,7 +66,7 @@ final class StagedMigrationManager extends ObjectClass
         }
         $storeStageIndex = $this->findCurrentMigrationStageFromModelChecksum($storeChecksum);
         if ($storeStageIndex === -1) {
-            $error = new Error(CoreDataErrorDomain, CoreDataError, null);
+            $error = new Error(CoreDataErrorDomain, CoreDataError);
             return false;
         }
         return true;
@@ -78,24 +78,24 @@ final class StagedMigrationManager extends ObjectClass
     public function validateStages(?Error &$error): bool
     {
         if ($this->stages->isEmpty) {
-            $error = new Error(CoreDataErrorDomain, CoreDataError, null);
+            $error = new Error(CoreDataErrorDomain, CoreDataError);
             return false;
         }
         $previousNextChecksum = null;
         foreach ($this->stages as $stage) {
             if ($stage instanceof CustomMigrationStage) {
                 if ($previousNextChecksum !== null && $stage->currentModel->versionChecksum !== $previousNextChecksum) {
-                    $error = new Error(CoreDataErrorDomain, CoreDataError, null);
+                    $error = new Error(CoreDataErrorDomain, CoreDataError);
                     return false;
                 }
                 $previousNextChecksum = $stage->nextModel->versionChecksum;
             } elseif ($stage instanceof LightweightMigrationStage) {
                 if ($stage->versionChecksums->isEmpty) {
-                    $error = new Error(CoreDataErrorDomain, CoreDataError, null);
+                    $error = new Error(CoreDataErrorDomain, CoreDataError);
                     return false;
                 }
                 if ($previousNextChecksum !== null && $stage->versionChecksums->first !== $previousNextChecksum) {
-                    $error = new Error(CoreDataErrorDomain, CoreDataError, null);
+                    $error = new Error(CoreDataErrorDomain, CoreDataError);
                     return false;
                 }
                 $previousNextChecksum = $stage->versionChecksums->last;

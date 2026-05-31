@@ -218,13 +218,7 @@ final class FetchRequest extends PersistentStoreRequest
 
     private function isSerializableAttribute(AttributeDescription $attribute): bool
     {
-        if ($attribute->isTransient) {
-            return false;
-        }
-        if ($attribute instanceof CompositeAttributeDescription) {
-            return false;
-        }
-        return true;
+        return !$attribute->isTransient && !$attribute instanceof CompositeAttributeDescription;
     }
 
     /**
