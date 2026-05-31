@@ -199,8 +199,20 @@ final class PersistentStoreCoordinator extends ObjectClass
         $this->persistentStores->append($persistentStore);
         $persistentStore->didAdd($this);
         NotificationCenter::default()->postNotificationName(PersistentStoreCoordinatorStoresDidChange, $this, $userInfo);
-        if ($options?->valueForKey(MigratePersistentStoresAutomaticallyOption) && !$this->managedObjectModel->isConfigurationCompatibleWithStoreMetadata($configuration, $this->metadata($persistentStore)) && ($store = $this->migratePersistentStore($persistentStore, $storeURL, $options, $storeType))) {
-            return $this->addPersistentStoreWithType(PersistentStoreType::from($store->type), $store->configurationName, $store->url, $store->options);
+        if ($options && $options[MigratePersistentStoresAutomaticallyOption] && !$this->managedObjectModel->isConfigurationCompatibleWithStoreMetadata($configuration, $this->metadata($persistentStore))) {
+            /** @var StagedMigrationManager|null $stagedManager */
+            $stagedManager = $options[PersistentStoreStagedMigrationManagerOptionKey];
+            if ($stagedManager instanceof StagedMigrationManager) {
+                $storeChecksum = $persistentStore::cachedModelForPersistentStoreWithURL($storeURL)?->versionChecksum ?? "";
+                $coordinatorChecksum = $this->managedObjectModel->versionChecksum;
+                $error = null;
+                if ($stagedManager->shouldAttemptStagedMigrationWithStoreModelVersionChecksum($storeChecksum, $coordinatorChecksum, $error)) {
+                    $this->performStagedMigration($persistentStore, $storeURL, $storeType, $options, $stagedManager);
+                    return $this->addPersistentStoreWithType($storeType, $configuration, $storeURL, $options);
+                }
+            } elseif ($store = $this->migratePersistentStore($persistentStore, $storeURL, $options, $storeType)) {
+                return $this->addPersistentStoreWithType(PersistentStoreType::from($store->type), $store->configurationName, $store->url, $store->options);
+            }
         }
         return $persistentStore;
     }
@@ -281,6 +293,65 @@ final class PersistentStoreCoordinator extends ObjectClass
             return $destinationContext->persistentStoreCoordinator?->persistentStores->first;
         }
         return null;
+    }
+
+    /**
+     * Executes a staged migration by iterating all stages from the store's current position forward.
+     * @throws Exception
+     * @internal
+     */
+    public function performStagedMigration(PersistentStore $store, URL $storeURL, PersistentStoreType $storeType, ?Dictionary $options, StagedMigrationManager $stagedManager): void
+    {
+        $storeChecksum = $store::cachedModelForPersistentStoreWithURL($storeURL)?->versionChecksum ?? "";
+        $startIndex = $stagedManager->findCurrentMigrationStageFromModelChecksum($storeChecksum);
+        if ($startIndex === -1) {
+            return;
+        }
+        foreach ($stagedManager->stages as $index => $stage) {
+            if ($index < $startIndex) {
+                continue;
+            }
+            if ($stage instanceof LightweightMigrationStage) {
+                $checksums = $stage->versionChecksums;
+                $currentChecksum = $storeChecksum;
+                foreach ($checksums as $nextChecksum) {
+                    if ($currentChecksum === "" || $currentChecksum === $nextChecksum) {
+                        $currentChecksum = $nextChecksum;
+                        continue;
+                    }
+                    $sourceModel = $store::cachedModelForPersistentStoreWithURL($storeURL) ?? $this->managedObjectModel;
+                    $destinationModel = $this->managedObjectModel;
+                    $mappingModel = MappingModel::inferredMappingModel($sourceModel, $destinationModel);
+                    $migrationManagerClass = $store::$migrationManagerClass;
+                    /** @var MigrationManager $migrationManager */
+                    $migrationManager = new $migrationManagerClass($sourceModel, $destinationModel);
+                    if ($migrationManager->migrateStore($storeURL, $storeType, $options, $mappingModel, $storeURL, $storeType, $options)) {
+                        $destinationContext = $migrationManager->destinationContext;
+                        if ($destinationContext->hasChanges) {
+                            $destinationContext->save();
+                        }
+                        $destinationContext->reset();
+                    }
+                    $currentChecksum = $nextChecksum;
+                }
+            } elseif ($stage instanceof CustomMigrationStage) {
+                $stage->willMigrateHandler?->call($stage, $stagedManager, $stage);
+                $sourceModel = $store::cachedModelForPersistentStoreWithURL($storeURL) ?? $this->managedObjectModel;
+                $destinationModel = $stage->nextModel->resolvedModel;
+                $mappingModel = MappingModel::inferredMappingModel($sourceModel, $destinationModel);
+                $migrationManagerClass = $store::$migrationManagerClass;
+                /** @var MigrationManager $migrationManager */
+                $migrationManager = new $migrationManagerClass($sourceModel, $destinationModel);
+                if ($migrationManager->migrateStore($storeURL, $storeType, $options, $mappingModel, $storeURL, $storeType, $options)) {
+                    $destinationContext = $migrationManager->destinationContext;
+                    if ($destinationContext->hasChanges) {
+                        $destinationContext->save();
+                    }
+                    $destinationContext->reset();
+                }
+                $stage->didMigrateHandler?->call($stage, $stagedManager, $stage);
+            }
+        }
     }
 
     /**
