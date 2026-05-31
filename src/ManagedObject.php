@@ -339,9 +339,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     private function hydrateAttributes(bool $shouldValidate): void
     {
         foreach ($this->modeledAttributes as $attribute) {
-            if ($attribute instanceof DerivedAttributeDescription) {
-                continue;
-            }
             $key = $attribute->name;
             $value = $this->primitiveValueForKey($key);
             $value = $this->resolveInitialAttributeValue($attribute, $value, $shouldValidate);
