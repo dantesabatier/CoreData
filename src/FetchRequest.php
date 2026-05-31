@@ -224,9 +224,6 @@ final class FetchRequest extends PersistentStoreRequest
         if ($attribute instanceof CompositeAttributeDescription) {
             return false;
         }
-        if ($attribute instanceof DerivedAttributeDescription) {
-            return !$attribute->isRuntimeOnly;
-        }
         return true;
     }
 
