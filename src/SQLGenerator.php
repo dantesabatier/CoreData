@@ -1595,7 +1595,7 @@ final class SQLGenerator
             foreach ($entity->properties as $property) {
                 if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLOptLockKey) {
                     $columnNames->insert($property->name);
-                } elseif ($property instanceof SQLAttribute && !$property->isCompositeAttribute) {
+                } elseif ($property instanceof SQLAttribute && !$property->isDerivedAttribute && !$property->isCompositeAttribute) {
                     if (!($exist = $insertedObject->changedValuesForCurrentEvent()->offsetExists($property->name)) && !$property->isOptional) {
                         $exist = $insertedObject->changedValues()->offsetExists($property->name);
                     }
@@ -1663,7 +1663,7 @@ final class SQLGenerator
                 $key = $property->name;
                 if ($property instanceof SQLOptLockKey) {
                     $columnNames->insert($key);
-                } elseif ($property instanceof SQLAttribute || $property instanceof SQLToOne) {
+                } elseif ($property instanceof SQLAttribute && !$property->isDerivedAttribute || $property instanceof SQLToOne) {
                     $exist = $updatedObject->changedValuesForCurrentEvent()->offsetExists($key);
                     if ($property instanceof SQLToOne) {
                         $exist = $updatedObject->changedValues()->offsetExists($key);
