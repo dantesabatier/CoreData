@@ -413,8 +413,8 @@ final class SQLGenerator
                 $columnNames->formUnion($request->serialization->keys->compactMap(function (string $key) use ($entity): ?string {
                     $property = $entity->propertiesByName[$key];
                     if ($property instanceof SQLAttribute && !$property->isTransient && !$property->isCompositeAttribute) {
-                        if ($property->isDerivedAttribute && $property->isRuntimeOnly) {
-                            return "{$this->buildDerivationExpression($property->derivationExpression)} AS $property->name";
+                        if ($property->isDerivedAttribute && $property->isRuntimeOnly && ($expression = $property->derivationExpression)) {
+                            return "{$this->buildDerivationExpression($expression)} AS $property->name";
                         }
                         return "$this->tableReference.$property->name";
                     }
@@ -656,11 +656,14 @@ final class SQLGenerator
                     return "$joinedTableAlias.$property->columnName AS {$joinedTableAlias}_$property->columnName";
                 }
                 if ($property instanceof SQLAttribute) {
-                    if (($expression = $property->derivationExpression) && $property->isRuntimeOnly) {
+                    if ($property->isRuntimeOnly && ($expression = $property->derivationExpression)) {
                         $backupEntity = $this->entity;
+                        $backupTableReference = $this->tableReference;
                         $this->entity = $currentEntity;
+                        $this->tableReference = $joinedTableAlias;
                         $result = $this->buildDerivationExpression($expression, $joinedTableAlias);
                         $this->entity = $backupEntity;
+                        $this->tableReference = $backupTableReference;
                         return "$result AS {$joinedTableAlias}_$property->columnName";
                     }
                     return "$joinedTableAlias.$property->columnName AS {$joinedTableAlias}_$property->columnName";
