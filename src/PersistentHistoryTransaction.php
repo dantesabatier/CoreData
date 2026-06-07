@@ -19,6 +19,7 @@ use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\Value;
 use function Sabatier\Foundation\human_readable_value;
 use const Sabatier\Foundation\NotFound;
+use const Sabatier\Foundation\UUID_NULL;
 
 /**
  * A set of changes in the persistent history based on a context save or batch operation.
@@ -30,15 +31,15 @@ final class PersistentHistoryTransaction extends ObjectClass
     /** @var string|null A granular description of the context that made the persistent history change, if available. This property has a value if the managed object context sets a $transactionAuthor before the save. */
     private(set) ?string $author = null;
     /** @var string The originating bundle's identifier. */
-    private(set) string $bundleID = UnknownName;
+    private(set) string $bundleID = UUID_NULL;
     /** @var ArrayClass<PersistentHistoryChange>|null The array of persistent history changes. */
     private(set) ?ArrayClass $changes = null;
     /** @var string|null The originating context's name. */
     private(set) ?string $contextName = null;
     /** @var string The originating process's identifier. */
-    private(set) string $processID = UnknownName;
+    private(set) string $processID = UUID_NULL;
     /** @var string The originating stores identifier. */
-    private(set) string $storeID = UnknownName;
+    private(set) string $storeID = UUID_NULL;
     /** @var Date The date of the persistent history change. */
     private(set) Date $timestamp {
         get => $this->timestamp ??= new Date();
