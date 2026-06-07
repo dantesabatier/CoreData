@@ -69,11 +69,26 @@ abstract class SQLStoreRequestContext extends ObjectClass
     {
         $this->connection = $connection;
         $this->connection->connect();
-        $this->executePrologue();
-        $ok = $this->executeRequestCore();
-        if ($ok) {
-            $this->executeEpilogue();
+        if (!$this->isWritingRequest || $connection->inTransaction()) {
+            $this->executePrologue();
+            $ok = $this->executeRequestCore();
+            if ($ok) {
+                $this->executeEpilogue();
+            }
+            return $ok;
         }
-        return $ok;
+        $connection->beginTransaction();
+        try {
+            $this->executePrologue();
+            $ok = $this->executeRequestCore();
+            if ($ok) {
+                $this->executeEpilogue();
+            }
+            $connection->commit();
+            return $ok;
+        } catch (Exception $exception) {
+            $connection->rollBack();
+            throw $exception;
+        }
     }
 }

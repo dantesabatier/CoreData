@@ -493,6 +493,56 @@ final class SQLConnection
     /**
      * @throws Exception
      */
+    public function inTransaction(): bool
+    {
+        return $this->mysql()->inTransaction();
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function beginTransaction(): bool
+    {
+        if ($this->inTransaction()) {
+            return false;
+        }
+        if (SQLCore::$debugLevel->value) {
+            error_log("CoreData: annotation: beginning transaction");
+        }
+        return $this->mysql()->beginTransaction();
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function commit(): bool
+    {
+        if (!$this->inTransaction()) {
+            return false;
+        }
+        if (SQLCore::$debugLevel->value) {
+            error_log("CoreData: annotation: committing transaction");
+        }
+        return $this->mysql()->commit();
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function rollBack(): bool
+    {
+        if (!$this->inTransaction()) {
+            return false;
+        }
+        if (SQLCore::$debugLevel->value) {
+            error_log("CoreData: annotation: rolling back transaction");
+        }
+        return $this->mysql()->rollBack();
+    }
+
+    /**
+     * @throws Exception
+     */
     public function fetchMaxPrimaryKey(string $entityName): int
     {
         /** @var SQLEntity $entity */
