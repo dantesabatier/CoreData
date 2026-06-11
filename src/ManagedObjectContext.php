@@ -741,15 +741,14 @@ final class ManagedObjectContext extends ObjectClass
         foreach ($this->unprocessedChanges as $unprocessedChange) {
             $object = $this->object($unprocessedChange->objectID);
             foreach ($object->persistentProperties as $property) {
-                if (!$property instanceof RelationshipDescription) {
-                    continue;
+                if ($property instanceof RelationshipDescription) {
+                    if (($value = $unprocessedChange->valueForProperty($property))) {
+                        $this->processPendingUpdates($value, $property, $object);
+                    }
+                } else {
+                    $this->updatedObjects->insert($object);
                 }
-                if (!($value = $unprocessedChange->valueForProperty($property))) {
-                    continue;
-                }
-                $this->processPendingUpdates($value, $property, $object);
             }
-            $this->updatedObjects->insert($object);
         }
         $this->resetAllChanges();
         NotificationCenter::default()->postNotificationName(self::didChangeObjectsNotification, $this, new Dictionary([InsertedObjectsKey => $this->insertedObjects, UpdatedObjectsKey => $this->updatedObjects, DeletedObjectsKey => $this->deletedObjects]));
@@ -770,7 +769,8 @@ final class ManagedObjectContext extends ObjectClass
             return;
         }
         $value = $change->newValue;
-        if ($property instanceof RelationshipDescription && $value !== null) {
+        if ($property instanceof RelationshipDescription) {
+            $value ??= new Set();
             $value instanceof Set || $value instanceof ManagedObject || $value instanceof ManagedObjectID ?: $value
                     |> typeof(...)
                     |> (fn(string $x): string => sprintf("invalid argument: %s->%s expecting \"%s|%s|%s\", \"%s\" given", $object->entity->name, $keyPath, Set::class, ManagedObject::class, ManagedObjectID::class, $x))
@@ -791,6 +791,8 @@ final class ManagedObjectContext extends ObjectClass
                         |> fatal_error(...);
                 $this->obtainPermanentID($managedObject);
             }
+        } else {
+            $value ??= Nil::nil();
         }
         $this->obtainPermanentID($object);
         $this->hasChanges = true;
