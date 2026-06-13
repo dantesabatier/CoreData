@@ -969,8 +969,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         default => false,
                     } && !$property->isOptional) {
                     $value
-                        |> typeof(...)
-                        |> (fn(string $x): string => sprintf("Invalid argument: %s %s, expecting \"%s\", \"%s\" given", $property->entity->name, $property->name, $type->name, $x))
+                        |> human_readable_value(...)
+                        |> (fn(string $x): string => sprintf("Invalid argument: %s \"%s\", expecting \"%s\", (%s)\"%s\" given", $property->entity->name, $property->name, $type->name, typeof($value), $x))
                         |> fatal_error(...);
                 }
             }
