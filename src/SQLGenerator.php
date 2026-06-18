@@ -68,6 +68,7 @@ final class SQLGenerator
     }
     private SQLAliasGenerator $aliasGenerator {
         get => $this->aliasGenerator ??= new SQLAliasGenerator();
+        set => $this->aliasGenerator = $value;
     }
     private FetchRequest $request {
         get {
@@ -134,6 +135,10 @@ final class SQLGenerator
     private bool $raisesForNotApplicableKeys = true;
     private ?string $keyValueOperator = null;
     private bool $isSubquery = false;
+    /** @var bool When true the generator emits a primary-key-only page selector: it groups by the primary key (so a row-multiplying join cannot inflate the LIMIT) and wraps to-many sort expressions in MIN/MAX so that grouping stays valid under strict GROUP BY. */
+    private bool $isPaginationKeySubquery = false;
+    /** @var SQLStatement|null A pre-generated statement used as the FROM source (a derived table) instead of the entity table. */
+    private ?SQLStatement $fromSubquery = null;
 
     public function __construct(public readonly SQLStoreRequestContext $requestContext)
     {
@@ -236,12 +241,17 @@ final class SQLGenerator
             if (!$this->useDistinct && $this->autoDistinct) {
                 $this->useDistinct = $request->needsDistinct;
             }
+            $usesPaginationSubquery = !$this->isSubquery && $this->requiresPaginationSubquery($request);
             $this->prepareSelectStatementWithFetchRequest($request);
             $this->prepareJoinStatementsForPredicateAndRelationships();
-            $predicate = $this->applyDiscriminatorPredicate($entity, $request->predicate);
-            if ($predicate) {
-                $this->appendWhereClauseToSQL();
-                $this->preparePredicate($predicate, $this->whereClause);
+            if ($usesPaginationSubquery) {
+                $this->appendPaginationKeyConstraintToSQL($request);
+            } else {
+                $predicate = $this->applyDiscriminatorPredicate($entity, $request->predicate);
+                if ($predicate) {
+                    $this->appendWhereClauseToSQL();
+                    $this->preparePredicate($predicate, $this->whereClause);
+                }
             }
             $this->appendFromClauseToSQL();
             $this->appendSQL($this->selectList);
@@ -255,6 +265,10 @@ final class SQLGenerator
                     $this->preparePredicate($havingPredicate, $this->havingClause);
                 }
                 $this->appendSQL($this->havingClause);
+            } elseif ($this->isPaginationKeySubquery && $this->queryHasRowMultiplyingJoin($request)) {
+                $this->appendGroupByClauseToSQL();
+                $this->groupByClause .= "$this->tableReference.{$this->entity->primaryKey->columnName}";
+                $this->appendSQL($this->groupByClause);
             }
             if ($request->resultType !== FetchRequestResultType::countResultType) {
                 $this->buildOrderByClause($request->sortDescriptors?->filter(fn(SortDescriptor $descriptor): bool => match ($descriptor->key) {
@@ -263,11 +277,13 @@ final class SQLGenerator
                 }) ?? new ArrayClass());
                 $this->appendSQL($this->orderByClause);
             }
-            if ($request->fetchLimit) {
-                $this->appendLimitClauseToSQL($request->fetchLimit);
-            }
-            if ($request->fetchOffset) {
-                $this->appendOffsetClauseToSQL($request->fetchOffset);
+            if (!$usesPaginationSubquery) {
+                if ($request->fetchLimit) {
+                    $this->appendLimitClauseToSQL($request->fetchLimit);
+                }
+                if ($request->fetchOffset) {
+                    $this->appendOffsetClauseToSQL($request->fetchOffset);
+                }
             }
         } elseif ($request instanceof BatchInsertRequest) {
             $this->prepareStatementForBatchInsertRequest();
@@ -326,7 +342,12 @@ final class SQLGenerator
     private function appendFromClauseToSQL(): void
     {
         $this->selectList .= " FROM ";
-        $this->selectList .= "`{$this->entity->tableName}`";
+        if ($fromSubquery = $this->fromSubquery) {
+            $this->selectList .= "($fromSubquery->string)";
+            $this->arguments->appendContentsOf($fromSubquery->arguments);
+        } else {
+            $this->selectList .= "`{$this->entity->tableName}`";
+        }
         if ($tableAlias = $this->tableAlias) {
             $this->selectList .= " AS $tableAlias";
         }
@@ -521,6 +542,50 @@ final class SQLGenerator
     private function keyPathTraversesRelationship(string $keyPath): bool
     {
         return array_any(explode(".", $keyPath), fn($component) => $this->entity->entityDescription->relationshipsByName->offsetExists($component));
+    }
+
+    private function keyPathTraversesToMany(string $keyPath): bool
+    {
+        $entity = $this->entity->entityDescription;
+        foreach (explode(".", $keyPath) as $component) {
+            $relationship = $entity->relationshipsByName[$component] ?? null;
+            if (!$relationship instanceof RelationshipDescription) {
+                return false;
+            }
+            if ($relationship->isToMany) {
+                return true;
+            }
+            $entity = $relationship->destinationEntity;
+        }
+        return false;
+    }
+
+    /**
+     * Whether a paginated fetch must resolve its page of distinct primary keys through a subquery before joining
+     * row-multiplying relationships. A to-many (or many-to-many) join, whether introduced by the serialization
+     * (prefetching) or by a predicate/sort key path, multiplies rows so that LIMIT/OFFSET would otherwise count rows
+     * rather than objects and could truncate the last object graph.
+     */
+    private function requiresPaginationSubquery(FetchRequest $request): bool
+    {
+        if (!$request->fetchLimit && !$request->fetchOffset) {
+            return false;
+        }
+        if ($request->resultType === FetchRequestResultType::countResultType) {
+            return false;
+        }
+        if (!($request->propertiesToGroupBy ?? new ArrayClass())->isEmpty) {
+            return false;
+        }
+        return $request->needsDistinct || $this->queryHasRowMultiplyingJoin($request);
+    }
+
+    private function queryHasRowMultiplyingJoin(FetchRequest $request): bool
+    {
+        if (($predicate = $request->predicate) && $this->predicateTraversesRelationships($predicate) && $this->keyPathExpressionsForFetchRequestPredicate()->contains(fn(Expression $expression): bool => $this->keyPathTraversesToMany($expression->description))) {
+            return true;
+        }
+        return $request->sortDescriptors?->contains(fn(SortDescriptor $descriptor): bool => $this->keyPathTraversesToMany($descriptor->key)) ?? false;
     }
 
     private function addJoinForRelationship(SQLRelationship $relationship, string $parentTableAlias, string $joinedTableAlias): void
@@ -1226,6 +1291,75 @@ final class SQLGenerator
         return $generator;
     }
 
+    /**
+     * Builds the inner page selector that resolves the LIMIT/OFFSET page as distinct primary keys of the root entity,
+     * applying only the predicate and sort joins (prefetch joins are suppressed). The outer query then joins the
+     * row-multiplying relationships against this page, hydrating every selected object graph in full.
+     */
+    private function buildPaginationKeySubquery(FetchRequest $request): SQLStatement
+    {
+        /** @var SQLFetchRequestContext $requestContext */
+        $requestContext = $this->requestContext;
+        $managedObjectModel = $requestContext->sqlCore->persistentStoreCoordinator->managedObjectModel;
+        /** @var EntityDescription $entityForFetchRequest */
+        $entityForFetchRequest = $managedObjectModel->entitiesByName[$this->entity->entityDescription->name];
+        $innerRequest = new FetchRequest();
+        $innerRequest->entity = $entityForFetchRequest;
+        $innerRequest->predicate = $request->predicate;
+        $innerRequest->sortDescriptors = $request->sortDescriptors;
+        $innerRequest->fetchLimit = $request->fetchLimit;
+        $innerRequest->fetchOffset = $request->fetchOffset;
+        $innerRequest->includesSubentities = $request->includesSubentities;
+        $innerRequest->includesPropertyValues = false;
+        $innerRequest->resultType = FetchRequestResultType::managedObjectIDResultType;
+        $newContext = new SQLFetchRequestContext($innerRequest, $requestContext->context, $requestContext->sqlCore);
+        $generator = new SQLGenerator($newContext);
+        $generator->isSubquery = true;
+        $generator->isPaginationKeySubquery = true;
+        $generator->autoDistinct = false;
+        $generator->raisesForNotApplicableKeys = false;
+        $generator->aliasGenerator = new SQLAliasGenerator($this->aliasGenerator->nestingLevel + 1);
+        $generator->tableAlias = $generator->aliasGenerator->generateTableAlias();
+        return $generator->statement ?? fatal_error("Unable to build pagination key subquery");
+    }
+
+    /**
+     * Wraps the paginated key selector in a derived table. MariaDB cannot evaluate LIMIT directly inside an IN
+     * subquery, so the page of primary keys is re-selected from a materialised derived table. The wrapping SELECT is
+     * produced by a dedicated generator (its FROM is the derived statement) rather than assembled by hand.
+     */
+    private function buildMaterialisedPaginationKeySubquery(FetchRequest $request): SQLStatement
+    {
+        /** @var SQLFetchRequestContext $requestContext */
+        $requestContext = $this->requestContext;
+        $managedObjectModel = $requestContext->sqlCore->persistentStoreCoordinator->managedObjectModel;
+        /** @var EntityDescription $entityForFetchRequest */
+        $entityForFetchRequest = $managedObjectModel->entitiesByName[$this->entity->entityDescription->name];
+        $wrappingRequest = new FetchRequest();
+        $wrappingRequest->entity = $entityForFetchRequest;
+        $wrappingRequest->includesPropertyValues = false;
+        $wrappingRequest->resultType = FetchRequestResultType::managedObjectIDResultType;
+        $newContext = new SQLFetchRequestContext($wrappingRequest, $requestContext->context, $requestContext->sqlCore);
+        $generator = new SQLGenerator($newContext);
+        $generator->isSubquery = true;
+        $generator->autoDistinct = false;
+        $generator->raisesForNotApplicableKeys = false;
+        $generator->fromSubquery = $this->buildPaginationKeySubquery($request);
+        $generator->tableAlias = $this->aliasGenerator->generateTableAlias();
+        return $generator->statement ?? fatal_error("Unable to build materialised pagination key subquery");
+    }
+
+    /**
+     * Constrains the outer query to the paginated page of primary keys.
+     */
+    private function appendPaginationKeyConstraintToSQL(FetchRequest $request): void
+    {
+        $subquery = $this->buildMaterialisedPaginationKeySubquery($request);
+        $this->appendWhereClauseToSQL();
+        $this->whereClause .= "$this->tableReference.{$this->entity->primaryKey->columnName} IN ($subquery->string)";
+        $this->arguments->appendContentsOf($subquery->arguments);
+    }
+
     private function buildDerivedKeyPathExpression(Expression $expression, ?string $tableAlias = null, ?bool &$isDeterministic = true): string
     {
         if ($expression->operand instanceof SubqueryExpression) {
@@ -1573,8 +1707,15 @@ final class SQLGenerator
         if ($expressionAliases->contains(fn(string $alias): bool => $alias === $descriptor->key)) {
             return "$descriptor->key $direction";
         }
-        $clause = $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key)) . " $direction";
-        return str_contains($clause, ".") ? $clause : null;
+        $columnExpression = $this->buildKeyPathExpression(Expression::expressionForKeyPath($descriptor->key));
+        if (!str_contains($columnExpression, ".")) {
+            return null;
+        }
+        if ($this->isPaginationKeySubquery && $this->keyPathTraversesToMany($descriptor->key)) {
+            $aggregate = $descriptor->ascending ? "MIN" : "MAX";
+            $columnExpression = "$aggregate($columnExpression)";
+        }
+        return "$columnExpression $direction";
     }
 
     private function coercedValue(ManagedObject|Dictionary $object, AttributeDescription $attribute): mixed
