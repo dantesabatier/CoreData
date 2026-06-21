@@ -1325,8 +1325,8 @@ final class SQLGenerator
 
     /**
      * Wraps the paginated key selector in a derived table. MariaDB cannot evaluate LIMIT directly inside an IN
-     * subquery, so the page of primary keys is re-selected from a materialised derived table. The wrapping SELECT is
-     * produced by a dedicated generator (its FROM is the derived statement) rather than assembled by hand.
+     * subquery, so the page of primary keys is re-selected from a materialized derived table. The wrapping SELECT is
+     * produced by a dedicated generator (it FROM is the derived statement) rather than assembled by hand.
      */
     private function buildMaterialisedPaginationKeySubquery(FetchRequest $request): SQLStatement
     {
