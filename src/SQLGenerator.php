@@ -992,11 +992,13 @@ final class SQLGenerator
         }
     }
 
-    private function buildConstantValueExpression(Expression $expression, ArrayClass $arguments, string $prefix = "", string $suffix = ""): mixed
+    private function buildConstantValueExpression(Expression $expression, ArrayClass $arguments, string $prefix = "", string $suffix = "", bool $escapesWildcards = false): mixed
     {
         $constantValue = $expression->constantValue;
         if (is_string($constantValue)) {
-            $constantValue = addcslashes($constantValue, "%_");
+            if ($escapesWildcards) {
+                $constantValue = addcslashes($constantValue, "%_");
+            }
         } elseif (is_bool($constantValue)) {
             $constantValue = (int)$constantValue;
         } elseif ($constantValue instanceof ManagedObject) {
@@ -1013,20 +1015,20 @@ final class SQLGenerator
         return $constantValue;
     }
 
-    private function buildComparisonExpression(Expression $expression, ArrayClass $arguments, string $prefix = "", string $suffix = ""): mixed
+    private function buildComparisonExpression(Expression $expression, ArrayClass $arguments, string $prefix = "", string $suffix = "", bool $escapesWildcards = false): mixed
     {
         if ($expression->expressionType === ExpressionType::constantValue) {
-            return $this->buildConstantValueExpression($expression, $arguments, $prefix, $suffix);
+            return $this->buildConstantValueExpression($expression, $arguments, $prefix, $suffix, $escapesWildcards);
         }
         return $this->buildExpression($expression);
     }
 
-    private function prepareClauseWithSimplePredicate(ComparisonPredicate $predicate, string &$clause, string $operator, string $prefix = "", string $suffix = ""): void
+    private function prepareClauseWithSimplePredicate(ComparisonPredicate $predicate, string &$clause, string $operator, string $prefix = "", string $suffix = "", bool $escapesWildcards = false): void
     {
         /** @var ArrayClass<mixed> $arguments */
         $arguments = new ArrayClass();
-        $left = $this->buildComparisonExpression($predicate->leftExpression, $arguments, $prefix, $suffix);
-        $right = $this->buildComparisonExpression($predicate->rightExpression, $arguments, $prefix, $suffix);
+        $left = $this->buildComparisonExpression($predicate->leftExpression, $arguments, $prefix, $suffix, $escapesWildcards);
+        $right = $this->buildComparisonExpression($predicate->rightExpression, $arguments, $prefix, $suffix, $escapesWildcards);
         $numberOfArguments = $arguments->count;
         if ($numberOfArguments === 1) {
             $key = $arguments->first;
@@ -1096,7 +1098,7 @@ final class SQLGenerator
         if (!($predicate->options & ComparisonPredicateOptions::caseInsensitive)) {
             $operator .= " BINARY";
         }
-        $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator);
+        $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator, escapesWildcards: true);
     }
 
     private function prepareMatches(ComparisonPredicate $predicate, string &$clause): void
@@ -1110,11 +1112,21 @@ final class SQLGenerator
 
     private function prepareBeginsWith(ComparisonPredicate $predicate, string &$clause): void
     {
-        $operator = "LIKE";
-        if (!($predicate->options & ComparisonPredicateOptions::caseInsensitive)) {
-            $operator .= " BINARY";
+        if ($predicate->options & ComparisonPredicateOptions::caseInsensitive) {
+            $this->prepareClauseWithSimplePredicate($predicate, $clause, "LIKE", "", "%", escapesWildcards: true);
+            return;
         }
-        $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator, "", "%");
+        // Case-sensitive prefix search. A bare "LIKE BINARY 'prefix%'" cannot use an index
+        // built on a case-insensitive collation (byte order differs from the index order),
+        // forcing a full scan. Pair it with a companion case-insensitive "LIKE 'prefix%'"
+        // term: the optimizer range-scans the index via the (superset) ci term, then the
+        // "LIKE BINARY" term refilters to the exact case-sensitive result. The result set is
+        // unchanged; the AND only narrows, so this is safe regardless of the chosen plan.
+        $clause .= "(";
+        $this->prepareClauseWithSimplePredicate($predicate, $clause, "LIKE", "", "%", escapesWildcards: true);
+        $clause .= " AND ";
+        $this->prepareClauseWithSimplePredicate($predicate, $clause, "LIKE BINARY", "", "%", escapesWildcards: true);
+        $clause .= ")";
     }
 
     private function prepareEndsWith(ComparisonPredicate $predicate, string &$clause): void
@@ -1123,7 +1135,7 @@ final class SQLGenerator
         if (!($predicate->options & ComparisonPredicateOptions::caseInsensitive)) {
             $operator .= " BINARY";
         }
-        $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator, "%");
+        $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator, "%", escapesWildcards: true);
     }
 
     private function prepareContains(ComparisonPredicate $predicate, string &$clause): void
@@ -1132,7 +1144,7 @@ final class SQLGenerator
         if (!($predicate->options & ComparisonPredicateOptions::caseInsensitive)) {
             $operator .= " BINARY";
         }
-        $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator, "%", "%");
+        $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator, "%", "%", escapesWildcards: true);
     }
 
     private function preparePredicate(Predicate $predicate, string &$clause): void
