@@ -256,7 +256,7 @@ final class SQLCore extends IncrementalStore
             $entities->appendContentsOf($entities->flatMap(fn(SQLEntity $entity): ArrayClass => $entity->entitySpecificRelationships->filter(fn(SQLRelationship $relationship): bool => $relationship->relationshipDescription->deleteRule === DeleteRule::cascadeDeleteRule))->map(fn(SQLRelationship $relationship): SQLEntity => $relationship->destinationEntity));
             /** @var ArrayClass<SQLEntity> $entities */
             $entities = new ArrayClass(new Set($entities->compactMap(fn(SQLEntity $entity): ?SQLEntity => $entity->isRootEntity ? $entity : $entity->rootEntity)));
-            $statement = SQLStatement::merging($entities->map(fn(SQLEntity $entity): SQLStatement => new SQLStatement("ALTER TABLE IF EXISTS `$entity->tableName` AUTO_INCREMENT = 0")));
+            $statement = $this->adapter->newResetAutoIncrementStatement($entities);
             $this->queryGenerationTrackingConnection->execute($statement);
             $this->maxPrimaryKeys->removeAll(fn(int $pk, string $entityName): bool => $entities->contains(fn(SQLEntity $entity): bool => $entity->tableName === $entityName));
         }

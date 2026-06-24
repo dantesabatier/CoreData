@@ -244,10 +244,17 @@ final readonly class SQLAdapter
         return new SQLStatement("DROP TABLE IF EXISTS `$entity->tableName`");
     }
 
+    /**
+     * @param ArrayClass<SQLEntity> $entities
+     */
+    public function newResetAutoIncrementStatement(ArrayClass $entities): SQLStatement
+    {
+        return SQLStatement::merging($entities->map(fn(SQLEntity $entity): SQLStatement => new SQLStatement("ALTER TABLE IF EXISTS `$entity->tableName` AUTO_INCREMENT = 0")));
+    }
+
     public function newDropIndexesStatementForManyToMany(SQLManyToMany $manyToMany): SQLStatement
     {
-        $entities = new ArrayClass([$manyToMany->destinationEntity, $manyToMany->inverseRelationship->destinationEntity]);
-        return SQLStatement::merging($entities->map(fn(SQLEntity $destinationEntity): SQLStatement => new SQLStatement("ALTER TABLE IF EXISTS `$manyToMany->correlationTableName` DROP FOREIGN KEY IF EXISTS `FK_{$manyToMany->correlationTableName}__{$manyToMany->entity->tableName}_$destinationEntity->tableName`")));
+        return SQLStatement::merging(new ArrayClass([$manyToMany->destinationEntity, $manyToMany->inverseRelationship->destinationEntity])->map(fn(SQLEntity $destinationEntity): SQLStatement => new SQLStatement("ALTER TABLE IF EXISTS `$manyToMany->correlationTableName` DROP FOREIGN KEY IF EXISTS `FK_{$manyToMany->correlationTableName}__{$manyToMany->entity->tableName}_$destinationEntity->tableName`")));
     }
 
     public function newDropIndexesStatement(SQLEntity $entity): ?SQLStatement
