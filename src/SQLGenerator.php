@@ -639,8 +639,7 @@ final class SQLGenerator
         $this->joinedAliasesMap[$destinationPath] = true;
         $destinationEntity = $toMany->destinationEntity;
         $this->appendJoinClauseToSQL();
-        $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $destinationPath.{$inverseToOne->foreignKey->columnName} = ";
-        $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
+        $this->joinClause .= "`$destinationEntity->tableName` AS $destinationPath ON $destinationPath.{$inverseToOne->foreignKey->columnName} = $sourcePath.{$sourceEntity->primaryKey->columnName}";
         if (!$sourceEntity->entityDescription->isPersistentHistoryEntity) {
             $this->appendJoinDestinationEntity($destinationEntity, $destinationPath);
         }
@@ -655,15 +654,10 @@ final class SQLGenerator
             $sourcePath = $sourceEntity->tableName;
         }
         $correlationTableAlias = "{$sourcePath}_$correlationTableName";
-
         if (!$this->joinedAliasesMap[$correlationTableAlias]) {
             $this->joinedAliasesMap[$correlationTableAlias] = true;
             $this->appendJoinClauseToSQL();
-            $this->joinClause .= "`$correlationTableName` AS $correlationTableAlias";
-            $this->joinClause .= " ON ";
-            $this->joinClause .= "$correlationTableAlias.$manyToMany->inverseColumnName";
-            $this->joinClause .= " = ";
-            $this->joinClause .= "$sourcePath.{$sourceEntity->primaryKey->columnName}";
+            $this->joinClause .= "`$correlationTableName` AS $correlationTableAlias ON $correlationTableAlias.$manyToMany->inverseColumnName = $sourcePath.{$sourceEntity->primaryKey->columnName}";
         }
         $destinationEntity = $manyToMany->destinationEntity;
         if ($destinationPath !== "" && !$this->joinedAliasesMap[$destinationPath]) {
