@@ -53,6 +53,11 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         $snapshotIndex = new Dictionary();
         /** @var Set<string> $nullPropertyPrefixes */
         $nullPropertyPrefixes = new Set();
+        // Per to-many collection lookup index: ArrayClass->hash => [primaryKey value => element Dictionary].
+        // Turns the linear $cursor->first()/contains() scans below into O(1) lookups while preserving
+        // their exact semantics (membership by primary key, latest-element fallback).
+        /** @var array<int, array<string, Dictionary<mixed>>> $toManyIndex */
+        $toManyIndex = [];
         do {
             /** @var EntityDescription $entityDescription */
             $entityDescription = $this->request->entity;
@@ -87,11 +92,13 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         $isNavigational = ($isRelationship || $isCompositeAttribute);
                         if ($isNavigational) {
                             if ($cursor instanceof ArrayClass) {
-                                $element = $cursor->first(fn(Dictionary $dictionary): bool => $dictionary[$primaryKeyName] === $parentID);
+                                $cursorKey = $cursor->hash;
+                                $element = $toManyIndex[$cursorKey][(string)$parentID] ?? null;
                                 if (!$element) {
                                     $element = $this->cloneFromIndex($snapshotIndex, $cursorEntity->entityDescription->name, $parentID);
                                     if ($element !== null) {
                                         $cursor->append($element);
+                                        $toManyIndex[$cursorKey][(string)$parentID] = $element;
                                     } else {
                                         $element = new Dictionary([$primaryKeyName => $parentID]);
                                     }
@@ -124,10 +131,13 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         $isTerminalValue = $property instanceof SQLColumn || $propertyDescription instanceof ExpressionDescription;
                         if ($isTerminalValue) {
                             if ($cursor instanceof ArrayClass) {
-                                if ($property instanceof SQLPrimaryKey && !$cursor->contains(fn(Dictionary $dictionary): bool => $dictionary[$primaryKeyName] === $value)) {
-                                    $cursor->append(new Dictionary([$primaryKeyName => $value]));
+                                $cursorKey = $cursor->hash;
+                                if ($property instanceof SQLPrimaryKey && !isset($toManyIndex[$cursorKey][(string)$value])) {
+                                    $newElement = new Dictionary([$primaryKeyName => $value]);
+                                    $cursor->append($newElement);
+                                    $toManyIndex[$cursorKey][(string)$value] = $newElement;
                                 }
-                                $element = $cursor->first(fn(Dictionary $dictionary): bool => $dictionary[$primaryKeyName] === $childrenID) ?? $cursor->last;
+                                $element = ($childrenID !== null ? ($toManyIndex[$cursorKey][(string)$childrenID] ?? null) : null) ?? $cursor->last;
                                 $cursor = &$element;
                             }
                             if ($cursor instanceof Dictionary && $propertyDescription instanceof PropertyDescription) {
