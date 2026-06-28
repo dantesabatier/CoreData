@@ -1659,39 +1659,65 @@ final class SQLGenerator
     {
         $raisesForNotApplicableKeys = $this->raisesForNotApplicableKeys;
         $this->raisesForNotApplicableKeys = false;
-        if (SS_COREDATA_USES_RELATIONSHIPS_SORT_DESCRIPTORS):
-            $descriptors->appendContentsOf($this->sortDescriptorsForOrderedRelationships());
-        endif;
         if (!$descriptors->isEmpty) {
             $expressionAliases = $this->expressionAliasesForRequest();
             $clauses = new Set($descriptors->compactMap(fn(SortDescriptor $descriptor): ?string => $this->buildSortClause($descriptor, $expressionAliases)));
-            if (!$clauses->isEmpty) {
-                $this->appendOrderByClauseToSQL();
-                $this->orderByClause .= $clauses->join(", ");
-            }
+        } else {
+            /** @var Set<string> $clauses */
+            $clauses = new Set();
+        }
+        if (SS_COREDATA_USES_RELATIONSHIPS_SORT_DESCRIPTORS):
+            $clauses->formUnion($this->orderClausesForOrderedRelationships());
+        endif;
+        if (!$clauses->isEmpty) {
+            $this->appendOrderByClauseToSQL();
+            $this->orderByClause .= $clauses->join(", ");
         }
         $this->raisesForNotApplicableKeys = $raisesForNotApplicableKeys;
     }
 
     /**
-     * @return Set<SortDescriptor>
+     * Builds ORDER BY clauses for ordered to-many relationships included in the request's
+     * serialization or predicate. The order key lives on the related (child) table, so the clause
+     * must reference the relationship's JOINED alias — built the same way the SELECT/JOIN code builds
+     * it (root alias + "_" per relationship component) — not the bare order-key column nor a raw key
+     * path (which buildKeyPathExpression resolves against the root table). A clause is emitted only
+     * when its join alias actually exists in this query (joinedAliasesMap), so paths the query did not
+     * join are skipped instead of producing invalid SQL.
+     *
+     * @return Set<string>
      */
-    private function sortDescriptorsForOrderedRelationships(): Set
+    private function orderClausesForOrderedRelationships(): Set
     {
-        /** @var Set<SQLToMany> $toManyRelationships */
-        $toManyRelationships = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate())->flatMap(fn(Expression $expression): ArrayClass => $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLForeignKey || $property instanceof SQLToMany)->compactMap(function (SQLProperty $property): ?SQLToMany {
+        /** @var Set<string> $clauses */
+        $clauses = new Set();
+        $expressions = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate());
+        foreach ($expressions as $expression) {
+            $properties = $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLForeignKey || $property instanceof SQLToMany);
+            $last = $properties->last;
             $toMany = match (true) {
-                $property instanceof SQLForeignKey => $property->toOneRelationship->inverseRelationship,
-                $property instanceof SQLToMany => $property,
+                $last instanceof SQLForeignKey => $last->toOneRelationship->inverseRelationship,
+                $last instanceof SQLToMany => $last,
                 default => null,
             };
             if (!$toMany instanceof SQLToMany || !$toMany->isOrdered) {
-                return null;
+                continue;
             }
-            $orderKeyProperty = $toMany->inverseToOne->foreignOrderKey->entity->propertiesByName[$toMany->inverseToOne->foreignOrderKey->columnName];
-            return $orderKeyProperty instanceof SQLProperty && !$orderKeyProperty->isTransient ? $toMany : null;
-        }));
-        return $toManyRelationships->map(fn(SQLToMany $toMany): SortDescriptor => new SortDescriptor("$toMany->name.{$toMany->inverseToOne->foreignOrderKey->columnName}"));
+            $orderColumnName = $toMany->inverseToOne->foreignOrderKey->columnName;
+            $orderKeyProperty = $toMany->destinationEntity->propertiesByName[$orderColumnName];
+            if (!$orderKeyProperty instanceof SQLProperty || $orderKeyProperty->isTransient) {
+                continue;
+            }
+            $alias = $this->tableReference;
+            foreach (explode(".", $expression->description) as $component) {
+                $alias .= "_$component";
+            }
+            if (!$this->joinedAliasesMap[$alias]) {
+                continue;
+            }
+            $clauses->insert("$alias.$orderColumnName ASC");
+        }
+        return $clauses;
     }
 
     /**
