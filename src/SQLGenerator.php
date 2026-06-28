@@ -1691,7 +1691,7 @@ final class SQLGenerator
             $orderKeyProperty = $toMany->inverseToOne->foreignOrderKey->entity->propertiesByName[$toMany->inverseToOne->foreignOrderKey->columnName];
             return $orderKeyProperty instanceof SQLProperty && !$orderKeyProperty->isTransient ? $toMany : null;
         }));
-        return $toManyRelationships->map(fn(SQLToMany $toMany): SortDescriptor => new SortDescriptor($toMany->inverseToOne->foreignOrderKey->columnName));
+        return $toManyRelationships->map(fn(SQLToMany $toMany): SortDescriptor => new SortDescriptor("$toMany->name.{$toMany->inverseToOne->foreignOrderKey->columnName}"));
     }
 
     /**
