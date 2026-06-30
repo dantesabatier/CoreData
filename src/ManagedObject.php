@@ -230,7 +230,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     }
     /** @internal */
     public bool $isStable {
-        get => $this->faultingState === ManagedObjectFaultingStateStable;
+        get => $this->faultingState === ManagedObjectFaultingStateStable && !$this->isFault;
     }
 
     /**
