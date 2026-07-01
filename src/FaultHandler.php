@@ -65,7 +65,7 @@ final readonly class FaultHandler
                 if ($value instanceof FaultingSet || $value instanceof FaultingArray) {
                     $value->turnIntoFault();
                 } else {
-                    $object->setPrimitiveValueForKey($committedValue instanceof Nil ? null : $committedValue, $property->name);
+                    $object->setPrimitiveValueForKey($committedValue, $property->name);
                 }
             }
         }
