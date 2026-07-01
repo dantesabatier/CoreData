@@ -423,7 +423,20 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function materializeFaultsFromSnapshot(Dictionary $snapshot): void
     {
+        $this->refaultEmptyToOneRelationships();
         $this->genericUpdateFromSnapshot($snapshot->filter(fn(mixed $value, string $key): bool => $this->isPropertyForKeyFault($key)));
+    }
+
+    private function refaultEmptyToOneRelationships(): void
+    {
+        foreach ($this->modeledRelationships as $relationship) {
+            if ($relationship->isToMany || $this->changedValuesForCurrentEvent->offsetExists($relationship->name)) {
+                continue;
+            }
+            if ($this->primitiveValueForKey($relationship->name) instanceof Nil) {
+                $this->setPrimitiveValueForKey(null, $relationship->name);
+            }
+        }
     }
 
     /**
