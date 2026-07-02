@@ -22,6 +22,7 @@ use Sabatier\Foundation\Notification;
 use Sabatier\Foundation\NotificationCenter;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
+use Sabatier\Foundation\ObjectProtocol;
 use Sabatier\Foundation\OperationQueue;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
@@ -45,13 +46,17 @@ final class ManagedObjectContext extends ObjectClass
     final public const string willSaveObjectsNotification = ManagedObjectContextWillSave;
     final public const string didSaveObjectsNotification = ManagedObjectContextDidSave;
     final public const string didSaveObjectIDsNotification = ManagedObjectContextDidSaveObjectIDs;
+    private ?ObjectProtocol $storeRemovalObserver = null;
     /** @var PersistentStoreCoordinator|null The persistent store coordinator of the context. The coordinator provides the managed object model and handles persistence. Note that multiple contexts can share a coordinator. May not be null. */
     public ?PersistentStoreCoordinator $persistentStoreCoordinator = null {
         set {
             $this->persistentStoreCoordinator = $value;
-            NotificationCenter::default()->removeObserver($this, PersistentStoreCoordinatorWillRemoveStore);
+            if ($this->storeRemovalObserver) {
+                NotificationCenter::default()->removeObserver($this->storeRemovalObserver);
+                $this->storeRemovalObserver = null;
+            }
             if ($value) {
-                NotificationCenter::default()->addObserverForName(PersistentStoreCoordinatorWillRemoveStore, $value, function (Notification $notification): void {
+                $this->storeRemovalObserver = NotificationCenter::default()->addObserverForName(PersistentStoreCoordinatorWillRemoveStore, $value, function (Notification $notification): void {
                     /** @var Dictionary<mixed> $userInfo */
                     $userInfo = $notification->userInfo;
                     /** @var ArrayClass<PersistentStore> $stores */
