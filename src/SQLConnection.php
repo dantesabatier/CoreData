@@ -16,6 +16,7 @@ use Pdo\Mysql;
 use PDOStatement;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Bundle;
+use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\KeyedUnarchiver;
@@ -423,6 +424,16 @@ final class SQLConnection
     {
         if ($this->hasPersistentHistoryTables) {
             $this->execute(new SQLStatement("DELETE FROM `PersistentHistoryTransaction` WHERE `transactionID` < ?", new ArrayClass([$transactionID])));
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function dropHistoryBeforeDate(Date $date): void
+    {
+        if ($this->hasPersistentHistoryTables) {
+            $this->execute(new SQLStatement("DELETE FROM `PersistentHistoryTransaction` WHERE `timestamp` < ?", new ArrayClass([$date])));
         }
     }
 

@@ -108,10 +108,7 @@ final class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestCont
                 return $this->deleteTransactionsRequestContext;
             }
             if ($date = $this->request->date) {
-                /** @var FetchRequest<PersistentHistoryTransaction> $fetchRequest */
-                $fetchRequest = PersistentHistoryTransaction::fetchRequest() ?? fatal_error("PersistentHistoryTransaction entity description is not initialized");
-                $fetchRequest->predicate = new ComparisonPredicate(Expression::expressionForKeyPath("timestamp"), Expression::expressionForConstantValue($date), PredicateOperatorType::lessThan);
-                $request = PersistentHistoryChangeRequest::fetchHistoryWithFetchRequest($fetchRequest);
+                $request = PersistentHistoryChangeRequest::fetchHistoryAfterDate($date);
             } elseif ($transactionNumber = $this->request->transactionNumber) {
                 $request = PersistentHistoryChangeRequest::fetchHistoryAfterTransaction(new PersistentHistoryTransaction(new Dictionary(["transactionNumber" => $transactionNumber->intValue])));
             } elseif ($fetchRequest = $this->request->fetchRequest) {
@@ -139,6 +136,8 @@ final class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestCont
         if ($this->request->isDelete) {
             if ($transactionNumber = $this->request->transactionNumber) {
                 $this->connection->dropHistoryBeforeTransactionID($transactionNumber->intValue);
+            } elseif ($date = $this->request->date) {
+                $this->connection->dropHistoryBeforeDate($date);
             } else {
                 $this->deleteTransactionsRequestContext->executeRequestUsingConnection($this->connection);
             }
