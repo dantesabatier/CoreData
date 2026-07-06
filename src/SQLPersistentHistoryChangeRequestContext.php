@@ -2,7 +2,6 @@
 
 namespace Sabatier\CoreData;
 
-use Exception;
 use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
@@ -99,30 +98,6 @@ final class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestCont
 
         };
     }
-    private SQLSaveChangesRequestContext $deleteTransactionsRequestContext {
-        /**
-         * @throws Exception
-         */
-        get {
-            if (isset($this->deleteTransactionsRequestContext)) {
-                return $this->deleteTransactionsRequestContext;
-            }
-            if ($date = $this->request->date) {
-                $request = PersistentHistoryChangeRequest::fetchHistoryAfterDate($date);
-            } elseif ($transactionNumber = $this->request->transactionNumber) {
-                $request = PersistentHistoryChangeRequest::fetchHistoryAfterTransaction(new PersistentHistoryTransaction(new Dictionary(["transactionNumber" => $transactionNumber->intValue])));
-            } elseif ($fetchRequest = $this->request->fetchRequest) {
-                $request = PersistentHistoryChangeRequest::fetchHistoryWithFetchRequest($fetchRequest);
-            } else {
-                $request = PersistentHistoryChangeRequest::fetchHistoryAfterToken($this->request->token);
-            }
-            $context = new SQLPersistentHistoryChangeRequestContext($request, $this->context, $this->sqlCore);
-            $context->executeRequestUsingConnection($this->connection);
-            $deleteTransactionsRequestContext = new SQLSaveChangesRequestContext(new SaveChangesRequest(deletedObjects: new Set($context->result)), $this->context, $this->sqlCore);
-            $deleteTransactionsRequestContext->hasHistoryTracking = true;
-            return $this->deleteTransactionsRequestContext = $deleteTransactionsRequestContext;
-        }
-    }
 
 
     public function __construct(PersistentHistoryChangeRequest $request, ManagedObjectContext $context, SQLCore $sqlCore)
@@ -138,8 +113,10 @@ final class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestCont
                 $this->connection->dropHistoryBeforeTransactionID($transactionNumber->intValue);
             } elseif ($date = $this->request->date) {
                 $this->connection->dropHistoryBeforeDate($date);
+            } elseif ($transactionNumber = $this->request->token?->storeTokens[$this->sqlCore->identifier] ?? $this->request->token?->storeTokens->values->first) {
+                $this->connection->dropHistoryBeforeTransactionID($transactionNumber->intValue);
             } else {
-                $this->deleteTransactionsRequestContext->executeRequestUsingConnection($this->connection);
+                $this->connection->dropHistoryBeforeTransactionID(PHP_INT_MAX);
             }
             if ($this->connection->hasHistoryRows()) {
                 $this->sqlCore->recomputePrimaryKeyMaxForEntities($this->sqlCore->model->entities->filter(fn(SQLEntity $entity): bool => $entity->entityDescription->isPersistentHistoryEntity));
