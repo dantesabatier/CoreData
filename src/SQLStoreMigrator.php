@@ -238,6 +238,11 @@ final class SQLStoreMigrator
             /** @var Set<SQLColumn> $columnsToCreate */
             $columnsToCreate = new Set($sourceEntity->columnsToCreate);
             $columnsToCreate->formUnion($destinationEntity->columnsToCreate);
+            $derivedAttributes = $columnsToCreate->filter(fn(SQLColumn $column): bool => $column instanceof SQLAttribute && $column->isDerivedAttribute)->reversed();
+            foreach ($derivedAttributes as $derivedAttribute) {
+                $statement = $this->adapter->newDropColumnStatement($derivedAttribute);
+                $this->connection->execute($statement);
+            }
             $properties = $sourceEntity->persistentProperties;
             foreach ($properties as $source) {
                 if ($destination = $destinationEntity->properties->first(function (SQLProperty $destination) use ($source): bool {
