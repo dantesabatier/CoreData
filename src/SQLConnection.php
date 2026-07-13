@@ -27,7 +27,6 @@ use Sabatier\Foundation\Sequence;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\ValueTransformer;
-use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
 use function Sabatier\Foundation\pluralize;
@@ -222,7 +221,7 @@ final class SQLConnection
      */
     public function execute(SQLStatement $statement): PDOStatement
     {
-        $time = absolute_time_get_current();
+        $time = ProcessInfo::processInfo()->systemUptime;
         if (SQLCore::$debugLevel->value) {
             error_log(sprintf("CoreData: sql: \n%s", $statement->formatted(SQLStatementFormatterStyle::defaultFormatterStyle())));
         }
@@ -230,7 +229,7 @@ final class SQLConnection
         if ($statement->arguments->isEmpty) {
             $pdoStatement = $mysql->query($statement->string);
             if (SQLCore::$debugLevel->value) {
-                error_log(sprintf("CoreData: annotation: execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $pdoStatement->rowCount(), pluralize("row", $pdoStatement->rowCount())));
+                error_log(sprintf("CoreData: annotation: execution time: %s for %d %s", human_readable_time(ProcessInfo::processInfo()->systemUptime - $time), $pdoStatement->rowCount(), pluralize("row", $pdoStatement->rowCount())));
             }
             return $pdoStatement;
         }
@@ -258,7 +257,7 @@ final class SQLConnection
         };
         $pdoStatement->execute($statement->arguments->map($transform)->array);
         if (SQLCore::$debugLevel->value) {
-            error_log(sprintf("CoreData: annotation: execution time: %s for %d %s", human_readable_time(absolute_time_get_current() - $time), $pdoStatement->rowCount(), pluralize("row", $pdoStatement->rowCount())));
+            error_log(sprintf("CoreData: annotation: execution time: %s for %d %s", human_readable_time(ProcessInfo::processInfo()->systemUptime - $time), $pdoStatement->rowCount(), pluralize("row", $pdoStatement->rowCount())));
         }
         return $pdoStatement;
     }
@@ -656,7 +655,7 @@ final class SQLConnection
      */
     public function createSchema(): bool
     {
-        $time = absolute_time_get_current();
+        $time = ProcessInfo::processInfo()->systemUptime;
         $database = $this->schema->name;
         $model = $this->model;
         $entities = $this->rootSchemaEntities;
@@ -670,7 +669,7 @@ final class SQLConnection
         $this->createPivotTables($entities);
         $this->saveCachedModel($model);
         if (SQLCore::$debugLevel->value) {
-            error_log("CoreData: annotation: database \"$database\" created, total execution time: " . human_readable_time(absolute_time_get_current() - $time));
+            error_log("CoreData: annotation: database \"$database\" created, total execution time: " . human_readable_time(ProcessInfo::processInfo()->systemUptime - $time));
         }
         return true;
     }

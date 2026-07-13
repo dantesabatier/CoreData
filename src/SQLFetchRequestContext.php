@@ -7,8 +7,8 @@ use PDOStatement;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Nil;
+use Sabatier\Foundation\ProcessInfo;
 use Sabatier\Foundation\Set;
-use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
 use function Sabatier\Foundation\human_readable_value;
@@ -309,7 +309,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     #[Override]
     protected function executePrologue(): void
     {
-        $this->duration = absolute_time_get_current();
+        $this->duration = ProcessInfo::processInfo()->systemUptime;
     }
 
     #[Override]
@@ -329,7 +329,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
     #[Override]
     protected function executeEpilogue(): void
     {
-        $this->duration = absolute_time_get_current() - $this->duration;
+        $this->duration = ProcessInfo::processInfo()->systemUptime - $this->duration;
         $level = $this->debugLevel->value;
         if ($level) {
             $message = sprintf("CoreData: annotation: total execution time: %s for %d %s", human_readable_time($this->duration), $this->result->count, pluralize("element", $this->result->count));

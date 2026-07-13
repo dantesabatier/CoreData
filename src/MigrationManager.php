@@ -15,9 +15,9 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Error;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\ObjectClass;
+use Sabatier\Foundation\ProcessInfo;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
-use function Sabatier\Foundation\absolute_time_get_current;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_time;
 use function Sabatier\Foundation\typeof;
@@ -223,7 +223,7 @@ class MigrationManager extends ObjectClass
             return;
         }
         if (static::$migrationDebugLevel) {
-            error_log(sprintf("CoreData: Processing entity mapping \"%s\" (pass %s of %s), elapsed time %s, %s%% completed", $mapping->name, $pass, 3, human_readable_time(absolute_time_get_current() - $this->timestamp), round($this->migrationProgress * 100.0, 2)));
+            error_log(sprintf("CoreData: Processing entity mapping \"%s\" (pass %s of %s), elapsed time %s, %s%% completed", $mapping->name, $pass, 3, human_readable_time(ProcessInfo::processInfo()->systemUptime - $this->timestamp), round($this->migrationProgress * 100.0, 2)));
         }
         if ($migrationCancellationError = $this->migrationCancellationError) {
             throw new InternalInconsistencyException(error: $migrationCancellationError);
@@ -288,7 +288,7 @@ class MigrationManager extends ObjectClass
         if (!$this->prepare($sourceURL, $sourceType, $sourceOptions, $mappingModel, $destinationURL, $destinationType, $destinationOptions)) {
             return false;
         }
-        $this->timestamp = absolute_time_get_current();
+        $this->timestamp = ProcessInfo::processInfo()->systemUptime;
         $mappings = $mappingModel->entityMappings;
         for ($i = 1; $i <= 3; $i++) {
             if ($this->migrationWasCancelled) {
