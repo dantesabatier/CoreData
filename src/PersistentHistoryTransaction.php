@@ -64,7 +64,7 @@ final class PersistentHistoryTransaction extends ObjectClass
             if ($key === "transactionID") {
                 $key = "transactionNumber";
             } elseif ($key === "timestamp") {
-                $value = new Date(strtotime((string)$value));
+                $value = Date::dateWithTimeIntervalSince1970((float)strtotime((string)$value));
             }
             $this->$key = $value;
         }

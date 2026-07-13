@@ -921,7 +921,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             AttributeType::boolean => $optionalValue("bool"),
             AttributeType::date => match (true) {
                 $value instanceof Date => $value,
-                is_string($value) => $write ? $value : new Date(strtotime($value)),
+                is_string($value) => $write ? $value : Date::dateWithTimeIntervalSince1970((float)strtotime($value)),
                 is_null($value) => $isOptional ? null : new Date(),
                 default => fatal_error(sprintf("Invalid argument: invalid value %s(%s) for type %s", human_readable_value($value), typeof($value), human_readable_value($type)))
             },
