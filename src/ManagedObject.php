@@ -81,11 +81,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     }
     /** @var bool A Boolean value that indicates whether the managed object has unsaved changes. */
     public bool $isUpdated {
-        get => $this->isUpdated ??= !$this->changedValuesForCurrentEvent->isEmpty && $this->isInserted;
+        get => !$this->changedValuesForCurrentEvent->isEmpty && $this->isInserted;
     }
     /** @var bool A Boolean value that indicates whether the managed object will be deleted during the next save. */
     public bool $isDeleted {
-        get => $this->isDeleted ??= $this->managedObjectContext->deletedObjects->containsElement($this);
+        get => $this->managedObjectContext->deletedObjects->containsElement($this);
     }
     /** @var bool A Boolean value that indicates whether the managed object has been inserted, has been deleted, or has unsaved changes, true if the receiver has been inserted, has been deleted, or has unsaved changes, otherwise false. The result is the equivalent of OR-ing the values of isInserted, isDeleted, and isUpdated. */
     public bool $hasChanges {
@@ -532,6 +532,19 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     public function didSave(): void
     {
+    }
+
+    /**
+     * Resets the receiver's change tracking after its pending changes have been committed to the persistent store.
+     *
+     * The isInserted backing value is corrected explicitly: it may have been computed (and memoized) as false
+     * mid-save, before the receiver's row reached the store, and the getter never recomputes it.
+     * @internal
+     */
+    public function didCommitChangesToStore(): void
+    {
+        $this->isInserted = true;
+        $this->changedValuesForCurrentEvent->removeAll();
     }
 
     /**

@@ -648,9 +648,12 @@ final class ManagedObjectContext extends ObjectClass
             }
         } else {
             $object->setValueForKey($insertions->first, $relationship->name);
-            $this->updatedObjects->insert($object);
+            if (!$object->isDeleted) {
+                $this->updatedObjects->insert($object);
+            }
         }
-        $this->insertedObjects->formUnion($insertions);
+        // Insertions recorded by KVO before a later delete() must not resurrect deleted objects at save time.
+        $this->insertedObjects->formUnion($insertions->filter(fn(ManagedObject $managedObject): bool => !$managedObject->isDeleted));
     }
 
     /**
@@ -750,7 +753,7 @@ final class ManagedObjectContext extends ObjectClass
                     if (($value = $unprocessedChange->valueForProperty($property))) {
                         $this->processPendingUpdates($value, $property, $object);
                     }
-                } else {
+                } elseif (!$object->isDeleted) {
                     $this->updatedObjects->insert($object);
                 }
             }
@@ -888,6 +891,7 @@ final class ManagedObjectContext extends ObjectClass
         $changesRequest = $this->createSaveChangesRequest();
         NotificationCenter::default()->postNotificationName(self::willSaveObjectsNotification, $this);
         $this->executeSaveChangesRequest($changesRequest);
+        $this->commitChangeTracking($changesRequest);
         $this->notifyObjectsDidSave($changesRequest);
         NotificationCenter::default()->postNotificationName(self::didSaveObjectsNotification, $this, new Dictionary([InsertedObjectsKey => $changesRequest->insertedObjects, UpdatedObjectsKey => $changesRequest->updatedObjects, DeletedObjectsKey => $changesRequest->deletedObjects]));
         $this->resetState();
@@ -936,6 +940,20 @@ final class ManagedObjectContext extends ObjectClass
         }
     }
 
+    private function commitChangeTracking(SaveChangesRequest $request): void
+    {
+        if ($insertedObjects = $request->insertedObjects) {
+            foreach ($insertedObjects as $object) {
+                $object->didCommitChangesToStore();
+            }
+        }
+        if ($updatedObjects = $request->updatedObjects) {
+            foreach ($updatedObjects as $object) {
+                $object->didCommitChangesToStore();
+            }
+        }
+    }
+
     private function notifyObjectsDidSave(SaveChangesRequest $request): void
     {
         if ($insertedObjects = $request->insertedObjects) {
@@ -976,7 +994,7 @@ final class ManagedObjectContext extends ObjectClass
         foreach ($insertedObjects as $insertedObject) {
             if ($insertedObject->isInserted) {
                 $this->insertedObjects->remove($insertedObject);
-                if ($insertedObject->isUpdated) {
+                if ($insertedObject->isUpdated && !$insertedObject->isDeleted) {
                     $this->updatedObjects->insert($insertedObject);
                 }
             }
