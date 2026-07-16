@@ -295,6 +295,10 @@ abstract class AtomicStore extends PersistentStore
     #[Override]
     public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): AtomicStoreCacheNode
     {
+        // Faults must be fulfilled from the registered node: newCacheNode is reserved for newly inserted objects and, in stores like XML, appends a duplicate backing element.
+        if ($cacheNode = $this->cacheNode($objectID)) {
+            return $cacheNode;
+        }
         $object = $context->existingObject($objectID) ?? fatal_error("Unable to find object with ID $objectID");
         return $this->newCacheNode($object);
     }

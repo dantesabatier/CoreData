@@ -436,7 +436,10 @@ final class XMLObjectStore extends AtomicStore
                             foreach ($references as $reference) {
                                 $remainingElements = $children->filter(fn(DOMElement $element): bool => $element->getAttribute("name") === $destination && $element->getAttribute("id") === $reference);
                                 foreach ($remainingElements as $remainingElement) {
-                                    $parent->removeChild($remainingElement);
+                                    // The cascaded node may also be in $cacheNodes (the context cascades deletions too); only detach it while it is still attached.
+                                    if ($remainingElement->parentNode?->isSameNode($parent)) {
+                                        $parent->removeChild($remainingElement);
+                                    }
                                 }
                             }
                         }
@@ -456,7 +459,10 @@ final class XMLObjectStore extends AtomicStore
                             }
                         }
                     }
-                    $parent->removeChild($deletedElement);
+                    // A cascade rule processed earlier in this loop may have detached this element already.
+                    if ($deletedElement->parentNode?->isSameNode($parent)) {
+                        $parent->removeChild($deletedElement);
+                    }
                 }
             }
         }
