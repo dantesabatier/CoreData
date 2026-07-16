@@ -25,9 +25,15 @@ phpstan analyse
 
 # Automated refactoring to modern PHP (readonly, property promotion, etc.)
 rector process
+
+# Unit tests (PHPUnit is installed globally, like the rest of the QA tools)
+phpunit
+
+# A single suite or test
+phpunit --filter ManagedObjectContextTest
 ```
 
-There is no test suite in this repository.
+Tests live in `tests/` as PHPUnit `TestCase` classes (namespace `Sabatier\CoreData\Tests`), configured by `phpunit.xml` (bootstrap `vendor/autoload.php`, warnings and notices fail the run). Persistence tests run against an `XMLObjectStore` on a per-test temp file — `MemoryObjectStore` has no `load()` implementation and cannot be added to a coordinator. Entities under test need a real `ManagedObject` subclass registered via `managedObjectClassName`; fetch through `MySubclass::fetchRequest()` (a bare `new FetchRequest("Entity")` resolves its context from the operation queue and dies in tests). When fixing a bug, add a regression test to the matching suite.
 
 ## Architecture
 
