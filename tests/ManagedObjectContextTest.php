@@ -284,6 +284,39 @@ final class ManagedObjectContextTest extends TestCase
         $this->assertCount(1, $context->fetch(Employee::fetchRequest()), "the rolled-back object never reaches the store");
     }
 
+    /**
+     * Regression: rollback() restores updated objects to their last committed values. Mutating a saved
+     * object and rolling back used to leave the mutated value in memory (the store and committed snapshot
+     * held the old one), so the object reported the uncommitted value and a follow-up save would have
+     * written it. rollback() must revert the attribute and clear change tracking so the follow-up save is
+     * a no-op. See "rollback does not restore committed values".
+     */
+    public function testRollbackRestoresUpdatedObjectsToCommittedValues(): void
+    {
+        $context = $this->makeContext();
+        $alice = $this->insertEmployee($context, "Alice", 2000);
+        $context->save();
+
+        $alice->salary = 2500;
+        $context->processPendingChanges();
+        $this->assertSame(2500, $alice->salary, "the mutation is visible before rollback");
+        $this->assertTrue($context->updatedObjects->containsElement($alice), "the mutated object is tracked as updated");
+
+        $context->rollback();
+
+        $this->assertSame(2000, $alice->salary, "rollback restores the attribute to its last committed value");
+        $this->assertFalse($alice->isUpdated, "the rolled-back object no longer reports unsaved changes");
+        $this->assertFalse($context->hasChanges, "rollback leaves the context with no pending changes");
+        $this->assertCount(0, $context->updatedObjects, "rollback clears the updatedObjects tracking set");
+
+        // A follow-up save must write nothing new: a freshly-built stack reading the same file still sees 2000.
+        $this->assertTrue($context->save(), "a save after rollback reports success");
+        $rereadContext = $this->makeContext();
+        $reloaded = $rereadContext->fetch(self::requestForName("Alice"))->first();
+        $this->assertNotNull($reloaded, "the object is still in the store");
+        $this->assertSame(2000, $reloaded->salary, "the follow-up save wrote nothing new: the committed value stands");
+    }
+
     public function testDeletePersistsAndClearsTracking(): void
     {
         $context = $this->makeContext();

@@ -1135,7 +1135,7 @@ final class ManagedObjectContext extends ObjectClass
     public function rollback(): void
     {
         foreach ($this->updatedObjects as $updatedObject) {
-            $this->refault($updatedObject);
+            $updatedObject->rollbackChangesToStore();
         }
         $this->resetState();
     }

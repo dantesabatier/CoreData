@@ -195,12 +195,39 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * @internal
      */
     public ?Dictionary $lastSnapshot = null;
-    /** @var Dictionary<mixed> */
+    /**
+     * The live primitive values of the persistent properties captured the last time the receiver's
+     * changes were committed to the store. This is the baseline {@see rollbackChangesToStore()} restores
+     * to, and the source {@see committedValues()} reports once the object has been saved (as opposed to
+     * only fetched). Distinct from {@see $originalSnapshot}, which optimistic-locking conflict detection
+     * owns and must keep pointing at the version last read from the store.
+     * @var Dictionary<mixed>|null
+     * @internal
+     */
+    private ?Dictionary $committedSnapshot = null;
+    /**
+     * @var Dictionary<mixed>
+     * The most recent fetched-or-saved values. The fetch-derived baseline (from {@see $originalSnapshot})
+     * is resolved lazily; a subsequent save overlays it with {@see $committedSnapshot} so that a
+     * previously-inserted object — whose $originalSnapshot is null until it is refetched — still reports
+     * its saved values here and can be rolled back to them.
+     */
     private Dictionary $committedValues {
         /**
          * @throws Exception
          */
-        get => $this->committedValues ??= $this->originalSnapshot?->reduce(new Dictionary(),
+        get {
+            $committedValues = clone $this->fetchedCommittedValues;
+            $this->committedSnapshot?->forEach(fn(mixed $value, string $key) => $committedValues[$key] = $value);
+            return $committedValues;
+        }
+    }
+    /** @var Dictionary<mixed> The committed values as last read from the store, memoized because resolving relationships is expensive. */
+    private Dictionary $fetchedCommittedValues {
+        /**
+         * @throws Exception
+         */
+        get => $this->fetchedCommittedValues ??= $this->originalSnapshot?->reduce(new Dictionary(),
             /**
              * @param Dictionary<mixed> $initialResult
              * @param mixed $value
@@ -538,13 +565,56 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      * Resets the receiver's change tracking after its pending changes have been committed to the persistent store.
      *
      * The isInserted backing value is corrected explicitly: it may have been computed (and memoized) as false
-     * mid-save, before the receiver's row reached the store, and the getter never recomputes it.
+     * mid-save, before the receiver's row reached the store, and the getter never recomputes it. The just-committed
+     * primitive values are captured as the new committed baseline so that {@see committedValues()} reports the saved
+     * state and {@see rollbackChangesToStore()} can restore to it.
      * @internal
      */
     public function didCommitChangesToStore(): void
     {
         $this->isInserted = true;
+        $this->committedSnapshot = $this->persistentPrimitiveValues();
         $this->changedValuesForCurrentEvent->removeAll();
+    }
+
+    /**
+     * Restores the receiver's persistent properties to their last committed values and discards its change tracking.
+     *
+     * This is the mirror image of {@see didCommitChangesToStore()}, invoked by {@see ManagedObjectContext::rollback()}
+     * for each updated object: it rewrites each persistent property's primitive storage back to the committed baseline
+     * and clears {@see changedValuesForCurrentEvent()} so the live {@see $isUpdated} getter reports false afterward.
+     * @internal
+     */
+    public function rollbackChangesToStore(): void
+    {
+        $committedValues = $this->committedValues;
+        foreach ($this->persistentProperties as $property) {
+            $key = $property->name;
+            if (!$committedValues->offsetExists($key)) {
+                continue;
+            }
+            $committedValue = $committedValues[$key];
+            $this->setPrimitiveValueForKey($committedValue instanceof Nil ? null : $committedValue, $key);
+        }
+        $this->changedValuesForCurrentEvent->removeAll();
+    }
+
+    /**
+     * Captures the live primitive values of the receiver's persistent properties.
+     * @return Dictionary<mixed>
+     */
+    private function persistentPrimitiveValues(): Dictionary
+    {
+        return $this->persistentProperties->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<mixed> $values
+             * @param PropertyDescription $property
+             * @return Dictionary<mixed>
+             */
+            function (Dictionary $values, PropertyDescription $property): Dictionary {
+                $values[$property->name] = $this->primitiveValueForKey($property->name);
+                return $values;
+            });
     }
 
     /**
