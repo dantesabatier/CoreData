@@ -227,6 +227,18 @@ abstract class AtomicStore extends PersistentStore
                 $objects = $objects->filtered($predicate);
             }
             $objects = new ArrayClass([new Number($objects->count)]);
+            return $objects;
+        }
+        // fetchOffset then fetchLimit apply to the row-returning result types only, after
+        // filtering and sorting; the count result type reports the full total and returns
+        // above. A fetchLimit of 0 means no limit (see FetchRequest::$fetchLimit).
+        if ($fetchOffset = $request->fetchOffset) {
+            // Clamp to the count: dropFirst() raises a range error when asked to drop more
+            // elements than the collection holds, rather than yielding an empty result.
+            $objects = new ArrayClass($objects->dropFirst(min($fetchOffset, $objects->count)));
+        }
+        if ($fetchLimit = $request->fetchLimit) {
+            $objects = new ArrayClass($objects->prefix($fetchLimit));
         }
         return $objects;
     }

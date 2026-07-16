@@ -151,29 +151,56 @@ final class FetchRequestTest extends TestCase
         $this->assertSame([1, 2, 3, 4, 5], $values, "every row is still present after sorting");
     }
 
-    /**
-     * KNOWN BUG: the XML store fetch path ignores fetchLimit (measured: a limit of 2
-     * still returns all five rows). Pins current behavior; when the store honors
-     * fetchLimit, change the expected count to 2.
-     */
-    public function testFetchLimitIsCurrentlyIgnored(): void
+    public function testFetchLimitCapsTheResultCount(): void
     {
         $request = Row::fetchRequest();
         $request->fetchLimit = 2;
 
-        $this->assertCount(5, $this->context->fetch($request), "BUG: XML store ignores fetchLimit; returns all rows");
+        $this->assertCount(2, $this->context->fetch($request), "fetchLimit caps the number of rows returned");
     }
 
-    /**
-     * KNOWN BUG: the XML store fetch path ignores fetchOffset (measured: offset 2 still
-     * returns all five rows). Pins current behavior.
-     */
-    public function testFetchOffsetIsCurrentlyIgnored(): void
+    public function testFetchLimitOfZeroMeansNoLimit(): void
     {
         $request = Row::fetchRequest();
+        $request->fetchLimit = 0;
+
+        $this->assertCount(5, $this->context->fetch($request), "a fetchLimit of 0 is treated as no limit");
+    }
+
+    public function testFetchLimitWithSortReturnsTheFirstRowsInOrder(): void
+    {
+        $request = Row::fetchRequest();
+        $request->sortDescriptors = new ArrayClass([new SortDescriptor("n", true)]);
+        $request->fetchLimit = 2;
+
+        $this->assertSame([1, 2], self::order($this->context->fetch($request)), "the limit takes the first rows after sorting");
+    }
+
+    public function testFetchOffsetSkipsLeadingRows(): void
+    {
+        $request = Row::fetchRequest();
+        $request->sortDescriptors = new ArrayClass([new SortDescriptor("n", true)]);
         $request->fetchOffset = 2;
 
-        $this->assertCount(5, $this->context->fetch($request), "BUG: XML store ignores fetchOffset; returns all rows");
+        $this->assertSame([3, 4, 5], self::order($this->context->fetch($request)), "the offset skips the leading rows after sorting");
+    }
+
+    public function testFetchOffsetAndLimitSelectAWindow(): void
+    {
+        $request = Row::fetchRequest();
+        $request->sortDescriptors = new ArrayClass([new SortDescriptor("n", true)]);
+        $request->fetchOffset = 1;
+        $request->fetchLimit = 2;
+
+        $this->assertSame([2, 3], self::order($this->context->fetch($request)), "offset then limit selects a subrange (offset applied first)");
+    }
+
+    public function testFetchOffsetPastTheEndReturnsEmpty(): void
+    {
+        $request = Row::fetchRequest();
+        $request->fetchOffset = 10;
+
+        $this->assertCount(0, $this->context->fetch($request), "an offset past the end returns no rows");
     }
 
     public function testCountMatchesFetchedRowCount(): void
