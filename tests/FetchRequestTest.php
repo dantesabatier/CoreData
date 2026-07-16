@@ -122,32 +122,24 @@ final class FetchRequestTest extends TestCase
         $this->assertCount(0, $this->context->fetch($request));
     }
 
-    /**
-     * KNOWN BUG (Foundation SortDescriptor direction is inverted; tracked separately):
-     * ascending=true currently yields DESCENDING order and vice versa, because
-     * SortDescriptor::compareObject multiplies the spaceship result by the wrong-signed
-     * ComparisonResult value. These two tests pin the CURRENT (wrong) behavior so the
-     * fix trips them; when SortDescriptor is fixed, swap the expected arrays.
-     */
-    public function testSortAscendingCurrentlyProducesDescendingOrder(): void
+    public function testSortAscendingOrdersLowToHigh(): void
     {
         $request = Row::fetchRequest();
         $request->sortDescriptors = new ArrayClass([new SortDescriptor("n", true)]);
 
-        $this->assertSame([5, 4, 3, 2, 1], self::order($this->context->fetch($request)), "BUG: ascending=true sorts descending until Foundation SortDescriptor is fixed");
+        $this->assertSame([1, 2, 3, 4, 5], self::order($this->context->fetch($request)), "an ascending sort descriptor orders the fetch low to high");
     }
 
-    public function testSortDescendingCurrentlyProducesAscendingOrder(): void
+    public function testSortDescendingOrdersHighToLow(): void
     {
         $request = Row::fetchRequest();
         $request->sortDescriptors = new ArrayClass([new SortDescriptor("n", false)]);
 
-        $this->assertSame([1, 2, 3, 4, 5], self::order($this->context->fetch($request)), "BUG: ascending=false sorts ascending until Foundation SortDescriptor is fixed");
+        $this->assertSame([5, 4, 3, 2, 1], self::order($this->context->fetch($request)), "a descending sort descriptor orders the fetch high to low");
     }
 
     /**
-     * The set of values returned is correct regardless of the direction bug, so this
-     * stays true across the fix: sorting is a permutation of the full result.
+     * Sorting is a permutation of the full result regardless of direction.
      */
     public function testSortIsAPermutationOfTheFullResult(): void
     {
