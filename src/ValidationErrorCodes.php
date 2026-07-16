@@ -28,6 +28,8 @@ const ManagedObjectModelReferenceNotFoundError = 134504;
 const ManagedObjectReferentialIntegrityError = 133000;
 /** @var int Error code to denote a generic validation error. */
 const ManagedObjectValidationError = 1550;
+/** @var int Error code to denote that a non-optional property has a null value. */
+const ValidationMissingMandatoryPropertyError = 1570;
 /** @var int Error code to denote that migration failed due to manual cancellation. */
 const MigrationCancelledError = 134120;
 /** @var int Error code to denote a problem with the validation of a managed object during a migration. */

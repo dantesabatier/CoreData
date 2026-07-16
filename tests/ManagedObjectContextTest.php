@@ -19,9 +19,12 @@ use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\CoreData\XMLObjectStore;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Date;
+use Sabatier\Foundation\InternalInconsistencyException;
+use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
+use const Sabatier\CoreData\ValidationMissingMandatoryPropertyError;
 
 final class Employee extends ManagedObject
 {
@@ -36,6 +39,10 @@ final class Department extends ManagedObject
 }
 
 final class Worker extends ManagedObject
+{
+}
+
+final class Ticket extends ManagedObject
 {
 }
 
@@ -434,5 +441,137 @@ final class ManagedObjectContextTest extends TestCase
         $worker = new Worker($context);
         $worker->name = $name;
         return $worker;
+    }
+
+    /**
+     * A Ticket has a mandatory "code" (isOptional=false, no default), a mandatory "priority"
+     * with a defaultValue, and an optional "note". Enough to pin down scalar optionality
+     * enforcement without disturbing the shared Company/Employee registration.
+     */
+    private static function makeTicketModel(): ManagedObjectModel
+    {
+        $code = new AttributeDescription();
+        $code->name = "code";
+        $code->type = AttributeType::string;
+        $code->isOptional = false;
+
+        $priority = new AttributeDescription();
+        $priority->name = "priority";
+        $priority->type = AttributeType::integer32;
+        $priority->isOptional = false;
+        $priority->defaultValue = 3;
+
+        $note = new AttributeDescription();
+        $note->name = "note";
+        $note->type = AttributeType::string;
+
+        $ticket = new EntityDescription();
+        $ticket->name = "Ticket";
+        $ticket->managedObjectClassName = Ticket::class;
+        $ticket->properties = new ArrayClass([$code, $priority, $note]);
+
+        $model = new ManagedObjectModel();
+        $model->entities = new ArrayClass([$ticket]);
+        return $model;
+    }
+
+    private function makeTicketContext(): ManagedObjectContext
+    {
+        $coordinator = new PersistentStoreCoordinator(self::makeTicketModel());
+        $coordinator->addPersistentStoreWithType(PersistentStoreType::xml, null, $this->storeURL);
+        $context = new ManagedObjectContext();
+        $context->persistentStoreCoordinator = $coordinator;
+        return $context;
+    }
+
+    /**
+     * Regression: a non-optional scalar attribute with no value was not enforced at save time.
+     * Inserting a Ticket without its mandatory "code" used to have save() coerce the value to
+     * an empty string, return true, and persist an empty row. save() must now fail validation.
+     * See "non-optional attribute not enforced at save".
+     */
+    public function testSaveFailsWhenARequiredAttributeIsUnset(): void
+    {
+        $context = $this->makeTicketContext();
+        new Ticket($context); // no "code" assigned
+
+        try {
+            $context->save();
+            $this->fail("save() must not succeed while a required attribute is unset");
+        } catch (InternalInconsistencyException $exception) {
+            $this->assertNotNull($exception->error, "the failure carries a validation Error");
+            $this->assertSame(ValidationMissingMandatoryPropertyError, $exception->error->code, "the error identifies the missing mandatory property");
+        }
+
+        $this->assertCount(0, $context->fetch(Ticket::fetchRequest()), "no row was persisted for the invalid object");
+    }
+
+    /**
+     * Regression: a required attribute can also be empty via the Nil placeholder rather than a
+     * plain null. Dictionary::dictionaryWithArray() preserves incoming NULLs (e.g. from a SQL row
+     * or an HTTP payload) as Nil, and Dictionary stores Nil under a present key, so the primitive
+     * value is Nil rather than a missing key. save() must reject that the same as an unset value.
+     * See "non-optional attribute not enforced at save".
+     */
+    public function testSaveFailsWhenARequiredAttributeHoldsTheNilPlaceholder(): void
+    {
+        $context = $this->makeTicketContext();
+        $ticket = new Ticket($context);
+        $ticket->setPrimitiveValueForKey(Nil::nil(), "code");
+        $this->assertInstanceOf(Nil::class, $ticket->primitiveValueForKey("code"), "the mandatory attribute holds the Nil placeholder");
+
+        try {
+            $context->save();
+            $this->fail("save() must not succeed while a required attribute holds Nil");
+        } catch (InternalInconsistencyException $exception) {
+            $this->assertNotNull($exception->error, "the failure carries a validation Error");
+            $this->assertSame(ValidationMissingMandatoryPropertyError, $exception->error->code, "a Nil value is treated as a missing mandatory property");
+        }
+
+        $this->assertCount(0, $context->fetch(Ticket::fetchRequest()), "no row was persisted for the invalid object");
+    }
+
+    public function testSaveSucceedsOnceTheRequiredAttributeIsSet(): void
+    {
+        $context = $this->makeTicketContext();
+        $ticket = new Ticket($context);
+        $ticket->code = "ABC-1";
+
+        $this->assertTrue($context->save(), "save succeeds once the mandatory attribute has a value");
+
+        $rereadContext = $this->makeTicketContext();
+        $reloaded = $rereadContext->fetch(Ticket::fetchRequest())->first();
+        $this->assertNotNull($reloaded, "the object reached the store");
+        $this->assertSame("ABC-1", (string)$reloaded->code, "the mandatory value round-trips");
+    }
+
+    /**
+     * A non-optional attribute with a defaultValue must not fail: the default supplies the value.
+     */
+    public function testSaveSucceedsWhenARequiredAttributeHasADefaultValue(): void
+    {
+        $context = $this->makeTicketContext();
+        $ticket = new Ticket($context);
+        $ticket->code = "ABC-2"; // "priority" (required, default 3) is left unset on purpose
+
+        $this->assertTrue($context->save(), "the default value satisfies the mandatory priority attribute");
+        $this->assertSame(3, $ticket->priority, "the default value was applied to the unassigned mandatory attribute");
+    }
+
+    /**
+     * The enforcement must not false-positive on update: mutating an unrelated attribute of an
+     * already-valid object leaves the mandatory attribute set from insert, so the save succeeds.
+     */
+    public function testUpdatingAnUnrelatedAttributeDoesNotRetriggerMandatoryValidation(): void
+    {
+        $context = $this->makeTicketContext();
+        $ticket = new Ticket($context);
+        $ticket->code = "ABC-3";
+        $this->assertTrue($context->save(), "the initial insert is valid");
+
+        $ticket->note = "follow up"; // does not touch the mandatory "code"
+        $context->processPendingChanges();
+
+        $this->assertTrue($context->save(), "updating an unrelated attribute keeps the save valid");
     }
 }

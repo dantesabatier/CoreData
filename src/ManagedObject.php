@@ -375,7 +375,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     private function resolveInitialAttributeValue(AttributeDescription $attribute, mixed $value, bool $shouldValidate): mixed
     {
         $value ??= $attribute->defaultValue;
-        if (!$attribute->isOptional) {
+        // A non-optional attribute without a supplied value or default is left null so its
+        // missing state survives to validation; fabricating a placeholder (e.g. "" for a
+        // string) would let a mandatory attribute silently pass validateForInsert().
+        if (!$attribute->isOptional && $value !== null) {
             $value = $this->applyTypeCoercionFallback($attribute, $value);
         }
         if ($shouldValidate) {
@@ -1133,13 +1136,13 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
      */
     private function validateChangedValues(): void
     {
-        !$this->changedValues->isEmpty ?: fatal_error("invalid state: changed values is empty");
         $properties = new Set($this->changedValues->keys->compactMap(fn(string $key): ?PropertyDescription => $this->entity->propertiesByName[$key]));
         $properties->formUnion($this->persistentProperties->filter(fn(PropertyDescription $property): bool => !$property->isOptional));
         foreach ($properties as $property) {
             $key = $property->name;
             $value = $this->changedValues[$key];
-            if ($value instanceof Nil) {
+            if ($value instanceof Nil || $value === null) {
+                $this->validateMandatoryValueForProperty($property);
                 continue;
             }
             if (!($predicate = $property->validationPredicates->first(fn(Predicate $predicate) => !$predicate->evaluate($this)))) {
@@ -1148,6 +1151,24 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $error = new Error(CoreDataErrorDomain, ManagedObjectConstraintValidationError, new Dictionary([LocalizedDescriptionKey => localized_string("Constraint Violation"), LocalizedFailureReasonErrorKey => sprintf(localized_string("The value being assigned does not satisfy the constraints (%s) defined for property \"%s\" on entity \"%s\"."), $predicate, $property->localizedName, $this->entity->localizedName), ValidationObjectErrorKey => $this, ValidationValueErrorKey => $value, ValidationKeyErrorKey => $key, ValidationPredicateErrorKey => $predicate]));
             throw new InternalInconsistencyException(error: $error);
         }
+    }
+
+    /**
+     * Enforces the optionality of a scalar attribute whose value is null at save time.
+     *
+     * A non-optional attribute without a value is a validation error. Attributes with a
+     * default value never reach this method with a null value (the default supplies it),
+     * and derived, composite, transient and fetched properties are out of scope: only the
+     * cardinality of relationships is checked elsewhere.
+     * @throws Exception If the property is a mandatory scalar attribute with no value.
+     */
+    private function validateMandatoryValueForProperty(PropertyDescription $property): void
+    {
+        if ($property->isOptional || !$property instanceof AttributeDescription || $property instanceof DerivedAttributeDescription || $property instanceof CompositeAttributeDescription) {
+            return;
+        }
+        $error = new Error(CoreDataErrorDomain, ValidationMissingMandatoryPropertyError, new Dictionary([LocalizedDescriptionKey => localized_string("Missing Mandatory Property"), LocalizedFailureReasonErrorKey => sprintf(localized_string("The property \"%s\" on entity \"%s\" is not optional but has no value."), $property->localizedName, $this->entity->localizedName), ValidationObjectErrorKey => $this, ValidationValueErrorKey => null, ValidationKeyErrorKey => $property->name]));
+        throw new InternalInconsistencyException(error: $error);
     }
 
     /**
