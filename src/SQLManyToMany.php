@@ -27,7 +27,7 @@ final class SQLManyToMany extends SQLRelationship
     }
     /** @var ArrayClass<SQLEntity> */
     private(set) ArrayClass $entities {
-        get => $this->entities ??= new ArrayClass([$this->destinationEntity, $this->inverseRelationship->destinationEntity])->sorted([new SortDescriptor("tableName")]);
+        get => $this->entities ??= new ArrayClass([$this->destinationEntity, $this->inverseRelationship->destinationEntity])->sorted([new SortDescriptor("tableName", false)]);
     }
     private(set) string $correlationTableName {
         get => $this->correlationTableName ??= $this->entities->map(fn(SQLEntity $entity): string => $entity->tableName)->join("");

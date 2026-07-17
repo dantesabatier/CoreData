@@ -218,7 +218,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
          */
         get {
             $committedValues = clone $this->fetchedCommittedValues;
-            $this->committedSnapshot?->forEach(fn(mixed $value, string $key) => $committedValues[$key] = $value);
+            if ($committedSnapshot = $this->committedSnapshot) {
+                $committedValues->merge($committedSnapshot);
+            }
             return $committedValues;
         }
     }
