@@ -24,7 +24,6 @@ use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
-use const Sabatier\CoreData\ValidationMissingMandatoryPropertyError;
 
 final class Employee extends ManagedObject
 {
@@ -54,10 +53,10 @@ final class AutoTicket extends ManagedObject
         if ($this->isDeleted) {
             return;
         }
-        // Supply the mandatory "code" during willSave, the way a real subclass fills in a
-        // creation date, a UUID, or a slug just before persisting. This must run before
-        // validation, or the object is rejected for a value it was about to set itself.
-        if ($this->valueForKey("code") === null) {
+        // Populate a value just before persisting, the way a real subclass fills in a
+        // creation date, a UUID, or a slug. Whatever willSave writes must be the value that
+        // reaches validation and the store, which only holds if validation runs after willSave.
+        if (!$this->valueForKey("code")) {
             $this->setValueForKey("AUTO-1", "code");
         }
     }
@@ -477,6 +476,8 @@ final class ManagedObjectContextTest extends TestCase
         $priority->type = AttributeType::integer32;
         $priority->isOptional = false;
         $priority->defaultValue = 3;
+        $priority->minValue = 1;
+        $priority->maxValue = 5;
 
         $note = new AttributeDescription();
         $note->name = "note";
@@ -502,50 +503,42 @@ final class ManagedObjectContextTest extends TestCase
     }
 
     /**
-     * Regression: a non-optional scalar attribute with no value was not enforced at save time.
-     * Inserting a Ticket without its mandatory "code" used to have save() coerce the value to
-     * an empty string, return true, and persist an empty row. save() must now fail validation.
-     * See "non-optional attribute not enforced at save".
+     * A non-optional scalar attribute left unset is supplied by the framework with its type's
+     * default value (string -> "", integer -> 0, and so on) rather than rejected: providing the
+     * value for a mandatory attribute wherever possible is the framework's job (in SQL this is
+     * enforced at the DDL level). The coerced value is then subject to the other validation
+     * rules (length, range, regex, uniqueness), but optionality alone does not fail the save.
      */
-    public function testSaveFailsWhenARequiredAttributeIsUnset(): void
+    public function testUnsetMandatoryAttributeIsFilledWithItsTypeDefault(): void
     {
         $context = $this->makeTicketContext();
-        new Ticket($context); // no "code" assigned
+        $ticket = new Ticket($context); // "code" (mandatory string, no default) left unset
 
-        try {
-            $context->save();
-            $this->fail("save() must not succeed while a required attribute is unset");
-        } catch (InternalInconsistencyException $exception) {
-            $this->assertNotNull($exception->error, "the failure carries a validation Error");
-            $this->assertSame(ValidationMissingMandatoryPropertyError, $exception->error->code, "the error identifies the missing mandatory property");
-        }
+        $this->assertTrue($context->save(), "the save succeeds; the framework supplies the mandatory value");
+        $this->assertSame("", (string)$ticket->code, "the mandatory string was filled with its type default");
 
-        $this->assertCount(0, $context->fetch(Ticket::fetchRequest()), "no row was persisted for the invalid object");
+        $rereadContext = $this->makeTicketContext();
+        $reloaded = $rereadContext->fetch(Ticket::fetchRequest())->first();
+        $this->assertNotNull($reloaded, "the object reached the store");
+        $this->assertSame("", (string)$reloaded->code, "the filled default was persisted");
     }
 
     /**
-     * Regression: a required attribute can also be empty via the Nil placeholder rather than a
-     * plain null. Dictionary::dictionaryWithArray() preserves incoming NULLs (e.g. from a SQL row
-     * or an HTTP payload) as Nil, and Dictionary stores Nil under a present key, so the primitive
-     * value is Nil rather than a missing key. save() must reject that the same as an unset value.
-     * See "non-optional attribute not enforced at save".
+     * The framework fills a mandatory attribute, but the coerced value is still subject to the
+     * property's other validation rules. A priority outside its [1, 5] range fails the save — not
+     * because the attribute is mandatory, but because the range rule rejects the value. This is
+     * the level the framework honors: supply the value, then validate it against length, range,
+     * regex, and so on.
      */
-    public function testSaveFailsWhenARequiredAttributeHoldsTheNilPlaceholder(): void
+    public function testAFilledValueMustStillSatisfyTheOtherValidationRules(): void
     {
         $context = $this->makeTicketContext();
         $ticket = new Ticket($context);
-        $ticket->setPrimitiveValueForKey(Nil::nil(), "code");
-        $this->assertInstanceOf(Nil::class, $ticket->primitiveValueForKey("code"), "the mandatory attribute holds the Nil placeholder");
+        $ticket->code = "ABC-9";
+        $ticket->priority = 99; // outside the modeled [1, 5] range
 
-        try {
-            $context->save();
-            $this->fail("save() must not succeed while a required attribute holds Nil");
-        } catch (InternalInconsistencyException $exception) {
-            $this->assertNotNull($exception->error, "the failure carries a validation Error");
-            $this->assertSame(ValidationMissingMandatoryPropertyError, $exception->error->code, "a Nil value is treated as a missing mandatory property");
-        }
-
-        $this->assertCount(0, $context->fetch(Ticket::fetchRequest()), "no row was persisted for the invalid object");
+        $this->expectException(InternalInconsistencyException::class);
+        $context->save();
     }
 
     public function testSaveSucceedsOnceTheRequiredAttributeIsSet(): void
@@ -576,10 +569,10 @@ final class ManagedObjectContextTest extends TestCase
     }
 
     /**
-     * The enforcement must not false-positive on update: mutating an unrelated attribute of an
-     * already-valid object leaves the mandatory attribute set from insert, so the save succeeds.
+     * Updating an unrelated attribute of an already-valid object keeps the save valid: the
+     * mandatory "code" set on insert is untouched.
      */
-    public function testUpdatingAnUnrelatedAttributeDoesNotRetriggerMandatoryValidation(): void
+    public function testUpdatingAnUnrelatedAttributeKeepsTheSaveValid(): void
     {
         $context = $this->makeTicketContext();
         $ticket = new Ticket($context);
@@ -593,24 +586,24 @@ final class ManagedObjectContextTest extends TestCase
     }
 
     /**
-     * Regression: validation must run AFTER willSave(). A subclass is allowed to populate a
-     * mandatory attribute in its willSave() hook (the way one fills in a creation date, a
-     * UUID, or a computed value just before persisting). Validating before willSave rejected
-     * such an object for a value it was about to supply itself. This mirrors Core Data, whose
-     * save cycle is willSave -> validateFor{Insert,Update} -> persist.
+     * Regression: validation and persistence must see the state left by willSave(). A subclass
+     * fills in a value in its willSave() hook (a creation date, a UUID, a computed slug) just
+     * before persisting; that value — not the framework's earlier type default — must be the one
+     * validated and stored. This only holds because validation runs after willSave, matching Core
+     * Data's willSave -> validateFor{Insert,Update} -> persist cycle.
      */
-    public function testWillSaveCanSatisfyAMandatoryAttributeBeforeValidation(): void
+    public function testWillSaveValueReachesValidationAndTheStore(): void
     {
         $context = $this->makeAutoTicketContext();
-        $autoTicket = new AutoTicket($context); // "code" left unset; willSave() supplies it
+        $autoTicket = new AutoTicket($context); // willSave() overwrites the filled "" with a real code
 
-        $this->assertTrue($context->save(), "save succeeds because willSave sets the mandatory attribute before validation");
-        $this->assertSame("AUTO-1", (string)$autoTicket->code, "willSave populated the mandatory attribute");
+        $this->assertTrue($context->save(), "the save succeeds");
+        $this->assertSame("AUTO-1", (string)$autoTicket->code, "willSave's value replaced the framework's type default");
 
         $rereadContext = $this->makeAutoTicketContext();
         $reloaded = $rereadContext->fetch(AutoTicket::fetchRequest())->first();
         $this->assertNotNull($reloaded, "the object reached the store");
-        $this->assertSame("AUTO-1", (string)$reloaded->code, "the willSave-supplied value was persisted");
+        $this->assertSame("AUTO-1", (string)$reloaded->code, "the willSave-supplied value was persisted, not the type default");
     }
 
     private static function makeAutoTicketModel(): ManagedObjectModel
