@@ -13,6 +13,7 @@ use Sabatier\CoreData\FetchRequest;
 use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\ManagedObjectContext;
 use Sabatier\CoreData\ManagedObjectModel;
+use Sabatier\CoreData\MergePolicy;
 use Sabatier\CoreData\PersistentStoreCoordinator;
 use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\CoreData\RelationshipDescription;
@@ -42,6 +43,10 @@ final class Worker extends ManagedObject
 }
 
 final class Ticket extends ManagedObject
+{
+}
+
+final class Page extends ManagedObject
 {
 }
 
@@ -630,5 +635,135 @@ final class ManagedObjectContextTest extends TestCase
         $context = new ManagedObjectContext();
         $context->persistentStoreCoordinator = $coordinator;
         return $context;
+    }
+
+    /**
+     * A Page entity whose "slug" is declared unique through the entity's uniquenessConstraints
+     * (never through an explicit $indexes assignment). This is the shape the atomic (XML) store
+     * used to ignore entirely.
+     */
+    private static function makePageModel(): ManagedObjectModel
+    {
+        $slug = new AttributeDescription();
+        $slug->name = "slug";
+        $slug->type = AttributeType::string;
+        $slug->isOptional = false;
+
+        $title = new AttributeDescription();
+        $title->name = "title";
+        $title->type = AttributeType::string;
+
+        $page = new EntityDescription();
+        $page->name = "Page";
+        $page->managedObjectClassName = Page::class;
+        $page->properties = new ArrayClass([$slug, $title]);
+        $page->uniquenessConstraints = new ArrayClass([new ArrayClass(["slug"])]);
+
+        $model = new ManagedObjectModel();
+        $model->entities = new ArrayClass([$page]);
+        return $model;
+    }
+
+    private function makePageContext(): ManagedObjectContext
+    {
+        $coordinator = new PersistentStoreCoordinator(self::makePageModel());
+        $coordinator->addPersistentStoreWithType(PersistentStoreType::xml, null, $this->storeURL);
+        $context = new ManagedObjectContext();
+        $context->persistentStoreCoordinator = $coordinator;
+        // The error merge policy is the context default, but pin it explicitly: these tests assert that a
+        // constraint conflict raises rather than being silently resolved by a merging policy.
+        $context->mergePolicy = MergePolicy::error();
+        return $context;
+    }
+
+    private function insertPage(ManagedObjectContext $context, string $slug, string $title = "Untitled"): Page
+    {
+        $page = new Page($context);
+        $page->slug = $slug;
+        $page->title = $title;
+        return $page;
+    }
+
+    /**
+     * Regression: the XML/atomic store silently ignored EntityDescription::$uniquenessConstraints —
+     * unlike the SQL backend, which rejects a duplicate at the DDL level. Two objects sharing a unique
+     * value both saved, leaving two rows that violate the constraint. The pre-save constraint check
+     * (ConflictDetectionService::detectConstraintConflicts) early-returned for freshly-inserted objects
+     * because they carry no originalSnapshot, so the check never ran on inserts. Under the error merge
+     * policy, saving a second object with a value already committed to the store must now fail.
+     */
+    public function testDuplicateUniqueValueAgainstAPersistedRowFails(): void
+    {
+        $context = $this->makePageContext();
+        $this->insertPage($context, "home");
+        $this->assertTrue($context->save(), "the first object with a unique slug saves");
+
+        $this->insertPage($context, "home");
+        $this->expectException(InternalInconsistencyException::class);
+        $context->save();
+    }
+
+    /**
+     * The in-memory side of the same save: two brand-new objects sharing a unique value in a single
+     * save() are both pending and neither is in the store yet, so a store-only check would miss them.
+     * The constraint must be enforced against the pending peers too.
+     */
+    public function testDuplicateUniqueValueAmongPendingInsertsInOneSaveFails(): void
+    {
+        $context = $this->makePageContext();
+        $this->insertPage($context, "about");
+        $this->insertPage($context, "about");
+
+        $this->expectException(InternalInconsistencyException::class);
+        $context->save();
+    }
+
+    /**
+     * The comparison is case-insensitive, matching the LIKE predicate the store check uses for string
+     * attributes, so "Home" collides with "home".
+     */
+    public function testUniqueValueComparisonIsCaseInsensitive(): void
+    {
+        $context = $this->makePageContext();
+        $this->insertPage($context, "home");
+        $this->assertTrue($context->save(), "the first slug saves");
+
+        $this->insertPage($context, "HOME");
+        $this->expectException(InternalInconsistencyException::class);
+        $context->save();
+    }
+
+    /**
+     * Distinct values must save without complaint: the constraint only fires on an actual duplicate.
+     */
+    public function testDistinctUniqueValuesSaveFine(): void
+    {
+        $context = $this->makePageContext();
+        $this->insertPage($context, "home");
+        $this->insertPage($context, "about");
+        $this->insertPage($context, "contact");
+
+        $this->assertTrue($context->save(), "three distinct slugs save together");
+
+        $rereadContext = $this->makePageContext();
+        $this->assertCount(3, $rereadContext->fetch(Page::fetchRequest()), "all three distinct pages reached the store");
+    }
+
+    /**
+     * Updating an existing object to a slug already held by another persisted object also violates the
+     * constraint — the check runs on updates as well as inserts.
+     */
+    public function testUpdatingToADuplicateUniqueValueFails(): void
+    {
+        $context = $this->makePageContext();
+        $this->insertPage($context, "home");
+        $about = $this->insertPage($context, "about");
+        $this->assertTrue($context->save(), "two distinct pages save");
+
+        $about->slug = "home";
+        $context->processPendingChanges();
+
+        $this->expectException(InternalInconsistencyException::class);
+        $context->save();
     }
 }
