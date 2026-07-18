@@ -46,6 +46,23 @@ final class Ticket extends ManagedObject
 {
 }
 
+final class AutoTicket extends ManagedObject
+{
+    #[\Override]
+    public function willSave(): void
+    {
+        if ($this->isDeleted) {
+            return;
+        }
+        // Supply the mandatory "code" during willSave, the way a real subclass fills in a
+        // creation date, a UUID, or a slug just before persisting. This must run before
+        // validation, or the object is rejected for a value it was about to set itself.
+        if ($this->valueForKey("code") === null) {
+            $this->setValueForKey("AUTO-1", "code");
+        }
+    }
+}
+
 /**
  * Tests for src/ManagedObjectContext.php against a full stack
  * (ManagedObjectModel -> PersistentStoreCoordinator -> XMLObjectStore).
@@ -573,5 +590,52 @@ final class ManagedObjectContextTest extends TestCase
         $context->processPendingChanges();
 
         $this->assertTrue($context->save(), "updating an unrelated attribute keeps the save valid");
+    }
+
+    /**
+     * Regression: validation must run AFTER willSave(). A subclass is allowed to populate a
+     * mandatory attribute in its willSave() hook (the way one fills in a creation date, a
+     * UUID, or a computed value just before persisting). Validating before willSave rejected
+     * such an object for a value it was about to supply itself. This mirrors Core Data, whose
+     * save cycle is willSave -> validateFor{Insert,Update} -> persist.
+     */
+    public function testWillSaveCanSatisfyAMandatoryAttributeBeforeValidation(): void
+    {
+        $context = $this->makeAutoTicketContext();
+        $autoTicket = new AutoTicket($context); // "code" left unset; willSave() supplies it
+
+        $this->assertTrue($context->save(), "save succeeds because willSave sets the mandatory attribute before validation");
+        $this->assertSame("AUTO-1", (string)$autoTicket->code, "willSave populated the mandatory attribute");
+
+        $rereadContext = $this->makeAutoTicketContext();
+        $reloaded = $rereadContext->fetch(AutoTicket::fetchRequest())->first();
+        $this->assertNotNull($reloaded, "the object reached the store");
+        $this->assertSame("AUTO-1", (string)$reloaded->code, "the willSave-supplied value was persisted");
+    }
+
+    private static function makeAutoTicketModel(): ManagedObjectModel
+    {
+        $code = new AttributeDescription();
+        $code->name = "code";
+        $code->type = AttributeType::string;
+        $code->isOptional = false;
+
+        $autoTicket = new EntityDescription();
+        $autoTicket->name = "AutoTicket";
+        $autoTicket->managedObjectClassName = AutoTicket::class;
+        $autoTicket->properties = new ArrayClass([$code]);
+
+        $model = new ManagedObjectModel();
+        $model->entities = new ArrayClass([$autoTicket]);
+        return $model;
+    }
+
+    private function makeAutoTicketContext(): ManagedObjectContext
+    {
+        $coordinator = new PersistentStoreCoordinator(self::makeAutoTicketModel());
+        $coordinator->addPersistentStoreWithType(PersistentStoreType::xml, null, $this->storeURL);
+        $context = new ManagedObjectContext();
+        $context->persistentStoreCoordinator = $coordinator;
+        return $context;
     }
 }

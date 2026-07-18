@@ -908,6 +908,7 @@ final class ManagedObjectContext extends ObjectClass
         $this->notifyObjectsWillSave();
         $this->updateObjectVersions();
         $this->prepareObjectsForSave();
+        $this->validateObjectsForSave();
     }
 
     /**
@@ -919,6 +920,13 @@ final class ManagedObjectContext extends ObjectClass
         $this->obtainPermanentIDsForInsertedObjects();
         $this->normalizeInsertedObjects();
         $this->normalizeUpdatedObjects();
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function validateObjectsForSave(): void
+    {
         $this->validateInsertedObjects();
         $this->validateUpdatedObjects();
         $this->validateDeletedObjects();
