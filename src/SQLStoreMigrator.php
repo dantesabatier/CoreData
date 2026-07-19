@@ -342,7 +342,7 @@ final class SQLStoreMigrator
                 }
             }
             foreach ($properties as $property) {
-                if ($property instanceof SQLAttribute && ($statement = $this->adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($property)))) {
+                if ($property instanceof SQLAttribute && !$property->isCompositeAttribute && ($statement = $this->adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($property)))) {
                     $this->connection->execute($statement);
                 }
             }

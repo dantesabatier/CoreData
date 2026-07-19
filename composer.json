@@ -53,6 +53,11 @@
       "src/VersionKeys.php"
     ]
   },
+  "autoload-dev": {
+    "psr-4": {
+      "Sabatier\\CoreData\\Tests\\": "tests"
+    }
+  },
   "extra": {
     "branch-alias": {
       "dev-master": "1.0-dev"
