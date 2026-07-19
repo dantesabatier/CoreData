@@ -226,8 +226,7 @@ abstract class AtomicStore extends PersistentStore
             if ($predicate) {
                 $objects = $objects->filtered($predicate);
             }
-            $objects = new ArrayClass([new Number($objects->count)]);
-            return $objects;
+            return new ArrayClass([new Number($objects->count)]);
         }
         // fetchOffset then fetchLimit apply to the row-returning result types only, after
         // filtering and sorting; the count result type reports the full total and returns

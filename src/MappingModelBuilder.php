@@ -66,13 +66,16 @@ final class MappingModelBuilder
      */
     private function indexByRenamingIdentifier(Dictionary $descriptionsByName): Dictionary
     {
-        /** @var Dictionary<T> $index */
-        return $descriptionsByName->reduce(new Dictionary(), function (Dictionary $index, EntityDescription|AttributeDescription|RelationshipDescription $description): Dictionary {
-            if (!$index->offsetExists($description->renamingIdentifier)) {
-                $index[$description->renamingIdentifier] = $description;
-            }
-            return $index;
-        });
+        return $descriptionsByName->reduce(new Dictionary(),
+            /**
+             * @param Dictionary<mixed> $index
+             * @param EntityDescription|AttributeDescription|RelationshipDescription $description
+             * @return Dictionary<mixed>
+             */
+            function (Dictionary $index, EntityDescription|AttributeDescription|RelationshipDescription $description): Dictionary {
+                $index[$description->renamingIdentifier] ??= $description;
+                return $index;
+            });
     }
 
     /**
@@ -80,12 +83,9 @@ final class MappingModelBuilder
      */
     private function destinationAttributeIndex(EntityDescription $destinationEntity): Dictionary
     {
-        /** @var Dictionary<AttributeDescription>|null $index */
-        $index = $this->destinationAttributeIndexesByEntityName[$destinationEntity->name];
-        if ($index === null) {
-            $index = $this->indexByRenamingIdentifier($destinationEntity->attributesByName);
-            $this->destinationAttributeIndexesByEntityName[$destinationEntity->name] = $index;
-        }
+        /** @var Dictionary<AttributeDescription> $index */
+        $index = $this->destinationAttributeIndexesByEntityName[$destinationEntity->name] ?? $this->indexByRenamingIdentifier($destinationEntity->attributesByName);
+        $this->destinationAttributeIndexesByEntityName[$destinationEntity->name] ??= $index;
         return $index;
     }
 
@@ -94,12 +94,9 @@ final class MappingModelBuilder
      */
     private function destinationRelationshipIndex(EntityDescription $destinationEntity): Dictionary
     {
-        /** @var Dictionary<RelationshipDescription>|null $index */
-        $index = $this->destinationRelationshipIndexesByEntityName[$destinationEntity->name];
-        if ($index === null) {
-            $index = $this->indexByRenamingIdentifier($destinationEntity->relationshipsByName);
-            $this->destinationRelationshipIndexesByEntityName[$destinationEntity->name] = $index;
-        }
+        /** @var Dictionary<RelationshipDescription> $index */
+        $index = $this->destinationRelationshipIndexesByEntityName[$destinationEntity->name] ?? $this->indexByRenamingIdentifier($destinationEntity->relationshipsByName);
+        $this->destinationRelationshipIndexesByEntityName[$destinationEntity->name] ??= $index;
         return $index;
     }
 
