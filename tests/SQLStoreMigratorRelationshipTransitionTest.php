@@ -125,28 +125,23 @@ final class SQLStoreMigratorRelationshipTransitionTest extends SQLMigrationTestC
     }
 
     /**
-     * KNOWN BUG (tracked separately): when a to-one relationship becomes many-to-many, the
-     * migrator creates the pivot table but leaves the now-obsolete to-one foreign-key column
-     * behind. In processTransformedEntityMappings, the source relationship is matched to the
-     * destination twice — once as SQLToOne and once as SQLForeignKey (both by renamingIdentifier)
-     * — so the SQLForeignKey never falls into the line-309 "removedColumns" branch, and no
-     * transition branch handles it either. This is orthogonal to the versionHash fix that makes
-     * the transition run at all.
+     * When a to-one relationship becomes many-to-many, the obsolete to-one foreign-key column
+     * must be dropped: the relationship now lives in a pivot table, so the old FK column would
+     * otherwise linger as dead schema. In processTransformedEntityMappings the source appears
+     * both as SQLToOne (which creates the pivot) and as SQLForeignKey; the SQLForeignKey source,
+     * matched to a non-foreign-key destination, is routed to removedColumns.
      */
-    public function testToOneBecomesManyToManyLeavesObsoleteForeignKeyColumn(): void
+    public function testToOneBecomesManyToManyDropsObsoleteForeignKeyColumn(): void
     {
         $this->bootstrap(self::model(ownerToMany: false));
 
+        $this->assertTrue($this->hasColumn("Item", "ownerID"), "precondition: to-one FK column exists in v1");
+
         $this->migrateTo(self::model(ownerToMany: true));
 
-        if (!$this->hasColumn("Item", "ownerID")) {
-            // If a later fix removes the column, flip this test into a positive assertion.
-            $this->assertFalse($this->hasColumn("Item", "ownerID"), "obsolete FK column was cleaned up");
-            return;
-        }
-        $this->markTestIncomplete(
-            "Known bug: the obsolete to-one FK column (ownerID) is not dropped when the "
-            . "relationship becomes many-to-many. Tracked separately from the versionHash fix.",
+        $this->assertFalse(
+            $this->hasColumn("Item", "ownerID"),
+            "the obsolete to-one FK column is dropped once the relationship becomes many-to-many",
         );
     }
 }

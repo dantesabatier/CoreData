@@ -283,6 +283,13 @@ final class SQLStoreMigrator
                             $statement = $this->adapter->newCreateIndexStatementForForeignKey($destination);
                             $this->connection->execute($statement);
                         }
+                    } elseif ($source instanceof SQLForeignKey) {
+                        // The source to-one relationship's foreign key still matches the destination
+                        // by renaming identifier, but the destination is no longer a foreign key
+                        // (e.g. the relationship became to-many/many-to-many, so it now lives in a
+                        // pivot table). The source SQLToOne pass handles creating the new structure;
+                        // here the now-obsolete foreign-key column and its index are removed.
+                        $this->removedColumns->insert($source);
                     } elseif ($source instanceof SQLRelationship && $destination instanceof SQLRelationship) {
                         if ($source instanceof $destination) {
                             if ($source instanceof SQLToMany && $destination instanceof SQLToMany && $source->relationshipDescription->deleteRule !== $destination->relationshipDescription->deleteRule) {
