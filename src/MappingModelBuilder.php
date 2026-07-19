@@ -84,9 +84,44 @@ final class MappingModelBuilder
         return true;
     }
 
-    public function checkForSchemaMatchBetween(/** @noinspection PhpUnusedParameterInspection */ ?EntityDescription $source, ?EntityDescription $destination): bool
+    /**
+     * Returns whether a lightweight (inferred) migration can map $source to $destination without
+     * manual intervention. It is a pure predicate: it inspects the properties the two entities
+     * share (paired by renaming identifier) and reports the two changes an inferred mapping
+     * cannot express —
+     *  - an attribute whose type changes in a way {@see canTransformAttributeType()} rejects
+     *    (there is no automatic value conversion), and
+     *  - a relationship whose destination entity changes (the migrator cannot re-target the
+     *    related objects).
+     *
+     * Added, removed, and renamed properties, transformable type changes, optionality changes,
+     * and new mandatory attributes (filled with their type default) are all inferable and return
+     * true.
+     */
+    public function checkForSchemaMatchBetween(?EntityDescription $source, ?EntityDescription $destination): bool
     {
-        return true;
+        if (!$source || !$destination) {
+            return true;
+        }
+        $attributesMatch = $source->attributesByName->allSatisfy(function (AttributeDescription $sourceAttribute) use ($destination): bool {
+            $destinationAttribute = $destination->attributesByName->first(fn(AttributeDescription $candidate): bool => $candidate->renamingIdentifier === $sourceAttribute->renamingIdentifier);
+            if (!$destinationAttribute || $destinationAttribute->isTransient || $destinationAttribute instanceof DerivedAttributeDescription || $sourceAttribute->isTransient || $sourceAttribute instanceof DerivedAttributeDescription) {
+                return true;
+            }
+            return $this->canTransformAttributeType($sourceAttribute->type, $destinationAttribute->type);
+        });
+        if (!$attributesMatch) {
+            return false;
+        }
+        return $source->relationshipsByName->allSatisfy(function (RelationshipDescription $sourceRelationship) use ($destination): bool {
+            $destinationRelationship = $destination->relationshipsByName->first(fn(RelationshipDescription $candidate): bool => $candidate->renamingIdentifier === $sourceRelationship->renamingIdentifier);
+            if (!$destinationRelationship) {
+                return true;
+            }
+            // Compare the destination entities by renaming identifier so that renaming the target
+            // entity (not a real re-targeting) is not mistaken for a destination change.
+            return $sourceRelationship->destinationEntity->renamingIdentifier === $destinationRelationship->destinationEntity->renamingIdentifier;
+        });
     }
 
     public function newEntityMapping(?EntityDescription $source, ?EntityDescription $destination): ?EntityMapping
@@ -102,6 +137,9 @@ final class MappingModelBuilder
         if ($destination) {
             $mapping->destinationEntityName = $destination->name;
             $mapping->destinationEntityVersionHash = $destination->versionHash;
+            if ($source && $destination->versionHash !== $source->versionHash && !$this->checkForSchemaMatchBetween($source, $destination)) {
+                throw new InferredMappingModelException("Cannot infer a mapping from entity \"$source->name\" to \"$destination->name\": the change is not expressible as a lightweight migration");
+            }
             $mapping->mappingType = $source ? ($destination->versionHash === $source->versionHash ? EntityMappingType::copyEntityMappingType : EntityMappingType::transformEntityMappingType) : EntityMappingType::addEntityMappingType;
         } elseif ($source) {
             $mapping->mappingType = EntityMappingType::removeEntityMappingType;
