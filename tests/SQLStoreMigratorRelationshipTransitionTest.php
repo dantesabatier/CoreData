@@ -144,4 +144,34 @@ final class SQLStoreMigratorRelationshipTransitionTest extends SQLMigrationTestC
             "the obsolete to-one FK column is dropped once the relationship becomes many-to-many",
         );
     }
+
+    public function testManyToManyBecomesToOneCreatesForeignKeyAndDropsPivot(): void
+    {
+        // v1: owner is to-many -> many-to-many pivot table, no FK column on Item.
+        $context = $this->bootstrap(self::model(ownerToMany: true));
+        $item = new Item($context);
+        $item->label = "gadget";
+        $context->save();
+
+        $this->assertTrue($this->tableExists("ItemHolder"), "precondition: pivot table exists in v1");
+        $this->assertFalse($this->hasColumn("Item", "ownerID"), "precondition: no FK column in v1");
+
+        // v2: owner becomes to-one -> a foreign-key column, pivot table obsolete.
+        $this->migrateTo(self::model(ownerToMany: false));
+
+        $this->assertTrue(
+            $this->hasColumn("Item", "ownerID"),
+            "many-to-many -> to-one creates the to-one foreign-key column",
+        );
+        $this->assertFalse(
+            $this->tableExists("ItemHolder"),
+            "the now-obsolete pivot table is dropped",
+        );
+
+        $this->assertSame(
+            ["gadget"],
+            $this->columnValues("Item", "label"),
+            "the entity's own data survives the reverse transition",
+        );
+    }
 }
