@@ -10,6 +10,7 @@
 namespace Sabatier\CoreData;
 
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Predicates\Expression;
 
 /** @internal */
@@ -18,8 +19,88 @@ final class MappingModelBuilder
     /** @internal */
     public static int $migrationDebugLevel = 0;
 
+    /**
+     * Destination entities indexed by renaming identifier, so a source entity finds its
+     * destination in O(1) instead of a linear scan. Built once; mirrors the cache that
+     * _NSMappingModelBuilder resets via _resetCaches.
+     * @var Dictionary<EntityDescription>
+     */
+    private Dictionary $destinationEntitiesByRenamingIdentifier {
+        get => $this->destinationEntitiesByRenamingIdentifier ??= $this->indexByRenamingIdentifier($this->destinationModel->entitiesByName);
+    }
+    /**
+     * Source root entities indexed by renaming identifier, so the "destination entity added"
+     * check is an O(1) lookup instead of a linear contains() over the source entities.
+     * @var Dictionary<EntityDescription>
+     */
+    private Dictionary $sourceRootEntitiesByRenamingIdentifier {
+        get => $this->sourceRootEntitiesByRenamingIdentifier ??= $this->indexByRenamingIdentifier($this->sourceModel->entitiesByName->filter(fn(EntityDescription $entity): bool => $entity->isRootEntity));
+    }
+    /**
+     * Per-destination-entity attribute indexes (renaming identifier -> attribute), keyed by the
+     * destination entity name and populated lazily as each entity mapping is inferred.
+     * @var Dictionary<Dictionary<AttributeDescription>>
+     */
+    private Dictionary $destinationAttributeIndexesByEntityName {
+        get => $this->destinationAttributeIndexesByEntityName ??= new Dictionary();
+    }
+    /**
+     * Per-destination-entity relationship indexes (renaming identifier -> relationship).
+     * @var Dictionary<Dictionary<RelationshipDescription>>
+     */
+    private Dictionary $destinationRelationshipIndexesByEntityName {
+        get => $this->destinationRelationshipIndexesByEntityName ??= new Dictionary();
+    }
+
     public function __construct(private readonly ManagedObjectModel $sourceModel, private readonly ManagedObjectModel $destinationModel)
     {
+    }
+
+    /**
+     * Indexes a by-name dictionary of descriptions by their renaming identifier. When two
+     * descriptions share a renaming identifier the first wins, matching the behavior of the
+     * linear first() scans this replaces.
+     * @template T of EntityDescription|AttributeDescription|RelationshipDescription
+     * @param Dictionary<T> $descriptionsByName
+     * @return Dictionary<T>
+     */
+    private function indexByRenamingIdentifier(Dictionary $descriptionsByName): Dictionary
+    {
+        /** @var Dictionary<T> $index */
+        return $descriptionsByName->reduce(new Dictionary(), function (Dictionary $index, EntityDescription|AttributeDescription|RelationshipDescription $description): Dictionary {
+            if (!$index->offsetExists($description->renamingIdentifier)) {
+                $index[$description->renamingIdentifier] = $description;
+            }
+            return $index;
+        });
+    }
+
+    /**
+     * @return Dictionary<AttributeDescription>
+     */
+    private function destinationAttributeIndex(EntityDescription $destinationEntity): Dictionary
+    {
+        /** @var Dictionary<AttributeDescription>|null $index */
+        $index = $this->destinationAttributeIndexesByEntityName[$destinationEntity->name];
+        if ($index === null) {
+            $index = $this->indexByRenamingIdentifier($destinationEntity->attributesByName);
+            $this->destinationAttributeIndexesByEntityName[$destinationEntity->name] = $index;
+        }
+        return $index;
+    }
+
+    /**
+     * @return Dictionary<RelationshipDescription>
+     */
+    private function destinationRelationshipIndex(EntityDescription $destinationEntity): Dictionary
+    {
+        /** @var Dictionary<RelationshipDescription>|null $index */
+        $index = $this->destinationRelationshipIndexesByEntityName[$destinationEntity->name];
+        if ($index === null) {
+            $index = $this->indexByRenamingIdentifier($destinationEntity->relationshipsByName);
+            $this->destinationRelationshipIndexesByEntityName[$destinationEntity->name] = $index;
+        }
+        return $index;
     }
 
     public function canTransformAttributeType(AttributeType $source, AttributeType $destination): bool
@@ -72,8 +153,10 @@ final class MappingModelBuilder
         $relationshipMappings = new ArrayClass();
         if ($destinationEntity) {
             if ($sourceEntity) {
-                $attributeMappings = $sourceEntity->attributesByName->compactMap(fn(AttributeDescription $source): ?PropertyMapping => $this->newInferredAttributeMapping($source, $destinationEntity->attributesByName->first(fn(AttributeDescription $destination): bool => $destination->renamingIdentifier === $source->renamingIdentifier)));
-                $relationshipMappings = $sourceEntity->relationshipsByName->compactMap(fn(RelationshipDescription $source): ?PropertyMapping => $this->newInferredRelationshipMapping($source, $destinationEntity->relationshipsByName->first(fn(RelationshipDescription $destination): bool => $destination->renamingIdentifier === $source->renamingIdentifier)));
+                $destinationAttributeIndex = $this->destinationAttributeIndex($destinationEntity);
+                $destinationRelationshipIndex = $this->destinationRelationshipIndex($destinationEntity);
+                $attributeMappings = $sourceEntity->attributesByName->compactMap(fn(AttributeDescription $source): ?PropertyMapping => $this->newInferredAttributeMapping($source, $destinationAttributeIndex[$source->renamingIdentifier]));
+                $relationshipMappings = $sourceEntity->relationshipsByName->compactMap(fn(RelationshipDescription $source): ?PropertyMapping => $this->newInferredRelationshipMapping($source, $destinationRelationshipIndex[$source->renamingIdentifier]));
             } else {
                 $attributeMappings = $destinationEntity->attributesByName->map(fn(AttributeDescription $attribute): PropertyMapping => new PropertyMapping($attribute->name));
                 $relationshipMappings = $destinationEntity->relationshipsByName->map(fn(RelationshipDescription $relationship): PropertyMapping => new PropertyMapping($relationship->name));
@@ -103,8 +186,9 @@ final class MappingModelBuilder
         if (!$source || !$destination) {
             return true;
         }
-        $attributesMatch = $source->attributesByName->allSatisfy(function (AttributeDescription $sourceAttribute) use ($destination): bool {
-            $destinationAttribute = $destination->attributesByName->first(fn(AttributeDescription $candidate): bool => $candidate->renamingIdentifier === $sourceAttribute->renamingIdentifier);
+        $destinationAttributeIndex = $this->destinationAttributeIndex($destination);
+        $attributesMatch = $source->attributesByName->allSatisfy(function (AttributeDescription $sourceAttribute) use ($destinationAttributeIndex): bool {
+            $destinationAttribute = $destinationAttributeIndex[$sourceAttribute->renamingIdentifier];
             if (!$destinationAttribute || $destinationAttribute->isTransient || $destinationAttribute instanceof DerivedAttributeDescription || $sourceAttribute->isTransient || $sourceAttribute instanceof DerivedAttributeDescription) {
                 return true;
             }
@@ -113,8 +197,9 @@ final class MappingModelBuilder
         if (!$attributesMatch) {
             return false;
         }
-        return $source->relationshipsByName->allSatisfy(function (RelationshipDescription $sourceRelationship) use ($destination): bool {
-            $destinationRelationship = $destination->relationshipsByName->first(fn(RelationshipDescription $candidate): bool => $candidate->renamingIdentifier === $sourceRelationship->renamingIdentifier);
+        $destinationRelationshipIndex = $this->destinationRelationshipIndex($destination);
+        return $source->relationshipsByName->allSatisfy(function (RelationshipDescription $sourceRelationship) use ($destinationRelationshipIndex): bool {
+            $destinationRelationship = $destinationRelationshipIndex[$sourceRelationship->renamingIdentifier];
             if (!$destinationRelationship) {
                 return true;
             }
@@ -151,10 +236,23 @@ final class MappingModelBuilder
     {
         $sourceEntities = $this->sourceModel->entitiesByName->filter(fn(EntityDescription $entity): bool => $entity->isRootEntity);
         $destinationEntities = $this->destinationModel->entitiesByName->filter(fn(EntityDescription $entity): bool => $entity->isRootEntity);
-        /** @var ArrayClass<EntityMapping> $entityMappings */
-        $entityMappings = $sourceEntities->compactMap(fn(EntityDescription $sourceEntity): ?EntityMapping => ($entityMapping = $this->newEntityMapping($sourceEntity, $this->destinationModel->entitiesByName->first(fn(EntityDescription $e): bool => $e->renamingIdentifier === $sourceEntity->renamingIdentifier))) && $this->inferPropertyMappingsForEntityMapping($entityMapping) ? $entityMapping : null)->appendingContentsOf($destinationEntities->compactMap(fn(EntityDescription $destinationEntity): ?EntityMapping => !$sourceEntities->contains(fn(EntityDescription $sourceEntity): bool => $destinationEntity->renamingIdentifier === $sourceEntity->renamingIdentifier) && ($entityMapping = $this->newEntityMapping(null, $destinationEntity)) && $this->inferPropertyMappingsForEntityMapping($entityMapping) ? $entityMapping : null));
+        // Map every source entity to its destination (by renaming identifier), producing copy,
+        // transform and remove mappings.
+        $entityMappings = $sourceEntities->compactMap(function (EntityDescription $sourceEntity): ?EntityMapping {
+            $destinationEntity = $this->destinationEntitiesByRenamingIdentifier[$sourceEntity->renamingIdentifier];
+            $entityMapping = $this->newEntityMapping($sourceEntity, $destinationEntity);
+            return $entityMapping && $this->inferPropertyMappingsForEntityMapping($entityMapping) ? $entityMapping : null;
+        });
+        // Add mappings for destination entities that have no source counterpart.
+        $addedMappings = $destinationEntities->compactMap(function (EntityDescription $destinationEntity): ?EntityMapping {
+            if ($this->sourceRootEntitiesByRenamingIdentifier[$destinationEntity->renamingIdentifier]) {
+                return null;
+            }
+            $entityMapping = $this->newEntityMapping(null, $destinationEntity);
+            return $entityMapping && $this->inferPropertyMappingsForEntityMapping($entityMapping) ? $entityMapping : null;
+        });
         $mappingModel = new MappingModel();
-        $mappingModel->entityMappings = $entityMappings;
+        $mappingModel->entityMappings = $entityMappings->appendingContentsOf($addedMappings);
         return $mappingModel;
     }
 }
