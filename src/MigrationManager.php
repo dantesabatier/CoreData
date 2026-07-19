@@ -290,12 +290,16 @@ class MigrationManager extends ObjectClass
         }
         $this->timestamp = ProcessInfo::processInfo()->systemUptime;
         $mappings = $mappingModel->entityMappings;
+        $count = $mappings->count;
         for ($i = 1; $i <= 3; $i++) {
             if ($this->migrationWasCancelled) {
                 break;
             }
             foreach ($mappings as $index => $mapping) {
-                $this->do($i, $i * $index, $mapping);
+                // A monotonically increasing step from 1 to count*3, so migrationProgress climbs
+                // steadily to 1.0. (The previous $i * $index was non-monotonic: it reset to 0 at
+                // the start of every pass and never reflected real progress.)
+                $this->do($i, ($i - 1) * $count + $index + 1, $mapping);
             }
         }
         $this->willChangeValueForKey("migrationProgress");

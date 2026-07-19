@@ -267,9 +267,13 @@ final class SQLStoreMigrator
                         } elseif (($source->sqlType !== $destination->sqlType || $source->isOptional !== $destination->isOptional || $source->isUnique !== $destination->isUnique || $source->minValue !== $destination->minValue || $source->maxValue !== $destination->maxValue || $source->defaultValue !== $destination->defaultValue || ($source->isDerivedAttribute !== $destination->isDerivedAttribute) || ($source->isDerivedAttribute && $destination->isDerivedAttribute && (string)$source->derivationExpression !== (string)$destination->derivationExpression))) {
                             if ($destination->isDerivedAttribute && ($statement = $this->adapter->newCreateColumnStatement($destination, $destinationEntity->columnAfter($destination)))) {
                                 $this->connection->execute($statement);
-                            } elseif ($statement = $this->adapter->newModifyColumnStatement($source, $destinationEntity->columnAfter($destination))) {
-                                $this->connection->execute($statement);
                             }
+                            // A plain attribute whose type/constraints changed is NOT modified here:
+                            // the final modify loop below re-applies every destination attribute's
+                            // type and position after all columns exist. Emitting the modify now
+                            // with "AFTER <columnAfter($destination)>" could reference a column that
+                            // has not been created yet (a new attribute declared before this one),
+                            // which MariaDB rejects with "Unknown column".
                         }
                         if (!$source->isTransient && $destination->isTransient) {
                             $this->removedColumns->insert($source);
@@ -283,12 +287,18 @@ final class SQLStoreMigrator
                             $statement = $this->adapter->newCreateIndexStatementForForeignKey($destination);
                             $this->connection->execute($statement);
                         }
-                    } elseif ($source instanceof SQLForeignKey) {
-                        // The source to-one relationship's foreign key still matches the destination
-                        // by renaming identifier, but the destination is no longer a foreign key
-                        // (e.g. the relationship became to-many/many-to-many, so it now lives in a
-                        // pivot table). The source SQLToOne pass handles creating the new structure;
-                        // here the now-obsolete foreign-key column and its index are removed.
+                    } elseif ($source instanceof SQLForeignKey && !$destinationEntity->foreignKeyColumns->contains(fn(SQLForeignKey $foreignKey): bool => $foreignKey->columnName === $source->columnName)) {
+                        // The source is a to-one foreign key that matched the destination by
+                        // renaming identifier, but the destination has NO foreign key with this
+                        // column — the relationship stopped being a to-one (it became
+                        // to-many/many-to-many and now lives in a pivot table or on the other
+                        // side). The source SQLToOne pass creates the new structure; here the
+                        // now-obsolete foreign-key column and its index are removed.
+                        //
+                        // The destination-FK guard is essential: without it, an UNCHANGED to-one
+                        // relationship (which still has a destination foreign key, but whose
+                        // SQLToOne intercepts the renaming-identifier match ahead of its FK) would
+                        // fall here and have its live column dropped — silent data loss.
                         $this->removedColumns->insert($source);
                     } elseif ($source instanceof SQLRelationship && $destination instanceof SQLRelationship) {
                         if ($source instanceof $destination) {
