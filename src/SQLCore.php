@@ -557,7 +557,7 @@ final class SQLCore extends IncrementalStore
     #[Override]
     public function newValueForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass|ManagedObjectID|Nil
     {
-        $expectedToken = $context->queryGenerationToken?->value ?? new QueryGenerationToken($this->identifier, $this->storeGeneration, $this->currentGeneration);
+        $expectedToken = $context->queryGenerationToken ?? new QueryGenerationToken($this->identifier, $this->storeGeneration, $this->currentGeneration);
         if ($cached = $this->rowCache->snapshot($objectID, $relationship)) {
             /** @var QueryGenerationToken|null $cachedToken */
             $cachedToken = $cached[ManagedObjectQueryResultGenerationKey];
@@ -621,7 +621,7 @@ final class SQLCore extends IncrementalStore
     public function newValueForFetchedProperty(FetchedPropertyDescription $fetchedProperty, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass
     {
         $isSorted = $fetchedProperty->fetchRequest?->sortDescriptors !== null;
-        $expectedToken = $context->queryGenerationToken?->value ?? new QueryGenerationToken($this->identifier, $this->storeGeneration, $this->currentGeneration);
+        $expectedToken = $context->queryGenerationToken ?? new QueryGenerationToken($this->identifier, $this->storeGeneration, $this->currentGeneration);
         if (!$isSorted && ($cached = $this->rowCache->snapshot($objectID, $fetchedProperty))) {
             /** @var QueryGenerationToken|null $cachedToken */
             $cachedToken = $cached[ManagedObjectQueryResultGenerationKey];
