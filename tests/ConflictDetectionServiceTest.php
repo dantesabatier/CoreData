@@ -15,8 +15,10 @@ use Sabatier\CoreData\ManagedObjectContext;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\MergePolicy;
 use Sabatier\CoreData\PersistentStoreCoordinator;
+use Sabatier\CoreData\PersistentStoreSnapshotProvider;
 use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\CoreData\SnapshotProvider;
+use Sabatier\CoreData\SnapshotVersioningStrategy;
 use Sabatier\CoreData\VersioningStrategy;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
@@ -253,9 +255,6 @@ final class ConflictDetectionServiceTest extends TestCase
 
     public function testTemporaryIdObjectIsSkipped(): void
     {
-        // A never-saved object still has a temporary ID → detectConflicts returns immediately
-        // (first guard), so the error policy is never consulted even with a forced version
-        // conflict AND an originalSnapshot present.
         $context = $this->context();
         $fresh = new Account($context);
         $fresh->email = "temp@x.com";
@@ -267,15 +266,11 @@ final class ConflictDetectionServiceTest extends TestCase
             new StubVersioningStrategy(true),
         );
         $service->detectConflicts($fresh);
-        $this->addToAssertionCount(1); // temporary ID short-circuits before any conflict work
+        $this->addToAssertionCount(1);
     }
 
     public function testMissingOriginalSnapshotIsSkipped(): void
     {
-        // Second guard: even a saved (permanent-ID) object is skipped when it has no
-        // originalSnapshot. NOTE: the XML store never populates originalSnapshot (it is set only
-        // through ManagedObject::updateFromSnapshot, which the XML fetch path does not drive), so
-        // this guard is what a persisted-then-mutated object hits in practice.
         $context = $this->context();
         $account = new Account($context);
         $account->email = "nosnap@x.com";
@@ -283,7 +278,7 @@ final class ConflictDetectionServiceTest extends TestCase
         $context->save();
         $account->balance = 2;
         $context->processPendingChanges();
-        $this->assertNull($account->originalSnapshot, "precondition: no originalSnapshot after insert+mutate");
+        $this->assertNull($account->originalSnapshot, "precondition: an inserted-then-mutated object has no originalSnapshot");
 
         $service = $this->service(
             MergePolicy::error(),
@@ -291,14 +286,11 @@ final class ConflictDetectionServiceTest extends TestCase
             new StubVersioningStrategy(true),
         );
         $service->detectConflicts($account);
-        $this->addToAssertionCount(1); // missing originalSnapshot short-circuits
+        $this->addToAssertionCount(1);
     }
 
     public function testVersionConflictOnAnUpdatedObjectRaises(): void
     {
-        // Drive the optimistic-locking branch directly. It requires a permanent ID, an
-        // originalSnapshot (the fetch-time baseline), and isUpdated. Since the XML path does not
-        // populate originalSnapshot, set it explicitly to the state the branch expects.
         $context = $this->context();
         $account = new Account($context);
         $account->email = "v@x.com";
@@ -309,9 +301,7 @@ final class ConflictDetectionServiceTest extends TestCase
         $account->balance = 2;
         $context->processPendingChanges();
         $this->assertTrue($account->isUpdated, "precondition: the object is in the updated set");
-        $this->assertNotNull($account->originalSnapshot, "precondition: a baseline snapshot is present");
 
-        // Store snapshot present + versioning strategy says conflict → resolve raises under error.
         $service = $this->service(
             MergePolicy::error(),
             new StubSnapshotProvider(new Dictionary([ManagedObjectVersionKey => 99])),
@@ -333,11 +323,34 @@ final class ConflictDetectionServiceTest extends TestCase
         $account->balance = 2;
         $context->processPendingChanges();
 
-        // Same setup, but the versioning strategy reports NO conflict → nothing is raised.
         $service = $this->service(
             MergePolicy::error(),
             new StubSnapshotProvider(new Dictionary([ManagedObjectVersionKey => 1])),
             new StubVersioningStrategy(false),
+        );
+        $service->detectConflicts($account);
+        $this->addToAssertionCount(1);
+    }
+
+    public function testAtomicStoreOptimisticLockingDegradesToNoConflict(): void
+    {
+        $seed = $this->context();
+        $seeded = new Account($seed);
+        $seeded->email = "row@x.com";
+        $seeded->balance = 1;
+        $seed->save();
+
+        $context = $this->context();
+        $account = $context->fetch(Account::fetchRequest())->first;
+        $account->balance = 2;
+        $context->processPendingChanges();
+
+        $snapshotProvider = new PersistentStoreSnapshotProvider($context);
+        $service = new ConflictDetectionService(
+            $snapshotProvider,
+            new SnapshotVersioningStrategy(),
+            new DeleteRuleConflictDetector($snapshotProvider),
+            MergePolicy::error(),
         );
         $service->detectConflicts($account);
         $this->addToAssertionCount(1);
