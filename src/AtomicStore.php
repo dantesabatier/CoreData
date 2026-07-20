@@ -48,9 +48,11 @@ abstract class AtomicStore extends PersistentStore
         $this->updateObject($object);
     }
 
-    private function updateObject(ManagedObject $object): void
+    private function updateObject(ManagedObject $object, bool $fromFetch = false): void
     {
         $cacheNode = $this->cacheNode($object->objectID) ?? fatal_error("Invalid argument: object \"$object\" does not exists ");
+        /** @var Dictionary<mixed> $snapshot */
+        $snapshot = new Dictionary();
         foreach ($object->entity as $property) {
             if ($property instanceof DerivedAttributeDescription) {
                 continue;
@@ -63,7 +65,12 @@ abstract class AtomicStore extends PersistentStore
             if ($value === null) {
                 continue;
             }
-            $object->setValueForKey($value, $key);
+            $snapshot[$key] = $value;
+        }
+        if ($fromFetch) {
+            $object->updateFromSnapshot($snapshot);
+        } else {
+            $object->updateFromRefreshSnapshot($snapshot);
         }
         $this->updateCacheNode($cacheNode, $object);
     }
@@ -141,7 +148,7 @@ abstract class AtomicStore extends PersistentStore
             $object = $context->object($cacheNode->objectID);
             if (!$object->isAwakeFromFetch) {
                 $object->isAwakeFromFetch = true;
-                $this->updateObject($object);
+                $this->updateObject($object, fromFetch: true);
                 $object->awakeFromFetch();
             }
             if ($request->includesSubentities) {

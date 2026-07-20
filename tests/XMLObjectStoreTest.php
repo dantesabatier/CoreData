@@ -182,6 +182,20 @@ final class XMLObjectStoreTest extends TestCase
         $this->assertSame("after", (string)$reloaded->code, "an update is persisted and visible to a later stack");
     }
 
+    public function testFetchedObjectCarriesAnOriginalSnapshot(): void
+    {
+        $context = $this->context();
+        $carton = new Carton($context);
+        $carton->code = "baseline";
+        $carton->weight = 11;
+        $context->save();
+
+        $reloaded = $this->context()->fetch(Carton::fetchRequest())->first;
+        $this->assertNotNull($reloaded, "precondition: the object round-trips");
+        $this->assertNotNull($reloaded->originalSnapshot, "a fetched object carries an original snapshot baseline");
+        $this->assertSame("baseline", $reloaded->originalSnapshot["code"], "the baseline holds the stored attribute values");
+    }
+
     public function testToManyRelationshipPersistsAndTraversesBothWays(): void
     {
         $context = $this->context();
