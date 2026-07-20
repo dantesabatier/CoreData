@@ -127,7 +127,7 @@ final class MergePolicy extends ObjectClass
     }
 
     /**
-     * A policy that merges conflicts between the persistent store's version of the object and the current in-memory version by individual property, with the external changes trumping in-memory changes.
+     * A policy that merges conflicts between the persistent store's version of the object and the current in-memory version by individual property, with the in-memory changes trumping external changes.
      * @return MergePolicy
      */
     #[Pure]
@@ -137,7 +137,7 @@ final class MergePolicy extends ObjectClass
     }
 
     /**
-     * A policy that merges conflicts between the persistent store's version of the object and the current in-memory version by individual property, with the in-memory changes trumping external changes.
+     * A policy that merges conflicts between the persistent store's version of the object and the current in-memory version by individual property, with the external changes trumping in-memory changes.
      * @return MergePolicy
      */
     #[Pure]

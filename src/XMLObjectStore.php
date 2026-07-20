@@ -403,6 +403,17 @@ final class XMLObjectStore extends AtomicStore
     }
 
     /**
+     * Detaches the XML elements backing the given cache nodes, and repairs the document around
+     * them: cascading to referenced children, and scrubbing dangling references to the deleted
+     * nodes from every other element.
+     *
+     * The cascade branch below is NOT redundant with the context's own delete-rule handling, even
+     * though it looks it: the context only cascades to children it has materialized, so a child
+     * that exists in the file but was never faulted into the context would otherwise be orphaned.
+     * This walks the stored "references" directly, so it prunes such children regardless. When the
+     * context DID cascade (the common case), the child is also in $cacheNodes and may already be
+     * detached — hence the parent-node guards before each removeChild.
+     *
      * @throws Exception
      */
     #[Override]
