@@ -11,6 +11,7 @@ use Sabatier\CoreData\EntityDescription;
 use Sabatier\CoreData\InferredMappingModelException;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\MappingModel;
+use Sabatier\CoreData\MappingModelBuilder;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
 
@@ -106,6 +107,59 @@ final class MappingModelBuilderSchemaMatchTest extends TestCase
 
         $model = MappingModel::inferredMappingModel($v1, $v2);
         $this->assertNotNull($model, "a new mandatory attribute is inferable (filled with a default)");
+    }
+
+    public function testUnchangedBooleanAttributeIsInferableWhenVersionHashChanges(): void
+    {
+        // The schema check only runs when the version hashes differ, so an unchanged attribute has
+        // to survive being re-examined alongside a genuine change elsewhere in the entity. Here the
+        // hash changes because the relationship's inverse is renamed (Cog.widget -> Cog.widgets,
+        // part of making the relationship many-to-many), while "isEnabled" keeps its boolean type.
+        $before = new RelationshipDescription();
+        $before->name = "part";
+        $before->lazyDestinationEntityName = "Cog";
+        $before->lazyInverseRelationshipName = "widget";
+        $before->maxCount = 1;
+
+        $after = new RelationshipDescription();
+        $after->name = "part";
+        $after->lazyDestinationEntityName = "Cog";
+        $after->lazyInverseRelationshipName = "widgets";
+        $after->maxCount = 1;
+
+        $v1 = self::widgetModel([self::attribute("isEnabled", AttributeType::boolean, optional: false), $before]);
+        $v2 = self::widgetModel([self::attribute("isEnabled", AttributeType::boolean, optional: false), $after]);
+
+        $widgetBefore = $v1->entitiesByName["Widget"];
+        $widgetAfter = $v2->entitiesByName["Widget"];
+        self::assertNotNull($widgetBefore);
+        self::assertNotNull($widgetAfter);
+        // Guard the premise: without differing hashes the check never runs and the test proves nothing.
+        self::assertNotSame($widgetBefore->versionHash, $widgetAfter->versionHash, "the relationship change must alter the entity version hash");
+
+        $model = MappingModel::inferredMappingModel($v1, $v2);
+        $this->assertNotNull($model, "an unchanged boolean attribute must not make the entity non-inferable");
+    }
+
+    /**
+     * An attribute whose type is unchanged is always transformable, whatever the type. Booleans
+     * regressed here: boolean was listed as a transformable source but omitted from the accepted
+     * destinations, so boolean -> boolean was rejected.
+     */
+    public function testUnchangedAttributeTypeIsAlwaysTransformable(): void
+    {
+        $builder = new MappingModelBuilder(new ManagedObjectModel(), new ManagedObjectModel());
+        foreach (AttributeType::cases() as $type) {
+            $this->assertTrue($builder->canTransformAttributeType($type, $type), "$type->name -> $type->name must be transformable");
+        }
+    }
+
+    public function testNumericNarrowingToBooleanIsNotTransformable(): void
+    {
+        $builder = new MappingModelBuilder(new ManagedObjectModel(), new ManagedObjectModel());
+        $this->assertFalse($builder->canTransformAttributeType(AttributeType::integer64, AttributeType::boolean), "narrowing an integer to a boolean is lossy");
+        $this->assertFalse($builder->canTransformAttributeType(AttributeType::double, AttributeType::boolean), "narrowing a double to a boolean is lossy");
+        $this->assertTrue($builder->canTransformAttributeType(AttributeType::boolean, AttributeType::integer64), "widening a boolean to an integer is lossless");
     }
 
     // --- Non-inferable changes: must raise ---
