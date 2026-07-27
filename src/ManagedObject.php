@@ -7,7 +7,6 @@ use Exception;
 use JetBrains\PhpStorm\ExpectedValues;
 use Override;
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\ComparisonResult;
 use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Error;
@@ -576,6 +575,13 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     {
         $this->isInserted = true;
         $this->committedSnapshot = $this->persistentPrimitiveValues();
+        // The optimistic-locking baseline has to follow the row we just wrote. The save bumped
+        // version and persisted it, so leaving the fetch-time snapshot in place makes the next
+        // save in the same context compare a stale version against the store and report a
+        // conflict against this context's own write.
+        if ($originalSnapshot = $this->originalSnapshot) {
+            $originalSnapshot[ManagedObjectVersionKey] = $this->version;
+        }
         $this->changedValuesForCurrentEvent->removeAll();
     }
 
@@ -829,37 +835,66 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $set->setSet($value);
                 $value = $set;
                 $change = $this->mutableSetValueForKey($key);
-                if ($this->isStable && !$this->isSuppressingKVO && $this->isAwakeFromFetch && $this->hasFaultForRelationshipNamed($key) && $this->isInserted) {
+                // The removal set below is derived by diffing against the current members, so an
+                // unfired fault reads as "empty": every removal is then lost and the assignment
+                // looks like a pure insertion. Resolving is gated on isStable because the store
+                // re-enters this method while hydrating a fetch, and firing the fault there
+                // corrupts the object being rebuilt.
+                if ($this->isStable && !$this->isSuppressingKVO && $this->hasFaultForRelationshipNamed($key) && $this->isInserted) {
                     /** @var FaultingSet $change */
                     $change = $this->valueForKey($key);
-                    /** @var ManagedObject $managedObject */
-                    foreach ($change as $managedObject) {
-                        if ($member = $value->member($managedObject)) {
-                            $managedObject->setValuesForKeys($member->dictionaryWithValues($member->serializationKeys));
+                    if ($this->isAwakeFromFetch) {
+                        /** @var ManagedObject $managedObject */
+                        foreach ($change as $managedObject) {
+                            if ($member = $value->member($managedObject)) {
+                                $managedObject->setValuesForKeys($member->dictionaryWithValues($member->serializationKeys));
+                            }
                         }
                     }
                 }
-                $comparisonResult = $change->compare($value);
-                if ($comparisonResult === ComparisonResult::orderedDescending) {
-                    $change->subtract($value);
+                // Dispatch on the actual set difference, not on cardinality: Set::compare orders by
+                // count, so assigning {3,4} over {2} looked like a pure insertion and unioned to
+                // {2,3,4}, silently keeping the correlation row for 2 that the caller removed.
+                /** @var Set<ManagedObject> $removedObjects */
+                $removedObjects = new Set($change->filter(fn(ManagedObject $object): bool => !$value->containsElement($object)));
+                /** @var Set<ManagedObject> $addedObjects */
+                $addedObjects = new Set($value->filter(fn(ManagedObject $object): bool => !$change->containsElement($object)));
+                // A removal has to be announced with the objects that left the relationship: the
+                // context turns that payload into the correlation-table DELETEs. Announcing the
+                // remaining members instead (or, when clearing, an empty set) drops the rows.
+                $notifiedChange = null;
+                if ($removedObjects->isEmpty && $addedObjects->isEmpty) {
+                    $changeKind = KeyValueChange::setting;
+                } elseif ($addedObjects->isEmpty) {
+                    $change->subtract($removedObjects);
+                    $notifiedChange = $removedObjects;
                     $changeKind = KeyValueChange::removal;
-                } elseif ($comparisonResult === ComparisonResult::orderedAscending) {
-                    $change->formUnion($value);
+                } elseif ($removedObjects->isEmpty) {
+                    $change->formUnion($addedObjects);
+                    $notifiedChange = $addedObjects;
                     $changeKind = KeyValueChange::insertion;
                 } else {
-                    $changeKind = KeyValueChange::setting;
-                    if (!$change->isEqual($value)) {
-                        $difference = $change->filter(fn(ManagedObject $object): bool => !$value->containsElement($object));
-                        $this->willChangeValueForKey($key, KeyValueChange::removal, $difference);
-                        $change->formIntersection($value);
-                        $this->didChangeValueForKey($key, KeyValueChange::removal, $difference);
-                        $this->willChangeValueForKey($key, KeyValueChange::insertion, $change);
-                        $change->formUnion($value);
-                        $this->didChangeValueForKey($key, KeyValueChange::insertion, $change);
-                        $changeKind = KeyValueChange::replacement;
-                    }
+                    $this->willChangeValueForKey($key, KeyValueChange::removal, $removedObjects);
+                    $change->subtract($removedObjects);
+                    $this->didChangeValueForKey($key, KeyValueChange::removal, $removedObjects);
+                    $this->willChangeValueForKey($key, KeyValueChange::insertion, $addedObjects);
+                    $change->formUnion($addedObjects);
+                    $this->didChangeValueForKey($key, KeyValueChange::insertion, $addedObjects);
+                    $changeKind = KeyValueChange::replacement;
                 }
-                if (!$inverseRelationship->isToMany) {
+                if ($inverseRelationship->isToMany) {
+                    /** @var ManagedObject $managedObject */
+                    foreach ($removedObjects as $managedObject) {
+                        $inverse = $managedObject->mutableSetValueForKey($inverseRelationship->name);
+                        if (!$inverse->containsElement($this)) {
+                            continue;
+                        }
+                        $managedObject->willChangeValueForKey($inverseRelationship->name, KeyValueChange::removal, new Set([$this]));
+                        $inverse->remove($this);
+                        $managedObject->updateDirtyState($inverse, $inverseRelationship->name);
+                        $managedObject->didChangeValueForKey($inverseRelationship->name, KeyValueChange::removal, new Set([$this]));
+                    }
+                } else {
                     /** @var ManagedObject $managedObject */
                     foreach ($value as $managedObject) {
                         $managedObject->setPrimitiveValueForKey($this->objectID, $inverseRelationship->name);
@@ -899,10 +934,11 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     $value->setPrimitiveValueForKey($this->objectID, $inverseRelationship->name);
                 }
                 $change = $value;
+                $notifiedChange = $value;
             }
-            $this->willChangeValueForKey($key, $changeKind, $change);
+            $this->willChangeValueForKey($key, $changeKind, $notifiedChange ?? $change);
             $this->setPrimitiveValueForKey($value, $key);
-            $this->didChangeValueForKey($key, $changeKind, $value);
+            $this->didChangeValueForKey($key, $changeKind, $notifiedChange ?? $value);
         } elseif (property_exists($this, $key)) {
             $this->willChangeValueForKey($key, KeyValueChange::replacement, $value);
             $this->$key = $value;
@@ -912,7 +948,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         }
     }
 
-    private function updateDirtyState(mixed $newValue, string $propertyName): void
+    /** @internal */
+    public function updateDirtyState(mixed $newValue, string $propertyName): void
     {
         if ($this->isSuppressingKVO || $this->isSuppressingChangeNotifications) {
             return;

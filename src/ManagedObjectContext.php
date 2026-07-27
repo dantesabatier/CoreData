@@ -630,6 +630,14 @@ final class ManagedObjectContext extends ObjectClass
         $inverseRelationship = $relationship->inverseRelationship;
         if ($relationship->isToMany) {
             if ($inverseRelationship->isToMany) {
+                // The correlation-table tracker writes from didSaveObjectsNotification, which save()
+                // only reaches when hasPendingChanges() is true. Linking two already-persisted objects
+                // dirties neither of them by itself (normalizeInsertedObjects drops them again, since
+                // both rows exist), so the owner has to be registered as updated or the save returns
+                // early and the tracked INSERTs are never written.
+                if (!$object->isDeleted) {
+                    $this->updatedObjects->insert($object);
+                }
                 foreach ($insertions as $insertion) {
                     $set = $insertion->mutableSetValueForKey($inverseRelationship->name);
                     $set->insert($object);
@@ -669,10 +677,16 @@ final class ManagedObjectContext extends ObjectClass
         if ($deleteRule === DeleteRule::nullifyDeleteRule) {
             if ($relationship->isToMany) {
                 if ($inverseRelationship->isToMany) {
+                    $this->deletedObjects->remove($object);
+                    $this->insertedObjects->remove($object);
+                    $this->updatedObjects->insert($object);
                     foreach ($deletions as $deletion) {
                         $set = $deletion->mutableSetValueForKey($inverseRelationship->name);
                         $set->remove($object);
                         $deletion->setPrimitiveValueForKey($set, $inverseRelationship->name);
+                        $this->deletedObjects->remove($deletion);
+                        $this->insertedObjects->remove($deletion);
+                        $this->updatedObjects->insert($deletion);
                     }
                     $store = $object->objectID->persistentStore;
                     if ($store instanceof SQLCore) {

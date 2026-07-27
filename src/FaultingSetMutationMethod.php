@@ -56,10 +56,12 @@ final readonly class FaultingSetMutationMethod
             if ($faultingSet->containsElement($newObject)) {
                 return;
             }
-            $obj->willChangeValueForKey($key, KeyValueChange::insertion, $faultingSet);
+            $inserted = new Set([$newObject]);
+            $obj->willChangeValueForKey($key, KeyValueChange::insertion, $inserted);
             $faultingSet->insert($newObject);
+            $obj->updateDirtyState($faultingSet, $key);
             self::handleInverseRelationshipUpdate($obj, $key, $newObject, $obj->objectID);
-            $obj->didChangeValueForKey($key, KeyValueChange::insertion, $faultingSet);
+            $obj->didChangeValueForKey($key, KeyValueChange::insertion, $inserted);
         });
     }
 
@@ -71,10 +73,15 @@ final readonly class FaultingSetMutationMethod
             if (!$faultingSet->containsElement($removedObject)) {
                 return;
             }
-            $obj->willChangeValueForKey($key, KeyValueChange::removal, $faultingSet);
+            // A removal must be announced with the objects that left the relationship: the context
+            // turns that payload into the correlation-table DELETEs. Passing the remaining members
+            // makes the save keep every row.
+            $removed = new Set([$removedObject]);
+            $obj->willChangeValueForKey($key, KeyValueChange::removal, $removed);
             $faultingSet->remove($removedObject);
+            $obj->updateDirtyState($faultingSet, $key);
             self::handleInverseRelationshipUpdate($obj, $key, $removedObject, null);
-            $obj->didChangeValueForKey($key, KeyValueChange::removal, $faultingSet);
+            $obj->didChangeValueForKey($key, KeyValueChange::removal, $removed);
         });
     }
 
@@ -92,10 +99,11 @@ final readonly class FaultingSetMutationMethod
                 if ($objectsToInsert->isEmpty) {
                     return;
                 }
-                $obj->willChangeValueForKey($key, KeyValueChange::insertion, $faultingSet);
+                $obj->willChangeValueForKey($key, KeyValueChange::insertion, $objectsToInsert);
                 $faultingSet->formUnion($objectsToInsert);
+                $obj->updateDirtyState($faultingSet, $key);
                 self::handleInverseRelationshipUpdate($obj, $key, $objectsToInsert, $obj->objectID);
-                $obj->didChangeValueForKey($key, KeyValueChange::insertion, $faultingSet);
+                $obj->didChangeValueForKey($key, KeyValueChange::insertion, $objectsToInsert);
             });
     }
 
@@ -113,10 +121,11 @@ final readonly class FaultingSetMutationMethod
                 if ($removedObjects->isEmpty) {
                     return;
                 }
-                $obj->willChangeValueForKey($key, KeyValueChange::removal, $faultingSet);
+                $obj->willChangeValueForKey($key, KeyValueChange::removal, $removedObjects);
                 $faultingSet->subtract($removedObjects);
+                $obj->updateDirtyState($faultingSet, $key);
                 self::handleInverseRelationshipUpdate($obj, $key, $removedObjects, null);
-                $obj->didChangeValueForKey($key, KeyValueChange::removal, $faultingSet);
+                $obj->didChangeValueForKey($key, KeyValueChange::removal, $removedObjects);
             });
     }
 
@@ -134,10 +143,11 @@ final readonly class FaultingSetMutationMethod
                 if ($objectsToRemove->isEmpty) {
                     return $faultingSet;
                 }
-                $obj->willChangeValueForKey($key, KeyValueChange::removal, $faultingSet);
+                $obj->willChangeValueForKey($key, KeyValueChange::removal, $objectsToRemove);
                 $faultingSet->formIntersection($intersectionSet);
+                $obj->updateDirtyState($faultingSet, $key);
                 self::handleInverseRelationshipUpdate($obj, $key, $objectsToRemove, null);
-                $obj->didChangeValueForKey($key, KeyValueChange::removal, $faultingSet);
+                $obj->didChangeValueForKey($key, KeyValueChange::removal, $objectsToRemove);
                 return $faultingSet;
             });
     }
