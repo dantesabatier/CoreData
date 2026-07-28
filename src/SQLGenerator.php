@@ -27,11 +27,13 @@ use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\ExpressionOperator;
 use Sabatier\Foundation\Predicates\ExpressionOperatorType;
 use Sabatier\Foundation\Predicates\ExpressionType;
+use Sabatier\Foundation\Predicates\FalsePredicate;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\Predicates\PredicateOperatorSymbol;
 use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\Predicates\PredicateVisitorFlags;
 use Sabatier\Foundation\Predicates\SubqueryExpression;
+use Sabatier\Foundation\Predicates\TruePredicate;
 use Sabatier\Foundation\Sequence;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\SortDescriptor;
@@ -1141,13 +1143,39 @@ final class SQLGenerator
         $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator, "%", "%", escapesWildcards: true);
     }
 
+    /**
+     * Appends the SQL condition for a predicate to the clause under construction.
+     *
+     * A constant predicate (`TRUEPREDICATE` / `FALSEPREDICATE`) has no key path to compare and
+     * translates to a literal condition, which is what lets it compose inside a compound predicate:
+     * `FALSEPREDICATE` AND-folded into a fetch yields no rows. Emitting nothing for it would drop the
+     * condition from the `WHERE` clause and widen the result set instead of narrowing it.
+     *
+     * An unsupported predicate is a programming error rather than an empty condition, for the same
+     * reason: silently omitting it would produce a query that returns more than the caller asked for.
+     */
     private function preparePredicate(Predicate $predicate, string &$clause): void
     {
         if ($predicate instanceof CompoundPredicate) {
             $this->prepareCompoundPredicate($predicate, $clause);
         } elseif ($predicate instanceof ComparisonPredicate) {
             $this->prepareComparisonPredicate($predicate, $clause);
+        } elseif ($predicate instanceof TruePredicate || $predicate instanceof FalsePredicate) {
+            $this->prepareConstantPredicate($predicate, $clause);
+        } else {
+            fatal_error("Unsupported predicate for SQL generation: $predicate");
         }
+    }
+
+    /**
+     * Appends the literal condition a constant predicate translates to.
+     *
+     * The condition is expressed over constants rather than emitted as a bare `TRUE`/`FALSE`
+     * keyword so it remains a valid operand wherever a comparison would appear.
+     */
+    private function prepareConstantPredicate(TruePredicate|FalsePredicate $predicate, string &$clause): void
+    {
+        $clause .= $predicate instanceof TruePredicate ? "1 = 1" : "1 = 0";
     }
 
     private function prepareCompoundPredicate(CompoundPredicate $predicate, string &$clause): void
