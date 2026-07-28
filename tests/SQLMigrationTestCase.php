@@ -46,6 +46,8 @@ abstract class SQLMigrationTestCase extends TestCase
     private ?string $envBackup = null;
     protected PDO $pdo;
     protected URL $storeURL;
+    /** @var list<ManagedObjectContext> Every stack this test opened, released in tearDown. */
+    private array $contexts = [];
 
     protected function setUp(): void
     {
@@ -71,6 +73,7 @@ abstract class SQLMigrationTestCase extends TestCase
 
     protected function tearDown(): void
     {
+        $this->releaseContexts();
         $this->dropDatabase();
 
         if ($this->envBackup !== null) {
@@ -78,6 +81,35 @@ abstract class SQLMigrationTestCase extends TestCase
         } elseif (is_file($this->envPath)) {
             unlink($this->envPath);
         }
+    }
+
+    /**
+     * Detaches every context from its coordinator so the stack — and the SQL connection its store
+     * holds open — can be collected. Assigning the coordinator registers the context as an observer
+     * of the notification centre, which keeps both alive for the whole process; the setter drops that
+     * registration when the coordinator is replaced, so clearing it is what actually frees them.
+     * Without this each test leaks one connection and a suite of this size exhausts max_connections.
+     */
+    private function releaseContexts(): void
+    {
+        foreach ($this->contexts as $context) {
+            $context->persistentStoreCoordinator = null;
+        }
+        $this->contexts = [];
+        gc_collect_cycles();
+    }
+
+    /**
+     * @param Dictionary<mixed>|null $options
+     */
+    private function openContext(ManagedObjectModel $model, ?Dictionary $options = null): ManagedObjectContext
+    {
+        $coordinator = new PersistentStoreCoordinator($model);
+        $coordinator->addPersistentStoreWithType(PersistentStoreType::sql, null, $this->storeURL, $options);
+        $context = new ManagedObjectContext();
+        $context->persistentStoreCoordinator = $coordinator;
+        $this->contexts[] = $context;
+        return $context;
     }
 
     private function dropDatabase(): void
@@ -92,11 +124,7 @@ abstract class SQLMigrationTestCase extends TestCase
      */
     protected function bootstrap(ManagedObjectModel $sourceModel): ManagedObjectContext
     {
-        $coordinator = new PersistentStoreCoordinator($sourceModel);
-        $coordinator->addPersistentStoreWithType(PersistentStoreType::sql, null, $this->storeURL);
-        $context = new ManagedObjectContext();
-        $context->persistentStoreCoordinator = $coordinator;
-        return $context;
+        return $this->openContext($sourceModel);
     }
 
     /**
@@ -107,15 +135,10 @@ abstract class SQLMigrationTestCase extends TestCase
      */
     protected function migrateTo(ManagedObjectModel $destinationModel): ManagedObjectContext
     {
-        $options = new Dictionary([
+        return $this->openContext($destinationModel, new Dictionary([
             MigratePersistentStoresAutomaticallyOption => true,
             InferMappingModelAutomaticallyOption => true,
-        ]);
-        $coordinator = new PersistentStoreCoordinator($destinationModel);
-        $coordinator->addPersistentStoreWithType(PersistentStoreType::sql, null, $this->storeURL, $options);
-        $context = new ManagedObjectContext();
-        $context->persistentStoreCoordinator = $coordinator;
-        return $context;
+        ]));
     }
 
     /**
@@ -128,11 +151,7 @@ abstract class SQLMigrationTestCase extends TestCase
      */
     protected function freshContext(ManagedObjectModel $model): ManagedObjectContext
     {
-        $coordinator = new PersistentStoreCoordinator($model);
-        $coordinator->addPersistentStoreWithType(PersistentStoreType::sql, null, $this->storeURL);
-        $context = new ManagedObjectContext();
-        $context->persistentStoreCoordinator = $coordinator;
-        return $context;
+        return $this->openContext($model);
     }
 
     // --- Schema introspection helpers (read the live DDL that the migrator produced) ---
