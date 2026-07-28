@@ -132,10 +132,8 @@ abstract class AtomicStore extends PersistentStore
             $object = $context->object($cacheNode->objectID);
             if (!$object->isAwakeFromFetch) {
                 $object->isAwakeFromFetch = true;
-                // Waking an object from the store must not overwrite work the context has pending:
-                // a fetch can be issued mid-save (conflict detection reads the stored version of
-                // the objects being written), and re-applying the stored snapshot there resurrects
-                // the very values the save is about to remove.
+                // A fetch can be issued mid-save by conflict detection, where re-applying the stored
+                // snapshot would resurrect the values the save is about to remove.
                 if (!$context->updatedObjects->containsElement($object) && !$context->deletedObjects->containsElement($object)) {
                     $this->updateObject($object, fromFetch: true);
                 }

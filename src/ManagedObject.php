@@ -575,10 +575,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     {
         $this->isInserted = true;
         $this->committedSnapshot = $this->persistentPrimitiveValues();
-        // The optimistic-locking baseline has to follow the row we just wrote. The save bumped
-        // version and persisted it, so leaving the fetch-time snapshot in place makes the next
-        // save in the same context compare a stale version against the store and report a
-        // conflict against this context's own write.
+        // The optimistic-locking baseline has to follow the row just written, or the next save in
+        // this context conflicts against its own write.
         if ($originalSnapshot = $this->originalSnapshot) {
             $originalSnapshot[ManagedObjectVersionKey] = $this->version;
         }
@@ -835,11 +833,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $set->setSet($value);
                 $value = $set;
                 $change = $this->mutableSetValueForKey($key);
-                // The removal set below is derived by diffing against the current members, so an
-                // unfired fault reads as "empty": every removal is then lost and the assignment
-                // looks like a pure insertion. Resolving is gated on isStable because the store
-                // re-enters this method while hydrating a fetch, and firing the fault there
-                // corrupts the object being rebuilt.
+                // Gated on isStable because the store re-enters this method while hydrating a fetch,
+                // where firing the fault would corrupt the object being rebuilt.
                 if ($this->isStable && !$this->isSuppressingKVO && $this->hasFaultForRelationshipNamed($key) && $this->isInserted) {
                     /** @var FaultingSet $change */
                     $change = $this->valueForKey($key);
@@ -852,16 +847,13 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         }
                     }
                 }
-                // Dispatch on the actual set difference, not on cardinality: Set::compare orders by
-                // count, so assigning {3,4} over {2} looked like a pure insertion and unioned to
-                // {2,3,4}, silently keeping the correlation row for 2 that the caller removed.
+                // Dispatched on the set difference rather than on Set::compare, which orders by count.
                 /** @var Set<ManagedObject> $removedObjects */
                 $removedObjects = new Set($change->filter(fn(ManagedObject $object): bool => !$value->containsElement($object)));
                 /** @var Set<ManagedObject> $addedObjects */
                 $addedObjects = new Set($value->filter(fn(ManagedObject $object): bool => !$change->containsElement($object)));
-                // A removal has to be announced with the objects that left the relationship: the
-                // context turns that payload into the correlation-table DELETEs. Announcing the
-                // remaining members instead (or, when clearing, an empty set) drops the rows.
+                // The context turns a removal's payload into the correlation-table DELETEs, so it has
+                // to carry the objects that left rather than the ones that remain.
                 $notifiedChange = null;
                 if ($removedObjects->isEmpty && $addedObjects->isEmpty) {
                     $changeKind = KeyValueChange::setting;

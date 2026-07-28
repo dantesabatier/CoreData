@@ -630,11 +630,8 @@ final class ManagedObjectContext extends ObjectClass
         $inverseRelationship = $relationship->inverseRelationship;
         if ($relationship->isToMany) {
             if ($inverseRelationship->isToMany) {
-                // The correlation-table tracker writes from didSaveObjectsNotification, which save()
-                // only reaches when hasPendingChanges() is true. Linking two already-persisted objects
-                // dirties neither of them by itself (normalizeInsertedObjects drops them again, since
-                // both rows exist), so the owner has to be registered as updated or the save returns
-                // early and the tracked INSERTs are never written.
+                // Linking two already-persisted objects dirties neither of them, so without this the
+                // save finds nothing pending and returns before the tracker's notification is posted.
                 if (!$object->isDeleted) {
                     $this->updatedObjects->insert($object);
                 }

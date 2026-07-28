@@ -73,9 +73,6 @@ final readonly class FaultingSetMutationMethod
             if (!$faultingSet->containsElement($removedObject)) {
                 return;
             }
-            // A removal must be announced with the objects that left the relationship: the context
-            // turns that payload into the correlation-table DELETEs. Passing the remaining members
-            // makes the save keep every row.
             $removed = new Set([$removedObject]);
             $obj->willChangeValueForKey($key, KeyValueChange::removal, $removed);
             $faultingSet->remove($removedObject);
