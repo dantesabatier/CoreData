@@ -14,6 +14,7 @@ use function Sabatier\Foundation\invalid_mutation;
 final class BatchFaultingArray extends ArrayClass implements Materializable
 {
     private int $length;
+    /** @var int<0, max> */
     #[Override]
     public int $count {
         get => $this->length;
