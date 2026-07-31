@@ -12,7 +12,6 @@ namespace Sabatier\CoreData;
 
 use Override;
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\ComparisonResult;
 use Sabatier\Foundation\SortDescriptor;
 
 /** @internal */
@@ -43,7 +42,7 @@ final class SQLManyToMany extends SQLRelationship
     }
     /** @var ArrayClass<string> */
     private(set) ArrayClass $columnNames {
-        get => $this->columnNames ??= new ArrayClass([$this->columnName, $this->inverseColumnName])->sort(fn(string $e, string $e1): int => ComparisonResult::orderedAscending->value * ($e <=> $e1));
+        get => $this->columnNames ??= new ArrayClass([$this->columnName, $this->inverseColumnName])->sort(fn(string $e, string $e1): int => $e1 <=> $e);
     }
     private(set) string $orderColumnName {
         get => $this->orderColumnName ??= $this->columnNames[0];
