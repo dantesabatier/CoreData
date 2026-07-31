@@ -31,8 +31,6 @@ final class ConstantPredicateRow extends ManagedObject
  */
 final class SQLConstantPredicateTest extends SQLMigrationTestCase
 {
-    protected const string DATABASE_NAME = "coredata_constant_predicate_test";
-
     private static function makeModel(): ManagedObjectModel
     {
         $n = new AttributeDescription();

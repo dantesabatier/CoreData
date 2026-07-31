@@ -11,6 +11,7 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\PersistentStoreCoordinator;
 use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\ProcessInfo;
 use Sabatier\Foundation\URL;
 use const Sabatier\CoreData\InferMappingModelAutomaticallyOption;
 use const Sabatier\CoreData\MigratePersistentStoresAutomaticallyOption;
@@ -35,7 +36,9 @@ use const Sabatier\CoreData\MigratePersistentStoresAutomaticallyOption;
  *
  * The database name is fixed (not random) because ProcessInfo caches the parsed environment
  * once per process; each test instead guarantees isolation by dropping and recreating the
- * database around every run.
+ * database around every run. For the same reason subclasses must NOT override DATABASE_NAME:
+ * only the first case to run would get its name honoured, and every later one would drop a
+ * database it is not using while migrating the one it is. setUp asserts this.
  */
 abstract class SQLMigrationTestCase extends TestCase
 {
@@ -60,6 +63,12 @@ abstract class SQLMigrationTestCase extends TestCase
             $this->envBackup = (string)file_get_contents($this->envPath);
         }
         file_put_contents($this->envPath, "SQL_SCHEMA_NAME=" . static::DATABASE_NAME . "\n");
+
+        // ProcessInfo parses the .env once per process and caches it, so only the first case
+        // to run gets its name honoured; a subclass that overrides DATABASE_NAME would leave
+        // every later case pointing at the first one's database while dropping its own. Fail
+        // here, where the cause is obvious, rather than in the migrations that come after.
+        $this->assertSame(static::DATABASE_NAME, ProcessInfo::processInfo()->environment["SQL_SCHEMA_NAME"], "DATABASE_NAME must not be overridden: ProcessInfo caches the first .env it reads for the whole process");
 
         $this->pdo = new PDO(
             "mysql:host=127.0.0.1",
