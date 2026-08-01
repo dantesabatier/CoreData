@@ -1000,6 +1000,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     {
         if ($value instanceof Value) {
             $value = $value->value;
+        } elseif ($value instanceof SensitiveValue) {
+            fatal_error(sprintf("Invalid argument: cannot coerce a masked %s for type %s", typeof($value), human_readable_value($type)));
         }
         $coercedValue = fn(string $type): string|int|bool|float|BackedEnum|null => match ($type) {
             "string" => $value instanceof BackedEnum ? $value : (string)$value,
