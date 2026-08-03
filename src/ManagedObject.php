@@ -931,7 +931,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             $this->willChangeValueForKey($key, $changeKind, $notifiedChange ?? $change);
             $this->setPrimitiveValueForKey($value, $key);
             $this->didChangeValueForKey($key, $changeKind, $notifiedChange ?? $value);
-        } elseif (property_exists($this, $key)) {
+        } elseif ($this->hasProperty($key)) {
             $this->willChangeValueForKey($key, KeyValueChange::replacement, $value);
             $this->$key = $value;
             $this->didChangeValueForKey($key, KeyValueChange::replacement, $value);
@@ -1140,7 +1140,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         if ($property = $this->entity->propertiesByName[$key]) {
             return self::coerceValue($value, $property);
         }
-        if (property_exists($this, $key)) {
+        if ($this->hasProperty($key)) {
             if ($key === ManagedObjectObjectIDKey && (is_int($value) || is_string($value))) {
                 $this->objectID->referenceObject = $value;
                 return false;
