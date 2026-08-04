@@ -1231,9 +1231,9 @@ final class SQLGenerator
     {
         $expressions = new ArrayClass([$predicate->leftExpression, $predicate->rightExpression]);
         $leftExpression = $expressions->first(fn(Expression $expression): bool => $this->isKeyPathExpression($expression)) ?? fatal_error("Select predicate must contain a key path expression");
-        $relationship = $this->resolveRelationshipFromKeyPath($leftExpression) ?? fatal_error("Unable to resolve relationship from key path \"$leftExpression->keyPath\"");
+        $relationship = $this->resolveRelationshipFromKeyPath($leftExpression) ?? fatal_error("Unable to resolve relationship from key path \"$leftExpression->description\"");
         $rightExpression = ($leftExpression === $predicate->leftExpression) ? $predicate->rightExpression : $predicate->leftExpression;
-        $keyPathComponents = components_from_key_path($leftExpression->keyPath);
+        $keyPathComponents = components_from_key_path($leftExpression->description);
         $propertyName = $keyPathComponents->remainderPath ?? $keyPathComponents->key;
         $innerPredicate = new ComparisonPredicate(Expression::expressionForKeyPath($propertyName), $rightExpression, $predicate->predicateOperatorType);
         $clause .= match ($predicate->comparisonPredicateModifier) {
@@ -1267,8 +1267,11 @@ final class SQLGenerator
     {
         $entity = $this->entity;
         $relationship = null;
-        foreach (explode(".", $expression->keyPath) as $key) {
-            $property = $entity->propertiesByName[$key];
+        // A parsed key path expression such as `orders.number` stores only the trailing key ("number")
+        // in ->keyPath; the leading components live in ->operand. ->description reconstructs the full
+        // dotted path, which is what we must walk to reach the to-many relationship it traverses.
+        foreach (explode(".", $expression->description) as $key) {
+            $property = $entity->propertiesByName[$key] ?? null;
             if ($property instanceof SQLToMany || $property instanceof SQLManyToMany) {
                 $entity = $property->destinationEntity;
                 $relationship = $property;
