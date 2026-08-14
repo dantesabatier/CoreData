@@ -2027,6 +2027,9 @@ final class SQLGenerator
             $map["PersistentHistoryChange"] = new ArrayClass($objects);
         } elseif ($first instanceof ManagedObject) {
             $dependsOn = fn(ManagedObject $source, ManagedObject $target): bool => $source->entity->relationshipsByName->compactMap(fn(RelationshipDescription $relationship): ?EntityDescription => $source->hasFaultForRelationshipNamed($relationship->name) ? $relationship->destinationEntity : null)->containsElement($target->entity);
+            // Two concurrent saves touching the same rows must lock them in the same order, or InnoDB
+            // deadlocks one of them. Dependency order alone leaves every unrelated pair undefined, so
+            // entity name and primary key break the ties and make the emitted order total.
             $objects = $objects->sort(function (ManagedObject $e0, ManagedObject $e1) use ($dependsOn): int {
                 if ($dependsOn($e0, $e1)) {
                     return ComparisonResult::orderedDescending->value;
@@ -2034,7 +2037,10 @@ final class SQLGenerator
                 if ($dependsOn($e1, $e0)) {
                     return ComparisonResult::orderedAscending->value;
                 }
-                return ComparisonResult::orderedSame->value;
+                if ($result = $e0->entity->name <=> $e1->entity->name) {
+                    return $result;
+                }
+                return (string)$e0->objectID->referenceObject <=> (string)$e1->objectID->referenceObject;
             });
             foreach ($objects as $object) {
                 /** @var ArrayClass $value */
