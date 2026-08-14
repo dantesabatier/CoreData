@@ -20,8 +20,9 @@ trait FaultingSetMutationMethods
     public function __call(string $name, array $arguments)
     {
         if ($method = $this->faultingSetMutationMethods[$name]) {
-            ($method->closure)(...$arguments);
-            return;
+            // intersect<Key>() answers the resulting relationship; the mutators that return
+            // nothing are unaffected by passing their null straight back.
+            return ($method->closure)(...$arguments);
         }
         $this->doesNotRecognizeSelector($name);
     }

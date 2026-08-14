@@ -51,9 +51,10 @@ final readonly class FaultingSetMutationMethod
     public static function addObjectMethod(ManagedObject $obj, string $key): FaultingSetMutationMethod
     {
         return new FaultingSetMutationMethod(sprintf("add%sObject", ucfirst($key)), function (ManagedObject $newObject) use ($obj, $key): void {
-            /** @var FaultingSet $faultingSet */
+            // Null optional to-many hold no relationship to add to, so there is nothing to insert.
+            /** @var FaultingSet|null $faultingSet */
             $faultingSet = $obj->valueForKey($key);
-            if ($faultingSet->containsElement($newObject)) {
+            if (!$faultingSet || $faultingSet->containsElement($newObject)) {
                 return;
             }
             $inserted = new Set([$newObject]);
@@ -68,9 +69,10 @@ final readonly class FaultingSetMutationMethod
     public static function removeObjectMethod(ManagedObject $obj, string $key): FaultingSetMutationMethod
     {
         return new FaultingSetMutationMethod(sprintf("remove%sObject", ucfirst($key)), function (ManagedObject $removedObject) use ($obj, $key): void {
-            /** @var FaultingSet $faultingSet */
+            // Null optional to-many hold nothing to remove, so there is nothing to materialize.
+            /** @var FaultingSet|null $faultingSet */
             $faultingSet = $obj->valueForKey($key);
-            if (!$faultingSet->containsElement($removedObject)) {
+            if (!$faultingSet?->containsElement($removedObject)) {
                 return;
             }
             $removed = new Set([$removedObject]);
@@ -89,8 +91,11 @@ final readonly class FaultingSetMutationMethod
              * @param Set<ManagedObject> $newObjects
              */
             function (Set $newObjects) use ($obj, $key): void {
-                /** @var FaultingSet $faultingSet */
+                /** @var FaultingSet|null $faultingSet */
                 $faultingSet = $obj->valueForKey($key);
+                if (!$faultingSet) {
+                    return;
+                }
                 /** @var Set<ManagedObject> $objectsToInsert */
                 $objectsToInsert = $newObjects->subtracting($faultingSet);
                 if ($objectsToInsert->isEmpty) {
@@ -111,8 +116,12 @@ final readonly class FaultingSetMutationMethod
              * @param Set<ManagedObject> $objectsToRemove
              */
             function (Set $objectsToRemove) use ($obj, $key): void {
-                /** @var FaultingSet $faultingSet */
+                // Null optional to-many hold nothing to remove, so there is nothing to materialize.
+                /** @var FaultingSet|null $faultingSet */
                 $faultingSet = $obj->valueForKey($key);
+                if (!$faultingSet) {
+                    return;
+                }
                 /** @var Set<ManagedObject> $removedObjects */
                 $removedObjects = $faultingSet->intersection($objectsToRemove);
                 if ($removedObjects->isEmpty) {
@@ -132,9 +141,14 @@ final readonly class FaultingSetMutationMethod
             /**
              * @param Set<ManagedObject> $intersectionSet
              */
-            function (Set $intersectionSet) use ($obj, $key): Set {
-                /** @var FaultingSet $faultingSet */
+            function (Set $intersectionSet) use ($obj, $key): ?Set {
+                // Hands the relationship back to the caller, so a null one answers null: there is
+                // no set to intersect and none to invent.
+                /** @var FaultingSet|null $faultingSet */
                 $faultingSet = $obj->valueForKey($key);
+                if (!$faultingSet) {
+                    return null;
+                }
                 /** @var Set<ManagedObject> $objectsToRemove */
                 $objectsToRemove = $faultingSet->subtracting($intersectionSet);
                 if ($objectsToRemove->isEmpty) {
