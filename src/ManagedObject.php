@@ -103,6 +103,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public bool $isFault = true;
     /** @var int The faulting state of the managed object. 0 if the object is fully initialized as a managed object and not transitioning to or from another state, otherwise some other value. */
     public int $faultingState = ManagedObjectFaultingStateUnstable;
+    /** @var Set<string> The names of the attributes actually brought in from the store. A non-optional attribute sits at its default value until it is loaded, which makes an unloaded one indistinguishable from a legitimately zero one. @internal */
+    public Set $loadedAttributeNames {
+        get => $this->loadedAttributeNames ??= new Set();
+    }
     /** @var ArrayClass<string> */
     private ArrayClass $serializationKeys {
         get => ManagedObjectSerializationPreparer::shared()->serializationKeysForObject($this) ?? $this->entity->defaultSerializationKeys;
@@ -443,6 +447,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         $this->genericUpdateFromSnapshot($snapshot);
         $this->originalSnapshot ??= $snapshot;
         $this->lastSnapshot = $snapshot;
+        $this->loadedAttributeNames->formUnion(new Set($snapshot->keys->filter(fn(string $key): bool => $this->entity->attributesByName->offsetExists($key))->array));
     }
 
     /**
@@ -452,7 +457,9 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     public function materializeFaultsFromSnapshot(Dictionary $snapshot): void
     {
         $this->refaultEmptyToOneRelationships();
-        $this->genericUpdateFromSnapshot($snapshot->filter(fn(mixed $value, string $key): bool => $this->isPropertyForKeyFault($key)));
+        // An attribute that was never loaded is indistinguishable from one holding zero: both sit at the default. Without tracking what was loaded, the value just read from the store would be discarded for looking like something the object already had.
+        $this->genericUpdateFromSnapshot($snapshot->filter(fn(mixed $value, string $key): bool => $this->isPropertyForKeyFault($key) || !$this->loadedAttributeNames->containsElement($key)));
+        $this->loadedAttributeNames->formUnion(new Set($snapshot->keys->filter(fn(string $key): bool => $this->entity->attributesByName->offsetExists($key))->array));
     }
 
     private function refaultEmptyToOneRelationships(): void

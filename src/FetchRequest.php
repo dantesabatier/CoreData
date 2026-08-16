@@ -89,6 +89,10 @@ final class FetchRequest extends PersistentStoreRequest
                 return $result;
             }) ?? new Dictionary();
     }
+    /** @var ArrayClass<string> The names of the entity's own attributes that the serialization asks for. A nested shape describes a relationship, which is cached apart from the object's snapshot. @internal */
+    public ArrayClass $serializationAttributeNames {
+        get => $this->serializationAttributeNames ??= $this->serialization->keys->filter(fn(string $key): bool => !$this->serialization[$key] instanceof Dictionary);
+    }
     /** @var string|null The name of the entity to fetch. */
     public ?string $entityName = null;
     /** @var bool @internal */

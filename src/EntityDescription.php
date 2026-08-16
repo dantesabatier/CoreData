@@ -96,6 +96,10 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
             return $this->attributesByName = $this->propertiesByName->filter(fn(PropertyDescription $property): bool => $property instanceof AttributeDescription);
         }
     }
+    /** @var ArrayClass<string> The names of the attributes a complete snapshot of the receiver is expected to carry. Runtime-only derived attributes never reach the persistent store, so they are excluded. */
+    private(set) ArrayClass $persistentAttributeNames {
+        get => $this->persistentAttributeNames ??= $this->attributesByName->filter(fn(AttributeDescription $attribute): bool => !($attribute instanceof DerivedAttributeDescription && $attribute->isRuntimeOnly))->keys;
+    }
     /** @var Dictionary<RelationshipDescription> The relationships of the receiver in a dictionary. The keys in the dictionary are the relationship names, and the values are instances of {@see RelationshipDescription}. */
     private(set) Dictionary $relationshipsByName {
         get {
@@ -301,6 +305,22 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
                 }
                 return $result;
             });
+    }
+
+    /**
+     * Returns whether a cached snapshot carries every one of the given attributes.
+     *
+     * A fetch only materializes the attributes its serialization asked for, so a stored snapshot may
+     * be partial. Its own keys are the record of its reach: an attribute absent from them was never
+     * read, and serving it from the cache would yield a default where a real value was expected.
+     *
+     * @param Dictionary<mixed> $snapshot
+     * @param ArrayClass<string> $attributeNames
+     * @internal
+     */
+    public function snapshotCovers(Dictionary $snapshot, ArrayClass $attributeNames): bool
+    {
+        return $attributeNames->allSatisfy(fn(string $name): bool => !$this->attributesByName->offsetExists($name) || $snapshot->offsetExists($name));
     }
 
     /**

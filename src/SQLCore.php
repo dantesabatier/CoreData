@@ -404,7 +404,15 @@ final class SQLCore extends IncrementalStore
                 if ($request->resultType === FetchRequestResultType::managedObjectIDResultType) {
                     return $managedObjectIDs;
                 }
-                $missingIDs = $managedObjectIDs->filter(fn(ManagedObjectID $objectID): bool => $context->isFaultOrUnregistered($objectID) && !$this->rowCache->hasSnapshot($objectID));
+                // A snapshot cached by an earlier fetch only covers what that serialization asked for. Taking its mere existence as proof would leave the attributes this fetch needs reading as nulls, so its reach is checked and whichever falls short is refetched.
+                $requestedAttributes = $request->serializationAttributeNames;
+                $missingIDs = $managedObjectIDs->filter(function (ManagedObjectID $objectID) use ($context, $requestedAttributes): bool {
+                    $snapshot = $this->rowCache->snapshot($objectID);
+                    if ($snapshot === null) {
+                        return $context->isFaultOrUnregistered($objectID);
+                    }
+                    return !$objectID->entity->snapshotCovers($snapshot, $requestedAttributes);
+                });
                 if (!$missingIDs->isEmpty) {
                     $faultRequestContext = new SQLBatchFaultRequestContext($missingIDs, $context, $this);
                     $faultRequestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
@@ -415,8 +423,16 @@ final class SQLCore extends IncrementalStore
                          * @param Dictionary<mixed> $snapshot
                          * @return Dictionary<mixed>
                          */
-                        function (Dictionary $snapshots, Dictionary $snapshot) use ($entity): Dictionary {
-                            $snapshots[$this->objectID($entity, $snapshot[ManagedObjectObjectIDKey])->uriRepresentation()->absoluteString] = $entity->sanitizeSnapshot($snapshot);
+                        function (Dictionary $snapshots, Dictionary $snapshot) use ($entity, $context): Dictionary {
+                            $objectID = $this->objectID($entity, $snapshot[ManagedObjectObjectIDKey]);
+                            // The batch returns rows as dictionaries, so refreshing only the cache would leave the already registered object holding the incomplete values that prompted the refetch.
+                            $object = $context->object($objectID);
+                            $object->isSuppressingChangeNotifications = true;
+                            $object->isSuppressingKVO = true;
+                            $object->materializeFaultsFromSnapshot($snapshot);
+                            $object->isSuppressingKVO = false;
+                            $object->isSuppressingChangeNotifications = false;
+                            $snapshots[$objectID->uriRepresentation()->absoluteString] = $entity->sanitizeSnapshot($snapshot);
                             return $snapshots;
                         }), $this->stalenessInterval);
                 }
@@ -540,7 +556,8 @@ final class SQLCore extends IncrementalStore
     #[Override]
     public function newValuesForObjectWithID(ManagedObjectID $objectID, ManagedObjectContext $context): IncrementalStoreNode
     {
-        if ($snapshot = $this->rowCache->snapshot($objectID)) {
+        // Fulfilling a fault fills the whole object, so a partial snapshot is no use here: returning it would leave the attributes it does not cover as nulls and, once stored again, the gap would perpetuate itself.
+        if (($snapshot = $this->rowCache->snapshot($objectID)) && $objectID->entity->snapshotCovers($snapshot, $objectID->entity->persistentAttributeNames)) {
             return new IncrementalStoreNode($objectID, $snapshot, $snapshot[ManagedObjectVersionKey] ?? 1);
         }
         $requestContext = new SQLObjectFaultRequestContext($objectID, $context, $this);
