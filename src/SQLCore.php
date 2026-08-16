@@ -404,7 +404,7 @@ final class SQLCore extends IncrementalStore
                 if ($request->resultType === FetchRequestResultType::managedObjectIDResultType) {
                     return $managedObjectIDs;
                 }
-                // A snapshot cached by an earlier fetch only covers what that serialization asked for. Taking its mere existence as proof would leave the attributes this fetch needs reading as nulls, so its reach is checked and whichever falls short is refetched.
+                // A snapshot cached by an earlier fetch only covers what that serialization asked for. Taking its mere existence as proof would leave the attributes this fetch needs reading as nulls, so its reach is checked, and whichever falls short is refetched.
                 $requestedAttributes = $request->serializationAttributeNames;
                 $missingIDs = $managedObjectIDs->filter(function (ManagedObjectID $objectID) use ($context, $requestedAttributes): bool {
                     $snapshot = $this->rowCache->snapshot($objectID);
@@ -429,7 +429,7 @@ final class SQLCore extends IncrementalStore
                             /** @var SQLEntity $rowEntity */
                             $rowEntity = $this->model->entitiesByName[$entityName] ?? fatal_error("Entity not found: $entityName");
                             $objectID = $this->objectID($rowEntity->entityDescription, $snapshot[$rowEntity->primaryKey->columnName]);
-                            // The batch returns rows as dictionaries, so refreshing only the cache would leave the already registered object holding the incomplete values that prompted the refetch.
+                            // The batch returns rows as dictionaries, so refreshing only the cache would leave the already registered object holding the incomplete values that prompted the `refetch`.
                             $object = $context->object($objectID);
                             $object->isSuppressingChangeNotifications = true;
                             $object->isSuppressingKVO = true;
@@ -619,7 +619,7 @@ final class SQLCore extends IncrementalStore
         $entity = $this->model->entitiesByName[$relationship->entity->name];
         $toMany = $entity->propertiesByName[$relationship->name];
         // The order lives in a column on the destination table, which only exists when the inverse is
-        // to-one; a many-to-many is stored in a correlation table that keeps no position.
+        // to-one; many-to-many are stored in a correlation table that keeps no position.
         if (!$toMany instanceof SQLToMany) {
             fatal_error(sprintf("%s->%s cannot be ordered: a relationship whose inverse is also to-many is stored in a correlation table, which has no column to keep the order in", $relationship->entity->name, $relationship->name));
         }
