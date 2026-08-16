@@ -424,7 +424,11 @@ final class SQLCore extends IncrementalStore
                          * @return Dictionary<mixed>
                          */
                         function (Dictionary $snapshots, Dictionary $snapshot) use ($entity, $context): Dictionary {
-                            $objectID = $this->objectID($entity, $snapshot[ManagedObjectObjectIDKey]);
+                            // A fetch of an abstract entity returns rows whose entity column names the concrete subentity, so the request's own entity cannot drive instantiation.
+                            $entityName = $snapshot[ManagedObjectEntityNameKey] ?? $entity->name;
+                            /** @var SQLEntity $rowEntity */
+                            $rowEntity = $this->model->entitiesByName[$entityName] ?? fatal_error("Entity not found: $entityName");
+                            $objectID = $this->objectID($rowEntity->entityDescription, $snapshot[$rowEntity->primaryKey->columnName]);
                             // The batch returns rows as dictionaries, so refreshing only the cache would leave the already registered object holding the incomplete values that prompted the refetch.
                             $object = $context->object($objectID);
                             $object->isSuppressingChangeNotifications = true;
@@ -432,7 +436,7 @@ final class SQLCore extends IncrementalStore
                             $object->materializeFaultsFromSnapshot($snapshot);
                             $object->isSuppressingKVO = false;
                             $object->isSuppressingChangeNotifications = false;
-                            $snapshots[$objectID->uriRepresentation()->absoluteString] = $entity->sanitizeSnapshot($snapshot);
+                            $snapshots[$objectID->uriRepresentation()->absoluteString] = $rowEntity->entityDescription->sanitizeSnapshot($snapshot);
                             return $snapshots;
                         }), $this->stalenessInterval);
                 }
