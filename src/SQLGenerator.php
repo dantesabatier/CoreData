@@ -1441,14 +1441,14 @@ final class SQLGenerator
     public function buildDerivationExpression(Expression $expression, ?string $tableAlias = null, ?bool &$isDeterministic = true): string
     {
         return match ($expression->expressionType) {
-            ExpressionType::conditional => $this->buildConditionalExpression($expression, $isDeterministic),
-            ExpressionType::function => $this->buildFunctionExpression($expression, $isDeterministic),
+            ExpressionType::conditional => $this->buildConditionalExpression($expression, $isDeterministic, $tableAlias),
+            ExpressionType::function => $this->buildFunctionExpression($expression, $isDeterministic, $tableAlias),
             ExpressionType::keyPath => $this->buildDerivedKeyPathExpression($expression, $tableAlias, $isDeterministic),
             default => fatal_error("Invalid argument: unsupported expression \"$expression\"")
         };
     }
 
-    private function buildFunctionExpression(Expression $expression, ?bool &$isDeterministic = true): string
+    private function buildFunctionExpression(Expression $expression, ?bool &$isDeterministic = true, ?string $tableAlias = null): string
     {
         $operator = $expression->operand;
         if (!$operator instanceof ExpressionOperator) {
@@ -1467,7 +1467,7 @@ final class SQLGenerator
             case ExpressionOperatorType::bitwiseXorWith:
             case ExpressionOperatorType::leftshiftBy:
             case ExpressionOperatorType::rightshiftBy:
-                return "({$arguments->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(" $operator->operatorSymbol ")})";
+                return "({$arguments->map(fn(Expression $argument): string => $this->buildExpression($argument, $isDeterministic, $tableAlias))->join(" $operator->operatorSymbol ")})";
             case ExpressionOperatorType::sum:
             case ExpressionOperatorType::count:
             case ExpressionOperatorType::min:
@@ -1582,18 +1582,18 @@ final class SQLGenerator
                 break;
         }
         $function ?: fatal_error("Invalid argument: unsupported expression \"$expression\"");
-        return "$function({$arguments->map(fn(Expression $argument): string => $this->buildExpression($argument))->join(match ($operator->operatorType) {
+        return "$function({$arguments->map(fn(Expression $argument): string => $this->buildExpression($argument, $isDeterministic, $tableAlias))->join(match ($operator->operatorType) {
                 ExpressionOperatorType::cast => " AS ",
                 default => ", ",
             })})";
     }
 
-    private function buildConditionalExpression(Expression $expression, ?bool &$isDeterministic = true): string
+    private function buildConditionalExpression(Expression $expression, ?bool &$isDeterministic = true, ?string $tableAlias = null): string
     {
         $string = "";
         $this->preparePredicate($expression->predicate, $string);
-        $true = $this->buildExpression($expression->true, $isDeterministic);
-        $false = $this->buildExpression($expression->false, $isDeterministic);
+        $true = $this->buildExpression($expression->true, $isDeterministic, $tableAlias);
+        $false = $this->buildExpression($expression->false, $isDeterministic, $tableAlias);
         $statement = new SQLStatement($string, $this->arguments);
         $predicate = $statement->description;
         $this->arguments->removeAll();
@@ -1653,13 +1653,14 @@ final class SQLGenerator
         return $this->buildCorrelatedSubqueryString($this->createSubQueryGenerator($relationship, $keyValueOperator, $keyPathToProperty, $tableAlias, $predicate), $relationship, $entity->tableName, $tableAlias);
     }
 
-    private function buildExpression(Expression $expression, ?bool &$isDeterministic = true): string
+    private function buildExpression(Expression $expression, ?bool &$isDeterministic = true, ?string $tableAlias = null): string
     {
         return match ($expression->expressionType) {
             ExpressionType::constantValue => $this->buildConstantExpression($expression, $isDeterministic),
-            ExpressionType::keyPath => $this->buildKeyPathExpression($expression, $isDeterministic),
-            ExpressionType::function => $this->buildFunctionExpression($expression, $isDeterministic),
-            ExpressionType::conditional => $this->buildConditionalExpression($expression, $isDeterministic),
+            // A derived attribute reached through a relationship is read from the join's alias, not from its own table. The alias has to survive every nesting level of the derivation, or a correlated subquery buried inside one re-qualifies with the raw table name and the column resolves against nothing.
+            ExpressionType::keyPath => $tableAlias !== null && new DerivationSchemaCompatibility($expression)->usesKeyValueOperator ? $this->buildCorrelatedAggregateSubquery($expression, $tableAlias) : $this->buildKeyPathExpression($expression, $isDeterministic),
+            ExpressionType::function => $this->buildFunctionExpression($expression, $isDeterministic, $tableAlias),
+            ExpressionType::conditional => $this->buildConditionalExpression($expression, $isDeterministic, $tableAlias),
             ExpressionType::aggregate => $this->buildAggregateExpression($expression, $isDeterministic),
             ExpressionType::subquery => $this->buildSubqueryExpression($expression, $isDeterministic),
             default => $expression->description,
