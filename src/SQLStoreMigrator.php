@@ -80,15 +80,14 @@ final class SQLStoreMigrator
     private function prepareEntityMappings(): void
     {
         foreach ($this->mappingModel->entityMappingsByName as $mapping) {
-            if ($mapping->mappingType === EntityMappingType::addEntityMappingType) {
-                $this->addedEntityMappings->insert($mapping);
-            } elseif ($mapping->mappingType === EntityMappingType::removeEntityMappingType) {
-                $this->removedEntityMappings->insert($mapping);
-            } elseif ($mapping->mappingType === EntityMappingType::copyEntityMappingType) {
-                $this->copiedEntityMappings->insert($mapping);
-            } elseif ($mapping->mappingType === EntityMappingType::transformEntityMappingType) {
-                $this->transformedEntityMappings->insert($mapping);
-            }
+            match ($mapping->mappingType) {
+                EntityMappingType::addEntityMappingType => $this->addedEntityMappings->insert($mapping),
+                EntityMappingType::removeEntityMappingType => $this->removedEntityMappings->insert($mapping),
+                EntityMappingType::copyEntityMappingType => $this->copiedEntityMappings->insert($mapping),
+                // A custom mapping changes how the data moves, not what the schema is: the destination schema follows the destination model either way, so it is reconciled as a transformation.
+                EntityMappingType::transformEntityMappingType, EntityMappingType::customEntityMappingType => $this->transformedEntityMappings->insert($mapping),
+                EntityMappingType::undefinedEntityMappingType => fatal_error("Entity mapping \"$mapping->name\" has no mapping type"),
+            };
         }
     }
 

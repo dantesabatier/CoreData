@@ -53,7 +53,10 @@ class MigrationManager extends ObjectClass
     private(set) MigrationContext $migrationContext {
         get => $this->migrationContext ??= new MigrationContext();
     }
-    private EntityMigrationPolicy $entityMigrationPolicy;
+    /** @var Dictionary<EntityMigrationPolicy> Keyed by entity mapping name: the passes iterate outside the mappings, so a single stored policy would be whichever one the creation pass built last, and every later pass would run it against the wrong mapping. */
+    private Dictionary $entityMigrationPoliciesByMappingName {
+        get => $this->entityMigrationPoliciesByMappingName ??= new Dictionary();
+    }
     /** @var Dictionary<Dictionary<ArrayClass<ManagedObject>>> */
     private Dictionary $byMappingBySourceRelationshipsAssociationTable {
         get => $this->byMappingBySourceRelationshipsAssociationTable ??= new Dictionary();
@@ -91,12 +94,8 @@ class MigrationManager extends ObjectClass
      */
     private function doFirstPassForMapping(EntityMapping $mapping): bool
     {
-        $entityMigrationPolicyClass = EntityMigrationPolicy::class;
-        if ($mapping->mappingType === EntityMappingType::customEntityMappingType) {
-            $entityMigrationPolicyClass = $mapping->entityMigrationPolicyClassName ?? fatal_error("$this->debugDescription cannot be mapped without a custom entityMigrationPolicyClassName");
-        }
-        $this->entityMigrationPolicy = new $entityMigrationPolicyClass();
-        if (!$this->entityMigrationPolicy->begin($mapping, $this)) {
+        $entityMigrationPolicy = $this->entityMigrationPolicy($mapping);
+        if (!$entityMigrationPolicy->begin($mapping, $this)) {
             return false;
         }
         if (!($sourceEntityName = $mapping->sourceEntityName)) {
@@ -136,7 +135,7 @@ class MigrationManager extends ObjectClass
             }
             $numberOfCreatedInstances = 0;
             foreach ($instances as $instance) {
-                if (!$this->entityMigrationPolicy->createDestinationInstances($instance, $mapping, $this)) {
+                if (!$entityMigrationPolicy->createDestinationInstances($instance, $mapping, $this)) {
                     continue;
                 }
                 $numberOfCreatedInstances += 1;
@@ -187,11 +186,12 @@ class MigrationManager extends ObjectClass
                 $this->byMappingBySourceRelationshipsAssociationTable[$key] = $relationshipsByName;
             }
         }
+        $entityMigrationPolicy = $this->entityMigrationPolicy($mapping);
         $destinationInstances = $this->destinationInstances($mapping->name);
         foreach ($destinationInstances as $destinationInstance) {
-            if ($this->entityMigrationPolicy->createRelationships($destinationInstance, $mapping, $this)) {
+            if ($entityMigrationPolicy->createRelationships($destinationInstance, $mapping, $this)) {
                 /** @noinspection PhpExpressionResultUnusedInspection */
-                $this->entityMigrationPolicy->endRelationshipCreation($mapping, $this);
+                $entityMigrationPolicy->endRelationshipCreation($mapping, $this);
             }
         }
         return true;
@@ -202,8 +202,9 @@ class MigrationManager extends ObjectClass
      */
     private function doThirdPassForMapping(EntityMapping $mapping): bool
     {
-        if ($this->entityMigrationPolicy->performCustomValidation($mapping, $this)) {
-            return $this->entityMigrationPolicy->end($mapping, $this);
+        $entityMigrationPolicy = $this->entityMigrationPolicy($mapping);
+        if ($entityMigrationPolicy->performCustomValidation($mapping, $this)) {
+            return $entityMigrationPolicy->end($mapping, $this);
         }
         return true;
     }
@@ -321,6 +322,7 @@ class MigrationManager extends ObjectClass
         $migrationContext->currentEntityMapping = null;
         $migrationContext->currentPropertyMapping = null;
         $migrationContext->clearAssociationTables();
+        $this->entityMigrationPoliciesByMappingName->removeAll();
     }
 
     /**
@@ -425,6 +427,24 @@ class MigrationManager extends ObjectClass
             return $this->destinationModel->entitiesByName[$destinationEntityName];
         }
         return null;
+    }
+
+    /**
+     * Returns the migration policy for a given entity mapping, creating it on first use. The
+     * instance is reused across all three passes so a policy can carry state from the creation
+     * stage through to validation.
+     */
+    private function entityMigrationPolicy(EntityMapping $mapping): EntityMigrationPolicy
+    {
+        $entityMigrationPolicies = $this->entityMigrationPoliciesByMappingName;
+        if ($entityMigrationPolicy = $entityMigrationPolicies[$mapping->name]) {
+            return $entityMigrationPolicy;
+        }
+        $entityMigrationPolicyClass = EntityMigrationPolicy::class;
+        if ($mapping->mappingType === EntityMappingType::customEntityMappingType) {
+            $entityMigrationPolicyClass = $mapping->entityMigrationPolicyClassName ?? fatal_error("$this->debugDescription cannot be mapped without a custom entityMigrationPolicyClassName");
+        }
+        return $entityMigrationPolicies[$mapping->name] = new $entityMigrationPolicyClass();
     }
 
     private function mapping(string $named): EntityMapping
