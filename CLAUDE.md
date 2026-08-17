@@ -100,7 +100,16 @@ Batch operations and history queries return typed result objects extending `Pers
 
 ### Migration
 
-`MigrationManager` orchestrates schema migrations. Stages extend `MigrationStage`:
+`MigrationManager` runs a `MappingModel` over three passes — create the destination instances, relate them, validate them — delegating each to an `EntityMigrationPolicy` (one instance per entity mapping, reused across the passes). There is only ever this one engine; what differs is where the mapping model comes from:
+
+- **Lightweight** — no mapping model exists, so `MappingModelBuilder` infers one by comparing the store's cached model with the new one. `canTransformAttributeType()` decides which attribute-type changes are inferable: a change is only inferable when the conversion the database performs is lossless (widening a numeric, rendering any of them or a date as text). Anything else raises `InferredMappingModelException`.
+- **Custom** — a mapping model already exists, so nothing is inferred. `MappingModel::mappingModel()` locates it in a bundle by version information rather than by file name: an `EntityMapping` records the version hashes of the entities it maps, and those identify the model pair it applies to. Mapping model files carry the extension in `MappingModelFileExtension`.
+
+An `EntityMapping` whose `mappingType` is `customEntityMappingType` names an `EntityMigrationPolicy` subclass in `entityMigrationPolicyClassName`; that policy produces the destination values the framework cannot derive on its own. Its schema is still reconciled from the destination model, exactly as a transformation is.
+
+`MigrationManager::canMigrateWithMappingModel()` and `performSanityCheck()` run before either store is opened: the first rejects a mapping model that is not structurally usable, the second one whose recorded version hashes disagree with the models being migrated. Both are permissive about what a hand-authored mapping model may leave out.
+
+Staged migrations pass through the same engine. Stages extend `MigrationStage`:
 - `LightweightMigrationStage` — inferred mapping
 - `CustomMigrationStage` — explicit `MappingModel` / `EntityMigrationPolicy`
 

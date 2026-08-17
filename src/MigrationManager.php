@@ -74,19 +74,48 @@ class MigrationManager extends ObjectClass
     }
 
     /**
+     * Returns whether a given mapping model is structurally usable.
+     *
+     * This is a self-consistency check: the models are not available here, so it verifies only what
+     * would otherwise fail deep inside a pass — that every entity mapping declares a type, and that
+     * a custom mapping names a policy able to perform it.
+     * @param MappingModel $mappingModel The mapping model to check.
      * @throws Exception
      */
-    public static function canMigrateWithMappingModel(/** @noinspection PhpUnusedParameterInspection */ MappingModel $mappingModel): bool
+    public static function canMigrateWithMappingModel(MappingModel $mappingModel): bool
     {
-        return true;
+        return $mappingModel->entityMappings->allSatisfy(function (EntityMapping $entityMapping): bool {
+            if ($entityMapping->mappingType === EntityMappingType::undefinedEntityMappingType) {
+                return false;
+            }
+            if ($entityMapping->mappingType !== EntityMappingType::customEntityMappingType) {
+                return true;
+            }
+            $entityMigrationPolicyClassName = $entityMapping->entityMigrationPolicyClassName;
+            return $entityMigrationPolicyClassName !== null && is_subclass_of($entityMigrationPolicyClassName, EntityMigrationPolicy::class);
+        });
     }
 
     /**
+     * Returns whether a given mapping model was authored against the models being migrated.
+     *
+     * An entity mapping records the version hash of the entity it maps, so a hash that disagrees
+     * with the model means the mapping model describes a different version of that entity and would
+     * move the data using the wrong shape. Entities a mapping model does not mention, and mappings
+     * that leave a hash unset, are allowed: a mapping model may cover only part of a schema.
+     * @param MappingModel $mappingModel The mapping model to check.
+     * @param ManagedObjectModel $sourceModel The source managed object model.
+     * @param ManagedObjectModel $destinationModel The destination managed object model.
      * @throws Exception
      */
-    public static function performSanityCheck(/** @noinspection PhpUnusedParameterInspection */ MappingModel $mappingModel, ManagedObjectModel $sourceModel, ManagedObjectModel $destinationModel): bool
+    public static function performSanityCheck(MappingModel $mappingModel, ManagedObjectModel $sourceModel, ManagedObjectModel $destinationModel): bool
     {
-        return true;
+        $agrees =
+            /**
+             * @param Dictionary<string|null> $versionHashesByName
+             */
+            fn(Dictionary $versionHashesByName, ManagedObjectModel $model): bool => $versionHashesByName->allSatisfy(fn(?string $versionHash, string $entityName): bool => $versionHash === null || ($entity = $model->entitiesByName[$entityName]) === null || $entity->versionHash === $versionHash);
+        return $agrees($mappingModel->sourceEntityVersionHashesByName, $sourceModel) && $agrees($mappingModel->destinationEntityVersionHashesByName, $destinationModel);
     }
 
     /**
