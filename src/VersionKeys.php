@@ -10,3 +10,7 @@ const StoreModelVersionHashesKey = "StoreModelVersionHashes";
 const StoreModelVersionIdentifiersKey = "StoreModelVersionIdentifiers";
 /** @var string Key to represent the earliest version of the operating system that the persistent store supports. The corresponding value is a Number object that takes the form of the constants defined by the availability macros defined in /usr/include/AvailabilityMacros.h; for example, 1040 represents OS X version 10.4.0. Backward compatibility may preclude some features. */
 const PersistentStoreOSCompatibility = "PersistentStoreOSCompatibility";
+/** @var string The path extension of an archived managed object model. */
+const ManagedObjectModelFileExtension = "mom";
+/** @var string The path extension of an archived mapping model. Mapping models are located in a bundle by their entity version hashes rather than by file name, so this extension is what identifies the candidates to examine. */
+const MappingModelFileExtension = "cdm";

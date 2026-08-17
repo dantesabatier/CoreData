@@ -47,6 +47,6 @@ final class ManagedObjectModelReference extends ObjectClass
      */
     public static function name(string $name, ?Bundle $bundle, string $versionChecksum): ManagedObjectModelReference
     {
-        return new ManagedObjectModelReference(new ManagedObjectModel($bundle?->url($name, "mom")), $versionChecksum);
+        return new ManagedObjectModelReference(new ManagedObjectModel($bundle?->url($name, ManagedObjectModelFileExtension)), $versionChecksum);
     }
 }

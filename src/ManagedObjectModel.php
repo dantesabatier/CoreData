@@ -132,7 +132,7 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
      */
     public static function mergedModel(ArrayClass $bundles, Dictionary $metadata): ?ManagedObjectModel
     {
-        return ManagedObjectModel::merging($bundles->compactMap(fn(Bundle $bundle): ?ManagedObjectModel => (($name = $bundle->object(kCFBundleNameKey)) && ($url = $bundle->url($name, "mom"))) ? new ManagedObjectModel($url) : null), $metadata);
+        return ManagedObjectModel::merging($bundles->compactMap(fn(Bundle $bundle): ?ManagedObjectModel => (($name = $bundle->object(kCFBundleNameKey)) && ($url = $bundle->url($name, ManagedObjectModelFileExtension))) ? new ManagedObjectModel($url) : null), $metadata);
     }
 
     /**

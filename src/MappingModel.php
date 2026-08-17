@@ -13,11 +13,11 @@ use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Bundle;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\FileManager;
+use Sabatier\Foundation\KeyedArchiver;
+use Sabatier\Foundation\KeyedUnarchiver;
 use Sabatier\Foundation\ObjectClass;
-use Sabatier\Foundation\Predicates\Expression;
-use Sabatier\Foundation\PropertyListSerialization;
 use Sabatier\Foundation\URL;
-use function Sabatier\Foundation\fatal_error;
 
 /**
  * A model instance that specifies how to map a model from a source to a destination managed object model.
@@ -50,6 +50,16 @@ final class MappingModel extends ObjectClass
             }
         }
     }
+    /** @var ManagedObjectModel|null The managed object model the mapping model maps from. A mapping model carries the two models it was authored against, so that loading one yields the pair its entity mappings were written for. */
+    public ?ManagedObjectModel $sourceModel = null;
+    /** @var ManagedObjectModel|null The managed object model the mapping model maps to. */
+    public ?ManagedObjectModel $destinationModel = null;
+    /** @var list<string> */
+    private const array archivableMappingModelKeys = ["entityMappings", "sourceModel", "destinationModel"];
+    /** @var ArrayClass<string> */
+    private ArrayClass $archivableMappingModelKeys {
+        get => $this->archivableMappingModelKeys ??= new ArrayClass(self::archivableMappingModelKeys);
+    }
 
     /**
      * Returns a mapping model initialized from a given URL.
@@ -58,54 +68,13 @@ final class MappingModel extends ObjectClass
      */
     public function __construct(?URL $url = null)
     {
-        if ($url) {
-            //FIXME: implement url loading, test it and improve it
-            /** @var Dictionary<mixed> $dictionary */
-            $dictionary = PropertyListSerialization::propertyListWithURL($url);
-            /** @var ArrayClass<Dictionary<mixed>>|null $entities */
-            $entities = $dictionary["entities"];
-            if ($entities) {
-                $this->entityMappings = $entities->map(function (Dictionary $dictionary): EntityMapping {
-                    $transform = function (Dictionary $dictionary): PropertyMapping {
-                        /** @var string $name */
-                        $name = $dictionary["name"] ?? fatal_error(sprintf("%s name cannot be null", PropertyMapping::class));
-                        $property = new PropertyMapping($name);
-                        /** @var string|null $valueExpressionFormat */
-                        $valueExpressionFormat = $dictionary["valueExpressionFormat"];
-                        if ($valueExpressionFormat) {
-                            $property->valueExpression = Expression::expressionWithFormat($valueExpressionFormat);
-                        }
-                        return $property;
-                    };
-                    $mapping = new EntityMapping();
-                    /** @var string|null $sourceExpressionFormat */
-                    $sourceExpressionFormat = $dictionary["sourceExpressionFormat"];
-                    if ($sourceExpressionFormat) {
-                        $mapping->sourceExpression = Expression::expressionWithFormat($sourceExpressionFormat);
-                    }
-                    /** @var int|null $mappingType */
-                    $mappingType = $dictionary["mappingType"];
-                    if ($mappingType) {
-                        $mapping->mappingType = EntityMappingType::from($mappingType);
-                    }
-                    /** @var ArrayClass<Dictionary<mixed>>|null $attributes */
-                    $attributes = $dictionary["attributes"];
-                    if ($attributes) {
-                        $mapping->attributeMappings = $attributes->map($transform);
-                    }
-                    /** @var ArrayClass<Dictionary<mixed>>|null $relationships */
-                    $relationships = $dictionary["relationships"];
-                    if ($relationships) {
-                        $mapping->relationshipMappings = $relationships->map($transform);
-                    }
-                    $dictionary->removeAll(fn(mixed $value, string $key): bool => match ($key) {
-                        "sourceExpressionFormat", "mappingType", "attributes", "relationships" => true,
-                        default => false
-                    });
-                    $mapping->setValuesForKeys($dictionary);
-                    return $mapping;
-                });
-            }
+        if ($url && ($data = FileManager::default()->contents($url->path))) {
+            /** @var MappingModel $unarchivedMappingModel */
+            $unarchivedMappingModel = KeyedUnarchiver::unarchiveTopLevelObjectWithData($data);
+            $this->setValuesForKeys($unarchivedMappingModel->dictionaryWithValues($this->archivableMappingModelKeys));
+            // Unarchiving yields the models as they were written: still editable, and with the indexes addEntity() maintains carried over from the archive rather than rebuilt.
+            $this->sourceModel = self::newModel($this->sourceModel);
+            $this->destinationModel = self::newModel($this->destinationModel);
         }
     }
 
@@ -126,19 +95,47 @@ final class MappingModel extends ObjectClass
     }
 
     /**
+     * Returns the mapping model in the given bundles whose entity version hashes match the archived
+     * hashes of a source and destination model.
+     *
+     * Mapping models are located by version information rather than by file name: a mapping model
+     * declares the hashes of the entities it was authored against, which is what identifies the pair
+     * of model versions it applies to.
+     * @param ArrayClass<Bundle>|null $bundles An array of bundles in which to search for mapping models.
+     * @param string|null $sourceHashes The archived entity version hashes of the source model.
+     * @param string|null $destinationHashes The archived entity version hashes of the destination model.
      * @throws Exception
      * @internal
      */
-    public static function newMappingModel(/** @noinspection PhpUnusedParameterInspection */ ?ArrayClass $bundles, ?string $sourceHashes, ?string $destinationHashes): ?MappingModel
+    public static function newMappingModel(?ArrayClass $bundles, ?string $sourceHashes, ?string $destinationHashes): ?MappingModel
     {
+        if (!$sourceHashes || !$destinationHashes) {
+            return null;
+        }
+        foreach ($bundles ?? Bundle::allBundles() as $bundle) {
+            foreach ($bundle->urls(MappingModelFileExtension) ?? new ArrayClass() as $url) {
+                $mappingModel = new MappingModel($url);
+                if (KeyedArchiver::archivedData($mappingModel->sourceEntityVersionHashesByName) === $sourceHashes &&
+                    KeyedArchiver::archivedData($mappingModel->destinationEntityVersionHashesByName) === $destinationHashes) {
+                    return $mappingModel;
+                }
+                if (self::$migrationDebugLevel) {
+                    error_log("CoreData: Mapping model at $url does not map the requested model versions");
+                }
+            }
+        }
         return null;
     }
 
-    /** @internal */
-    public static function mappingModelFromBundles(/** @noinspection PhpUnusedParameterInspection */ ?ArrayClass $bundles, ?ManagedObjectModel $sourceModel, ?ManagedObjectModel $destinationModel): ?MappingModel
+    /** @throws Exception
+     * @internal
+     */
+    public static function mappingModelFromBundles(?ArrayClass $bundles, ?ManagedObjectModel $sourceModel, ?ManagedObjectModel $destinationModel): ?MappingModel
     {
-        // FIXME: implement mapping models from bundles
-        return null;
+        if (!$sourceModel || !$destinationModel) {
+            return null;
+        }
+        return self::newMappingModel($bundles, KeyedArchiver::archivedData($sourceModel->entityVersionHashesByName), KeyedArchiver::archivedData($destinationModel->entityVersionHashesByName));
     }
 
     /**
@@ -155,6 +152,15 @@ final class MappingModel extends ObjectClass
     public static function inferredMappingModel(ManagedObjectModel $sourceModel, ManagedObjectModel $destinationModel): MappingModel
     {
         return new MappingModelBuilder($sourceModel, $destinationModel)->newInferredMappingModel();
+    }
+
+    /**
+     * Rebuilds a model that arrived as part of an archived mapping model, so it is indistinguishable
+     * from one read from its own file.
+     */
+    private static function newModel(?ManagedObjectModel $model): ?ManagedObjectModel
+    {
+        return $model ? ManagedObjectModel::newModel(KeyedArchiver::archivedData($model)) : null;
     }
 
     private function addEntityMapping(EntityMapping $entityMapping): void
