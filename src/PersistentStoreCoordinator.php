@@ -321,7 +321,7 @@ final class PersistentStoreCoordinator extends ObjectClass
                     }
                     $sourceModel = $store::cachedModelForPersistentStoreWithURL($storeURL) ?? $this->managedObjectModel;
                     $destinationModel = $this->managedObjectModel;
-                    $mappingModel = MappingModel::inferredMappingModel($sourceModel, $destinationModel);
+                    $mappingModel = MappingModel::mappingModel(null, $sourceModel, $destinationModel) ?? MappingModel::inferredMappingModel($sourceModel, $destinationModel);
                     $migrationManagerClass = $store::$migrationManagerClass;
                     /** @var MigrationManager $migrationManager */
                     $migrationManager = new $migrationManagerClass($sourceModel, $destinationModel);
@@ -338,7 +338,7 @@ final class PersistentStoreCoordinator extends ObjectClass
                 $stage->willMigrateHandler?->call($stage, $stagedManager, $stage);
                 $sourceModel = $store::cachedModelForPersistentStoreWithURL($storeURL) ?? $this->managedObjectModel;
                 $destinationModel = $stage->nextModel->resolvedModel;
-                $mappingModel = MappingModel::inferredMappingModel($sourceModel, $destinationModel);
+                $mappingModel = MappingModel::mappingModel(null, $sourceModel, $destinationModel) ?? MappingModel::inferredMappingModel($sourceModel, $destinationModel);
                 $migrationManagerClass = $store::$migrationManagerClass;
                 /** @var MigrationManager $migrationManager */
                 $migrationManager = new $migrationManagerClass($sourceModel, $destinationModel);
