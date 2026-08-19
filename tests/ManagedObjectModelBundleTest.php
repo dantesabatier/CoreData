@@ -9,6 +9,7 @@ use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
 use Sabatier\CoreData\ManagedObjectModel;
+use Sabatier\CoreData\ManagedObjectModelBundle;
 use Sabatier\CoreData\ManagedObjectModelReference;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
@@ -136,7 +137,7 @@ final class ManagedObjectModelBundleTest extends TestCase
             ]),
         ]));
 
-        $url = ManagedObjectModel::currentVersionURL($this->url($bundle), $first->versionChecksum);
+        $url = new ManagedObjectModelBundle($this->url($bundle))->versionURL($first->versionChecksum);
 
         $this->assertNotNull($url, "a checksum in the version information must resolve to its version");
         $this->assertNotNull(new ManagedObjectModel($url)->entitiesByName["Recipe"]?->attributesByName["directions"], "the resolved version must be the one the checksum names, not the current one");
@@ -183,6 +184,6 @@ final class ManagedObjectModelBundleTest extends TestCase
         $bundle = $this->makeBundle("Recipes");
         $this->writeVersionInfo($bundle, new Dictionary([ManagedObjectModelCurrentVersionNameKey => "Absent"]));
 
-        $this->assertNull(ManagedObjectModel::currentVersionURL($this->url($bundle)));
+        $this->assertNull(new ManagedObjectModelBundle($this->url($bundle))->currentVersionURL);
     }
 }
