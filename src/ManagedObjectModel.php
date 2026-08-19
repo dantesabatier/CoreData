@@ -99,17 +99,14 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
         if (!$url) {
             return;
         }
-        $bundle = ManagedObjectModelBundle::canInitWithURL($url) ? new ManagedObjectModelBundle($url) : null;
-        $modelURL = $bundle ? $bundle->currentVersionURL : $url;
-        if (!$modelURL) {
-            return;
-        }
+        $bundle = new ManagedObjectModelBundle($url);
+        $modelURL = $bundle->currentVersionURL ?? $url;
         if ($data = FileManager::default()->contents($modelURL->path)) {
             /** @var ManagedObjectModel $unarchivedModel */
             $unarchivedModel = KeyedUnarchiver::unarchiveTopLevelObjectWithData($data);
             $this->setValuesForKeys($unarchivedModel->dictionaryWithValues($this->archivableModelKeys));
             // The localization sits beside the model bundle rather than beside the version inside it and is named after the bundle: a model out of a package has one more directory between it and the resources' directory.
-            $resourceURL = $bundle?->url ?? $modelURL;
+            $resourceURL = $bundle->currentVersionURL ? $bundle->url : $modelURL;
             $name = $resourceURL->deletingPathExtension()->lastPathComponent;
             $poURL = Bundle::bundleWithURL($resourceURL->deletingLastPathComponent()->deletingLastPathComponent())->url("{$name}Model", "po", null, Locale::getPrimaryLanguage(Locale::getDefault()));
             if ($poURL && ($content = FileManager::default()->contents($poURL->path))) {

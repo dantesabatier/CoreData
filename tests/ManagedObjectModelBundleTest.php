@@ -137,7 +137,7 @@ final class ManagedObjectModelBundleTest extends TestCase
             ]),
         ]));
 
-        $url = new ManagedObjectModelBundle($this->url($bundle))->versionURL($first->versionChecksum);
+        $url = new ManagedObjectModelBundle($this->url($bundle))->urlForModelVersionWithChecksum($first->versionChecksum);
 
         $this->assertNotNull($url, "a checksum in the version information must resolve to its version");
         $this->assertNotNull(new ManagedObjectModel($url)->entitiesByName["Recipe"]?->attributesByName["directions"], "the resolved version must be the one the checksum names, not the current one");
@@ -177,6 +177,63 @@ final class ManagedObjectModelBundleTest extends TestCase
         $reference = ManagedObjectModelReference::fileURL($this->url("Recipes." . ManagedObjectModelFileExtension), $model->versionChecksum);
 
         $this->assertNotNull($reference->resolvedModel->entitiesByName["Recipe"]?->attributesByName["directions"]);
+    }
+
+    public function testThePackageListsTheVersionsItHolds(): void
+    {
+        $bundle = $this->makeBundle("Recipes");
+        $this->writeModel($bundle . "/Recipes.mom", self::model("directions"));
+        $this->writeModel($bundle . "/Recipes 2.mom", self::model("instructions"));
+
+        $versions = new ManagedObjectModelBundle($this->url($bundle))->modelVersions;
+
+        $this->assertEqualsCanonicalizing(["Recipes", "Recipes 2"], $versions->array);
+    }
+
+    public function testThePackageNamesItsCurrentVersion(): void
+    {
+        $bundle = $this->makeBundle("Recipes");
+        $this->writeModel($bundle . "/Recipes.mom", self::model("directions"));
+        $this->writeModel($bundle . "/Recipes 2.mom", self::model("instructions"));
+        $this->writeVersionInfo($bundle, new Dictionary([ManagedObjectModelCurrentVersionNameKey => "Recipes 2"]));
+
+        $this->assertSame("Recipes 2", new ManagedObjectModelBundle($this->url($bundle))->currentVersion);
+    }
+
+    /** A version the package does not hold is not its current version, however the version information names it. */
+    public function testAVersionInformationNamingAMissingVersionHasNoCurrentVersion(): void
+    {
+        $bundle = $this->makeBundle("Recipes");
+        $this->writeVersionInfo($bundle, new Dictionary([ManagedObjectModelCurrentVersionNameKey => "Absent"]));
+
+        $this->assertNull(new ManagedObjectModelBundle($this->url($bundle))->currentVersion);
+    }
+
+    public function testTheChecksumsComeFromTheVersionInformation(): void
+    {
+        $bundle = $this->makeBundle("Recipes");
+        $model = self::model("directions");
+        $this->writeModel($bundle . "/Recipes.mom", $model);
+        $this->writeVersionInfo($bundle, new Dictionary([
+            ManagedObjectModelVersionHashesKey => new Dictionary(["Recipes" => $model->versionChecksum]),
+        ]));
+
+        $this->assertSame($model->versionChecksum, new ManagedObjectModelBundle($this->url($bundle))->versionChecksums["Recipes"]);
+    }
+
+    /**
+     * A model file is not a package, so a bundle over one holds no versions. Asking is what lets a
+     * caller stay ignorant of which layout it was handed.
+     */
+    public function testAModelFileIsNotAPackage(): void
+    {
+        $this->writeModel("Recipes." . ManagedObjectModelFileExtension, self::model("directions"));
+
+        $bundle = new ManagedObjectModelBundle($this->url("Recipes." . ManagedObjectModelFileExtension));
+
+        $this->assertNull($bundle->currentVersion);
+        $this->assertNull($bundle->currentVersionURL);
+        $this->assertSame(0, $bundle->modelVersions->count);
     }
 
     public function testABundleNamingAMissingVersionResolvesToNothing(): void

@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Sabatier\CoreData;
 
 use Exception;
+use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Bundle;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\PropertyListSerialization;
 use Sabatier\Foundation\URL;
 
@@ -15,14 +16,20 @@ use Sabatier\Foundation\URL;
  * information that names the current one.
  *
  * Migrating between two versions of a model needs both to exist at once, which a single model file
- * cannot provide. The version information is what distinguishes the versions from one another; a
- * package assembled by hand may carry none, in which case the version named after the package is the
- * current one.
+ * cannot provide. The version information is what tells the versions apart; a package assembled by
+ * hand may carry none, in which case the version named after the package is the current one.
+ *
+ * A URL that is not a package yields a bundle with no versions at all, so a caller can ask without
+ * having to know which of the two layouts it is looking at.
  * @internal
  */
 final class ManagedObjectModelBundle
 {
-    /** @var Dictionary<mixed>|null The version information of the bundle, or null when it carries none. */
+    /** @var Bundle The package as a bundle, so its contents are enumerated the way any bundle's are. */
+    private Bundle $bundle {
+        get => $this->bundle ??= Bundle::bundleWithURL($this->url);
+    }
+    /** @var Dictionary<mixed>|null The version information of the package, or null when it carries none. */
     private ?Dictionary $versionInfo {
         get {
             if ($this->isVersionInfoResolved) {
@@ -30,35 +37,54 @@ final class ManagedObjectModelBundle
             }
             $this->isVersionInfoResolved = true;
             /** @var Dictionary<mixed>|null $versionInfo */
-            $versionInfo = PropertyListSerialization::propertyListWithURL($this->versionInfoURL);
+            $versionInfo = $this->isPackage ? PropertyListSerialization::propertyListWithURL($this->versionInfoURL) : null;
             return $this->versionInfo = $versionInfo;
         }
     }
-    /** @var URL The location of the bundle's version information. */
+    /** @var bool Whether the URL addresses a package at all. Only the extension is examined; whether the package holds anything is answered by the versions themselves. */
+    private bool $isPackage {
+        get => $this->isPackage ??= $this->url->pathExtension === ManagedObjectModelBundleFileExtension;
+    }
+    /** @var URL The location of the package's version information. */
     public URL $versionInfoURL {
         get => $this->versionInfoURL ??= $this->url->appendingPathComponent(ManagedObjectModelVersionInfoFileName)->appendingPathExtension("plist");
     }
-    /** @var string The name a version carries when the bundle names none: the bundle's own. */
-    private string $defaultVersionName {
-        get => $this->defaultVersionName ??= $this->url->deletingPathExtension()->lastPathComponent;
+    /** @var ArrayClass<string> The names of every version in the package, in the order the package lists them. */
+    public ArrayClass $modelVersions {
+        get => $this->modelVersions ??= $this->isPackage ? ($this->bundle->urls(ManagedObjectModelFileExtension) ?? new ArrayClass())->map(fn(URL $url): string => $url->deletingPathExtension()->lastPathComponent) : new ArrayClass();
     }
-    /** @var URL|null The location of the model to load, or null when the bundle holds no such version. */
-    public ?URL $currentVersionURL {
-        /**
-         * @throws Exception
-         */
+    /** @var Dictionary<string> The version checksum of every version the version information records, keyed by version name. A package carrying no version information records none: a checksum is only known by opening the model. */
+    public Dictionary $versionChecksums {
         get {
-            if ($this->isCurrentVersionURLResolved) {
-                return $this->currentVersionURL;
+            if (isset($this->versionChecksums)) {
+                return $this->versionChecksums;
             }
-            $this->isCurrentVersionURLResolved = true;
-            /** @var string|null $name */
-            $name = $this->versionInfo?->valueForKey(ManagedObjectModelCurrentVersionNameKey);
-            return $this->currentVersionURL = $this->versionURLNamed($name ?? $this->defaultVersionName);
+            /** @var Dictionary<string>|null $versionChecksums */
+            $versionChecksums = $this->versionInfo?->valueForKey(ManagedObjectModelVersionHashesKey);
+            return $this->versionChecksums = $versionChecksums ?? new Dictionary();
         }
     }
+    /** @var string|null The name of the version to load, or null when the package holds none. */
+    public ?string $currentVersion {
+        get {
+            if ($this->isCurrentVersionResolved) {
+                return $this->currentVersion;
+            }
+            $this->isCurrentVersionResolved = true;
+            if (!$this->isPackage) {
+                return $this->currentVersion = null;
+            }
+            /** @var string $name */
+            $name = $this->versionInfo?->valueForKey(ManagedObjectModelCurrentVersionNameKey) ?? $this->url->deletingPathExtension()->lastPathComponent;
+            return $this->currentVersion = $this->modelVersions->containsElement($name) ? $name : null;
+        }
+    }
+    /** @var URL|null The location of the model to load, or null when the package holds no such version. */
+    public ?URL $currentVersionURL {
+        get => ($name = $this->currentVersion) === null ? null : $this->urlForModelVersionNamed($name);
+    }
     private bool $isVersionInfoResolved = false;
-    private bool $isCurrentVersionURLResolved = false;
+    private bool $isCurrentVersionResolved = false;
 
     /**
      * @param URL $url The location of the model bundle.
@@ -68,37 +94,28 @@ final class ManagedObjectModelBundle
     }
 
     /**
-     * Returns whether a given URL can be initialized as a model bundle. Only the extension is examined: whether the package holds a version to load is answered by {$currentVersionURL}.
+     * Returns the location of the named version, whether or not the package holds it.
+     * @param string $name The name of a version.
      */
-    public static function canInitWithURL(URL $url): bool
+    public function urlForModelVersionNamed(string $name): URL
     {
-        return $url->pathExtension === ManagedObjectModelBundleFileExtension;
+        return $this->url->appendingPathComponent($name)->appendingPathExtension(ManagedObjectModelFileExtension);
     }
 
     /**
-     * Returns the location of the version a given checksum identifies, or null when the bundle holds no such version.
+     * Returns the location of the version a given checksum identifies, or null when the package holds no such version.
      *
-     * Only the version information relates a checksum to a version, so a bundle carrying none cannot answer this.
+     * Only the version information relates a checksum to a version, so a package carrying none cannot answer this.
      * @param string $versionChecksum The checksum of the version to locate.
      * @throws Exception
      */
-    public function versionURL(string $versionChecksum): ?URL
+    public function urlForModelVersionWithChecksum(string $versionChecksum): ?URL
     {
-        /** @var Dictionary<string>|null $versionHashesByName */
-        $versionHashesByName = $this->versionInfo?->valueForKey(ManagedObjectModelVersionHashesKey);
-        if (!$versionHashesByName) {
+        $versionChecksums = $this->versionChecksums;
+        $name = $versionChecksums->keys->first(fn(string $versionName): bool => $versionChecksums[$versionName] === $versionChecksum);
+        if ($name === null || !$this->modelVersions->containsElement($name)) {
             return null;
         }
-        $name = $versionHashesByName->keys->first(fn(string $versionName): bool => $versionHashesByName[$versionName] === $versionChecksum);
-        return $name === null ? null : $this->versionURLNamed($name);
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function versionURLNamed(string $name): ?URL
-    {
-        $versionURL = $this->url->appendingPathComponent($name)->appendingPathExtension(ManagedObjectModelFileExtension);
-        return FileManager::default()->fileExists($versionURL->path) ? $versionURL : null;
+        return $this->urlForModelVersionNamed($name);
     }
 }

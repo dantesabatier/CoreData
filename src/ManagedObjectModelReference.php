@@ -61,6 +61,6 @@ final class ManagedObjectModelReference extends ObjectClass
      */
     private static function versionURL(URL $url, string $versionChecksum): ?URL
     {
-        return ManagedObjectModelBundle::canInitWithURL($url) ? new ManagedObjectModelBundle($url)->versionURL($versionChecksum) : $url;
+        return new ManagedObjectModelBundle($url)->urlForModelVersionWithChecksum($versionChecksum) ?? $url;
     }
 }
