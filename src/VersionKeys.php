@@ -12,5 +12,13 @@ const StoreModelVersionIdentifiersKey = "StoreModelVersionIdentifiers";
 const PersistentStoreOSCompatibility = "PersistentStoreOSCompatibility";
 /** @var string The path extension of an archived managed object model. */
 const ManagedObjectModelFileExtension = "mom";
+/** @var string The path extension of a managed object model bundle: a package holding one archived model per version, plus the version information naming the current one. */
+const ManagedObjectModelBundleFileExtension = "momd";
+/** @var string The name of the property list, inside a managed object model bundle, that names the current version and maps every version name to its checksum. */
+const ManagedObjectModelVersionInfoFileName = "VersionInfo";
+/** @var string Key, in a model bundle version information, for the name of the model to load. */
+const ManagedObjectModelCurrentVersionNameKey = "NSManagedObjectModel_CurrentVersionName";
+/** @var string Key, in a model bundle version information, for the version checksums keyed by model name. */
+const ManagedObjectModelVersionHashesKey = "NSManagedObjectModel_VersionHashes";
 /** @var string The path extension of an archived mapping model. Mapping models are located in a bundle by their entity version hashes rather than by file name, so this extension is what identifies the candidates to examine. */
 const MappingModelFileExtension = "cdm";

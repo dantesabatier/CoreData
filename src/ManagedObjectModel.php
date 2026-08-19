@@ -15,6 +15,7 @@ use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\KeyedUnarchiver;
 use Sabatier\Foundation\ObjectClass;
+use Sabatier\Foundation\PropertyListSerialization;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Traversable;
@@ -95,18 +96,57 @@ final class ManagedObjectModel extends ObjectClass implements IteratorAggregate,
      */
     public function __construct(?URL $url = null)
     {
-        if ($url && ($data = FileManager::default()->contents($url->path))) {
+        if (!$url) {
+            return;
+        }
+        $bundleURL = $url->pathExtension === ManagedObjectModelBundleFileExtension ? $url : null;
+        $modelURL = $bundleURL ? self::currentVersionURL($bundleURL) : $url;
+        if (!$modelURL) {
+            return;
+        }
+        if ($data = FileManager::default()->contents($modelURL->path)) {
             /** @var ManagedObjectModel $unarchivedModel */
             $unarchivedModel = KeyedUnarchiver::unarchiveTopLevelObjectWithData($data);
             $this->setValuesForKeys($unarchivedModel->dictionaryWithValues($this->archivableModelKeys));
-            $bundle = Bundle::bundleWithURL($url->deletingLastPathComponent()->deletingLastPathComponent());
-            $name = $url->deletingPathExtension()->lastPathComponent;
+            // The localization sits beside the model bundle rather than beside the version inside it, and is named after the bundle: a model out of a package has one more directory between it and the resources directory.
+            $resourceURL = $bundleURL ?? $modelURL;
+            $bundle = Bundle::bundleWithURL($resourceURL->deletingLastPathComponent()->deletingLastPathComponent());
+            $name = $resourceURL->deletingPathExtension()->lastPathComponent;
             $poURL = $bundle->url("{$name}Model", "po", null, Locale::getPrimaryLanguage(Locale::getDefault()));
             if ($poURL && ($content = FileManager::default()->contents($poURL->path))) {
                 $this->localizationDictionary = new StringsFileParser($content)->dictionary;
             }
             $this->isEditable = false;
         }
+    }
+
+    /**
+     * Returns the URL of the model to load out of a model bundle, or null when the bundle names none.
+     *
+     * The version information names the current version; a bundle written by hand may omit it, in which case the version carrying the bundle own name is the current one.
+     * @param URL $bundleURL The location of a model bundle.
+     * @param string|null $versionChecksum The checksum of a specific version to resolve, or null for the current one.
+     * @throws Exception
+     * @internal
+     */
+    public static function currentVersionURL(URL $bundleURL, ?string $versionChecksum = null): ?URL
+    {
+        $name = null;
+        /** @var Dictionary<mixed>|null $versionInfo */
+        $versionInfo = PropertyListSerialization::propertyListWithURL($bundleURL->appendingPathComponent(ManagedObjectModelVersionInfoFileName)->appendingPathExtension("plist"));
+        if ($versionInfo) {
+            if ($versionChecksum !== null) {
+                /** @var Dictionary<string> $versionHashesByName */
+                $versionHashesByName = $versionInfo[ManagedObjectModelVersionHashesKey] ?? new Dictionary();
+                $name = $versionHashesByName->keys->first(fn(string $versionName): bool => $versionHashesByName[$versionName] === $versionChecksum);
+            } else {
+                /** @var string|null $name */
+                $name = $versionInfo[ManagedObjectModelCurrentVersionNameKey];
+            }
+        }
+        // Falling back to the bundle own name keeps a hand-made package working, the way an unvalidated bundle does elsewhere.
+        $versionURL = $bundleURL->appendingPathComponent($name ?? $bundleURL->deletingPathExtension()->lastPathComponent)->appendingPathExtension(ManagedObjectModelFileExtension);
+        return FileManager::default()->fileExists($versionURL->path) ? $versionURL : null;
     }
 
     /**
