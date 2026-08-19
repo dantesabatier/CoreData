@@ -9,6 +9,7 @@ use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
 use Sabatier\CoreData\ManagedObjectModel;
+use Sabatier\CoreData\ManagedObjectModelReference;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\FileManager;
@@ -139,6 +140,42 @@ final class ManagedObjectModelBundleTest extends TestCase
 
         $this->assertNotNull($url, "a checksum in the version information must resolve to its version");
         $this->assertNotNull(new ManagedObjectModel($url)->entitiesByName["Recipe"]?->attributesByName["directions"], "the resolved version must be the one the checksum names, not the current one");
+    }
+
+    /**
+     * A reference describes one version of a model, and the checksum is what picks it. Before the
+     * bundle existed there was nothing to pick from, so the checksum was carried and ignored.
+     */
+    public function testAReferenceResolvesTheVersionItsChecksumNames(): void
+    {
+        $bundle = $this->makeBundle("Recipes");
+        $first = self::model("directions");
+        $second = self::model("instructions");
+        $this->writeModel($bundle . "/Recipes.mom", $first);
+        $this->writeModel($bundle . "/Recipes 2.mom", $second);
+        $this->writeVersionInfo($bundle, new Dictionary([
+            ManagedObjectModelCurrentVersionNameKey => "Recipes 2",
+            ManagedObjectModelVersionHashesKey => new Dictionary([
+                "Recipes" => $first->versionChecksum,
+                "Recipes 2" => $second->versionChecksum,
+            ]),
+        ]));
+
+        $reference = ManagedObjectModelReference::fileURL($this->url($bundle), $first->versionChecksum);
+
+        $this->assertNotNull($reference->resolvedModel->entitiesByName["Recipe"]?->attributesByName["directions"], "the reference must resolve the version its checksum names, not the current one");
+        $this->assertNull($reference->resolvedModel->entitiesByName["Recipe"]?->attributesByName["instructions"]);
+    }
+
+    /** A model file on its own is the only version there is, so the checksum is not a selector. */
+    public function testAReferenceToAModelFileResolvesThatFile(): void
+    {
+        $model = self::model("directions");
+        $this->writeModel("Recipes." . ManagedObjectModelFileExtension, $model);
+
+        $reference = ManagedObjectModelReference::fileURL($this->url("Recipes." . ManagedObjectModelFileExtension), $model->versionChecksum);
+
+        $this->assertNotNull($reference->resolvedModel->entitiesByName["Recipe"]?->attributesByName["directions"]);
     }
 
     public function testABundleNamingAMissingVersionResolvesToNothing(): void

@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Exception;
 use Sabatier\Foundation\Bundle;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\URL;
@@ -29,10 +30,11 @@ final class ManagedObjectModelReference extends ObjectClass
      * @param URL $url The on-disk location of the managed object model.
      * @param string $versionChecksum The checksum of the object model’s version.
      * @return ManagedObjectModelReference A reference to the managed object model.
+     * @throws Exception
      */
     public static function fileURL(URL $url, string $versionChecksum): ManagedObjectModelReference
     {
-        return new ManagedObjectModelReference(new ManagedObjectModel($url), $versionChecksum);
+        return new ManagedObjectModelReference(new ManagedObjectModel(self::versionURL($url, $versionChecksum)), $versionChecksum);
     }
 
     /**
@@ -44,9 +46,24 @@ final class ManagedObjectModelReference extends ObjectClass
      * @param Bundle|null $bundle The bundle to search.
      * @param string $versionChecksum The checksum of the object model’s version.
      * @return ManagedObjectModelReference A reference to the managed object model.
+     * @throws Exception
      */
     public static function name(string $name, ?Bundle $bundle, string $versionChecksum): ManagedObjectModelReference
     {
-        return new ManagedObjectModelReference(new ManagedObjectModel($bundle?->url($name, ManagedObjectModelFileExtension)), $versionChecksum);
+        $url = $bundle?->url($name, ManagedObjectModelFileExtension) ?? $bundle?->url($name, ManagedObjectModelBundleFileExtension);
+        return new ManagedObjectModelReference(new ManagedObjectModel($url ? self::versionURL($url, $versionChecksum) : null), $versionChecksum);
+    }
+
+    /**
+     * Resolves the version a checksum names inside a model bundle. A model file on its own is the only
+     * version there is, so its checksum is not a selector, and the URL stands as given.
+     * @throws Exception
+     */
+    private static function versionURL(URL $url, string $versionChecksum): ?URL
+    {
+        if ($url->pathExtension !== ManagedObjectModelBundleFileExtension) {
+            return $url;
+        }
+        return ManagedObjectModel::currentVersionURL($url, $versionChecksum);
     }
 }
