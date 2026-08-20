@@ -12,6 +12,7 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\ManagedObjectModelBundle;
 use Sabatier\CoreData\ManagedObjectModelReference;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Bundle;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\KeyedArchiver;
@@ -67,6 +68,11 @@ final class ManagedObjectModelBundleTest extends TestCase
     private function url(string $relativePath): URL
     {
         return URL::fileURL($this->resources . "/" . $relativePath);
+    }
+
+    private function containingBundle(): Bundle
+    {
+        return Bundle::bundleWithURL(URL::fileURL(dirname($this->resources)));
     }
 
     private function writeModel(string $relativePath, ManagedObjectModel $model): void
@@ -225,6 +231,68 @@ final class ManagedObjectModelBundleTest extends TestCase
      * A model file is not a package, so a bundle over one holds no versions. Asking is what lets a
      * caller stay ignorant of which layout it was handed.
      */
+    /**
+     * A consumer that knows only the model's name gets the package, because that is the layout carrying
+     * the version the store asks for. Locating by the model file's extension alone would walk straight past it.
+     */
+    public function testTheNamedModelResolvesToThePackage(): void
+    {
+        $bundle = $this->makeBundle("Recipes");
+        $this->writeModel($bundle . "/Recipes.mom", self::model("directions"));
+
+        $url = ManagedObjectModelBundle::urlForModelNamed("Recipes", $this->containingBundle());
+
+        $this->assertSame($this->url($bundle)->path, $url?->path);
+    }
+
+    /** Every project today ships a lone model file, and it has to keep resolving. */
+    public function testTheNamedModelFallsBackToALoneModelFile(): void
+    {
+        $this->writeModel("Recipes." . ManagedObjectModelFileExtension, self::model("directions"));
+
+        $url = ManagedObjectModelBundle::urlForModelNamed("Recipes", $this->containingBundle());
+
+        $this->assertSame($this->url("Recipes." . ManagedObjectModelFileExtension)->path, $url?->path);
+    }
+
+    /**
+     * A lone model file beside a package of the same name wins. A project that ships the file must keep
+     * loading exactly what it loaded before packages existed; a project that moved to a package no longer
+     * ships the file, so the two only ever coexist by accident.
+     */
+    public function testALoneModelFileWinsOverAPackageOfTheSameName(): void
+    {
+        $bundle = $this->makeBundle("Recipes");
+        $this->writeModel($bundle . "/Recipes.mom", self::model("instructions"));
+        $this->writeModel("Recipes." . ManagedObjectModelFileExtension, self::model("directions"));
+
+        $url = ManagedObjectModelBundle::urlForModelNamed("Recipes", $this->containingBundle());
+
+        $this->assertSame($this->url("Recipes." . ManagedObjectModelFileExtension)->path, $url?->path);
+    }
+
+    public function testAnAbsentNamedModelResolvesToNothing(): void
+    {
+        $this->assertNull(ManagedObjectModelBundle::urlForModelNamed("Recipes", $this->containingBundle()));
+    }
+
+    /**
+     * The whole point of locating by name: a container asked for a name ends up with the package's current
+     * version, without any caller having to know which of the two layouts is on disk.
+     */
+    public function testTheNamedModelLoadsThePackagesCurrentVersion(): void
+    {
+        $bundle = $this->makeBundle("Recipes");
+        $this->writeModel($bundle . "/Recipes.mom", self::model("directions"));
+        $this->writeModel($bundle . "/Recipes 2.mom", self::model("instructions"));
+        $this->writeVersionInfo($bundle, new Dictionary([ManagedObjectModelCurrentVersionNameKey => "Recipes 2"]));
+
+        $model = new ManagedObjectModel(ManagedObjectModelBundle::urlForModelNamed("Recipes", $this->containingBundle()));
+
+        $this->assertNotNull($model->entitiesByName["Recipe"]?->attributesByName["instructions"], "the named model must load the version the package names as current");
+        $this->assertNull($model->entitiesByName["Recipe"]?->attributesByName["directions"]);
+    }
+
     public function testAModelFileIsNotAPackage(): void
     {
         $this->writeModel("Recipes." . ManagedObjectModelFileExtension, self::model("directions"));

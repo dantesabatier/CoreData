@@ -94,6 +94,22 @@ final class ManagedObjectModelBundle
     }
 
     /**
+     * Returns the location of the named model in a given bundle, preferring a lone model file over a package.
+     *
+     * A model reaches its consumer either as a single file or as a package holding one file per version.
+     * Both answer to the same name, so a caller that knows only the name cannot tell which of the two it
+     * is about to get. The lone file wins, so a project shipping one keeps loading exactly what it loaded
+     * before packages existed; a project that moved to a package no longer ships the file.
+     * @param string|null $name The name of the model.
+     * @param Bundle|null $bundle The bundle to search.
+     * @return URL|null The location of the model, or null when the bundle holds neither layout under that name.
+     */
+    public static function urlForModelNamed(?string $name, ?Bundle $bundle): ?URL
+    {
+        return $bundle?->url($name, ManagedObjectModelFileExtension) ?? $bundle?->url($name, ManagedObjectModelBundleFileExtension);
+    }
+
+    /**
      * Returns the location of the named version, whether or not the package holds it.
      * @param string $name The name of a version.
      */

@@ -50,7 +50,7 @@ final class ManagedObjectModelReference extends ObjectClass
      */
     public static function name(string $name, ?Bundle $bundle, string $versionChecksum): ManagedObjectModelReference
     {
-        $url = $bundle?->url($name, ManagedObjectModelFileExtension) ?? $bundle?->url($name, ManagedObjectModelBundleFileExtension);
+        $url = ManagedObjectModelBundle::urlForModelNamed($name, $bundle);
         return new ManagedObjectModelReference(new ManagedObjectModel($url ? self::versionURL($url, $versionChecksum) : null), $versionChecksum);
     }
 
@@ -59,7 +59,7 @@ final class ManagedObjectModelReference extends ObjectClass
      * version there is, so its checksum is not a selector, and the URL stands as given.
      * @throws Exception
      */
-    private static function versionURL(URL $url, string $versionChecksum): ?URL
+    private static function versionURL(URL $url, string $versionChecksum): URL
     {
         return new ManagedObjectModelBundle($url)->urlForModelVersionWithChecksum($versionChecksum) ?? $url;
     }
