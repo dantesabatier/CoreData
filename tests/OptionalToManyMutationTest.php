@@ -36,9 +36,16 @@ final class OptionalToManyMember extends ManagedObject
  *
  *     Call to a member function containsElement() on null
  *
- * A null relationship holds nothing, so every mutator has nothing to act on and does nothing —
- * none of them invents a set to write into. Raya reaches all of this through Task::willSave(),
- * which calls addUsersObject()/addMachinesObject()/addShiftsObject() on a Production.
+ * A null relationship holds nothing, so the mutators never blindly invent a set to write into.
+ * The additive ones make one exception, and only where the model grants it: isOptional is the
+ * permission for the relationship to be absent, which is what makes inserting the first object
+ * a legal transition from absent to present. So add<Key>Object()/add<Key>() materialize the set
+ * when the relationship is optional, and a mandatory one reading as null stays null — that is
+ * an invalid state, not something to paper over. remove<Key>()/intersect<Key>() materialize
+ * nothing either way: there is nothing to take out of a relationship that is not there.
+ *
+ * Raya reaches all of this through Task::willSave(), which calls addUsersObject()/
+ * addMachinesObject()/addShiftsObject() on a Production.
  *
  * The crash is in the object graph and needs no save, but the stack still needs a store: a
  * coordinator with none cannot hand out object IDs when the objects are registered.
@@ -65,7 +72,7 @@ final class OptionalToManyMutationTest extends TestCase
      * Owner <->> Member, with the to-many left optional — the default, and the configuration
      * that produced the crash.
      */
-    private function makeContext(): ManagedObjectContext
+    private function makeContext(bool $optionalToMany = true): ManagedObjectContext
     {
         $ownerName = new AttributeDescription();
         $ownerName->name = "name";
@@ -77,7 +84,7 @@ final class OptionalToManyMutationTest extends TestCase
         $members->lazyDestinationEntityName = "OptionalToManyMember";
         $members->lazyInverseRelationshipName = "owner";
         $members->isToMany = true;
-        $members->isOptional = true;
+        $members->isOptional = $optionalToMany;
 
         $owner = new EntityDescription();
         $owner->name = "OptionalToManyOwner";
@@ -122,25 +129,25 @@ final class OptionalToManyMutationTest extends TestCase
         return [$owner, $member];
     }
 
-    public function testAddObjectOnANullOptionalToManyDoesNothing(): void
+    public function testAddObjectOnANullOptionalToManyMaterializesIt(): void
     {
         $context = $this->makeContext();
         [$owner, $member] = $this->makePair($context);
 
         $owner->addMembersObject($member);
 
-        $this->assertNull($owner->members, "a null relationship stays null rather than being invented");
-        $this->assertNull($member->owner, "and the inverse was left alone");
+        $this->assertTrue($owner->members->containsElement($member), "optional grants the absent-to-present transition");
+        $this->assertSame($owner, $member->owner, "and the inverse was set");
     }
 
-    public function testAddOnANullOptionalToManyDoesNothing(): void
+    public function testAddOnANullOptionalToManyMaterializesIt(): void
     {
         $context = $this->makeContext();
         [$owner, $member] = $this->makePair($context);
 
         $owner->addMembers(new Set([$member]));
 
-        $this->assertNull($owner->members, "a null relationship stays null rather than being invented");
+        $this->assertTrue($owner->members->containsElement($member), "optional grants the absent-to-present transition");
     }
 
     /**

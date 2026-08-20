@@ -26,6 +26,28 @@ final readonly class FaultingSetMutationMethod
         }
     }
 
+    /**
+     * Answers the relationship's set, materializing an absent one where the model allows it.
+     *
+     * isOptional is the permission for to-many to be absent, and that permission is what makes
+     * going from absent to present legal — so an optional relationship reading as null is
+     * materialized here. A mandatory one reading as null is an invalid state instead and stays
+     * null rather than being papered over with a set nobody declared.
+     */
+    private static function mutableSetForKey(ManagedObject $obj, string $key): ?Set
+    {
+        /** @var Set|null $faultingSet */
+        $faultingSet = $obj->valueForKey($key);
+        if (!$faultingSet) {
+            /** @var RelationshipDescription $relationship */
+            $relationship = $obj->modeledRelationships[$key];
+            if ($relationship->isOptional) {
+                $faultingSet = $obj->mutableSetValueForKey($key);
+            }
+        }
+        return $faultingSet;
+    }
+
     private static function toOneInverseRelationshipForKey(ManagedObject $obj, string $key): ?RelationshipDescription
     {
         /** @var RelationshipDescription $relationship */
@@ -51,9 +73,7 @@ final readonly class FaultingSetMutationMethod
     public static function addObjectMethod(ManagedObject $obj, string $key): FaultingSetMutationMethod
     {
         return new FaultingSetMutationMethod(sprintf("add%sObject", ucfirst($key)), function (ManagedObject $newObject) use ($obj, $key): void {
-            // Null optional to-many hold no relationship to add to, so there is nothing to insert.
-            /** @var FaultingSet|null $faultingSet */
-            $faultingSet = $obj->valueForKey($key);
+            $faultingSet = self::mutableSetForKey($obj, $key);
             if (!$faultingSet || $faultingSet->containsElement($newObject)) {
                 return;
             }
@@ -91,8 +111,7 @@ final readonly class FaultingSetMutationMethod
              * @param Set<ManagedObject> $newObjects
              */
             function (Set $newObjects) use ($obj, $key): void {
-                /** @var FaultingSet|null $faultingSet */
-                $faultingSet = $obj->valueForKey($key);
+                $faultingSet = self::mutableSetForKey($obj, $key);
                 if (!$faultingSet) {
                     return;
                 }
