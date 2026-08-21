@@ -1072,6 +1072,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 }
                 return $value;
             })(),
+            AttributeType::compositeAttributeType => $value instanceof Dictionary ? $value : new Dictionary(),
             AttributeType::undefined => fatal_error("Invalid argument: cannot use an attribute type of \"Undefined\""),
             default => $value
         };
@@ -1099,6 +1100,13 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     AttributeType::string, AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float, AttributeType::boolean => $isOptional && $value === "" ? null : self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $write),
                     default => self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $write),
                 };
+                if ($property instanceof CompositeAttributeDescription && $value instanceof Dictionary && $value->isEmpty) {
+                    foreach ($property->elements as $element) {
+                        $elementValue = $element->defaultValue;
+                        self::coerceValue($elementValue, $element, $write);
+                        $value[$element->name] = $elementValue;
+                    }
+                }
                 if (!match ($type) {
                         AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float => is_int($value) || is_float($value) || $value instanceof Number || $value instanceof BackedEnum,
                         AttributeType::string, AttributeType::binaryData => is_string($value) || $value instanceof BackedEnum,
