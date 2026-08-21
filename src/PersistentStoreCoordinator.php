@@ -273,11 +273,8 @@ final class PersistentStoreCoordinator extends ObjectClass
         $sourceURL = $store->url;
         $sourceModel = $store::cachedModelForPersistentStoreWithURL($sourceURL) ?? $this->managedObjectModel;
         $destinationModel = $this->managedObjectModel;
-        if ($store->options?->valueForKey(InferMappingModelAutomaticallyOption)) {
-            $mappingModel = MappingModel::inferredMappingModel($sourceModel, $destinationModel);
-        } else {
-            $mappingModel = MappingModel::mappingModel(null, $sourceModel, $destinationModel) ?? fatal_error("MappingModel cannot be found for migration");
-        }
+        $mappingModel = MappingModel::mappingModel(null, $sourceModel, $destinationModel);
+        $mappingModel ??= $store->options?->valueForKey(InferMappingModelAutomaticallyOption) ? MappingModel::inferredMappingModel($sourceModel, $destinationModel) : fatal_error("MappingModel cannot be found for migration");
         $sourceType = PersistentStoreType::from($store->type);
         $sourceOptions = $store->options;
         $migrationManagerClass = $store::$migrationManagerClass;
