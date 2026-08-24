@@ -82,14 +82,15 @@ final class ManagedObjectSerializationPreparer
      */
     private function prepareObjectGraph(ManagedObject $object, Dictionary $shape, WeakMap $visited): void
     {
-        // The graph is walked once per call, not once per shape: an object whose own shape is already satisfied can still have gained children since it was last prepared — a to-many mutated in the same request — and those children have never been given the shape. Only a revisit within this same walk is a cycle and can be cut.
-        if (isset($visited[$object])) {
+        // An object carries one shape, but the graph can reach it down two branches that ask for different things — an author asked for by email, the same user asked for by name under a comment. So a revisit grows the shape rather than losing it, and the object ends up emitting the union both branches asked for. What ends the walk is a visit that adds nothing: that covers a cycle, whose second lap repeats a shape already merged, without cutting off a branch that still has something to contribute.
+        /** @var Dictionary<mixed> $currentShape */
+        $currentShape = $this->preparedShapes[$object] ?? new Dictionary();
+        $hasGrown = $this->shapeChanged($currentShape, $shape);
+        if (isset($visited[$object]) && !$hasGrown) {
             return;
         }
         $visited[$object] = true;
-        /** @var Dictionary<mixed> $currentShape */
-        $currentShape = $this->preparedShapes[$object] ?? new Dictionary();
-        $mergedShape = $this->shapeChanged($currentShape, $shape) ? $this->mergeShape($currentShape, $shape) : $currentShape;
+        $mergedShape = $hasGrown ? $this->mergeShape($currentShape, $shape) : $currentShape;
         $this->preparedShapes[$object] = $mergedShape;
         $this->applySerializationShape($object, $mergedShape);
         $context = $object->managedObjectContext;
