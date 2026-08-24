@@ -82,10 +82,7 @@ final class ManagedObjectSerializationPreparer
      */
     private function prepareObjectGraph(ManagedObject $object, Dictionary $shape, WeakMap $visited): void
     {
-        // The graph is walked once per call, not once per shape: an object whose own shape is already
-        // satisfied can still have gained children since it was last prepared — a to-many mutated in
-        // the same request — and those children have never been given the shape. Only a revisit within
-        // this same walk is a cycle and can be cut.
+        // The graph is walked once per call, not once per shape: an object whose own shape is already satisfied can still have gained children since it was last prepared — a to-many mutated in the same request — and those children have never been given the shape. Only a revisit within this same walk is a cycle and can be cut.
         if (isset($visited[$object])) {
             return;
         }
