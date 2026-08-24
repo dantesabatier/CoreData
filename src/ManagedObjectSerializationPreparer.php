@@ -77,14 +77,22 @@ final class ManagedObjectSerializationPreparer
         return false;
     }
 
-    private function prepareObjectGraph(ManagedObject $object, Dictionary $shape): void
+    /**
+     * @param WeakMap<ManagedObject, true> $visited
+     */
+    private function prepareObjectGraph(ManagedObject $object, Dictionary $shape, WeakMap $visited): void
     {
-        /** @var Dictionary<mixed> $currentShape */
-        $currentShape = $this->preparedShapes[$object] ?? new Dictionary();
-        if (!$this->shapeChanged($currentShape, $shape)) {
+        // The graph is walked once per call, not once per shape: an object whose own shape is already
+        // satisfied can still have gained children since it was last prepared — a to-many mutated in
+        // the same request — and those children have never been given the shape. Only a revisit within
+        // this same walk is a cycle and can be cut.
+        if (isset($visited[$object])) {
             return;
         }
-        $mergedShape = $this->mergeShape($currentShape, $shape);
+        $visited[$object] = true;
+        /** @var Dictionary<mixed> $currentShape */
+        $currentShape = $this->preparedShapes[$object] ?? new Dictionary();
+        $mergedShape = $this->shapeChanged($currentShape, $shape) ? $this->mergeShape($currentShape, $shape) : $currentShape;
         $this->preparedShapes[$object] = $mergedShape;
         $this->applySerializationShape($object, $mergedShape);
         $context = $object->managedObjectContext;
@@ -94,11 +102,11 @@ final class ManagedObjectSerializationPreparer
             }
             $value = $object->valueForKey($key);
             if ($value instanceof ManagedObject) {
-                $this->prepareObjectGraph($value, $subshape);
+                $this->prepareObjectGraph($value, $subshape, $visited);
             } elseif ($value instanceof ManagedObjectID) {
-                $this->prepareObjectGraph($context->object($value), $subshape);
+                $this->prepareObjectGraph($context->object($value), $subshape, $visited);
             } elseif ($value instanceof Sequence) {
-                $value->forEach(fn(ManagedObject $object) => $this->prepareObjectGraph($object, $subshape));
+                $value->forEach(fn(ManagedObject $object) => $this->prepareObjectGraph($object, $subshape, $visited));
             }
         }
     }
@@ -109,7 +117,9 @@ final class ManagedObjectSerializationPreparer
         if ($shape === null || $shape->isEmpty) {
             return $object;
         }
-        $this->prepareObjectGraph($object, $shape);
+        /** @var WeakMap<ManagedObject, true> $visited */
+        $visited = new WeakMap();
+        $this->prepareObjectGraph($object, $shape, $visited);
         return $object;
     }
 }
