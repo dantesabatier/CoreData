@@ -24,10 +24,18 @@ abstract class RowCache implements PersistentStoreCache
         return "{$objectID->uriRepresentation()->absoluteString}$divider$name";
     }
 
+    /**
+     * The canonical description is digested rather than escaped: urlencode grew the key past the
+     * length of its input (a predicate with a few clauses reached 339 characters from 255), and
+     * a key that long is carried on every cached query and has to fit the backends' own limits —
+     * Memcached rejects keys over 250 bytes. xxh128 is non-cryptographic on purpose: this
+     * identifies a query, it does not authenticate one, and the digest is fixed at 32 characters
+     * whatever the request looks like.
+     */
     #[Override]
     public function queryKeyForRequest(FetchRequest $request, QueryGenerationToken $token): string
     {
-        $hash = urlencode($request->canonicalDescription);
+        $hash = hash("xxh128", $request->canonicalDescription);
         return "/query/$token->origin/$token->generation/$hash";
     }
 }
