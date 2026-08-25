@@ -10,6 +10,7 @@ use Sabatier\CoreData\EntityDescription;
 use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Predicates\Predicate;
 
 final class Track extends ManagedObject
@@ -85,12 +86,22 @@ final class SQLCaseSensitivityTest extends SQLMigrationTestCase
     }
 
     /**
+     * Evaluates the predicate against dictionaries keyed by "title" rather than against bare
+     * strings, so the `title` key path actually resolves. Foundation falls back to SELF for a
+     * key path an object cannot answer, which makes a bare string agree by accident for most
+     * operators — but it hides whether the key path was resolved at all.
+     *
      * @return list<string> the titles the same predicate selects when evaluated in memory
      */
     private static function evaluateTitles(string $predicate): array
     {
         $compiled = Predicate::format($predicate);
-        $titles = array_values(array_filter(self::Titles, $compiled->evaluate(...)));
+        $titles = [];
+        foreach (self::Titles as $title) {
+            if ($compiled->evaluate(new Dictionary(["title" => $title]))) {
+                $titles[] = $title;
+            }
+        }
         sort($titles);
         return $titles;
     }
@@ -174,9 +185,8 @@ final class SQLCaseSensitivityTest extends SQLMigrationTestCase
     /**
      * LIKE is case-sensitive by default too, pinned with a wildcard-free pattern.
      *
-     * Deliberately NOT asserted through assertLayersAgree: LIKE is the one operator whose
-     * pattern language differs between the two layers, so agreement holds only while the
-     * pattern contains no wildcard. See testLikePatternLanguageDivergesBetweenLayers.
+     * A wildcard-free pattern is used because LIKE has no working wildcard in either layer; see
+     * testLikeHasNoWildcardInEitherLayer.
      */
     public function testLikeIsCaseSensitiveByDefault(): void
     {
@@ -192,41 +202,36 @@ final class SQLCaseSensitivityTest extends SQLMigrationTestCase
     }
 
     /**
-     * Documents a known cross-layer divergence rather than a desired behavior.
+     * LIKE has NO wildcard through either layer, by two independent mechanisms that happen to
+     * agree.
      *
-     * In memory, Foundation routes LIKE through LikePredicateOperator -> MatchingPredicateOperator
-     * -> string_matches, which compiles the pattern as an anchored REGEX (`/^pattern$/`), so the
-     * wildcard is regex syntax: `Bol.*` matches, `Bol%` does not.
+     * In memory, Foundation routes LIKE through LikePredicateOperator -> MatchingPredicateOperator,
+     * which forces CompareOptions::quoted before calling string_matches — so the pattern is
+     * preg_quote'd and the anchored regex it compiles to matches literally. `Bol.*` does not match
+     * "Bolero"; not even `.*` matches anything.
      *
-     * Through the store, neither works. LIKE is emitted as SQL `LIKE BINARY`, whose wildcards are
-     * `%` and `_` — but prepareLike passes escapesWildcards: true, so the user's own `%` is
-     * escaped to `\%` and bound as a LITERAL percent. A regex `.*` means nothing to SQL either.
-     * The net effect is that a wildcarded LIKE matches nothing through the store no matter which
-     * language the caller writes in, and only a wildcard-free pattern behaves the same in both
-     * layers.
+     * Through the store, LIKE is emitted as SQL `LIKE BINARY`, whose wildcards are `%` and `_` —
+     * but prepareLike passes escapesWildcards: true, so the user's own `%` is escaped to `\%` and
+     * bound as a literal percent.
      *
-     * That escaping is not an oversight: it is what makes an exact-looking LIKE on a value
-     * containing a literal `%` or `_` work (see SQLWildcardEscapingTest). The cost is that SQL's
-     * own wildcards are unreachable through this operator. Pinned so the behavior is visible and
-     * any future change to it breaks this test on purpose. A caller who needs a portable wildcard
-     * search should use BEGINSWITH / CONTAINS / ENDSWITH, which agree across both layers.
+     * So a wildcarded LIKE matches nothing on either side, in either syntax, and the two layers
+     * agree on every pattern. The escaping is not an oversight: it is what makes an exact-looking
+     * LIKE on a value containing a literal `%` or `_` work (see SQLWildcardEscapingTest). The cost
+     * is that LIKE offers no pattern matching at all — it is an exact comparison with extra steps.
+     * A caller who wants a wildcard search should use BEGINSWITH / CONTAINS / ENDSWITH, and one
+     * who wants a regex should use MATCHES.
      */
-    public function testLikePatternLanguageDivergesBetweenLayers(): void
+    public function testLikeHasNoWildcardInEitherLayer(): void
     {
         $this->seed();
 
-        // Through the store, the user's "%" is escaped to a literal, so nothing matches...
-        $this->assertSame([], $this->fetchTitles("title LIKE \"Bol%\""));
-        // ...and in memory it fails too, because "%" is just a literal in a regex.
-        $this->assertSame([], self::evaluateTitles("title LIKE \"Bol%\""));
+        // The SQL wildcard is escaped to a literal before it reaches the database...
+        $this->assertSame([], $this->assertLayersAgree("title LIKE \"Bol%\""));
+        // ...and the regex wildcard is preg_quote'd before the in-memory matcher sees it.
+        $this->assertSame([], $this->assertLayersAgree("title LIKE \"Bol.*\""));
 
-        // The regex wildcard is the one the in-memory evaluator understands, and SQL does not.
-        $this->assertSame([], $this->fetchTitles("title LIKE \"Bol.*\""));
-        $this->assertSame(["Bolero"], self::evaluateTitles("title LIKE \"Bol.*\""));
-
-        // The only pattern both layers agree on is one with no wildcard at all.
-        $this->assertSame(["Bolero"], $this->fetchTitles("title LIKE \"Bolero\""));
-        $this->assertSame(["Bolero"], self::evaluateTitles("title LIKE \"Bolero\""));
+        // What LIKE does match is the exact string, in both layers.
+        $this->assertSame(["Bolero"], $this->assertLayersAgree("title LIKE \"Bolero\""));
     }
 
     /**
