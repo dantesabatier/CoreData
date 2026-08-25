@@ -269,8 +269,7 @@ final class RowCacheTest extends TestCase
         $first = "store-a-" . __FUNCTION__;
         $second = "store-b-" . __FUNCTION__;
 
-        // Read both first, the way the store does before it ever advances, so the comparison is
-        // about namespacing and not about how a cold counter initializes.
+        // Read both first, the way the store does before it ever advances, so the comparison is about namespacing and not about how a cold counter initializes.
         $firstBefore = $cache->currentGenerationForStore($first);
         $secondBefore = $cache->currentGenerationForStore($second);
 

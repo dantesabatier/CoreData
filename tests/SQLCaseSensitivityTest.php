@@ -40,7 +40,7 @@ final class Track extends ManagedObject
 final class SQLCaseSensitivityTest extends SQLMigrationTestCase
 {
     /** @var list<string> Titles differing only in case, so casing changes the result set. */
-    private const array TITLES = ["Adagio", "adagio", "ADAGIO", "Allegro", "allegro", "Bolero"];
+    private const array Titles = ["Adagio", "adagio", "ADAGIO", "Allegro", "allegro", "Bolero"];
 
     private static function model(): ManagedObjectModel
     {
@@ -61,7 +61,7 @@ final class SQLCaseSensitivityTest extends SQLMigrationTestCase
     private function seed(): void
     {
         $context = $this->bootstrap(self::model());
-        foreach (self::TITLES as $value) {
+        foreach (self::Titles as $value) {
             $track = new Track($context);
             $track->title = $value;
         }
@@ -90,7 +90,7 @@ final class SQLCaseSensitivityTest extends SQLMigrationTestCase
     private static function evaluateTitles(string $predicate): array
     {
         $compiled = Predicate::format($predicate);
-        $titles = array_values(array_filter(self::TITLES, $compiled->evaluate(...)));
+        $titles = array_values(array_filter(self::Titles, $compiled->evaluate(...)));
         sort($titles);
         return $titles;
     }

@@ -35,9 +35,9 @@ final class Part extends ManagedObject
 final class SQLWildcardEscapingTest extends SQLMigrationTestCase
 {
     /** Values holding literal SQL wildcards, which is what makes the escaping observable. */
-    private const string UNDERSCORE_SKU = "AUDIT_TEST_50";
-    private const string PERCENT_SKU = "50%OFF";
-    private const string BOTH_SKU = "AB_CD%EF";
+    private const string UnderscoreSKU = "AUDIT_TEST_50";
+    private const string PercentSKU = "50%OFF";
+    private const string BothSKU = "AB_CD%EF";
 
     private static function model(): ManagedObjectModel
     {
@@ -63,7 +63,7 @@ final class SQLWildcardEscapingTest extends SQLMigrationTestCase
     private function seed(): void
     {
         $context = $this->bootstrap(self::model());
-        foreach ([self::UNDERSCORE_SKU, self::PERCENT_SKU, self::BOTH_SKU, "AUDITxTESTx50", "50NOTOFF"] as $value) {
+        foreach ([self::UnderscoreSKU, self::PercentSKU, self::BothSKU, "AUDITxTESTx50", "50NOTOFF"] as $value) {
             $part = new Part($context);
             $part->sku = $value;
         }
@@ -93,7 +93,7 @@ final class SQLWildcardEscapingTest extends SQLMigrationTestCase
     public function testExactMatchFindsValueContainingUnderscore(): void
     {
         $this->seed();
-        $this->assertSame([self::UNDERSCORE_SKU], $this->fetchSKUs(sprintf("sku == \"%s\"", self::UNDERSCORE_SKU)));
+        $this->assertSame([self::UnderscoreSKU], $this->fetchSKUs(sprintf("sku == \"%s\"", self::UnderscoreSKU)));
     }
 
     /**
@@ -102,7 +102,7 @@ final class SQLWildcardEscapingTest extends SQLMigrationTestCase
     public function testExactMatchFindsValueContainingPercent(): void
     {
         $this->seed();
-        $this->assertSame([self::PERCENT_SKU], $this->fetchSKUs(sprintf("sku == \"%s\"", self::PERCENT_SKU)));
+        $this->assertSame([self::PercentSKU], $this->fetchSKUs(sprintf("sku == \"%s\"", self::PercentSKU)));
     }
 
     /**
@@ -112,7 +112,7 @@ final class SQLWildcardEscapingTest extends SQLMigrationTestCase
     public function testExactMatchDoesNotTreatUnderscoreAsWildcard(): void
     {
         $this->seed();
-        $this->assertNotContains("AUDITxTESTx50", $this->fetchSKUs(sprintf("sku == \"%s\"", self::UNDERSCORE_SKU)));
+        $this->assertNotContains("AUDITxTESTx50", $this->fetchSKUs(sprintf("sku == \"%s\"", self::UnderscoreSKU)));
     }
 
     /**
@@ -122,7 +122,7 @@ final class SQLWildcardEscapingTest extends SQLMigrationTestCase
     public function testNotEqualExcludesOnlyTheEscapedValue(): void
     {
         $this->seed();
-        $this->assertSame(["50%OFF", "50NOTOFF", "AB_CD%EF", "AUDITxTESTx50"], $this->fetchSKUs(sprintf("sku != \"%s\"", self::UNDERSCORE_SKU)));
+        $this->assertSame(["50%OFF", "50NOTOFF", "AB_CD%EF", "AUDITxTESTx50"], $this->fetchSKUs(sprintf("sku != \"%s\"", self::UnderscoreSKU)));
     }
 
     /**
@@ -132,7 +132,7 @@ final class SQLWildcardEscapingTest extends SQLMigrationTestCase
     public function testLikeTreatsWildcardsInThePatternAsLiterals(): void
     {
         $this->seed();
-        $this->assertSame([self::BOTH_SKU], $this->fetchSKUs(sprintf("sku LIKE \"%s\"", self::BOTH_SKU)));
+        $this->assertSame([self::BothSKU], $this->fetchSKUs(sprintf("sku LIKE \"%s\"", self::BothSKU)));
     }
 
     /**
@@ -142,7 +142,7 @@ final class SQLWildcardEscapingTest extends SQLMigrationTestCase
     public function testBeginsWithEscapesWildcardsInsideTheValue(): void
     {
         $this->seed();
-        $this->assertSame([self::UNDERSCORE_SKU], $this->fetchSKUs("sku BEGINSWITH \"AUDIT_TEST\""));
+        $this->assertSame([self::UnderscoreSKU], $this->fetchSKUs("sku BEGINSWITH \"AUDIT_TEST\""));
     }
 
     /**
@@ -152,7 +152,7 @@ final class SQLWildcardEscapingTest extends SQLMigrationTestCase
     public function testContainsEscapesWildcardsInsideTheValue(): void
     {
         $this->seed();
-        $this->assertSame([self::PERCENT_SKU], $this->fetchSKUs("sku CONTAINS \"50%\""));
+        $this->assertSame([self::PercentSKU], $this->fetchSKUs("sku CONTAINS \"50%\""));
     }
 
     /**
@@ -162,6 +162,6 @@ final class SQLWildcardEscapingTest extends SQLMigrationTestCase
     public function testInMatchesValuesContainingWildcards(): void
     {
         $this->seed();
-        $this->assertSame([self::PERCENT_SKU, self::UNDERSCORE_SKU], $this->fetchSKUs(sprintf("sku IN {\"%s\", \"%s\"}", self::UNDERSCORE_SKU, self::PERCENT_SKU)));
+        $this->assertSame([self::PercentSKU, self::UnderscoreSKU], $this->fetchSKUs(sprintf("sku IN {\"%s\", \"%s\"}", self::UnderscoreSKU, self::PercentSKU)));
     }
 }

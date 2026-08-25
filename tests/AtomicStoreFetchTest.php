@@ -48,7 +48,7 @@ final class AtomicStoreFetchTest extends TestCase
     private URL $storeURL;
 
     /** @var list<array{code: string, amount: int, category: string}> The fixture rows. */
-    private const array ROWS = [
+    private const array Rows = [
         ["code" => "A-1", "amount" => 100, "category" => "rent"],
         ["code" => "A-2", "amount" => 200, "category" => "rent"],
         ["code" => "B-1", "amount" => 300, "category" => "wages"],
@@ -99,7 +99,7 @@ final class AtomicStoreFetchTest extends TestCase
         $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
 
         $context = $this->context();
-        foreach (self::ROWS as $row) {
+        foreach (self::Rows as $row) {
             $ledger = new AtomicLedger($context);
             $ledger->code = $row["code"];
             $ledger->amount = $row["amount"];
@@ -189,7 +189,7 @@ final class AtomicStoreFetchTest extends TestCase
         $request->resultType = FetchRequestResultType::countResultType;
         $request->fetchLimit = 2;
 
-        $this->assertSame(count(self::ROWS), $context->fetch($request)->first->intValue, "a limit paginates rows, it does not cap a count");
+        $this->assertSame(count(self::Rows), $context->fetch($request)->first->intValue, "a limit paginates rows, it does not cap a count");
     }
 
     /**
@@ -267,7 +267,7 @@ final class AtomicStoreFetchTest extends TestCase
     public function testFetchOffsetBeyondTheResultYieldsNothing(): void
     {
         $codes = $this->codes(function (object $request): void {
-            $request->fetchOffset = count(self::ROWS) + 10;
+            $request->fetchOffset = count(self::Rows) + 10;
         });
 
         $this->assertSame([], $codes);
@@ -282,7 +282,7 @@ final class AtomicStoreFetchTest extends TestCase
             $request->fetchLimit = 0;
         });
 
-        $this->assertCount(count(self::ROWS), $codes);
+        $this->assertCount(count(self::Rows), $codes);
     }
 
     /**
@@ -426,7 +426,7 @@ final class AtomicStoreFetchTest extends TestCase
 
         $allReferences = $this->referenceObjects();
 
-        $this->assertCount(count(self::ROWS) + 2, $allReferences, "both new rows were stored");
+        $this->assertCount(count(self::Rows) + 2, $allReferences, "both new rows were stored");
         $this->assertSame(count($allReferences), count(array_unique($allReferences)), "no reference was handed out twice");
         foreach ($firstPass as $reference) {
             $this->assertContains($reference, $allReferences, "an existing row kept its reference");
