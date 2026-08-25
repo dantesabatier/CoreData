@@ -20,8 +20,10 @@
 ## 📦 Installation
 
 ```bash
-composer require sabatier/foundation:dev-master
+composer require sabatier/coredata
 ```
+
+`sabatier/coredata` depends on `sabatier/foundation`, which Composer resolves for you.
 
 ## 🚀 Quick Start
 ### Basic Fetching and Saving
@@ -32,7 +34,7 @@ use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Error;
 use Sabatier\CoreData\PersistentContainer;
 use Sabatier\CoreData\PersistentStoreDescription;
-use Sabatier\CoreData\FetchRequest;
+use function Sabatier\Foundation\fatal_error;
 
 // 1. Initialize the context
 $name = Bundle::main()->object(kCFBundleNameKey);
@@ -44,9 +46,10 @@ $container->loadPersistentStores(function (PersistentStoreDescription $descripti
 });
 $context = $container->viewContext;
 
-// 2. Prepare a fetch request with batching
-$fetchRequest = new FetchRequest();
-$fetchRequest->entity = EntitityDescription::entity("Employee", $context);
+// 2. Prepare a fetch request with batching.
+// Employee is your ManagedObject subclass, registered as the entity's
+// managedObjectClassName; fetchRequest() resolves the entity for you.
+$fetchRequest = Employee::fetchRequest();
 $fetchRequest->fetchBatchSize = 50;
 
 // 3. Execute fetch (returns a BatchFaultingArray)
@@ -55,7 +58,7 @@ $employees = $context->fetch($fetchRequest);
 foreach ($employees as $employee) {
     echo $employee->lastName;
     // Objects are automatically turned from faults into realized objects here
-    $employee->lastAccessDate = new Date(); 
+    $employee->lastAccessDate = new Date();
 }
 
 // 4. Persist changes
@@ -67,6 +70,11 @@ if ($context->hasChanges) {
     }
 }
 ```
+
+> Prefer `Employee::fetchRequest()` over `new FetchRequest()`. A bare
+> `FetchRequest` with no entity name resolves its context from the operation
+> queue, which is rarely what you want outside a running application.
+
 ## 🏗 Architecture & Core Components
 
 The framework is designed as a multi-layered stack that separates the object graph from the physical storage, allowing for high flexibility and performance.
@@ -88,6 +96,12 @@ The framework is designed as a multi-layered stack that separates the object gra
 ### 4. Performance Mechanisms
 - **`FaultHandler`**: Automatically manages "Faulting." It keeps the application's memory usage low by creating "hollow" objects that only load their full data when a property is actually accessed.
 - **`BatchFaultingArray`**: A specialized collection that enables seamless iteration over massive result sets. It fetches data in batches, ensuring that only the necessary objects are in memory at any given time.
+
+## 📚 Documentation
+
+- [Defining a model](docs/defining-a-model.md) — entities, attributes, relationships, delete rules, constraints.
+- [Configuring the SQL store](docs/sql-store.md) — connection settings, store options, fetching, concurrency, conflict resolution.
+- [Migrations](docs/migrations.md) — lightweight vs custom mapping models, the three passes, staged migrations.
 
 ## License
 
