@@ -88,6 +88,7 @@ final class ManagedObjectID extends ObjectClass implements FetchRequestResult
         $this->entityName = $data["entityName"];
         $this->referenceObject = $data["referenceObject"];
         $this->storeIdentifier = $data["storeIdentifier"];
+        $this->isStoreIdentifierResolved = true;
     }
 
     /**

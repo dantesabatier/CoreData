@@ -282,9 +282,6 @@ final class PersistentStoreCoordinator extends ObjectClass
         $migrationManager = new $migrationManagerClass($sourceModel, $destinationModel);
         if ($migrationManager->migrateStore($sourceURL, $sourceType, $sourceOptions, $mappingModel, $destinationURL, $destinationType, $destinationOptions)) {
             $destinationContext = $migrationManager->destinationContext;
-            if ($destinationContext->hasChanges) {
-                $destinationContext->save();
-            }
             $destinationContext->reset();
             $this->remove($store);
             return $destinationContext->persistentStoreCoordinator?->persistentStores->first;
@@ -324,9 +321,6 @@ final class PersistentStoreCoordinator extends ObjectClass
                     $migrationManager = new $migrationManagerClass($sourceModel, $destinationModel);
                     if ($migrationManager->migrateStore($storeURL, $storeType, $options, $mappingModel, $storeURL, $storeType, $options)) {
                         $destinationContext = $migrationManager->destinationContext;
-                        if ($destinationContext->hasChanges) {
-                            $destinationContext->save();
-                        }
                         $destinationContext->reset();
                     }
                     $currentChecksum = $nextChecksum;
@@ -341,9 +335,6 @@ final class PersistentStoreCoordinator extends ObjectClass
                 $migrationManager = new $migrationManagerClass($sourceModel, $destinationModel);
                 if ($migrationManager->migrateStore($storeURL, $storeType, $options, $mappingModel, $storeURL, $storeType, $options)) {
                     $destinationContext = $migrationManager->destinationContext;
-                    if ($destinationContext->hasChanges) {
-                        $destinationContext->save();
-                    }
                     $destinationContext->reset();
                 }
                 $stage->didMigrateHandler?->call($stage, $stagedManager, $stage);

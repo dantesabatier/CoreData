@@ -332,6 +332,9 @@ class MigrationManager extends ObjectClass
                 $this->do($i, ($i - 1) * $count + $index + 1, $mapping);
             }
         }
+        if ($this->destinationContext->hasChanges) {
+            $this->destinationContext->save();
+        }
         $this->willChangeValueForKey("migrationProgress");
         $this->migrationProgress = 1.0;
         $this->didChangeValueForKey("migrationProgress");

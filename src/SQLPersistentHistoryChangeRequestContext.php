@@ -48,19 +48,13 @@ final class SQLPersistentHistoryChangeRequestContext extends SQLStoreRequestCont
             $transactionKey = $fetchRequest->entity?->isKindOf($persistentHistoryTransactionEntityDescription) ? "" : "transaction.";
             if ($request->isFetchTransactionForToken) {
                 $token = $request->token ?? new PersistentHistoryToken(new Dictionary([$this->sqlCore->identifier => $transactionNumber ?? new Number(0)]));
-                /** @psalm-suppress ReservedWord */
-                $predicate = CompoundPredicate::andPredicateWithSubpredicates($token->storeTokens->reduce(new Dictionary(),
-                    /**
-                     * @param Dictionary<mixed> $result
-                     * @param Number $value
-                     * @param string $key
-                     * @return Dictionary<mixed>
-                     */
-                    function (Dictionary $result, Number $value, string $key) use ($transactionKey): Dictionary {
-                        $result["{$transactionKey}storeID"] = $key;
-                        $result["{$transactionKey}transactionID"] = $value;
-                        return $result;
-                    })->map(fn(mixed $value, string $key): ComparisonPredicate => new ComparisonPredicate(Expression::expressionForKeyPath($key), Expression::expressionForConstantValue($value))));
+                $storeID = $this->sqlCore->identifier;
+                /** @var Number $storeToken */
+                $storeToken = $token->storeTokens[$storeID] ?? new Number(0);
+                $predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([
+                    new ComparisonPredicate(Expression::expressionForKeyPath("{$transactionKey}storeID"), Expression::expressionForConstantValue($storeID)),
+                    new ComparisonPredicate(Expression::expressionForKeyPath("{$transactionKey}transactionID"), Expression::expressionForConstantValue($storeToken), PredicateOperatorType::greaterThan),
+                ]));
             } elseif ($date) {
                 $predicate = new ComparisonPredicate(Expression::expressionForKeyPath("{$transactionKey}timestamp"), Expression::expressionForConstantValue($date), PredicateOperatorType::greaterThan);
             } elseif ($transactionNumber) {

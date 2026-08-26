@@ -126,6 +126,18 @@ final class ManagedObjectIDTest extends TestCase
         $this->assertTrue($objectID->isEqual($unserialized), "the unserialized ID is equal to the original");
     }
 
+    public function testUnserializationKeepsTheArchivedStoreIdentifierResolved(): void
+    {
+        $objectID = new ManagedObjectID(self::makeEntity("Person"), "unused");
+        $objectID->__unserialize([
+            "entityName" => "Person",
+            "referenceObject" => 42,
+            "storeIdentifier" => "archived-store",
+        ]);
+
+        $this->assertSame("archived-store", $objectID->storeIdentifier, "reading the identifier must not replace the archived value with null when no store is attached yet");
+    }
+
     public function testJsonSerializeIsTheReferenceObject(): void
     {
         $entity = self::makeEntity("Person");
