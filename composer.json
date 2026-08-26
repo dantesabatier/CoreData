@@ -17,20 +17,16 @@
   ],
   "require": {
     "php": "^8.5",
-    "ext-gd": "*",
-    "ext-mbstring": "*",
-    "ext-curl": "*",
-    "ext-intl": "*",
-    "ext-gettext": "*",
     "ext-dom": "*",
-    "ext-ctype": "*",
-    "ext-libxml": "*",
+    "ext-intl": "*",
+    "ext-mbstring": "*",
     "ext-pdo": "*",
-    "ext-zlib": "*",
-    "ext-apcu": "*",
-    "ext-redis": "*",
-    "ext-memcached": "*",
     "sabatier/foundation": "@dev"
+  },
+  "suggest": {
+    "ext-apcu": "Backs the store's L2 row cache on a single server, with no external service to run. Without one of these, the default in-memory row cache applies per process.",
+    "ext-redis": "Backs the store's L2 row cache across several servers.",
+    "ext-memcached": "Alternative shared backend for the store's L2 row cache."
   },
   "config": {
     "platform": {

@@ -1,2 +1,17 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Keep the distributed package to what an application actually loads. Everything
+# below is development apparatus or runtime scratch space: it belongs in the
+# repository, not in the vendor directory of every project that installs this.
+/.claude            export-ignore
+/.gitattributes     export-ignore
+/.gitignore         export-ignore
+/.idea              export-ignore
+/CLAUDE.md          export-ignore
+/ExtractLocalizables.php export-ignore
+/Library            export-ignore
+/phpunit.xml        export-ignore
+/psalm.xml          export-ignore
+/rector.php         export-ignore
+/tests             export-ignore
