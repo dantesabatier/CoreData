@@ -44,10 +44,9 @@ final class RecurringExpense extends ManagedObject
  * sections and keeps them in step with its context. It had no coverage of any kind: 188 lines of
  * section bookkeeping driven by a context notification that nothing else in the suite reaches.
  *
- * Writing it surfaced four defects. Three are fixed and covered here — the positional API and
- * change tracking both work now — and one is pinned as a record of behaviour that is still
- * wrong: `FetchedResultsSectionInfo::$numberOfObjects` is zero for every grouped section
- * (testGroupedSectionReportsZeroObjects).
+ * Writing it surfaced five defects, all since fixed: change tracking never fired, the refresh
+ * admitted objects of any entity, section row counts read zero, indexPath() missed row 0, and
+ * Foundation's IndexPath could not be loaded at all.
  */
 final class FetchedResultsControllerTest extends TestCase
 {
@@ -245,28 +244,45 @@ final class FetchedResultsControllerTest extends TestCase
     }
 
     /**
-     * Records a defect. FetchedResultsSectionInfo computes $numberOfObjects once, in its
-     * constructor, from the collection it is handed. buildSections constructs each section with
-     * an EMPTY ArrayClass and only then appends the objects to it, so the count is frozen at
-     * zero while ->objects fills up.
+     * numberOfObjects is the property a list view asks for its row count, and it has to agree
+     * with the collection it counts.
      *
-     * The consequence is that numberOfObjects — the property a list view asks for its row count —
-     * reads 0 for every grouped section, while ->objects->count reports the truth. The
-     * non-grouped path is unaffected because it passes an already-populated collection.
-     *
-     * Fixing it means making numberOfObjects derive from the collection on read (a get hook)
-     * rather than caching in the constructor; the class is readonly, so the cached int is what
-     * makes it wrong rather than merely stale.
+     * It used to be computed once in the constructor, and buildSections constructs each section
+     * with an empty collection before appending to it — so every grouped section reported zero
+     * while ->objects filled up. The ungrouped path was unaffected, which is why the flat case
+     * looked correct.
      */
-    public function testGroupedSectionReportsZeroObjects(): void
+    public function testGroupedSectionCountsItsObjects(): void
     {
         $controller = $this->controller("category");
         $controller->performFetch();
 
+        foreach ($controller->sections as $section) {
+            $this->assertSame($section->objects->count, $section->numberOfObjects, "section \"$section->name\" must count what it holds");
+        }
+
+        $office = $controller->sections->first(fn(FetchedResultsSectionInfo $section): bool => $section->name === "office");
+        $this->assertSame(2, $office->numberOfObjects);
+    }
+
+    /**
+     * The count follows the collection after the fact too: a refresh appends to a section's
+     * objects, and the row count has to move with them.
+     */
+    public function testSectionCountFollowsARefresh(): void
+    {
+        $controller = $this->controller("category");
+        $controller->performFetch();
+
+        $recurring = new Expense($controller->managedObjectContext);
+        $recurring->merchant = "Aardvark";
+        $recurring->category = "office";
+        $controller->managedObjectContext->processPendingChanges();
+
         $office = $controller->sections->first(fn(FetchedResultsSectionInfo $section): bool => $section->name === "office");
 
-        $this->assertSame(2, $office->objects->count, "the section really holds two objects");
-        $this->assertSame(0, $office->numberOfObjects, "but numberOfObjects was frozen at construction, when the collection was empty");
+        $this->assertSame(3, $office->numberOfObjects, "the count reflects the object the refresh added");
+        $this->assertSame($office->objects->count, $office->numberOfObjects);
     }
 
     /**
