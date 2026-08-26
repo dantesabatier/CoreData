@@ -33,19 +33,14 @@ final class Expense extends ManagedObject
  * sections and keeps them in step with its context. It had no coverage of any kind: 188 lines of
  * section bookkeeping driven by a context notification that nothing else in the suite reaches.
  *
- * Writing it surfaced three defects, all recorded here rather than fixed, and each named for what
- * it records:
+ * Writing it surfaced four defects. Two are fixed and covered here — the positional API works
+ * now — and two are pinned as records of behaviour that is still wrong:
  *
  * - Change tracking never fires: the notification filter compares against the fetch request's
  *   `entityName`, which `ManagedObject::fetchRequest()` leaves null
  *   (testChangeTrackingNeverFiresWhenTheRequestCarriesNoEntityName).
  * - `FetchedResultsSectionInfo::$numberOfObjects` is stale for every grouped section
  *   (testGroupedSectionReportsZeroObjects).
- * - `Sabatier\Foundation\IndexPath` cannot be loaded at all, which makes `object()` and
- *   `indexPath()` unreachable (testIndexPathAPIIsUnreachable).
- *
- * Taken together the class is largely non-functional as published: it fetches and groups
- * correctly, and nothing else about it works.
  */
 final class FetchedResultsControllerTest extends TestCase
 {
@@ -263,30 +258,74 @@ final class FetchedResultsControllerTest extends TestCase
     // --- Index paths ---
 
     /**
-     * Records a defect outside this class. `object()` and `indexPath()` are the controller's
-     * whole positional API, and both take or return a Sabatier\Foundation\IndexPath — a class
-     * that cannot be loaded: it aliases the SequenceAlgorithms trait's `compare` to
-     * `sequenceCompare`, and the trait marks `compare()` with #[Override], so the renamed copy
-     * carries an #[Override] with no matching parent and PHP fatals at class-load time
-     * ("IndexPath::sequenceCompare() has #[\Override] attribute, but no matching parent method
-     * exists").
-     *
-     * It is a fatal error rather than an exception, so it cannot be caught — merely naming the
-     * class in a running test kills the PHP process. This test therefore asserts the diagnosis
-     * from outside, by checking that the class fails to become available, and the positional
-     * methods stay untested until Foundation drops that #[Override] or the alias.
+     * object() resolves a position to the object living there.
      */
-    public function testIndexPathAPIIsUnreachable(): void
+    public function testObjectAtIndexPathReturnsTheObjectInThatSection(): void
     {
-        // Deliberately does NOT reference IndexPath::class — resolving it would load the class and take the process down with it. autoload: false answers from the already-loaded class table instead.
-        $this->assertFalse(
-            class_exists("Sabatier\\Foundation\\IndexPath", false),
-            "IndexPath must not already be loaded, or this test's premise is wrong",
-        );
-        $this->assertTrue(
-            interface_exists(FetchedResultsControllerDelegate::class),
-            "the delegate contract that names IndexPath in its signatures still loads, since a parameter type is not resolved until called",
-        );
+        $controller = $this->controller("category");
+        $controller->performFetch();
+
+        // "office" is the first section and holds Alpha then Beta.
+        $this->assertSame("Alpha", $controller->object(new IndexPath([0, 0]))->merchant);
+        $this->assertSame("Beta", $controller->object(new IndexPath([0, 1]))->merchant);
+    }
+
+    /**
+     * indexPath() is the inverse, and it has to work for row 0.
+     *
+     * It used to test the row index for truthiness — `if ($row = $e->objects->indexOf($object))`
+     * — and ArrayClass::indexOf returns 0 for a first element, so the first object of every
+     * section was reported as not found. That is the row a list view scrolls to first.
+     */
+    public function testIndexPathFindsEveryRowIncludingTheFirst(): void
+    {
+        $controller = $this->controller("category");
+        $controller->performFetch();
+
+        $first = $controller->object(new IndexPath([0, 0]));
+        $second = $controller->object(new IndexPath([0, 1]));
+
+        $firstPath = $controller->indexPath($first);
+        $this->assertNotNull($firstPath, "row 0 is a valid position, not a miss");
+        $this->assertSame(0, $firstPath->section);
+        $this->assertSame(0, $firstPath->row);
+
+        $secondPath = $controller->indexPath($second);
+        $this->assertNotNull($secondPath);
+        $this->assertSame(0, $secondPath->section);
+        $this->assertSame(1, $secondPath->row);
+    }
+
+    /**
+     * A position in a later section resolves to that section's number, not just to a row.
+     */
+    public function testIndexPathReportsTheSectionItFoundTheObjectIn(): void
+    {
+        $controller = $this->controller("category");
+        $controller->performFetch();
+
+        // "travel" is the third section; Mu is its first row.
+        $travel = $controller->sections->first(fn(FetchedResultsSectionInfo $section): bool => $section->name === "travel");
+        $path = $controller->indexPath($travel->objects[0]);
+
+        $this->assertNotNull($path);
+        $this->assertSame(2, $path->section, "the object is in the third section");
+        $this->assertSame(0, $path->row);
+    }
+
+    /**
+     * An object the fetch never returned has no position.
+     */
+    public function testIndexPathOfAnUnfetchedObjectIsNull(): void
+    {
+        $controller = $this->controller("category");
+        $controller->performFetch();
+
+        $stranger = new Expense($this->context());
+        $stranger->merchant = "Omega";
+        $stranger->category = "misc";
+
+        $this->assertNull($controller->indexPath($stranger));
     }
 
     // --- Section index titles ---

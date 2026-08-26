@@ -156,7 +156,10 @@ final class FetchedResultsController extends ObjectClass
     public function indexPath(mixed $object): ?IndexPath
     {
         foreach ($this->sections as $section => $e) {
-            if ($row = $e->objects->indexOf($object)) {
+            // Row 0 is a valid position, so the miss has to be told from it by comparing against
+            // null: indexOf() returns the index or null, and a truthiness test would report the
+            // first object of every section as not found.
+            if (($row = $e->objects->indexOf($object)) !== null) {
                 return new IndexPath([$section, $row]);
             }
         }
