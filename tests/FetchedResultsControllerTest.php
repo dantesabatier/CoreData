@@ -29,6 +29,16 @@ final class Expense extends ManagedObject
 {
 }
 
+/** An entity with nothing to do with Expense, and no attribute in common with it. */
+final class Reminder extends ManagedObject
+{
+}
+
+/** A subentity of Expense, so a fetch on the parent legitimately covers it. */
+final class RecurringExpense extends ManagedObject
+{
+}
+
 /**
  * Tests FetchedResultsController — the controller that runs a fetch, groups the results into
  * sections and keeps them in step with its context. It had no coverage of any kind: 188 lines of
@@ -70,8 +80,29 @@ final class FetchedResultsControllerTest extends TestCase
         $entity->managedObjectClassName = Expense::class;
         $entity->properties = new ArrayClass([$merchant, $category]);
 
+        $period = new AttributeDescription();
+        $period->name = "period";
+        $period->type = AttributeType::string;
+
+        $recurring = new EntityDescription();
+        $recurring->name = "RecurringExpense";
+        $recurring->managedObjectClassName = RecurringExpense::class;
+        $recurring->superentity = $entity;
+        $recurring->properties = new ArrayClass([$period]);
+        $entity->subentities = new ArrayClass([$recurring]);
+
+        // Deliberately shares no attribute name with Expense: sorting the results by "merchant" raises UndefinedKeyException if one of these ever leaks in.
+        $note = new AttributeDescription();
+        $note->name = "note";
+        $note->type = AttributeType::string;
+
+        $reminder = new EntityDescription();
+        $reminder->name = "Reminder";
+        $reminder->managedObjectClassName = Reminder::class;
+        $reminder->properties = new ArrayClass([$note]);
+
         $model = new ManagedObjectModel();
-        $model->entities = new ArrayClass([$entity]);
+        $model->entities = new ArrayClass([$entity, $reminder]);
         return $model;
     }
 
@@ -474,6 +505,80 @@ final class FetchedResultsControllerTest extends TestCase
             $controller->sections->first(fn(FetchedResultsSectionInfo $section): bool => $section->name === "postage"),
             "the new category was re-grouped into its own section",
         );
+    }
+
+    /**
+     * The refresh must only admit objects of the fetched entity.
+     *
+     * The entity filter used to sit on a variable that was read once, to decide whether to
+     * refresh at all, and the refresh then appended the notification's whole inserted set. So a
+     * batch holding one Expense and one Reminder passed the check on the Expense and admitted
+     * both — and sorting the result by "merchant", which Reminder does not have, raised
+     * UndefinedKeyException from inside the sort. The filter now runs where the objects are
+     * added.
+     */
+    public function testAnUnrelatedEntityInTheSameBatchIsNotAdmitted(): void
+    {
+        $controller = $this->controller("category");
+        $controller->performFetch();
+        $before = $controller->fetchedObjects->count;
+
+        $context = $controller->managedObjectContext;
+        $expense = new Expense($context);
+        $expense->merchant = "Omega";
+        $expense->category = "office";
+        $reminder = new Reminder($context);
+        $reminder->note = "unrelated";
+        $context->processPendingChanges();
+
+        $this->assertSame($before + 1, $controller->fetchedObjects->count, "only the Expense joined the results");
+        foreach ($controller->fetchedObjects as $object) {
+            $this->assertSame("Expense", $object->entity->name, "no Reminder leaked into an Expense fetch");
+        }
+    }
+
+    /**
+     * A subentity does belong to a fetch on its parent, so it has to survive the same filter that
+     * rejects an unrelated entity. This is what makes the check an isKindOf rather than a name
+     * comparison, and it follows includesSubentities, which defaults to true.
+     */
+    public function testASubentityIsAdmittedIntoAParentEntityFetch(): void
+    {
+        $controller = $this->controller("category");
+        $controller->performFetch();
+        $before = $controller->fetchedObjects->count;
+
+        $recurring = new RecurringExpense($controller->managedObjectContext);
+        $recurring->merchant = "Aardvark";
+        $recurring->category = "office";
+        $recurring->period = "monthly";
+        $controller->managedObjectContext->processPendingChanges();
+
+        $this->assertSame($before + 1, $controller->fetchedObjects->count, "the subentity belongs to the parent's fetch");
+        $office = $controller->sections->first(fn(FetchedResultsSectionInfo $section): bool => $section->name === "office");
+        $this->assertSame(["Aardvark", "Alpha", "Beta"], self::merchants($office), "and is grouped and sorted with its section");
+    }
+
+    /**
+     * With includesSubentities off, the fetch covers the parent entity alone.
+     */
+    public function testASubentityIsRejectedWhenSubentitiesAreExcluded(): void
+    {
+        $context = $this->context();
+        $request = Expense::fetchRequest();
+        $request->includesSubentities = false;
+        $request->sortDescriptors = new ArrayClass([new SortDescriptor("merchant", true)]);
+        $controller = new FetchedResultsController($request, $context, "category");
+        $controller->performFetch();
+        $before = $controller->fetchedObjects->count;
+
+        $recurring = new RecurringExpense($context);
+        $recurring->merchant = "Aardvark";
+        $recurring->category = "office";
+        $recurring->period = "monthly";
+        $context->processPendingChanges();
+
+        $this->assertSame($before, $controller->fetchedObjects->count, "the subentity is excluded when the request excludes subentities");
     }
 
     /**

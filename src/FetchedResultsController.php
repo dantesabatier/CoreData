@@ -115,7 +115,12 @@ final class FetchedResultsController extends ObjectClass
          * @param ResultType $object
          * @return bool
          */
-            fn(mixed $object): bool => !$deleted->containsElement($object))->appendingContentsOf($inserted);
+            fn(mixed $object): bool => !$deleted->containsElement($object))->appendingContentsOf($inserted->filter(
+            /**
+             * @param ResultType $object
+             * @return bool
+             */
+                fn(mixed $object): bool => $this->isFetchedEntity($object->entity)));
         if ($sortDescriptors = $this->fetchRequest->sortDescriptors) {
             $newFetched = $newFetched->sorted($sortDescriptors);
         }
