@@ -17,10 +17,8 @@ composer install
 # Static analysis — level 3 with Foundation plugin
 psalm
 
-# Static analysis — level 2
-phpstan analyse
-
 # Automated refactoring to modern PHP (readonly, property promotion, etc.)
+# Uses PHPStan as its inference engine, bundled in its own package — there is no phpstan.neon
 rector process
 
 # Unit tests (PHPUnit is installed globally, like the rest of the QA tools)
