@@ -111,10 +111,7 @@ final class ManagedObjectID extends ObjectClass implements FetchRequestResult
     public function isEqual(mixed $other): bool
     {
         if ($other instanceof ManagedObjectID) {
-            // Equivalent to comparing uriRepresentation() of both ("x-coredata://{store}/{entity}/{ref}"), but without
-            // building two URL objects per comparison. The URI compare is case-insensitive (URL::compare uses
-            // CompareOptions::caseInsensitive) and stringifies referenceObject, so we replicate both here. This is a hot
-            // path during deep-graph hydration (profiled: uriRepresentation dominated by isEqual's two URL builds).
+            // Equivalent to comparing uriRepresentation() of both ("x-coredata://{store}/{entity}/{ref}"), but without building two URL objects per comparison. The URI compare is case-insensitive (URL::compare uses CompareOptions::caseInsensitive) and stringifies referenceObject, so we replicate both here. This is a hot path during deep-graph hydration (profiled: uriRepresentation dominated by isEqual's two URL builds).
             return string_is_equal((string)$this->storeIdentifier, (string)$other->storeIdentifier, CompareOptions::caseInsensitive)
                 && string_is_equal($this->entityName, $other->entityName, CompareOptions::caseInsensitive)
                 && string_is_equal((string)$this->referenceObject, (string)$other->referenceObject, CompareOptions::caseInsensitive);

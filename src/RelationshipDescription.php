@@ -76,11 +76,7 @@ final class RelationshipDescription extends PropertyDescription
         if ($this->deleteRule !== DeleteRule::nullifyDeleteRule) {
             $dictionary["deleteRule"] = $this->deleteRule->value;
         }
-        // Cardinality is part of the relationship's persistent shape: a to-one relationship is
-        // a foreign-key column while a to-many (whose inverse is to-many) is a pivot table, so a
-        // change here demands a migration. Include min/max count in the hash so that a
-        // cardinality change alters the entity version hash and is inferred as a transform
-        // rather than a copy.
+        // Cardinality is part of the relationship's persistent shape: a to-one relationship is a foreign-key column while a to-many (whose inverse is to-many) is a pivot table, so a change here demands a migration. Include min/max count in the hash so that a cardinality change alters the entity version hash and is inferred as a transform rather than a copy.
         $dictionary["minCount"] = $this->minCount;
         $dictionary["maxCount"] = $this->maxCount;
         $dictionary["lazyDestinationEntityName"] = $this->lazyDestinationEntityName;

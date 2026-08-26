@@ -582,8 +582,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     {
         $this->isInserted = true;
         $this->committedSnapshot = $this->persistentPrimitiveValues();
-        // The optimistic-locking baseline has to follow the row just written, or the next save in
-        // this context conflicts against its own write.
+        // The optimistic-locking baseline has to follow the row just written, or the next save in this context conflicts against its own write.
         if ($originalSnapshot = $this->originalSnapshot) {
             $originalSnapshot[ManagedObjectVersionKey] = $this->version;
         }
@@ -840,8 +839,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $set->setSet($value);
                 $value = $set;
                 $change = $this->mutableSetValueForKey($key);
-                // Gated on isStable because the store re-enters this method while hydrating a fetch,
-                // where firing the fault would corrupt the object being rebuilt.
+                // Gated on isStable because the store re-enters this method while hydrating a fetch, where firing the fault would corrupt the object being rebuilt.
                 if ($this->isStable && !$this->isSuppressingKVO && $this->hasFaultForRelationshipNamed($key) && $this->isInserted) {
                     /** @var FaultingSet $change */
                     $change = $this->valueForKey($key);
@@ -859,8 +857,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 $removedObjects = new Set($change->filter(fn(ManagedObject $object): bool => !$value->containsElement($object)));
                 /** @var Set<ManagedObject> $addedObjects */
                 $addedObjects = new Set($value->filter(fn(ManagedObject $object): bool => !$change->containsElement($object)));
-                // The context turns a removal's payload into the correlation-table DELETEs, so it has
-                // to carry the objects that left rather than the ones that remain.
+                // The context turns a removal's payload into the correlation-table DELETEs, so it has to carry the objects that left rather than the ones that remain.
                 $notifiedChange = null;
                 if ($removedObjects->isEmpty && $addedObjects->isEmpty) {
                     $changeKind = KeyValueChange::setting;

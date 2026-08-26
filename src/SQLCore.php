@@ -618,8 +618,7 @@ final class SQLCore extends IncrementalStore
         /** @var SQLEntity $entity */
         $entity = $this->model->entitiesByName[$relationship->entity->name];
         $toMany = $entity->propertiesByName[$relationship->name];
-        // The order lives in a column on the destination table, which only exists when the inverse is
-        // to-one; many-to-many are stored in a correlation table that keeps no position.
+        // The order lives in a column on the destination table, which only exists when the inverse is to-one; many-to-many are stored in a correlation table that keeps no position.
         if (!$toMany instanceof SQLToMany) {
             fatal_error(sprintf("%s->%s cannot be ordered: a relationship whose inverse is also to-many is stored in a correlation table, which has no column to keep the order in", $relationship->entity->name, $relationship->name));
         }

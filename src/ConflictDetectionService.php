@@ -172,9 +172,7 @@ final readonly class ConflictDetectionService
             $conflictingObjects = new ArrayClass([$object]);
             return new ConstraintConflict($constraint, null, $databaseSnapshot, $conflictingObjects, $conflictingSnapshots);
         }
-        // The store fetch cannot see the other objects pending in the same save: none of them has been
-        // written to the store yet, so two brand-new objects that share a unique value would both pass a
-        // store-only check. Compare against the pending peers held in the context as well.
+        // The store fetch cannot see the other objects pending in the same save: none of them has been written to the store yet, so two brand-new objects that share a unique value would both pass a store-only check. Compare against the pending peers held in the context as well.
         if ($peer = $this->conflictingPendingPeer($object, $key, $value)) {
             $peerSnapshot = $peer->dictionaryWithValues($attributeKeys);
             $conflictingSnapshots = new ArrayClass([$baselineSnapshot, $peerSnapshot]);
@@ -203,8 +201,7 @@ final readonly class ConflictDetectionService
         if ($value === null || $otherValue === null) {
             return false;
         }
-        // Mirror the store predicate in constraintFetchRequestFor(): string attributes compare with LIKE,
-        // which is case-insensitive, everything else compares by equality.
+        // Mirror the store predicate in constraintFetchRequestFor(): string attributes compare with LIKE, which is case-insensitive, everything else compares by equality.
         return $type === AttributeType::string ? string_is_equal((string)$value, (string)$otherValue, CompareOptions::caseInsensitive) : is_equal($value, $otherValue);
     }
 }

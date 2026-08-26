@@ -203,8 +203,7 @@ final class MappingModelBuilder
             if (!$destinationRelationship) {
                 return true;
             }
-            // Compare the destination entities by renaming identifier so that renaming the target
-            // entity (not a real re-targeting) is not mistaken for a destination change.
+            // Compare the destination entities by renaming identifier so that renaming the entity (not a real re-targeting) is not mistaken for a destination change.
             return $sourceRelationship->destinationEntity->renamingIdentifier === $destinationRelationship->destinationEntity->renamingIdentifier;
         });
     }
@@ -236,8 +235,7 @@ final class MappingModelBuilder
     {
         $sourceEntities = $this->sourceModel->entitiesByName->filter(fn(EntityDescription $entity): bool => $entity->isRootEntity);
         $destinationEntities = $this->destinationModel->entitiesByName->filter(fn(EntityDescription $entity): bool => $entity->isRootEntity);
-        // Map every source entity to its destination (by renaming identifier), producing copy,
-        // transform and remove mappings.
+        // Map every source entity to its destination (by renaming identifier), producing copy, transform and remove mappings.
         $entityMappings = $sourceEntities->compactMap(function (EntityDescription $sourceEntity): ?EntityMapping {
             $destinationEntity = $this->destinationEntitiesByRenamingIdentifier[$sourceEntity->renamingIdentifier];
             $entityMapping = $this->newEntityMapping($sourceEntity, $destinationEntity);

@@ -54,8 +54,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         /** @var Set<string> $nullPropertyPrefixes */
         $nullPropertyPrefixes = new Set();
         // Per to-many collection lookup index: ArrayClass->hash => [primaryKey value => element Dictionary].
-        // Turns the linear $cursor->first()/contains() scans below into O(1) lookups while preserving
-        // their exact semantics (membership by primary key, latest-element fallback).
+        // Turns the linear $cursor->first()/contains() scans below into O(1) lookups while preserving their exact semantics (membership by primary key, latest-element fallback).
         /** @var array<int, array<string, Dictionary<mixed>>> $toManyIndex */
         $toManyIndex = [];
         do {

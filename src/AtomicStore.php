@@ -132,8 +132,7 @@ abstract class AtomicStore extends PersistentStore
             $object = $context->object($cacheNode->objectID);
             if (!$object->isAwakeFromFetch) {
                 $object->isAwakeFromFetch = true;
-                // A fetch can be issued mid-save by conflict detection, where re-applying the stored
-                // snapshot would resurrect the values the save is about to remove.
+                // A fetch can be issued mid-save by conflict detection, where re-applying the stored snapshot would resurrect the values the save is about to remove.
                 if (!$context->updatedObjects->containsElement($object) && !$context->deletedObjects->containsElement($object)) {
                     $this->updateObject($object, fromFetch: true);
                 }
@@ -223,9 +222,7 @@ abstract class AtomicStore extends PersistentStore
             }
             return new ArrayClass([new Number($objects->count)]);
         }
-        // fetchOffset then fetchLimit apply to the row-returning result types only, after
-        // filtering and sorting; the count result type reports the full total and returns
-        // above. A fetchLimit of 0 means no limit (see FetchRequest::$fetchLimit).
+        // fetchOffset then fetchLimit apply to the row-returning result types only, after filtering and sorting; the count result type reports the full total and returns above. A fetchLimit of 0 means no limit (see FetchRequest::$fetchLimit).
         if ($fetchOffset = $request->fetchOffset) {
             $objects = new ArrayClass($objects->dropFirst($fetchOffset));
         }

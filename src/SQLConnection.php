@@ -548,9 +548,7 @@ final class SQLConnection
         if (SQLCore::$debugLevel->value) {
             error_log("CoreData: annotation: rolling back transaction");
         }
-        // A lost connection keeps reporting an active transaction, so the check above lets it through.
-        // Nothing survives the connection to be rolled back, and callers unwind a failure through here:
-        // raising would replace the exception on its way out with the noise from cleaning up after it.
+        // A lost connection keeps reporting an active transaction, so the check above lets it through. Nothing survives the connection to be rolled back, and callers unwind a failure through here: raising would replace the exception on its way out with the noise from cleaning up after it.
         try {
             return $this->mysql()->rollBack();
         } catch (PDOException) {
