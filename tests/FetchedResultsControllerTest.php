@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
+use Sabatier\CoreData\FetchRequest;
 use Sabatier\CoreData\FetchedResultsChangeType;
 use Sabatier\CoreData\FetchedResultsController;
 use Sabatier\CoreData\FetchedResultsControllerDelegate;
@@ -33,14 +34,10 @@ final class Expense extends ManagedObject
  * sections and keeps them in step with its context. It had no coverage of any kind: 188 lines of
  * section bookkeeping driven by a context notification that nothing else in the suite reaches.
  *
- * Writing it surfaced four defects. Two are fixed and covered here — the positional API works
- * now — and two are pinned as records of behaviour that is still wrong:
- *
- * - Change tracking never fires: the notification filter compares against the fetch request's
- *   `entityName`, which `ManagedObject::fetchRequest()` leaves null
- *   (testChangeTrackingNeverFiresWhenTheRequestCarriesNoEntityName).
- * - `FetchedResultsSectionInfo::$numberOfObjects` is stale for every grouped section
- *   (testGroupedSectionReportsZeroObjects).
+ * Writing it surfaced four defects. Three are fixed and covered here — the positional API and
+ * change tracking both work now — and one is pinned as a record of behaviour that is still
+ * wrong: `FetchedResultsSectionInfo::$numberOfObjects` is zero for every grouped section
+ * (testGroupedSectionReportsZeroObjects).
  */
 final class FetchedResultsControllerTest extends TestCase
 {
@@ -376,30 +373,22 @@ final class FetchedResultsControllerTest extends TestCase
     // --- Context change tracking ---
 
     /**
-     * Records a defect: change tracking never fires for a controller built the documented way.
+     * The regression this suite exists for: change tracking has to fire for a controller built
+     * the way the project tells callers to build one.
      *
-     * processManagedObjectContextChanges filters the notification's objects with
-     * `$object->entity->name === $this->fetchRequest->entityName`. But
-     * `ManagedObject::fetchRequest()` — the factory the project tells callers to use, and the one
-     * CLAUDE.md recommends over a bare `new FetchRequest()` — sets only `entity`, leaving
-     * `entityName` null. So the comparison is "Expense" === null for every object, the affected
-     * set comes out empty, and the method returns before refreshing anything.
-     *
-     * The controller therefore never updates and never calls its delegate, which is the whole
-     * point of the class. Proven causal: assigning `$request->entityName = "Expense"` by hand
-     * makes this test and the two below pass unchanged.
-     *
-     * The fix belongs in the filter, not in the caller: it should compare against the entity the
-     * request resolved (`$this->fetchRequest->entity`), which is populated on both construction
-     * paths, rather than the optional name.
+     * The filter used to compare `$object->entity->name === $fetchRequest->entityName`, and
+     * ManagedObject::fetchRequest() — the recommended factory — sets only `entity`, leaving
+     * `entityName` null. Every comparison was "Expense" === null, the affected set came out
+     * empty, and the method returned before refreshing anything, so the controller never updated
+     * and never called its delegate.
      */
-    public function testChangeTrackingNeverFiresWhenTheRequestCarriesNoEntityName(): void
+    public function testInsertingAnObjectRefreshesTheResultsAndNotifiesTheDelegate(): void
     {
         $controller = $this->controller("category");
         $controller->performFetch();
         $before = $controller->fetchedObjects->count;
 
-        $this->assertNull($controller->fetchRequest->entityName, "fetchRequest() leaves entityName unset");
+        $this->assertNull($controller->fetchRequest->entityName, "fetchRequest() leaves entityName unset, which is the case that used to break");
 
         $delegate = new class implements FetchedResultsControllerDelegate {
             public bool $called = false;
@@ -443,36 +432,71 @@ final class FetchedResultsControllerTest extends TestCase
         $expense->category = "office";
         $controller->managedObjectContext->processPendingChanges();
 
-        $this->assertFalse($delegate->called, "the delegate is never called, because the entity filter matched nothing");
-        $this->assertSame($before, $controller->fetchedObjects->count, "and the inserted object never joins the results");
+        $this->assertTrue($delegate->called, "the controller notifies its delegate on a context change");
+        $this->assertSame($before + 1, $controller->fetchedObjects->count, "the inserted object joins the results");
+        $this->assertSame(1, $delegate->insertions, "the difference reports the one insertion");
     }
 
     /**
-     * The same defect seen through the sections: an insertion that should create a fourth
-     * section leaves the grouping untouched.
+     * A refresh re-groups, so an insertion has to land in the right section and in sort order —
+     * not merely be appended to the flat result set.
      */
-    public function testChangeTrackingLeavesTheSectionsStale(): void
+    public function testInsertedObjectIsGroupedIntoItsSection(): void
     {
         $controller = $this->controller("category");
         $controller->performFetch();
 
         $expense = new Expense($controller->managedObjectContext);
         $expense->merchant = "Aardvark";
+        $expense->category = "office";
+        $controller->managedObjectContext->processPendingChanges();
+
+        $office = $controller->sections->first(fn(FetchedResultsSectionInfo $section): bool => $section->name === "office");
+
+        $this->assertSame(["Aardvark", "Alpha", "Beta"], self::merchants($office), "the new object is sorted into its section");
+    }
+
+    /**
+     * An object whose section value is new becomes a section of its own.
+     */
+    public function testInsertedObjectWithANewSectionValueAddsASection(): void
+    {
+        $controller = $this->controller("category");
+        $controller->performFetch();
+
+        $expense = new Expense($controller->managedObjectContext);
+        $expense->merchant = "Omega";
         $expense->category = "postage";
         $controller->managedObjectContext->processPendingChanges();
 
-        $this->assertSame(3, $controller->sections->count, "the new category does not become a section");
-        $this->assertNull(
+        $this->assertSame(4, $controller->sections->count);
+        $this->assertNotNull(
             $controller->sections->first(fn(FetchedResultsSectionInfo $section): bool => $section->name === "postage"),
-            "nothing was re-grouped",
+            "the new category was re-grouped into its own section",
         );
     }
 
     /**
-     * A fresh performFetch does pick the new object up — the fetch itself works, which is what
-     * localises the defect to the notification path rather than to the fetch or the grouping.
+     * An update changes no membership, so the result count holds steady across a refresh.
      */
-    public function testPerformFetchAgainPicksUpAnInsertedObject(): void
+    public function testUpdatingAnObjectLeavesMembershipUnchanged(): void
+    {
+        $controller = $this->controller("category");
+        $controller->performFetch();
+        $before = $controller->fetchedObjects->count;
+
+        $first = $controller->fetchedObjects[0];
+        $first->merchant = $first->merchant . " (edited)";
+        $controller->managedObjectContext->processPendingChanges();
+
+        $this->assertSame($before, $controller->fetchedObjects->count, "an update adds and removes nothing");
+    }
+
+    /**
+     * Without a delegate the controller still refreshes itself — the delegate is a notification
+     * sink, not a precondition for tracking.
+     */
+    public function testRefreshHappensWithoutADelegate(): void
     {
         $controller = $this->controller("category");
         $controller->performFetch();
@@ -480,13 +504,42 @@ final class FetchedResultsControllerTest extends TestCase
 
         $expense = new Expense($controller->managedObjectContext);
         $expense->merchant = "Omega";
-        $expense->category = "postage";
-        $controller->managedObjectContext->save();
+        $expense->category = "office";
+        $controller->managedObjectContext->processPendingChanges();
 
+        $this->assertSame($before + 1, $controller->fetchedObjects->count);
+    }
+
+    /**
+     * The other construction path has to keep working. A request carrying an entity NAME is the
+     * shape `new FetchRequest("Expense")` produces, and its `entity` resolves lazily through the
+     * context associated with the current operation queue — which raises outside one. So the
+     * filter compares the name when there is one, and only falls back to the resolved entity
+     * when there is not; reading `entity` unconditionally would break this case.
+     *
+     * Built by setting the name on top of a resolved request, because a bare
+     * `new FetchRequest("Expense")` cannot even complete performFetch() in a test: the store
+     * reads `->entity` while building the fetch and dies on the missing queue context, long
+     * before any change notification arrives.
+     */
+    public function testChangeTrackingWorksWhenTheRequestCarriesAnEntityName(): void
+    {
+        $context = $this->context();
+        $request = Expense::fetchRequest();
+        $request->entityName = "Expense";
+        $request->sortDescriptors = new ArrayClass([new SortDescriptor("merchant", true)]);
+        $controller = new FetchedResultsController($request, $context, "category");
         $controller->performFetch();
+        $before = $controller->fetchedObjects->count;
 
-        $this->assertSame($before + 1, $controller->fetchedObjects->count, "re-fetching sees the new object");
-        $this->assertSame(4, $controller->sections->count, "and re-groups it into its own section");
+        $this->assertSame("Expense", $controller->fetchRequest->entityName, "this exercises the name branch of the filter");
+
+        $expense = new Expense($context);
+        $expense->merchant = "Omega";
+        $expense->category = "office";
+        $context->processPendingChanges();
+
+        $this->assertSame($before + 1, $controller->fetchedObjects->count, "a name-carrying request tracks changes too");
     }
 
     /**
