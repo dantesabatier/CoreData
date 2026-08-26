@@ -61,6 +61,7 @@ final class FetchRequest extends PersistentStoreRequest
         set {
             $this->isEntityResolved = true;
             $this->entity = $value;
+            $this->entityName = $value?->name;
         }
     }
     /** @var Predicate|null The predicate of the fetch request. The predicate instance constrains the selection of objects the FetchRequest instance is to fetch. If the predicate is empty, for example, if it is an AND predicate whose array of elements contains no predicates, the request has its predicate set to null. */

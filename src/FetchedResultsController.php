@@ -72,27 +72,18 @@ final class FetchedResultsController extends ObjectClass
     }
 
     /**
-     * Decides whether a changed object belongs to the fetch this controller tracks.
-     *
-     * The two ways of building a fetch request populate different halves of its identity:
-     * ManagedObject::fetchRequest() sets `entity` and leaves `entityName` null, while
-     * new FetchRequest("Name") sets `entityName` and only resolves `entity` lazily — through the
-     * context associated with the current operation queue, which raises outside one. Reading
-     * either alone, therefore, misses or breaks one of the two, so the name is compared first, and
-     * the resolved entity is consulted only when there is no name to compare.
-     *
-     * The entity comparison honors includesSubentities (true by default) the way the stores do,
-     * so a fetch on a parent entity tracks changes to its subentities.
+     * Compares the name rather than the entity: on a request built from an entity name, reading
+     * `entity` resolves it through the current operation queue's context and raises outside one.
      */
     private function isFetchedEntity(EntityDescription $entity): bool
     {
-        if ($entityName = $this->fetchRequest->entityName) {
-            return $entity->name === $entityName || ($this->fetchRequest->includesSubentities && $entity->isKindOf(EntityDescription::entity($entityName, $this->managedObjectContext)));
-        }
-        if (!($requested = $this->fetchRequest->entity)) {
+        if (!($entityName = $this->fetchRequest->entityName)) {
             return false;
         }
-        return $this->fetchRequest->includesSubentities ? $entity->isKindOf($requested) : $entity->isEqual($requested);
+        if ($entity->name === $entityName) {
+            return true;
+        }
+        return $this->fetchRequest->includesSubentities && $entity->isKindOf(EntityDescription::entity($entityName, $this->managedObjectContext));
     }
 
     /**
@@ -180,7 +171,6 @@ final class FetchedResultsController extends ObjectClass
     public function indexPath(mixed $object): ?IndexPath
     {
         foreach ($this->sections as $section => $e) {
-            // Row 0 is a valid position, so the miss has to be told from it by comparing against null: indexOf() returns the index or null, and a truthiness test would report the first object of every section as not found.
             if (($row = $e->objects->indexOf($object)) !== null) {
                 return new IndexPath([$section, $row]);
             }

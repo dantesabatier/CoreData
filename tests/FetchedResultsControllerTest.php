@@ -376,11 +376,11 @@ final class FetchedResultsControllerTest extends TestCase
      * The regression this suite exists for: change tracking has to fire for a controller built
      * the way the project tells callers to build one.
      *
-     * The filter used to compare `$object->entity->name === $fetchRequest->entityName`, and
-     * ManagedObject::fetchRequest() — the recommended factory — sets only `entity`, leaving
-     * `entityName` null. Every comparison was "Expense" === null, the affected set came out
-     * empty, and the method returned before refreshing anything, so the controller never updated
-     * and never called its delegate.
+     * The filter compares `$object->entity->name` against the request's `entityName`, and
+     * ManagedObject::fetchRequest() — the recommended factory — used to leave that null: every
+     * comparison was "Expense" === null, the affected set came out empty, and the method returned
+     * before refreshing anything. FetchRequest's `entity` setter now populates `entityName`
+     * alongside it, so both halves of the identity are present however the request was built.
      */
     public function testInsertingAnObjectRefreshesTheResultsAndNotifiesTheDelegate(): void
     {
@@ -388,7 +388,7 @@ final class FetchedResultsControllerTest extends TestCase
         $controller->performFetch();
         $before = $controller->fetchedObjects->count;
 
-        $this->assertNull($controller->fetchRequest->entityName, "fetchRequest() leaves entityName unset, which is the case that used to break");
+        $this->assertSame("Expense", $controller->fetchRequest->entityName, "setting the entity populates the name the filter compares");
 
         $delegate = new class implements FetchedResultsControllerDelegate {
             public bool $called = false;
@@ -511,35 +511,24 @@ final class FetchedResultsControllerTest extends TestCase
     }
 
     /**
-     * The other construction path has to keep working. A request carrying an entity NAME is the
-     * shape `new FetchRequest("Expense")` produces, and its `entity` resolves lazily through the
-     * context associated with the current operation queue — which raises outside one. So the
-     * filter compares the name when there is one, and only falls back to the resolved entity
-     * when there is not; reading `entity` unconditionally would break this case.
-     *
-     * Built by setting the name on top of a resolved request, because a bare
-     * `new FetchRequest("Expense")` cannot even complete performFetch() in a test: the store
-     * reads `->entity` while building the fetch and dies on the missing queue context, long
-     * before any change notification arrives.
+     * The identity a fetch request carries has two halves, and the change filter can only read
+     * one of them: `entity` resolves lazily through the context of the current operation queue,
+     * so reading it outside one raises. Setting the entity therefore has to populate the name
+     * too, which is what keeps the filter usable however the request was built — and what makes
+     * `ManagedObject::fetchRequest()` a complete request rather than half of one.
      */
-    public function testChangeTrackingWorksWhenTheRequestCarriesAnEntityName(): void
+    public function testSettingTheEntityPopulatesTheEntityName(): void
     {
-        $context = $this->context();
-        $request = Expense::fetchRequest();
-        $request->entityName = "Expense";
-        $request->sortDescriptors = new ArrayClass([new SortDescriptor("merchant", true)]);
-        $controller = new FetchedResultsController($request, $context, "category");
-        $controller->performFetch();
-        $before = $controller->fetchedObjects->count;
+        $fromFactory = Expense::fetchRequest();
+        $this->assertSame("Expense", $fromFactory->entityName, "the factory's request carries the name as well as the entity");
 
-        $this->assertSame("Expense", $controller->fetchRequest->entityName, "this exercises the name branch of the filter");
+        $assignedByHand = new FetchRequest();
+        $assignedByHand->entity = $fromFactory->entity;
+        $this->assertSame("Expense", $assignedByHand->entityName, "assigning the entity directly does the same");
 
-        $expense = new Expense($context);
-        $expense->merchant = "Omega";
-        $expense->category = "office";
-        $context->processPendingChanges();
-
-        $this->assertSame($before + 1, $controller->fetchedObjects->count, "a name-carrying request tracks changes too");
+        $cleared = new FetchRequest();
+        $cleared->entity = null;
+        $this->assertNull($cleared->entityName, "clearing the entity clears the name with it");
     }
 
     /**
