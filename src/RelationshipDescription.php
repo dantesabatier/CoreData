@@ -58,6 +58,22 @@ final class RelationshipDescription extends PropertyDescription
     public int $minCount = 0;
     /** @var int The maximum number of managed objects the relationship can reference. If you declare a relationship attribute as optional when defining your entities, the framework only enforces {@see minCount} and maxCount when that attribute is not null. The default value is 0. */
     public int $maxCount = 0;
+    /** @var string The name of the relationship's destination entity. Set this while assembling the model. */
+    public string $destinationEntityName {
+        get => $this->lazyDestinationEntityName;
+        set {
+            $this->isEditable ?: fatal_error("$this->debugDescription cannot be edited after it has been added to an entity");
+            $this->lazyDestinationEntityName = $value;
+        }
+    }
+    /** @var string The name of the inverse relationship on the destination entity. Set this while assembling the model. */
+    public string $inverseRelationshipName {
+        get => $this->lazyInverseRelationshipName;
+        set {
+            $this->isEditable ?: fatal_error("$this->debugDescription cannot be edited after it has been added to an entity");
+            $this->lazyInverseRelationshipName = $value;
+        }
+    }
     /** @internal */
     public string $lazyDestinationEntityName = UnknownName;
     /** @internal */

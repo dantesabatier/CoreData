@@ -61,8 +61,8 @@ final class ManagedObjectModelTest extends TestCase
 
         $books = new RelationshipDescription();
         $books->name = "books";
-        $books->lazyDestinationEntityName = "Book";
-        $books->lazyInverseRelationshipName = "author";
+        $books->destinationEntityName = "Book";
+        $books->inverseRelationshipName = "author";
         $books->isToMany = true;
         $books->deleteRule = DeleteRule::cascadeDeleteRule;
 
@@ -82,8 +82,8 @@ final class ManagedObjectModelTest extends TestCase
 
         $authorRelationship = new RelationshipDescription();
         $authorRelationship->name = "author";
-        $authorRelationship->lazyDestinationEntityName = "Author";
-        $authorRelationship->lazyInverseRelationshipName = "books";
+        $authorRelationship->destinationEntityName = "Author";
+        $authorRelationship->inverseRelationshipName = "books";
         $authorRelationship->maxCount = 1;
 
         $book = new EntityDescription();
@@ -109,6 +109,8 @@ final class ManagedObjectModelTest extends TestCase
         $this->assertSame("Author", $this->author->name, "entitiesByName resolves Author");
         $this->assertSame("Book", $this->book->name, "entitiesByName resolves Book");
         $this->assertSame($this->model, $this->author->managedObjectModel, "the entity is associated back to the model");
+        $this->assertSame("Book", $this->author->relationshipsByName["books"]->destinationEntityName);
+        $this->assertSame("author", $this->author->relationshipsByName["books"]->inverseRelationshipName);
     }
 
     public function testEntityPropertiesArePartitionedByKind(): void

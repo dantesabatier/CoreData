@@ -177,7 +177,7 @@ final class PersistentStoreCoordinator extends ObjectClass
      * The configuration can be null, in which case no other configurations are allowed.
      * @param URL $storeURL The file location of the persistent store.
      * @param Dictionary<mixed>|null $options A dictionary containing key-value pairs that specify whether the store should be read-only and whether (for an XML store) the XML file should be validated against the DTD before it is read.
-     * For key definitions, see {@see IgnorePersistentStoreVersioningOption}, {@see MigratePersistentStoresAutomaticallyOption}, {@see InferMappingModelAutomaticallyOption}, {@see ReadOnlyPersistentStoreOption}, {@see ValidateXMLStoreOption}, {@see PersistentStoreTimeoutOption}. This value may be null.
+     * For key definitions, see {@see MigratePersistentStoresAutomaticallyOption}, {@see InferMappingModelAutomaticallyOption}, {@see ReadOnlyPersistentStoreOption}, {@see ValidateXMLStoreOption}, {@see PersistentStoreTimeoutOption}. This value may be null.
      * @return PersistentStore
      * @throws Exception If a new store cannot be created, upon return contains an error that describes the problem
      */

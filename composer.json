@@ -4,6 +4,7 @@
   "keywords": [
     "sabatier",
     "coredata",
+    "mariadb",
     "persistence",
     "objectgraph"
   ],
@@ -21,12 +22,13 @@
     "ext-intl": "*",
     "ext-mbstring": "*",
     "ext-pdo": "*",
-    "sabatier/foundation": "@dev"
+    "ext-pdo_mysql": "*",
+    "sabatier/foundation": "^1.0@dev"
   },
   "suggest": {
-    "ext-apcu": "Backs the store's L2 row cache on a single server, with no external service to run. Without one of these, the default in-memory row cache applies per process.",
-    "ext-redis": "Backs the store's L2 row cache across several servers.",
-    "ext-memcached": "Alternative shared backend for the store's L2 row cache."
+    "ext-apcu": "Required when selecting APCuRowCache for a cache shared by requests on one server.",
+    "ext-redis": "Required when selecting RedisRowCache for a cache shared across servers.",
+    "ext-memcached": "Required when selecting MemcachedRowCache as the shared cache backend."
   },
   "config": {
     "platform": {

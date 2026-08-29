@@ -12,6 +12,7 @@ model cached in the store against the model it was given; if they are incompatib
 before returning.
 
 ```php
+use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\Foundation\Dictionary;
 use const Sabatier\CoreData\InferMappingModelAutomaticallyOption;
 use const Sabatier\CoreData\MigratePersistentStoresAutomaticallyOption;
@@ -26,32 +27,29 @@ $coordinator->addPersistentStoreWithType(PersistentStoreType::sql, null, $url, n
 |--------------------------------------------------------|-------------------------------------------------------------------------------------|
 | `MigratePersistentStoresAutomaticallyOption`           | Migrate on open when the models are incompatible                                    |
 | `InferMappingModelAutomaticallyOption`                 | Infer a mapping model when none is found. Requires the option above                 |
-| `IgnorePersistentStoreVersioningOption`                | Skip the version-hash comparison entirely, while still updating the recorded hashes |
 | `PersistentStoreStagedMigrationManagerOptionKey`       | Supply a staged migration manager                                                   |
-| `PersistentStoreDeferredLightweightMigrationOptionKey` | Defer a lightweight migration                                                       |
 
 `PersistentContainer` sets the first two on every description it creates, so an application
 built that way migrates automatically.
 
 ## Lightweight migrations
 
-No mapping model exists, so `MappingModelBuilder` infers one by comparing the store's cached
-model with the new one. This covers the ordinary shape changes: adding or removing an entity,
-adding or removing a property, renaming, changing a relationship's cardinality.
+When no mapping model exists, the framework infers one by comparing the store's cached model with
+the new one. This covers ordinary shape changes: adding or removing an entity, adding or removing
+a property, renaming, and changing a relationship's cardinality.
 
-Attribute **type** changes are the constrained part. A change is inferable only when the
-conversion the database performs is lossless, which in practice means numeric-to-numeric or
-numeric-to-string:
+Attribute **type** changes are the constrained part. The supported inferred conversions are:
 
-| From                                                                                 | To                              | Inferable |
-|--------------------------------------------------------------------------------------|---------------------------------|-----------|
-| `integer16` / `integer32` / `integer64` / `decimal` / `double` / `float` / `boolean` | any other of those, or `string` | Yes       |
-| Anything else (including `date`, `uuid`, `binaryData`, `string` → numeric)           | —                               | No        |
+| From                                                                                 | To                                                                            | Inferable |
+|--------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|-----------|
+| Any type                                                                             | The same type                                                                 | Yes       |
+| `integer16` / `integer32` / `integer64` / `decimal` / `double` / `float` / `boolean` | An integer, `decimal`, `double`, `float` or `string`                           | Yes       |
+| Anything else                                                                        | A different type, including `date` or `uuid` to `string`, or any to `boolean` | No        |
 
-Note that a numeric type can widen *or narrow* under inference — `integer64` to `integer16` is
-accepted — so the guarantee is about the conversion being expressible, not about every value
-surviving it. Anything outside the table raises `InferredMappingModelException`; a change of a
-relationship's destination entity does too.
+Numeric conversions can widen *or narrow*: `integer64` to `integer16` is accepted even though
+some values may not survive. Test the migrated data before production deployment. Anything
+outside the table raises `InferredMappingModelException`; changing a relationship's destination
+entity does too.
 
 A useful asymmetry: numeric → `string` is inferable, but `date` → `string` is **not**, even
 though a database will happily render a date as text.
@@ -100,11 +98,11 @@ transformation. The policy supplies data, not DDL.
 `EntityMigrationPolicy`. **One policy instance per entity mapping, reused across all three
 passes**, so a policy can accumulate state in the first pass and use it in the later ones.
 
-| Pass        | Policy hooks                                                       |
-|-------------|--------------------------------------------------------------------|
-| 1. Create   | `begin()`, `createDestinationInstances()`, `endInstanceCreation()` |
-| 2. Relate   | `createRelationships()`, `endRelationshipCreation()`               |
-| 3. Validate | `end()`                                                            |
+| Pass        | Policy hooks                                                                |
+|-------------|-----------------------------------------------------------------------------|
+| 1. Create   | `begin()`, `createDestinationInstances()`, `endInstanceCreation()`          |
+| 2. Relate   | `createRelationships()`, `endRelationshipCreation()`                        |
+| 3. Validate | `performCustomValidation()`, `end()`                                       |
 
 The passes are separated because relationships cannot be wired until every destination object
 exists. In `createDestinationInstances()` you create the destination object and set its
@@ -112,12 +110,16 @@ attributes; in `createRelationships()` you connect it to objects other mappings 
 
 ## Staged migrations
 
-A migration can be expressed as a sequence of stages, each of which goes through the same
-engine. Stages extend `MigrationStage`:
+A migration can be expressed as a sequence of stages. Create a `StagedMigrationManager` with the
+ordered stages and pass it under `PersistentStoreStagedMigrationManagerOptionKey`. Stages extend
+`MigrationStage`:
 
-- `LightweightMigrationStage` — the mapping for this stage is inferred.
-- `CustomMigrationStage` — the stage carries an explicit `MappingModel` or
-  `EntityMigrationPolicy`.
+- `LightweightMigrationStage` receives an ordered list of model version checksums suitable for
+  inferred migration.
+- `CustomMigrationStage` receives source and destination `ManagedObjectModelReference` objects.
+  Its `willMigrateHandler` and `didMigrateHandler` let application code prepare or clean up data
+  around the stage. An explicit mapping model, when needed, is discovered from the model version
+  hashes in the application bundle.
 
 Staging is how you move across several model versions in order, or interleave an inferable
 change with one that needs code, without writing a single mapping model that spans every

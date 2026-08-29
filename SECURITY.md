@@ -2,12 +2,14 @@
 
 ## Supported versions
 
-Until 1.0 is tagged, only `master` receives security fixes. Once released, the
-latest minor of the current major is supported.
+Until 1.0 is tagged, only `master` receives security fixes. After a stable release, both `master`
+and the latest tagged minor of the current major receive security fixes.
 
-| Version  | Supported |
-|----------|-----------|
-| `master` | yes       |
+| Version                        | Supported                  |
+|--------------------------------|----------------------------|
+| `master`                       | yes                        |
+| Latest stable minor, after 1.0 | yes                        |
+| Older stable minors            | no                         |
 
 ## Reporting a vulnerability
 

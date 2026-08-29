@@ -4,28 +4,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Sabatier CoreData** is an Object Graph and Persistence framework for PHP 8.5+, inspired by Apple's Core Data. It manages complex in-memory object graphs and persists them to pluggable backends (SQL, XML, Binary, In-Memory) without requiring raw SQL.
+**Sabatier CoreData** is an Object Graph and Persistence framework for PHP 8.5+, inspired by Apple's Core Data. It manages complex in-memory object graphs and persists them to pluggable backends (MariaDB, XML, Binary) without requiring raw SQL.
 
 The sibling package `sabatier/foundation` (at `../Foundation`) must be present; it provides collections, KVO, notifications, and the Psalm plugin.
 
 ## Commands
 
-```bash
+```powershell
 # Install dependencies
 composer install
 
+# QA tools are installed globally with Composer. Ensure Composer's global bin
+# directory is on PATH, or invoke the executables from that directory.
+
 # Static analysis — level 3 with Foundation plugin
-psalm
+& "$env:APPDATA\Composer\vendor\bin\psalm.bat" --config=psalm.xml
 
 # Automated refactoring to modern PHP (readonly, property promotion, etc.)
 # Uses PHPStan as its inference engine, bundled in its own package — there is no phpstan.neon
-rector process
+& "$env:APPDATA\Composer\vendor\bin\rector.bat" process
 
-# Unit tests (PHPUnit is installed globally, like the rest of the QA tools)
-phpunit
+# Unit tests
+& "$env:APPDATA\Composer\vendor\bin\phpunit.bat"
 
 # A single suite or test
-phpunit --filter ManagedObjectContextTest
+& "$env:APPDATA\Composer\vendor\bin\phpunit.bat" --filter ManagedObjectContextTest
 ```
 
 Tests live in `tests/` as PHPUnit `TestCase` classes (namespace `Sabatier\CoreData\Tests`), configured by `phpunit.xml` (bootstrap `vendor/autoload.php`, warnings and notices fail the run). Persistence tests run against an `XMLObjectStore` on a per-test temp file — `MemoryObjectStore` has no `load()` implementation and cannot be added to a coordinator. Entities under test need a real `ManagedObject` subclass registered via `managedObjectClassName`; fetch through `MySubclass::fetchRequest()` (a bare `new FetchRequest("Entity")` resolves its context from the operation queue and dies in tests). When fixing a bug, add a regression test to the matching suite.
@@ -81,9 +84,9 @@ All operations use typed request objects (all extend `PersistentStoreRequest`):
 
 Batch operations and history queries return typed result objects extending `PersistentStoreResult`.
 
-### SQL Backend
+### MariaDB Backend
 
-`SQLCore` (internal) backs the SQL store with ~50 classes covering query generation (`SQLGenerator`, `SQLStatement`, `SQLFormatter`), per-operation contexts (`SQLFetchRequestContext`, `SQLSaveChangesRequestContext`, `SQLBatchInsertRequestContext`, …), schema mapping (`SQLModel`, `SQLEntity`, `SQLSchema`), and index types (`SQLIndex`, `SQLRTreeIndex`, `SQLBinaryIndex`).
+`SQLCore` (internal) backs the MariaDB store with ~50 classes covering query generation (`SQLGenerator`, `SQLStatement`, `SQLFormatter`), per-operation contexts (`SQLFetchRequestContext`, `SQLSaveChangesRequestContext`, `SQLBatchInsertRequestContext`, …), schema mapping (`SQLModel`, `SQLEntity`, `SQLSchema`), and index types (`SQLIndex`, `SQLRTreeIndex`, `SQLBinaryIndex`).
 
 ### Conflict Resolution
 
@@ -97,7 +100,7 @@ Batch operations and history queries return typed result objects extending `Pers
 
 `MigrationManager` runs a `MappingModel` over three passes — create the destination instances, relate them, validate them — delegating each to an `EntityMigrationPolicy` (one instance per entity mapping, reused across the passes). There is only ever this one engine; what differs is where the mapping model comes from:
 
-- **Lightweight** — no mapping model exists, so `MappingModelBuilder` infers one by comparing the store's cached model with the new one. `canTransformAttributeType()` decides which attribute-type changes are inferable: a change is only inferable when the conversion the database performs is lossless (widening a numeric, rendering any of them or a date as text). Anything else raises `InferredMappingModelException`.
+- **Lightweight** — no mapping model exists, so `MappingModelBuilder` infers one by comparing the store's cached model with the new one. `canTransformAttributeType()` accepts identity conversions and conversion from an integer, decimal, float, double or boolean to an integer, decimal, float, double or string. Numeric narrowing is accepted even though values may be lost; conversion to boolean and date-to-string are not inferred. Anything else raises `InferredMappingModelException`.
 - **Custom** — a mapping model already exists, so nothing is inferred. `MappingModel::mappingModel()` locates it in a bundle by version information rather than by file name: an `EntityMapping` records the version hashes of the entities it maps, and those identify the model pair it applies to. Mapping model files carry the extension in `MappingModelFileExtension`.
 
 An `EntityMapping` whose `mappingType` is `customEntityMappingType` names an `EntityMigrationPolicy` subclass in `entityMigrationPolicyClassName`; that policy produces the destination values the framework cannot derive on its own. Its schema is still reconciled from the destination model, exactly as a transformation is.
@@ -106,7 +109,7 @@ An `EntityMapping` whose `mappingType` is `customEntityMappingType` names an `En
 
 Staged migrations pass through the same engine. Stages extend `MigrationStage`:
 - `LightweightMigrationStage` — inferred mapping
-- `CustomMigrationStage` — explicit `MappingModel` / `EntityMigrationPolicy`
+- `CustomMigrationStage` — source and destination `ManagedObjectModelReference` objects plus pre/post migration handlers; an explicit mapping model is discovered by the referenced models' version hashes
 
 ## Key Design Conventions
 

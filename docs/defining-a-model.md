@@ -61,7 +61,7 @@ $model->entities = new ArrayClass([$employee]);
 | Case                                  | Notes                                                        |
 |---------------------------------------|--------------------------------------------------------------|
 | `string`                              |                                                              |
-| `integer16`, `integer32`, `integer64` | Pick the width you need; migrations can widen but not narrow |
+| `integer16`, `integer32`, `integer64` | Pick the width you need; inferred migrations may also narrow |
 | `decimal`                             | Exact decimal, for money                                     |
 | `double`, `float`                     | Binary floating point                                        |
 | `boolean`                             |                                                              |
@@ -75,10 +75,9 @@ $model->entities = new ArrayClass([$employee]);
 ### Optional attributes and default values
 
 `isOptional` defaults to `false`, and a non-optional attribute is not enforced late at save
-time — it is satisfied **eagerly at construction**. `ManagedObject::hydrateProperties()` runs
-`resolveInitialAttributeValue()`, which assigns a type-appropriate default (`""` for a string,
-`0` for an integer) instead of leaving the value null. So a required attribute is already
-non-null by the time you save.
+time — it is satisfied **eagerly at construction**. The framework assigns a type-appropriate
+default (`""` for a string, `0` for an integer) instead of leaving the value null. A required
+attribute is therefore already non-null by the time you save.
 
 This is a deliberate departure from Apple's fail-late validation. If you want a value to be
 genuinely absent until set, mark it `isOptional = true`.
@@ -92,25 +91,26 @@ A relationship needs a destination and, in practice, an inverse. Declare both si
 each at the other; the framework maintains them together, so setting one side updates the other.
 
 ```php
+use Sabatier\CoreData\DeleteRule;
 use Sabatier\CoreData\RelationshipDescription;
 
 // Department --< Employee (one department, many employees)
 $employees = new RelationshipDescription();
 $employees->name = "employees";
-$employees->lazyDestinationEntityName = "Employee";
-$employees->lazyInverseRelationshipName = "department";
+$employees->destinationEntityName = "Employee";
+$employees->inverseRelationshipName = "department";
 $employees->isToMany = true;
 
 $department = new RelationshipDescription();
 $department->name = "department";
-$department->lazyDestinationEntityName = "Department";
-$department->lazyInverseRelationshipName = "employees";
+$department->destinationEntityName = "Department";
+$department->inverseRelationshipName = "employees";
 $department->maxCount = 1;   // to-one
 ```
 
-The `lazy…Name` properties exist so two entities can refer to each other while the model is
-still being assembled — neither has to be constructed first. Cardinality is `isToMany = true`
-for a collection, or `maxCount = 1` for a to-one.
+The name-based properties let two entities refer to each other while the model is still being
+assembled — neither has to be constructed first. Cardinality is `isToMany = true` for a
+collection, or `maxCount = 1` for a to-one.
 
 ### Delete rules
 
@@ -127,7 +127,7 @@ for a collection, or `maxCount = 1` for a to-one.
 $employees->deleteRule = DeleteRule::cascadeDeleteRule;
 ```
 
-On the SQL store the foreign key's `ON DELETE` clause is derived from the **inverse** (to-many)
+On the MariaDB store the foreign key's `ON DELETE` clause is derived from the **inverse** (to-many)
 side's rule, not from the to-one side.
 
 ### Optional to-many relationships
@@ -187,11 +187,10 @@ A model can be serialized to a file. The extensions are:
 | `.momd`   | A bundle of `.mom` versions (a version package) |
 | `.cdm`    | A mapping model, for custom migrations          |
 
-`ManagedObjectModelBundle` locates a model in a bundle, by name for a single `.mom` or by
-version for a `.momd` package. Version identity is what drives migration: each entity carries a
-version hash, and a mapping model records the hashes of the entities it maps, which is how the
-framework decides that a given mapping model applies to a given pair of models. See
-[Migrations](migrations.md).
+The framework locates a model in the application bundle by name for a single `.mom` or by version
+for a `.momd` package. Version identity drives migration: each entity carries a version hash, and
+a mapping model records the hashes of the entities it maps. Those hashes determine whether a
+mapping applies to a given pair of models. See [Migrations](migrations.md).
 
 ## Where the model is used
 
@@ -211,4 +210,4 @@ $context->persistentStoreCoordinator = $coordinator;
 ```
 
 `PersistentContainer` does all of the above for you and is the better entry point for an
-application; see [Configuring the SQL store](sql-store.md).
+application; see [Configuring the MariaDB store](sql-store.md).

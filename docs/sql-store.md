@@ -1,26 +1,26 @@
-# Configuring the SQL store
+# Configuring the MariaDB store
 
-The SQL store is the production backend. It is an incremental store: it loads and saves in
-chunks rather than rewriting a whole file, which is what makes faulting and batching useful.
+The MariaDB store is the production backend. It requires the `pdo_mysql` extension and loads and
+saves in chunks rather than rewriting a whole file, which makes lazy loading and batching useful.
 
 ## Connection settings
 
-The SQL layer reads its connection settings from the **process environment**, which
-Foundation's `ProcessInfo` populates from a `.env` file in the project root.
+The MariaDB layer reads connection settings from Foundation's `ProcessInfo` environment dictionary,
+which is populated from a `.env` file in the project root.
 
-| Variable                         | Default      | Meaning              |
-|----------------------------------|--------------|----------------------|
-| `SQL_SCHEMA_NAME`                | *(required)* | Database/schema name |
-| `SQL_SCHEMA_HOST`                | `127.0.0.1`  | Server host          |
-| `SQL_SCHEMA_CREDENTIAL_USER`     | `root`       | User                 |
-| `SQL_SCHEMA_CREDENTIAL_PASSWORD` | *(none)*     | Password             |
+| Variable                         | Default     | Meaning                                                   |
+|----------------------------------|-------------|-----------------------------------------------------------|
+| `SQL_SCHEMA_NAME`                | URL name    | Fallback database/schema name when the store URL has none |
+| `SQL_SCHEMA_HOST`                | `127.0.0.1` | Server host                                               |
+| `SQL_SCHEMA_CREDENTIAL_USER`     | `root`      | User                                                      |
+| `SQL_SCHEMA_CREDENTIAL_PASSWORD` | *(none)*    | Password                                                  |
 
-`SQL_SCHEMA_NAME` has no default: if it is absent the store raises an
-`InternalInconsistencyException` naming the missing variable.
+The database name in the store URL takes precedence. `PersistentContainer("my_application")`,
+for example, creates `sql://my_application`, so `SQL_SCHEMA_NAME` is not needed. If neither the
+URL nor `.env` provides a name, opening the store fails.
 
 ```ini
-# .env
-SQL_SCHEMA_NAME=my_application
+# .env — SQL_SCHEMA_NAME is optional when the URL names the database
 SQL_SCHEMA_HOST=127.0.0.1
 SQL_SCHEMA_CREDENTIAL_USER=app
 SQL_SCHEMA_CREDENTIAL_PASSWORD=secret
@@ -30,9 +30,8 @@ SQL_SCHEMA_CREDENTIAL_PASSWORD=secret
 has no effect, which matters for test suites that want to point at different databases — they
 have to share one name per process.
 
-The schema is created and kept up to date by the framework. You never write DDL, and consumer
-code never writes SQL: statements are generated from `FetchRequest` predicates and sort
-descriptors.
+The schema is created and kept up to date by the framework. Application code never writes DDL or
+SQL: MariaDB statements are generated from `FetchRequest` predicates and sort descriptors.
 
 ## Building the stack
 
@@ -113,18 +112,20 @@ Passed in the options dictionary when adding a store.
 | `PersistentStoreTimeoutOption`                | Seconds to wait for a connection before failing                                                                  |
 | `PersistentStoreCacheStalenessIntervalOption` | How long cached snapshots stay valid, in seconds. Default 3600                                                   |
 | `ManagedObjectModelURLOption`                 | Load the model from a specific URL, for migration against a known version                                        |
-| `ValidateXMLStoreOption`                      | XML store only: validate against the DTD on open                                                                 |
 
 The migration options are documented in [Migrations](migrations.md).
 
-## Concurrency
+## Operation scheduling
 
-A context belongs to a queue. `ManagedObjectContextConcurrencyType` distinguishes the main-queue
-context from a private-queue one, and `performBlock()` runs work on the context's own queue.
+Context blocks are serialized through Foundation's cooperative operation queues. Those queues use
+fibers on the current PHP thread; they do not create a worker thread or move database work into the
+background. A block that does not suspend runs immediately on the caller's thread.
 
-`PersistentContainer::newBackgroundContext()` returns a private-queue context parented to the
-view context, set up to consume `didSaveObjectsNotification` automatically. Use it for writes
-that should not block the foreground.
+`PersistentContainer::newBackgroundContext()` creates a separate child context, but its
+`privateQueueConcurrencyType` value is an ownership label rather than a guarantee of parallel or
+background execution. Applications that need work to run outside the request thread must provide
+their own process, worker or event-loop integration and keep each context confined to that unit of
+work.
 
 A child context saves **into its parent**, not to the store. To reach the database you have to
 save every context in the chain up to the one whose parent is the coordinator.
@@ -134,6 +135,8 @@ save every context in the chain up to the one whose parent is the coordinator.
 Prefer the generated request over building one by hand:
 
 ```php
+use Sabatier\Foundation\Predicates\Predicate;
+
 $request = Employee::fetchRequest();
 $request->predicate = Predicate::format("lastName BEGINSWITH \"A\"");
 $request->fetchBatchSize = 50;
@@ -144,8 +147,8 @@ $employees = $context->fetch($request);
 A bare `new FetchRequest()` with no entity name resolves its context from the current operation
 queue, and fails outside a running application — `MyClass::fetchRequest()` avoids that.
 
-`fetchBatchSize` returns a `BatchFaultingArray`: object IDs are fetched up front and full objects
-are materialized a batch at a time as you iterate, which keeps a large result set out of memory.
+With `fetchBatchSize`, object IDs are fetched up front and full objects are materialized a batch
+at a time as you iterate, which keeps a large result set out of memory.
 
 `FetchRequestResultType` controls what comes back — managed objects (the default), object IDs,
 dictionaries, or a count. Ask for `countResultType` rather than fetching objects to count them.
@@ -180,24 +183,39 @@ delete rules, or run validation — refresh or discard affected contexts afterwa
 
 ## Conflict resolution
 
-Optimistic locking is available on the SQL store: each object carries a version that the store
-persists and reads back, so `ConflictDetectionService` can compare a fetched baseline against the
-current row. When they disagree, the context's `MergeStrategy` decides:
+Optimistic locking is available on the MariaDB store: each object carries a version that is compared
+with the current row during a save. Configure conflict handling through the context's public
+`MergePolicy` API:
 
-| Strategy              | Resolution                    |
-|-----------------------|-------------------------------|
-| `ObjectTrumpStrategy` | In-memory changes win         |
-| `StoreTrumpStrategy`  | Stored values win             |
-| `OverwriteStrategy`   | Last writer wins              |
-| `RollbackStrategy`    | Discard the in-memory changes |
+| Factory method                                | Resolution                    |
+|-----------------------------------------------|-------------------------------|
+| `MergePolicy::error()`                        | Raise an error; the default   |
+| `MergePolicy::mergeByPropertyObjectTrump()`   | In-memory changes win         |
+| `MergePolicy::mergeByPropertyStoreTrump()`    | Stored values win             |
+| `MergePolicy::overwrite()`                    | Last writer wins              |
+| `MergePolicy::rollback()`                     | Discard the in-memory changes |
 
-The default policy raises an error instead of merging. Atomic stores (XML, binary) do not persist
-the version and degrade to "no conflict" — locking there would be meaningless, since the store
-*is* its in-memory node cache and a save rewrites the whole file.
+```php
+use Sabatier\CoreData\MergePolicy;
+
+$context->mergePolicy = MergePolicy::mergeByPropertyObjectTrump();
+```
+
+Whole-file stores do not persist the row version and therefore do not detect this kind of
+conflict.
 
 ## Row caching
 
-`RowCache` fronts the store with a snapshot cache. `DefaultRowCache` is in-process and needs
-nothing; `APCuRowCache`, `RedisRowCache` and `MemcachedRowCache` back onto their respective
-servers, and `NullRowCache` disables caching. Entries expire per
-`PersistentStoreCacheStalenessIntervalOption`.
+`DefaultRowCache` is in-process and needs no configuration. Select a different cache class before
+loading a store:
+
+```php
+use Sabatier\CoreData\PersistentStore;
+use Sabatier\CoreData\RedisRowCache;
+
+PersistentStore::$rowCacheClass = RedisRowCache::class;
+```
+
+`APCuRowCache`, `RedisRowCache` and `MemcachedRowCache` use their respective extensions;
+`NullRowCache` disables caching. Redis and Memcached use their standard local host and port by
+default. Entries expire according to `PersistentStoreCacheStalenessIntervalOption`.

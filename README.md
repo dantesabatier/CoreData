@@ -1,108 +1,105 @@
 # Sabatier CoreData
 
-**Sabatier CoreData** is a robust object-graph management and persistence framework for PHP 8.5+, heavily inspired by Apple's Core Data. It allows developers to manage the lifecycle of model objects, handle complex relationships, and persist data without writing raw SQL, all while maintaining a highly optimized memory footprint.
+**Sabatier CoreData** is an object-graph management and persistence framework for PHP 8.5,
+inspired by Apple's Core Data. It tracks model objects and their relationships, coordinates
+changes through managed object contexts, and persists them without requiring application code to
+write SQL. The production SQL store targets MariaDB.
 
-## ✨ Key Features
+## Key features
 
-- **Managed Object Context (MOC)**: A powerful "scratchpad" for your objects. It tracks insertions, updates, and deletions, providing an internally consistent view of your data.
-- **Advanced Faulting**: Implements the "faulting" pattern via `FaultHandler`. Objects and relationships are only fully realized when accessed, minimizing I/O and memory usage.
-- **Batch Faulting**: Efficiently handle thousands of records with `BatchFaultingArray`. It supports batch sizes, allowing the framework to fetch object IDs and only inflate full objects as you iterate.
-- **Relationship Management**: Full support for To-One and To-Many relationships, including automated inverse relationship handling and delete rules (Nullify, Cascade, Deny).
-- **Concurrency Support**: Designed with concurrency types (`mainQueueConcurrencyType`, `privateQueueConcurrencyType`) and queue-based execution via `performBlock()`.
-- **Change Tracking & Undo**: Integrated with `UndoManager` and KVO-style (Key-Value Observing) notifications to monitor object graph changes in real-time.
-- **Constraint Resolution**: Built-in support for merge policies and unique constraint conflict resolution.
+- **Object-graph management** — create, fetch, update and delete related model objects through an
+  internally consistent context.
+- **Lazy loading and batched fetching** — defer data loading until it is needed and iterate large
+  result sets without materializing every object at once.
+- **Relationship management** — maintain to-one and to-many relationships, inverse relationships
+  and Nullify, Cascade, Deny and No Action delete rules.
+- **Change tracking and undo** — inspect pending changes, save or roll them back, and integrate an
+  undo manager when the application needs undo and redo.
+- **Conflict resolution and constraints** — enforce uniqueness constraints and choose a supported
+  merge policy for optimistic-locking conflicts.
+- **Model migration** — infer supported schema changes or supply custom migration behavior.
 
-## 🛠 Requirements
+## Requirements
 
-- **PHP 8.5** or higher (leveraging property hooks, readonly properties, and advanced type systems).
-- **Foundation Library**: Depends on `sabatier/foundation`.
+- PHP `^8.5`.
+- The `dom`, `intl`, `mbstring`, `pdo` and `pdo_mysql` PHP extensions.
+- MariaDB for the SQL store.
 
-## 📦 Installation
+The `sabatier/foundation` dependency is installed by Composer.
+
+## Installation
 
 ```bash
 composer require sabatier/coredata
 ```
 
-`sabatier/coredata` depends on `sabatier/foundation`, which Composer resolves for you.
+## Quick start
 
-## 🚀 Quick Start
-### Basic Fetching and Saving
+The following example assumes that `$model` has been built as shown in
+[Defining a model](docs/defining-a-model.md), and that it contains an `Employee` entity backed by
+an `Employee` subclass of `ManagedObject`.
 
 ```php
-use Sabatier\Foundation\Bundle;
-use Sabatier\Foundation\Date;
-use Sabatier\Foundation\Error;
 use Sabatier\CoreData\PersistentContainer;
 use Sabatier\CoreData\PersistentStoreDescription;
+use Sabatier\Foundation\Date;
+use Sabatier\Foundation\Error;
 use function Sabatier\Foundation\fatal_error;
 
-// 1. Initialize the context
-$name = Bundle::main()->object(kCFBundleNameKey);
-$container = new PersistentContainer($name);
+$container = new PersistentContainer("my_application", $model);
 $container->loadPersistentStores(function (PersistentStoreDescription $description, ?Error $error): void {
     if ($error) {
-        fatal_error("Unable to load persistent stores: $error");
+        fatal_error("Unable to load persistent store: $error");
     }
 });
+
 $context = $container->viewContext;
 
-// 2. Prepare a fetch request with batching.
-// Employee is your ManagedObject subclass, registered as the entity's
-// managedObjectClassName; fetchRequest() resolves the entity for you.
-$fetchRequest = Employee::fetchRequest();
-$fetchRequest->fetchBatchSize = 50;
-
-// 3. Execute fetch (returns a BatchFaultingArray)
-$employees = $context->fetch($fetchRequest);
+$request = Employee::fetchRequest();
+$request->fetchBatchSize = 50;
+$employees = $context->fetch($request);
 
 foreach ($employees as $employee) {
     echo $employee->lastName;
-    // Objects are automatically turned from faults into realized objects here
     $employee->lastAccessDate = new Date();
 }
 
-// 4. Persist changes
 if ($context->hasChanges) {
     try {
         $context->save();
-    } catch (Exception $e) {
-        // Handle validation or merge conflicts
+    } catch (\Throwable $error) {
+        // Handle validation or merge conflicts.
     }
 }
 ```
 
-> Prefer `Employee::fetchRequest()` over `new FetchRequest()`. A bare
-> `FetchRequest` with no entity name resolves its context from the operation
-> queue, which is rarely what you want outside a running application.
+Prefer the model class' `fetchRequest()` method over constructing an unscoped request. It resolves
+the correct entity without depending on ambient queue state.
 
-## 🏗 Architecture & Core Components
+## Public architecture
 
-The framework is designed as a multi-layered stack that separates the object graph from the physical storage, allowing for high flexibility and performance.
+- **Model and objects** — `ManagedObjectModel` contains `EntityDescription` metadata;
+  application entities subclass `ManagedObject`.
+- **Context** — `ManagedObjectContext` is the primary interface for inserting, fetching, changing
+  and deleting model objects. It also owns the merge policy and undo state.
+- **Persistence** — `PersistentContainer` assembles the model, coordinator, stores and view
+  context. `PersistentStoreDescription` configures each store.
+- **Requests** — `FetchRequest` describes reads; batch insert, update and delete requests provide
+  direct bulk operations when object-graph callbacks are not required.
 
-### 1. The Object Graph Layer
-- **`ManagedObject`**: The base class for all your data entities. It handles property observation (KVO) and state management (Clean, New, Updated, Deleted).
-- **`ManagedObjectContext`**: Your primary interface for data manipulation. It acts as an in-memory "scratchpad" where you can create, fetch, and modify objects before committing changes.
-- **`UndoManager`**: Integrated directly into the context, allowing you to roll back or redo complex object graph changes effortlessly.
+Most applications should start with `PersistentContainer`. The lower-level coordinator APIs are
+available for applications that need several stores or explicit store configuration.
 
-### 2. The Coordination Layer
-- **`PersistentStoreCoordinator`**: The "hub" of the stack. It mediates between the high-level `ManagedObjectContext` and the low-level `PersistentStore`. It handles the mapping between your PHP objects and the storage schema.
-- **`ManagedObjectModel`**: A collection of `EntityDescription` objects that define the structure, properties, and relationships of your data.
+## Documentation
 
-### 3. The Persistence Layer
-- **`PersistentStore`**: The abstract base class for all storage types.
-- **`IncrementalStore`**: A specialized abstract subclass designed for stores that load and save data in chunks (like SQL). It uses `IncrementalStoreNode` to pass data between the store and the context.
-- **`SQLCore`**: The primary implementation for relational databases, transforming `FetchRequest` objects into optimized SQL queries.
-
-### 4. Performance Mechanisms
-- **`FaultHandler`**: Automatically manages "Faulting." It keeps the application's memory usage low by creating "hollow" objects that only load their full data when a property is actually accessed.
-- **`BatchFaultingArray`**: A specialized collection that enables seamless iteration over massive result sets. It fetches data in batches, ensuring that only the necessary objects are in memory at any given time.
-
-## 📚 Documentation
-
-- [Defining a model](docs/defining-a-model.md) — entities, attributes, relationships, delete rules, constraints.
-- [Configuring the SQL store](docs/sql-store.md) — connection settings, store options, fetching, concurrency, conflict resolution.
-- [Migrations](docs/migrations.md) — lightweight vs custom mapping models, the three passes, staged migrations.
+- [Defining a model](docs/defining-a-model.md) — entities, attributes, relationships, delete rules
+  and constraints.
+- [Configuring the MariaDB store](docs/sql-store.md) — connections, store options, fetching,
+  concurrency, conflict resolution and caching.
+- [Migrations](docs/migrations.md) — inferred and custom mappings and staged migrations.
+- [Security policy](SECURITY.md) — supported versions and private vulnerability reporting.
+- [Changelog](CHANGELOG.md) — release notes and compatibility-relevant changes.
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE.md` file for details.
+Sabatier CoreData is available under the [MIT License](LICENSE.md).
