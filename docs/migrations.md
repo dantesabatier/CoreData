@@ -22,13 +22,13 @@ $coordinator->addPersistentStoreWithType(PersistentStoreType::sql, null, $url, n
 ]));
 ```
 
-| Option | Effect |
-|---|---|
-| `MigratePersistentStoresAutomaticallyOption` | Migrate on open when the models are incompatible |
-| `InferMappingModelAutomaticallyOption` | Infer a mapping model when none is found. Requires the option above |
-| `IgnorePersistentStoreVersioningOption` | Skip the version-hash comparison entirely, while still updating the recorded hashes |
-| `PersistentStoreStagedMigrationManagerOptionKey` | Supply a staged migration manager |
-| `PersistentStoreDeferredLightweightMigrationOptionKey` | Defer a lightweight migration |
+| Option                                                 | Effect                                                                              |
+|--------------------------------------------------------|-------------------------------------------------------------------------------------|
+| `MigratePersistentStoresAutomaticallyOption`           | Migrate on open when the models are incompatible                                    |
+| `InferMappingModelAutomaticallyOption`                 | Infer a mapping model when none is found. Requires the option above                 |
+| `IgnorePersistentStoreVersioningOption`                | Skip the version-hash comparison entirely, while still updating the recorded hashes |
+| `PersistentStoreStagedMigrationManagerOptionKey`       | Supply a staged migration manager                                                   |
+| `PersistentStoreDeferredLightweightMigrationOptionKey` | Defer a lightweight migration                                                       |
 
 `PersistentContainer` sets the first two on every description it creates, so an application
 built that way migrates automatically.
@@ -43,10 +43,10 @@ Attribute **type** changes are the constrained part. A change is inferable only 
 conversion the database performs is lossless, which in practice means numeric-to-numeric or
 numeric-to-string:
 
-| From | To | Inferable |
-|---|---|---|
-| `integer16` / `integer32` / `integer64` / `decimal` / `double` / `float` / `boolean` | any other of those, or `string` | Yes |
-| Anything else (including `date`, `uuid`, `binaryData`, `string` → numeric) | — | No |
+| From                                                                                 | To                              | Inferable |
+|--------------------------------------------------------------------------------------|---------------------------------|-----------|
+| `integer16` / `integer32` / `integer64` / `decimal` / `double` / `float` / `boolean` | any other of those, or `string` | Yes       |
+| Anything else (including `date`, `uuid`, `binaryData`, `string` → numeric)           | —                               | No        |
 
 Note that a numeric type can widen *or narrow* under inference — `integer64` to `integer16` is
 accepted — so the guarantee is about the conversion being expressible, not about every value
@@ -75,14 +75,14 @@ Both are deliberately permissive about what a hand-authored mapping model may le
 
 `EntityMappingType` says what happens to an entity:
 
-| Case | Meaning |
-|---|---|
-| `addEntityMappingType` | New in the destination |
-| `removeEntityMappingType` | Gone from the destination |
-| `copyEntityMappingType` | Carried across unchanged |
+| Case                         | Meaning                                        |
+|------------------------------|------------------------------------------------|
+| `addEntityMappingType`       | New in the destination                         |
+| `removeEntityMappingType`    | Gone from the destination                      |
+| `copyEntityMappingType`      | Carried across unchanged                       |
 | `transformEntityMappingType` | Changed, with property mappings describing how |
-| `customEntityMappingType` | Handled by your own policy class |
-| `undefinedEntityMappingType` | Not yet classified |
+| `customEntityMappingType`    | Handled by your own policy class               |
+| `undefinedEntityMappingType` | Not yet classified                             |
 
 ### Custom policies
 
@@ -100,11 +100,11 @@ transformation. The policy supplies data, not DDL.
 `EntityMigrationPolicy`. **One policy instance per entity mapping, reused across all three
 passes**, so a policy can accumulate state in the first pass and use it in the later ones.
 
-| Pass | Policy hooks |
-|---|---|
-| 1. Create | `begin()`, `createDestinationInstances()`, `endInstanceCreation()` |
-| 2. Relate | `createRelationships()`, `endRelationshipCreation()` |
-| 3. Validate | `end()` |
+| Pass        | Policy hooks                                                       |
+|-------------|--------------------------------------------------------------------|
+| 1. Create   | `begin()`, `createDestinationInstances()`, `endInstanceCreation()` |
+| 2. Relate   | `createRelationships()`, `endRelationshipCreation()`               |
+| 3. Validate | `end()`                                                            |
 
 The passes are separated because relationships cannot be wired until every destination object
 exists. In `createDestinationInstances()` you create the destination object and set its

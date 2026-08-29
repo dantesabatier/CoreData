@@ -8,12 +8,12 @@ chunks rather than rewriting a whole file, which is what makes faulting and batc
 The SQL layer reads its connection settings from the **process environment**, which
 Foundation's `ProcessInfo` populates from a `.env` file in the project root.
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `SQL_SCHEMA_NAME` | *(required)* | Database/schema name |
-| `SQL_SCHEMA_HOST` | `127.0.0.1` | Server host |
-| `SQL_SCHEMA_CREDENTIAL_USER` | `root` | User |
-| `SQL_SCHEMA_CREDENTIAL_PASSWORD` | *(none)* | Password |
+| Variable                         | Default      | Meaning              |
+|----------------------------------|--------------|----------------------|
+| `SQL_SCHEMA_NAME`                | *(required)* | Database/schema name |
+| `SQL_SCHEMA_HOST`                | `127.0.0.1`  | Server host          |
+| `SQL_SCHEMA_CREDENTIAL_USER`     | `root`       | User                 |
+| `SQL_SCHEMA_CREDENTIAL_PASSWORD` | *(none)*     | Password             |
 
 `SQL_SCHEMA_NAME` has no default: if it is absent the store raises an
 `InternalInconsistencyException` naming the missing variable.
@@ -106,14 +106,14 @@ $context->persistentStoreCoordinator = $coordinator;
 
 Passed in the options dictionary when adding a store.
 
-| Constant | Effect |
-|---|---|
-| `PersistentStoreIDOption` | Explicit store identifier, used in `ManagedObjectID`s and as a cache namespace. Derived from the URL when absent |
-| `ReadOnlyPersistentStoreOption` | Reject writes. Default `false` |
-| `PersistentStoreTimeoutOption` | Seconds to wait for a connection before failing |
-| `PersistentStoreCacheStalenessIntervalOption` | How long cached snapshots stay valid, in seconds. Default 3600 |
-| `ManagedObjectModelURLOption` | Load the model from a specific URL, for migration against a known version |
-| `ValidateXMLStoreOption` | XML store only: validate against the DTD on open |
+| Constant                                      | Effect                                                                                                           |
+|-----------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| `PersistentStoreIDOption`                     | Explicit store identifier, used in `ManagedObjectID`s and as a cache namespace. Derived from the URL when absent |
+| `ReadOnlyPersistentStoreOption`               | Reject writes. Default `false`                                                                                   |
+| `PersistentStoreTimeoutOption`                | Seconds to wait for a connection before failing                                                                  |
+| `PersistentStoreCacheStalenessIntervalOption` | How long cached snapshots stay valid, in seconds. Default 3600                                                   |
+| `ManagedObjectModelURLOption`                 | Load the model from a specific URL, for migration against a known version                                        |
+| `ValidateXMLStoreOption`                      | XML store only: validate against the DTD on open                                                                 |
 
 The migration options are documented in [Migrations](migrations.md).
 
@@ -184,12 +184,12 @@ Optimistic locking is available on the SQL store: each object carries a version 
 persists and reads back, so `ConflictDetectionService` can compare a fetched baseline against the
 current row. When they disagree, the context's `MergeStrategy` decides:
 
-| Strategy | Resolution |
-|---|---|
-| `ObjectTrumpStrategy` | In-memory changes win |
-| `StoreTrumpStrategy` | Stored values win |
-| `OverwriteStrategy` | Last writer wins |
-| `RollbackStrategy` | Discard the in-memory changes |
+| Strategy              | Resolution                    |
+|-----------------------|-------------------------------|
+| `ObjectTrumpStrategy` | In-memory changes win         |
+| `StoreTrumpStrategy`  | Stored values win             |
+| `OverwriteStrategy`   | Last writer wins              |
+| `RollbackStrategy`    | Discard the in-memory changes |
 
 The default policy raises an error instead of merging. Atomic stores (XML, binary) do not persist
 the version and degrade to "no conflict" — locking there would be meaningless, since the store

@@ -7,14 +7,14 @@ does not require a schema file, though it can be loaded from one (see
 
 ## The pieces
 
-| Class | Describes |
-|---|---|
-| `ManagedObjectModel` | The whole schema — a set of entities |
-| `EntityDescription` | One entity: its name, its properties, its backing class |
-| `AttributeDescription` | A scalar value (string, integer, date, …) |
-| `RelationshipDescription` | A reference to another entity |
-| `FetchedPropertyDescription` | A collection defined by a predicate rather than a foreign key |
-| `CompositeAttributeDescription` | A value assembled from several other attributes |
+| Class                           | Describes                                                     |
+|---------------------------------|---------------------------------------------------------------|
+| `ManagedObjectModel`            | The whole schema — a set of entities                          |
+| `EntityDescription`             | One entity: its name, its properties, its backing class       |
+| `AttributeDescription`          | A scalar value (string, integer, date, …)                     |
+| `RelationshipDescription`       | A reference to another entity                                 |
+| `FetchedPropertyDescription`    | A collection defined by a predicate rather than a foreign key |
+| `CompositeAttributeDescription` | A value assembled from several other attributes               |
 
 `AttributeDescription`, `RelationshipDescription` and `FetchedPropertyDescription` all extend
 `PropertyDescription`, which is why an entity's `properties` is one flat collection.
@@ -58,19 +58,19 @@ $model->entities = new ArrayClass([$employee]);
 
 `AttributeType` is the enum of storable value types. Use it rather than raw strings.
 
-| Case | Notes |
-|---|---|
-| `string` | |
+| Case                                  | Notes                                                        |
+|---------------------------------------|--------------------------------------------------------------|
+| `string`                              |                                                              |
 | `integer16`, `integer32`, `integer64` | Pick the width you need; migrations can widen but not narrow |
-| `decimal` | Exact decimal, for money |
-| `double`, `float` | Binary floating point |
-| `boolean` | |
-| `date` | Backed by Foundation's `Date` |
-| `binaryData` | |
-| `uuid`, `uri` | |
-| `transformable` | Serialized arbitrary value |
-| `objectID` | A reference to another object's identity |
-| `compositeAttributeType` | See `CompositeAttributeDescription` |
+| `decimal`                             | Exact decimal, for money                                     |
+| `double`, `float`                     | Binary floating point                                        |
+| `boolean`                             |                                                              |
+| `date`                                | Backed by Foundation's `Date`                                |
+| `binaryData`                          |                                                              |
+| `uuid`, `uri`                         |                                                              |
+| `transformable`                       | Serialized arbitrary value                                   |
+| `objectID`                            | A reference to another object's identity                     |
+| `compositeAttributeType`              | See `CompositeAttributeDescription`                          |
 
 ### Optional attributes and default values
 
@@ -116,11 +116,11 @@ for a collection, or `maxCount = 1` for a to-one.
 
 `DeleteRule` decides what happens to the destination when the source object is deleted:
 
-| Case | Effect |
-|---|---|
-| `nullifyDeleteRule` | Clear the inverse reference (the usual choice) |
-| `cascadeDeleteRule` | Delete the destination objects too |
-| `denyDeleteRule` | Refuse the delete while the relationship is non-empty |
+| Case                 | Effect                                                                |
+|----------------------|-----------------------------------------------------------------------|
+| `nullifyDeleteRule`  | Clear the inverse reference (the usual choice)                        |
+| `cascadeDeleteRule`  | Delete the destination objects too                                    |
+| `denyDeleteRule`     | Refuse the delete while the relationship is non-empty                 |
 | `noActionDeleteRule` | Leave the destination untouched — you are responsible for consistency |
 
 ```php
@@ -181,11 +181,11 @@ is ignored rather than applied.
 
 A model can be serialized to a file. The extensions are:
 
-| Extension | Contents |
-|---|---|
-| `.mom` | One managed object model |
-| `.momd` | A bundle of `.mom` versions (a version package) |
-| `.cdm` | A mapping model, for custom migrations |
+| Extension | Contents                                        |
+|-----------|-------------------------------------------------|
+| `.mom`    | One managed object model                        |
+| `.momd`   | A bundle of `.mom` versions (a version package) |
+| `.cdm`    | A mapping model, for custom migrations          |
 
 `ManagedObjectModelBundle` locates a model in a bundle, by name for a single `.mom` or by
 version for a `.momd` package. Version identity is what drives migration: each entity carries a
