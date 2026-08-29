@@ -15,6 +15,7 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Date;
+use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
 
@@ -198,5 +199,25 @@ final class ManagedObjectModelTest extends TestCase
         $this->assertSame($rebuilt->entitiesByName["Author"]->versionHash, $this->author->versionHash, "identically-shaped entities produce the same version hash");
         $this->assertSame($rebuilt->entitiesByName["Book"]->versionHash, $this->book->versionHash, "the hash is deterministic across model builds");
         $this->assertNotSame($this->book->versionHash, $this->author->versionHash, "differently-shaped entities produce different version hashes");
+    }
+
+    public function testStringRangesValidateLengthExplicitly(): void
+    {
+        $string = new AttributeDescription();
+        $string->name = "code";
+        $string->type = AttributeType::string;
+        $string->minValue = 2;
+        $string->maxValue = 4;
+
+        $this->assertFalse($string->validationPredicates[0]->evaluate(new Dictionary(["code" => "a"])));
+        $this->assertTrue($string->validationPredicates[0]->evaluate(new Dictionary(["code" => "ab"])));
+        $this->assertFalse($string->validationPredicates[1]->evaluate(new Dictionary(["code" => "abcde"])));
+
+        $number = new AttributeDescription();
+        $number->name = "priority";
+        $number->type = AttributeType::integer32;
+        $number->minValue = 2;
+
+        $this->assertTrue($number->validationPredicates[0]->evaluate(new Dictionary(["priority" => 2])));
     }
 }

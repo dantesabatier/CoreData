@@ -46,17 +46,21 @@ abstract class PropertyDescription extends ObjectClass
             }
             /** @var ArrayClass<Predicate> $validationPredicates */
             $validationPredicates = new ArrayClass();
+            $valueExpression = Expression::expressionForKeyPath($this->name);
+            $rangeExpression = ($this instanceof AttributeDescription && $this->type === AttributeType::string)
+                ? Expression::expressionForFunction("length:", new ArrayClass([$valueExpression]))
+                : $valueExpression;
             $minValue = $this->minValue;
             if (is_numeric($minValue)) {
-                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForKeyPath($this->name), Expression::expressionForConstantValue($minValue), PredicateOperatorType::greaterThanOrEqualTo));
+                $validationPredicates->append(new ComparisonPredicate($rangeExpression, Expression::expressionForConstantValue($minValue), PredicateOperatorType::greaterThanOrEqualTo));
             }
             $maxValue = $this->maxValue;
             if (is_numeric($maxValue)) {
-                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForKeyPath($this->name), Expression::expressionForConstantValue($maxValue), PredicateOperatorType::lessThanOrEqualTo));
+                $validationPredicates->append(new ComparisonPredicate($rangeExpression, Expression::expressionForConstantValue($maxValue), PredicateOperatorType::lessThanOrEqualTo));
             }
             $regex = $this->regex;
             if (is_string($regex)) {
-                $validationPredicates->append(new ComparisonPredicate(Expression::expressionForKeyPath($this->name), Expression::expressionForConstantValue($regex), PredicateOperatorType::matches));
+                $validationPredicates->append(new ComparisonPredicate($valueExpression, Expression::expressionForConstantValue($regex), PredicateOperatorType::matches));
             }
             return $this->validationPredicates = $validationPredicates;
         }
