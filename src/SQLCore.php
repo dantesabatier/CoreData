@@ -278,7 +278,7 @@ final class SQLCore extends IncrementalStore
      */
     private function processRequestContext(SQLStoreRequestContext $requestContext): mixed
     {
-        !($requestContext->isWritingRequest && $this->isReadOnly) ?: fatal_error("Cannot modify a read only persistent store");
+        !$requestContext->isWritingRequest || !$this->isReadOnly ?: fatal_error("Cannot modify a read only persistent store");
         $requestContext->executeRequestUsingConnection($this->queryGenerationTrackingConnection);
         if ($requestContext->isWritingRequest) {
             if (!$requestContext->hasHistoryTracking && $this->options?->valueForKey(PersistentStoreRemoteChangeNotificationPostOptionKey) && $requestContext->transactionID->boolValue) {

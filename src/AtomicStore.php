@@ -227,7 +227,7 @@ abstract class AtomicStore extends PersistentStore
             $objects = new ArrayClass($objects->dropFirst($fetchOffset));
         }
         if ($fetchLimit = $request->fetchLimit) {
-            $objects = new ArrayClass($objects->prefix($fetchLimit));
+            return new ArrayClass($objects->prefix($fetchLimit));
         }
         return $objects;
     }

@@ -98,7 +98,7 @@ final class EntityDescription extends ObjectClass implements IteratorAggregate, 
     }
     /** @var ArrayClass<string> The names of the attributes a complete snapshot of the receiver is expected to carry. Runtime-only derived attributes never reach the persistent store, so they are excluded. */
     private(set) ArrayClass $persistentAttributeNames {
-        get => $this->persistentAttributeNames ??= $this->attributesByName->filter(fn(AttributeDescription $attribute): bool => !($attribute instanceof DerivedAttributeDescription && $attribute->isRuntimeOnly))->keys;
+        get => $this->persistentAttributeNames ??= $this->attributesByName->filter(fn(AttributeDescription $attribute): bool => !$attribute instanceof DerivedAttributeDescription || !$attribute->isRuntimeOnly)->keys;
     }
     /** @var Dictionary<RelationshipDescription> The relationships of the receiver in a dictionary. The keys in the dictionary are the relationship names, and the values are instances of {@see RelationshipDescription}. */
     private(set) Dictionary $relationshipsByName {

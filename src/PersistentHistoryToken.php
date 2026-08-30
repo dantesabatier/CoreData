@@ -23,7 +23,7 @@ final class PersistentHistoryToken extends ObjectClass
     /**
      * @param Dictionary<Number> $storeTokens
      */
-    function __construct(public readonly Dictionary $storeTokens)
+    public function __construct(public readonly Dictionary $storeTokens)
     {
     }
 

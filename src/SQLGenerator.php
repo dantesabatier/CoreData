@@ -416,7 +416,7 @@ final class SQLGenerator
         if ($this->keyValueOperator === KeyValueOperator::countKeyValueOperator) {
             $columnNames->insert("$this->tableReference.{$entity->primaryKey->columnName}");
         }
-        $appendBaseColumns = !$hasGroupBy && !$this->isSubquery && !$request->returnsObjectsAsFaults && !($request->resultType === FetchRequestResultType::countResultType && $this->keyValueOperator === KeyValueOperator::countKeyValueOperator);
+        $appendBaseColumns = !$hasGroupBy && !$this->isSubquery && !$request->returnsObjectsAsFaults && ($request->resultType !== FetchRequestResultType::countResultType || $this->keyValueOperator !== KeyValueOperator::countKeyValueOperator);
         if ($appendBaseColumns) {
             if ($request->resultType !== FetchRequestResultType::countResultType) {
                 /** @var ArrayClass<SQLColumn> $entityColumns */

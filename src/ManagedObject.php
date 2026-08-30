@@ -1011,9 +1011,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             "string" => $value instanceof BackedEnum ? $value : (string)$value,
             "int" => $value instanceof BackedEnum ? $value : (int)$value,
             "bool" => (function () use ($value, $write): bool|int {
-                if ($value === null) {
-                    $value = false;
-                }
+                $value ??= false;
                 if (!is_numeric($value)) {
                     $value = (bool)$value;
                 }

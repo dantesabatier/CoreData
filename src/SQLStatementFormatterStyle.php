@@ -9,11 +9,11 @@ use JetBrains\PhpStorm\ExpectedValues;
 /** @internal */
 final class SQLStatementFormatterStyle
 {
-    final const int none = 0;
-    final const int interpolateStrings = 1;
-    final const int includeArguments = 2;
-    final const int prettyPrint = 4;
-    final const int highlight = 8;
+    const int none = 0;
+    const int interpolateStrings = 1;
+    const int includeArguments = 2;
+    const int prettyPrint = 4;
+    const int highlight = 8;
 
     #[ExpectedValues(flagsFromClass: SQLStatementFormatterStyle::class)]
     public static function defaultFormatterStyle(): int
