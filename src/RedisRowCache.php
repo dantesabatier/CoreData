@@ -121,7 +121,7 @@ final class RedisRowCache extends RowCache
         }
         /** @var Redis $pipe */
         $pipe = $this->redis->multi(Redis::PIPELINE);
-        $snapshots->forEach(fn(Dictionary $snapshot, string $key) => $pipe->setex($key, $ttl, serialize($snapshot->array) ?: fatal_error("Unable to serialize snapshot for Redis row cache")));
+        $snapshots->forEach(fn(Dictionary $snapshot, string $key): bool|Redis => $pipe->setex($key, $ttl, serialize($snapshot->array) ?: fatal_error("Unable to serialize snapshot for Redis row cache")));
         $pipe->exec();
     }
 
