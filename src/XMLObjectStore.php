@@ -452,8 +452,8 @@ final class XMLObjectStore extends AtomicStore
     }
 
     /**
-     * Detaches the XML elements backing the given cache nodes, and repairs the document around
-     * them: cascading to referenced children, and scrubbing dangling references to the deleted
+     * Detaches the XML elements backing the given cache nodes and repairs the surrounding document:
+     * cascading to referenced children, and scrubbing dangling references to the deleted
      * nodes from every other element.
      *
      * The cascade branch below is NOT redundant with the context's own delete-rule handling, even
