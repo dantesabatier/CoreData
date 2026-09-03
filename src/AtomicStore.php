@@ -320,8 +320,17 @@ abstract class AtomicStore extends PersistentStore
             if (!$inverseRelationship->isToMany) {
                 return $this->nodeCache->first(fn(AtomicStoreCacheNode $node): bool => $node->objectID->entity->isKindOf($destinationEntity) && $node->valueForKey($inverseRelationship->name)?->isEqual($objectID))?->objectID ?? Nil::nil();
             }
+            // A to-one whose inverse is to-many cannot be found by scanning the destination nodes the way the branches above do: the inverse holds a collection, and the owning side is the only one that records the single ID. Read it from this object's own node instead. Without this the ordinary to-one/to-many pair fell through to the Nil below, so a relationship re-faulted by FaultHandler::fulfillFault could never be resolved again.
+            $value = $this->cacheNode($objectID)?->valueForKey($relationship->name);
+            if ($value instanceof ManagedObjectID) {
+                return $value;
+            }
+            if ($value instanceof ManagedObject) {
+                return $value->objectID;
+            }
+            return Nil::nil();
         }
-        if ($relationship->isToMany) {
+        if ($relationship->isToMany && !$relationship->isOptional) {
             return new ArrayClass();
         }
         return Nil::nil();

@@ -213,7 +213,10 @@ final class XMLObjectStore extends AtomicStore
             }
         }
         foreach ($object->entity->relationshipsByName as $key => $relationship) {
-            $value = $object->primitiveValueForKey($key);
+            if (!$this->shouldWriteRelationship($object, $key)) {
+                continue;
+            }
+            $value = $this->relationshipValueToWrite($object, $key);
             $relationshipNode = $this->createRelationshipChildOnNode($node, $relationship);
             $destinationNode = $relationshipNode->getAttributeNode("destination");
             $referencesNode = $relationshipNode->getAttributeNode("references");
@@ -221,7 +224,7 @@ final class XMLObjectStore extends AtomicStore
             $referencesNode->value = $this->getIDRefString($value, $relationship);
             $inverseRelationship = $relationship->inverseRelationship;
             /** @var Set<ManagedObjectID> $managedObjectIDs */
-            $managedObjectIDs = $value instanceof Set ? $value->map(fn(ManagedObject|ManagedObjectID $e): ManagedObjectID => $e instanceof ManagedObject ? $e->objectID : $e) : ($value instanceof ManagedObjectID ? new Set([$value]) : new Set());
+            $managedObjectIDs = $this->managedObjectIDs($value, $relationship);
             foreach ($managedObjectIDs as $managedObjectID) {
                 /** @psalm-suppress UndefinedPropertyAssignment */
                 $destinationNode->value = $managedObjectID->entityName;
@@ -240,6 +243,40 @@ final class XMLObjectStore extends AtomicStore
             }
         }
         $node->normalize();
+    }
+
+    private function shouldWriteRelationship(ManagedObject $object, string $key): bool
+    {
+        $value = $object->primitiveValueForKey($key);
+        // A refaulted to-many is empty, but a newly built FaultingSet can still carry explicit
+        // members before its fault flag is cleared. Those members are real data and must be saved.
+        return !$object->isPropertyForKeyFault($key)
+            || ($value instanceof Set && !$value->isEmpty)
+            || $object->changedValuesForCurrentEvent()->offsetExists($key);
+    }
+
+    private function relationshipValueToWrite(ManagedObject $object, string $key): Set|ManagedObject|ManagedObjectID|Nil|null
+    {
+        $changedValues = $object->changedValuesForCurrentEvent();
+        if ($changedValues->offsetExists($key)) {
+            $value = $changedValues[$key];
+            return $value instanceof Nil ? null : $value;
+        }
+        return $object->primitiveValueForKey($key);
+    }
+
+    private function removeInverseXMLReference(ManagedObjectID $destinationID, RelationshipDescription $inverseRelationship, ManagedObjectID $sourceID): void
+    {
+        $cacheNode = $this->cacheNode($destinationID);
+        if (!$cacheNode instanceof XMLObjectStoreCacheNode) {
+            return;
+        }
+        $relationshipNode = $this->createRelationshipChildOnNode($cacheNode->data, $inverseRelationship);
+        $references = new Set(explode(" ", $relationshipNode->getAttribute("references")));
+        $references->remove((string)$sourceID->referenceObject);
+        $referencesNode = $relationshipNode->getAttributeNode("references");
+        /** @psalm-suppress UndefinedPropertyAssignment */
+        $referencesNode->value = trim($references->join(" "));
     }
 
     private function getIDRefString(Set|ManagedObject|ManagedObjectID|Nil|null $value, ?RelationshipDescription $relationship = null): string
@@ -392,8 +429,20 @@ final class XMLObjectStore extends AtomicStore
             $node->setValueForKey($object->primitiveValueForKey($key), $key);
         }
         foreach ($entity->relationshipsByName as $key => $relationship) {
-            $value = $object->primitiveValueForKey($key);
+            if (!$this->shouldWriteRelationship($object, $key)) {
+                continue;
+            }
+            $value = $this->relationshipValueToWrite($object, $key);
             $managedObjectIDs = $this->managedObjectIDs($value, $relationship);
+            if (!$relationship->isToMany) {
+                $storedObjectID = $node->valueForKey($key);
+                if ($storedObjectID instanceof ManagedObject) {
+                    $storedObjectID = $storedObjectID->objectID;
+                }
+                if ($storedObjectID instanceof ManagedObjectID && !$managedObjectIDs->containsElement($storedObjectID)) {
+                    $this->removeInverseXMLReference($storedObjectID, $relationship->inverseRelationship, $object->objectID);
+                }
+            }
             $value = $relationship->isToMany ? $managedObjectIDs : $managedObjectIDs->first;
             $node->setValueForKey($value, $key);
         }
