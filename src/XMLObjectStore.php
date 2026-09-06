@@ -248,8 +248,7 @@ final class XMLObjectStore extends AtomicStore
     private function shouldWriteRelationship(ManagedObject $object, string $key): bool
     {
         $value = $object->primitiveValueForKey($key);
-        // A refaulted to-many is empty, but a newly built FaultingSet can still carry explicit
-        // members before its fault flag is cleared. Those members are real data and must be saved.
+        // A refaulted to-many is empty, but a newly built FaultingSet can still carry explicit members before its fault flag is cleared. Those members are real data and must be saved.
         return !$object->isPropertyForKeyFault($key)
             || ($value instanceof Set && !$value->isEmpty)
             || $object->changedValuesForCurrentEvent()->offsetExists($key);

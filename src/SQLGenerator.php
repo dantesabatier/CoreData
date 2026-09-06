@@ -550,7 +550,7 @@ final class SQLGenerator
     {
         $entity = $this->entity->entityDescription;
         foreach (explode(".", $keyPath) as $component) {
-            $relationship = $entity->relationshipsByName[$component] ?? null;
+            $relationship = $entity->relationshipsByName[$component];
             if (!$relationship instanceof RelationshipDescription) {
                 return false;
             }
@@ -775,7 +775,7 @@ final class SQLGenerator
             $currentEntity = $relationship->destinationEntity;
             if (!$this->isSubquery && $this->request->resultType !== FetchRequestResultType::countResultType) {
                 /** @var Dictionary<mixed>|null $nestedSerialization */
-                $nestedSerialization = $currentSerialization[$name] ?? null;
+                $nestedSerialization = $currentSerialization[$name];
                 if (!$this->processedColumnAliasesMap[$joinedTableAlias]) {
                     $this->processedColumnAliasesMap[$joinedTableAlias] = true;
                     $this->appendUniqueColumnsToSelectList($this->generateColumnNames($currentEntity, $joinedTableAlias, $nestedSerialization));
@@ -1112,12 +1112,7 @@ final class SQLGenerator
             $this->prepareClauseWithSimplePredicate($predicate, $clause, "LIKE", "", "%", escapesWildcards: true);
             return;
         }
-        // Case-sensitive prefix search. A bare "LIKE BINARY 'prefix%'" cannot use an index
-        // built on a case-insensitive collation (byte order differs from the index order),
-        // forcing a full scan. Pair it with a companion case-insensitive "LIKE 'prefix%'"
-        // term: the optimizer range-scans the index via the (superset) ci term, then the
-        // "LIKE BINARY" term refilters to the exact case-sensitive result. The result set is
-        // unchanged; the AND only narrows, so this is safe regardless of the chosen plan.
+        // Case-sensitive prefix search. A bare "LIKE BINARY 'prefix%'" cannot use an index built on a case-insensitive collation (byte order differs from the index order), forcing a full scan. Pair it with a companion case-insensitive "LIKE 'prefix%'" term: the optimizer range-scans the index via the (superset) ci term, then the "LIKE BINARY" term refilters to the exact case-sensitive result. The result set is unchanged; the AND only narrows, so this is safe regardless of the chosen plan.
         $clause .= "(";
         $this->prepareClauseWithSimplePredicate($predicate, $clause, "LIKE", "", "%", escapesWildcards: true);
         $clause .= " AND ";
@@ -1267,11 +1262,9 @@ final class SQLGenerator
     {
         $entity = $this->entity;
         $relationship = null;
-        // A parsed key path expression such as `orders.number` stores only the trailing key ("number")
-        // in ->keyPath; the leading components live in ->operand. ->description reconstructs the full
-        // dotted path, which is what we must walk to reach the to-many relationship it traverses.
+        // A parsed key path expression such as `orders.number` stores only the trailing key ("number") in ->keyPath; the leading components live in ->operand. ->description reconstructs the full dotted path, which is what we must walk to reach the to-many relationship it traverses.
         foreach (explode(".", $expression->description) as $key) {
-            $property = $entity->propertiesByName[$key] ?? null;
+            $property = $entity->propertiesByName[$key];
             if ($property instanceof SQLToMany || $property instanceof SQLManyToMany) {
                 $entity = $property->destinationEntity;
                 $relationship = $property;
@@ -2028,9 +2021,7 @@ final class SQLGenerator
             $map["PersistentHistoryChange"] = new ArrayClass($objects);
         } elseif ($first instanceof ManagedObject) {
             $dependsOn = fn(ManagedObject $source, ManagedObject $target): bool => $source->entity->relationshipsByName->compactMap(fn(RelationshipDescription $relationship): ?EntityDescription => $source->hasFaultForRelationshipNamed($relationship->name) ? $relationship->destinationEntity : null)->containsElement($target->entity);
-            // Two concurrent saves touching the same rows must lock them in the same order, or InnoDB
-            // deadlocks one of them. Dependency order alone leaves every unrelated pair undefined, so
-            // entity name and primary key break the ties and make the emitted order total.
+            // Two concurrent saves touching the same rows must lock them in the same order, or InnoDB deadlocks one of them. Dependency order alone leaves every unrelated pair undefined, so entity name and primary key break the ties and make the emitted order total.
             $objects = $objects->sort(function (ManagedObject $e0, ManagedObject $e1) use ($dependsOn): int {
                 if ($dependsOn($e0, $e1)) {
                     return ComparisonResult::orderedDescending->value;

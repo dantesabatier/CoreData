@@ -630,8 +630,7 @@ final class ManagedObjectContext extends ObjectClass
         $inverseRelationship = $relationship->inverseRelationship;
         if ($relationship->isToMany) {
             if ($inverseRelationship->isToMany) {
-                // Linking two already-persisted objects dirties neither of them, so without this the
-                // save finds nothing pending and returns before the tracker's notification is posted.
+                // Linking two already-persisted objects dirties neither of them, so without this the save finds nothing pending and returns before the tracker's notification is posted.
                 if (!$object->isDeleted) {
                     $this->updatedObjects->insert($object);
                 }

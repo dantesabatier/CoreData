@@ -161,8 +161,7 @@ final readonly class FaultingSetMutationMethod
              * @param Set<ManagedObject> $intersectionSet
              */
             function (Set $intersectionSet) use ($obj, $key): ?Set {
-                // Hands the relationship back to the caller, so a null one answers null: there is
-                // no set to intersect and none to invent.
+                // Hands the relationship back to the caller, so a null one answers null: there is no set to intersect and none to invent.
                 /** @var FaultingSet|null $faultingSet */
                 $faultingSet = $obj->valueForKey($key);
                 if (!$faultingSet) {
