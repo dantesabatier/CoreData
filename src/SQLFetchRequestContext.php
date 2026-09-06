@@ -86,6 +86,9 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         $property = $cursorEntity->propertiesByName[$key] ?? $cursorEntity->compositeAttributeNameToSQLProperty[$key];
                         /** @var PropertyDescription|null $propertyDescription */
                         $propertyDescription = $property?->propertyDescription ?? $this->request->propertiesToFetch?->first(fn(string|PropertyDescription $p): bool => $p instanceof PropertyDescription ? $p->name === $key : $p === $key);
+                        if ($propertyDescription instanceof CompositeAttributeDescription && $propertyDescription->name !== $key) {
+                            $propertyDescription = $propertyDescription->elements->first(fn(AttributeDescription $element): bool => $element->name === $key) ?? $propertyDescription;
+                        }
                         $isRelationship = $property instanceof SQLRelationship;
                         $isCompositeAttribute = ($property instanceof SQLAttribute && $property->isCompositeAttribute);
                         $isNavigational = ($isRelationship || $isCompositeAttribute);
