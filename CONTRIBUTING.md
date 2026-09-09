@@ -117,6 +117,14 @@ Some constraints are deliberate, and a change that violates one will be declined
 - **Prefer property hooks** to explicit getters and setters for computed or coerced values. Note
   that PHP forbids a hooked property in a `readonly` class: such a class drops the class-level
   `readonly` and marks each promoted property `readonly` instead.
+- **No blanket `declare(strict_types=1)` sweep.** 80 of the 202 files in `src/` omit the
+  declaration on purpose. The store boundary marshals values whose PHP type is decided at
+  runtime by the model's `AttributeType`, not at compile time: `ManagedObject::coercedValue()`
+  casts a `mixed` through `(string)`, `(int)` or `(float)` per attribute, and `XMLObjectStore`
+  passes the result to `DOMDocument::createElement()`, which requires `string`. Declaring
+  strict types across all 80 turns 129 of the 438 tests into `TypeError`s. A new enum, request
+  or leaf value object should still declare it, as its peers already do — the exception covers
+  the coercing core, not the whole tree.
 
 ## Licence
 
