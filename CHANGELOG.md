@@ -28,6 +28,9 @@ entries remain under **Unreleased**.
   construction.
 - Required PHP extensions are down to those the framework uses on every path. APCu, Redis and
   Memcached are opt-in row-cache backends and moved to `suggest`.
+- `ExtractLocalizables.php` extracts the localizations the bundle declares rather than a
+  hard-coded English and Spanish pair, so adding a locale to `Info.plist` is enough for the
+  extractor to pick it up.
 
 ### Fixed
 
@@ -37,6 +40,23 @@ entries remain under **Unreleased**.
   fetches — an unrelated entity in the same change batch used to enter the results and break
   sorting — and reports index paths for the first row of a section.
 - A deserialized `ManagedObjectID` no longer re-resolves its store identifier.
+- Composite attributes read back the values they were saved with. A composite has no column
+  of its own — it decomposes into one column per element — so `SQLFetchRequestContext` rebuilds
+  the nesting by resolving each column name through `compositeAttributeNameToSQLProperty`, which
+  maps an element name back to the composite that owns it, and therefore to the composite's own
+  description. Coercing an element's scalar against that description reached the
+  `compositeAttributeType` branch of `ManagedObject::coercedValue()`, which answers a `Dictionary`
+  for anything that is not one already, so every element was replaced by an empty one: a position
+  saved as `{"x": 2510.0, "y": 63.0}` fetched back as `{"x": [], "y": []}` while the columns still
+  held the right numbers. Only the read path was affected, which made it look like the store had
+  lost the data rather than mistyped it on the way out. Each element is now coerced against its
+  own description.
+- A string attribute's `minValue` and `maxValue` constrain its length, not its collation order.
+  `PropertyDescription::$validationPredicates` compared the value itself against the bound, so a
+  string attribute compared a string to a number: PHP's numeric coercion made `"a"` satisfy a
+  minimum of 2 and `"abcde"` satisfy a maximum of 4, and the constraint passed everything it was
+  meant to reject. A string attribute now wraps the key path in `length:`; numeric attributes
+  still compare the value, and `regex` still matches the value rather than its length.
 - Atomic stores can now resolve a to-one relationship whose inverse is to-many. That combination
   had no branch in `AtomicStore::newValueForRelationship`, so once a fault was fulfilled — which
   re-faults every to-one — the relationship read as `null` for the rest of the session. Mutating
@@ -53,3 +73,15 @@ entries remain under **Unreleased**.
 
 - Added `docs/` covering how to define a model, configure the MariaDB store and write migrations.
 - Added `SECURITY.md` and `CONTRIBUTING.md`.
+- Recorded why `declare(strict_types=1)` is absent from 80 of the 202 files in `src/`, in both
+  `CONTRIBUTING.md` and `CLAUDE.md`. Next to Foundation and Service, where every file declares
+  it, the omission reads as neglect; it is load-bearing. The store boundary marshals values whose
+  PHP type is decided at runtime by the model's `AttributeType`, not at compile time —
+  `ManagedObject::coercedValue()` casts a `mixed` through `(string)`, `(int)` or `(float)`
+  according to the attribute it is reading, and `XMLObjectStore` hands the result to
+  `DOMDocument::createElement()`, which requires `string`; coercive mode is what lets an integer
+  attribute reach the DOM as text. Declaring strict types across all 80 turns 129 of the 438 tests
+  into `TypeError`s, which is a measurement rather than an estimate. The split is principled and
+  the note says so: the enums, the request and result value objects and the leaf types already
+  declare it, and a new file of that kind should. `CONTRIBUTING.md` lists a blanket sweep under
+  what the framework will not accept, since that is the change the note exists to decline.
