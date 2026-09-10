@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\APCuRowCache;
@@ -14,10 +15,12 @@ use Sabatier\CoreData\EntityDescription;
 use Sabatier\CoreData\FetchRequest;
 use Sabatier\CoreData\ManagedObjectID;
 use Sabatier\CoreData\ManagedObjectModel;
+use Sabatier\CoreData\MemcachedRowCache;
 use Sabatier\CoreData\NullRowCache;
 use Sabatier\CoreData\PersistentStoreCache;
 use Sabatier\CoreData\PropertyDescription;
 use Sabatier\CoreData\QueryGenerationToken;
+use Sabatier\CoreData\RedisRowCache;
 use Sabatier\CoreData\RowCache;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
@@ -42,6 +45,17 @@ use Sabatier\Foundation\Predicates\Predicate;
  */
 final class RowCacheTest extends TestCase
 {
+    /** @var string Distinguishes this run's keys from those a previous run left in a persistent backend. */
+    private static string $nonce = "";
+
+    #[Override]
+    public static function setUpBeforeClass(): void
+    {
+        // uniqid() rather than random_bytes(): this only has to differ between runs, and the
+        // CSPRNG version is declared to throw, which a PHPUnit hook cannot document away.
+        self::$nonce = uniqid("", true);
+    }
+
     /**
      * Each caching backend, as a name => factory pair. A factory that cannot run on this
      * machine returns null and the test is skipped rather than failed.
@@ -57,7 +71,32 @@ final class RowCacheTest extends TestCase
                     ? new APCuRowCache()
                     : null,
             ],
+            "RedisRowCache" => [static fn(): ?RowCache =>
+                self::canReach("redis", 6379) ? new RedisRowCache() : null,
+            ],
+            "MemcachedRowCache" => [static fn(): ?RowCache =>
+                self::canReach("memcached", 11211) ? new MemcachedRowCache() : null,
+            ],
         ];
+    }
+
+    /**
+     * Whether a networked backend can actually be used: the extension is loaded and something
+     * is listening on its port. The socket is probed rather than the client being constructed,
+     * because both clients connect lazily — Memcached::addServer() never touches the network,
+     * so a missing server would surface as a failed get() deep inside a test instead of a skip.
+     */
+    private static function canReach(string $extension, int $port): bool
+    {
+        if (!extension_loaded($extension)) {
+            return false;
+        }
+        $socket = @fsockopen("127.0.0.1", $port, $errno, $error, 0.25);
+        if ($socket === false) {
+            return false;
+        }
+        fclose($socket);
+        return true;
     }
 
     /**
@@ -79,12 +118,29 @@ final class RowCacheTest extends TestCase
         return $entity;
     }
 
+    /**
+     * Object IDs carry a per-run nonce. Redis and Memcached outlive the PHP process — Redis
+     * persists to disk, Memcached keeps its slabs — so a fixed reference makes every test that
+     * asserts "nothing is cached yet" pass once and fail on the next run against whatever the
+     * previous one left behind. The in-process backends do not care, and the nonce is invisible
+     * to what is being asserted: only key identity matters, never the key's text.
+     */
     private static function objectID(string $reference, string $entityName = "Person"): ManagedObjectID
     {
-        return new ManagedObjectID(self::entity($entityName), $reference);
+        return new ManagedObjectID(self::entity($entityName), "$reference-" . self::$nonce);
     }
 
-    /** @return Dictionary<mixed> */
+    /**
+     * A store identifier unique to this run, for the same reason object IDs carry a nonce: the
+     * generation counter of a persistent backend outlives the process, and these tests assert
+     * what an *uninitialized* store reports.
+     */
+    private static function storeIdentifier(string $label): string
+    {
+        return "store-$label-" . self::$nonce;
+    }
+
+    /** @return Dictionary<string> A one-attribute snapshot; the label identifies which write it came from. */
     private static function snapshot(string $label): Dictionary
     {
         return new Dictionary(["label" => $label]);
@@ -247,7 +303,7 @@ final class RowCacheTest extends TestCase
     public function testGenerationStartsAtOneAndAdvances(callable $factory): void
     {
         $cache = $this->backend($factory);
-        $store = "store-" . __FUNCTION__;
+        $store = self::storeIdentifier(__FUNCTION__);
 
         $this->assertSame(1, $cache->currentGenerationForStore($store), "an uninitialized store reports generation 1");
 
@@ -266,8 +322,8 @@ final class RowCacheTest extends TestCase
     public function testGenerationsAreIndependentPerStore(callable $factory): void
     {
         $cache = $this->backend($factory);
-        $first = "store-a-" . __FUNCTION__;
-        $second = "store-b-" . __FUNCTION__;
+        $first = self::storeIdentifier("a-" . __FUNCTION__);
+        $second = self::storeIdentifier("b-" . __FUNCTION__);
 
         // Read both first, the way the store does before it ever advances, so the comparison is about namespacing and not about how a cold counter initializes.
         $firstBefore = $cache->currentGenerationForStore($first);
@@ -297,7 +353,7 @@ final class RowCacheTest extends TestCase
     public function testReadThenAdvanceAlwaysMovesTheGenerationForward(callable $factory): void
     {
         $cache = $this->backend($factory);
-        $store = "store-" . __FUNCTION__ . "-" . bin2hex(random_bytes(4));
+        $store = self::storeIdentifier(__FUNCTION__);
 
         $observed = $cache->currentGenerationForStore($store);
         $advanced = $cache->advanceGenerationForStore($store);
@@ -330,11 +386,11 @@ final class RowCacheTest extends TestCase
     public function testAdvanceWithoutAPriorReadDiffersAcrossBackends(callable $factory): void
     {
         $cache = $this->backend($factory);
-        $store = "store-" . __FUNCTION__ . "-" . bin2hex(random_bytes(4));
+        $store = self::storeIdentifier(__FUNCTION__);
 
         $advanced = $cache->advanceGenerationForStore($store);
 
-        $expected = $cache instanceof DefaultRowCache ? 2 : 1;
+        $expected = $cache instanceof DefaultRowCache || $cache instanceof MemcachedRowCache ? 2 : 1;
         $this->assertSame($expected, $advanced, "cold-start initialization differs by backend; recorded, and harmless because the store reads first");
         $this->assertSame($advanced, $cache->currentGenerationForStore($store), "whatever it returns must be what is stored");
     }

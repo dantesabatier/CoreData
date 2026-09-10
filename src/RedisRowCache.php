@@ -37,15 +37,25 @@ final class RedisRowCache extends RowCache
     #[Override]
     public function currentGenerationForStore(string $storeIdentifier): int
     {
-        $generation = $this->redis->get("generation:$storeIdentifier");
-        return is_numeric($generation) ? (int)$generation : 0;
+        $key = "generation:$storeIdentifier";
+        $generation = $this->redis->get($key);
+        if (is_numeric($generation)) {
+            return (int)$generation;
+        }
+        $this->redis->setnx($key, 1);
+        return 1;
     }
 
+    /**
+     * PersistentStoreCache fixes the uninitialized generation at 1, so an absent key seeds to 1
+     * on read and incr() carries it to 2 — reporting 0 put this backend one generation behind
+     * every other one, and the generation is part of the query cache key.
+     */
     #[Override]
     public function advanceGenerationForStore(string $storeIdentifier): int
     {
         $generation = $this->redis->incr("generation:$storeIdentifier");
-        return is_int($generation) ? $generation : 0;
+        return is_int($generation) ? $generation : 1;
     }
 
     #[Override]

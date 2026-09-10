@@ -38,18 +38,28 @@ final class MemcachedRowCache extends RowCache
     #[Override]
     public function currentGenerationForStore(string $storeIdentifier): int
     {
-        $generation = $this->memcached->get("generation:$storeIdentifier");
-        return is_numeric($generation) ? (int)$generation : 1;
+        $key = "generation:$storeIdentifier";
+        $generation = $this->memcached->get($key);
+        if (is_numeric($generation)) {
+            return (int)$generation;
+        }
+        $this->memcached->add($key, 1);
+        return 1;
     }
 
+    /**
+     * Reading seeds the key so that this can increment it. Without the seed, increment() finds
+     * nothing, falls back to add($key, 1) and returns 1 — the generation a reader had already
+     * seen, so a cache invalidation silently kept serving the previous generation's query keys.
+     */
     #[Override]
     public function advanceGenerationForStore(string $storeIdentifier): int
     {
         $key = "generation:$storeIdentifier";
         $generation = $this->memcached->increment($key);
         if ($generation === false) {
-            $this->memcached->add($key, 1);
-            return 1;
+            $this->memcached->add($key, 2);
+            return 2;
         }
         return $generation;
     }
