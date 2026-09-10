@@ -31,6 +31,12 @@ final class PolicyLedger extends ManagedObject
 {
 }
 
+/**
+ * @property int $amount
+ * @property string $code
+ * @property string $reference
+ * @property int $total
+ */
 final class PolicyVoucher extends ManagedObject
 {
 }

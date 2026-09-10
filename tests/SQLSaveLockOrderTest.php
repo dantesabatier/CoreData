@@ -23,6 +23,9 @@ final class SQLLockOrderAlpha extends ManagedObject
 {
 }
 
+/**
+ * @property string $name
+ */
 final class SQLLockOrderOmega extends ManagedObject
 {
 }

@@ -11,10 +11,17 @@ use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\Foundation\ArrayClass;
 
+/**
+ * @property string $color
+ * @property string $colour
+ */
 final class Gizmo extends ManagedObject
 {
 }
 
+/**
+ * @property string $color
+ */
 final class Contraption extends ManagedObject
 {
 }

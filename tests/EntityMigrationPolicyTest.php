@@ -37,6 +37,9 @@ final class Invoice extends ManagedObject
 {
 }
 
+/**
+ * @property Invoice $invoice
+ */
 final class InvoiceLine extends ManagedObject
 {
 }

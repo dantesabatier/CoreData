@@ -33,6 +33,9 @@ final class CoordinatorNote extends ManagedObject
 {
 }
 
+/**
+ * @property string $label
+ */
 final class CoordinatorTag extends ManagedObject
 {
 }

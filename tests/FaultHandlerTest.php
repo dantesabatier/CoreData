@@ -37,6 +37,11 @@ final class Sprocket extends ManagedObject
 {
 }
 
+/**
+ * @property Sprocket $gadget
+ * @property string $label
+ * @property int $qty
+ */
 final class Widget extends ManagedObject
 {
 }

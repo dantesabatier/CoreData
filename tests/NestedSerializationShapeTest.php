@@ -39,6 +39,16 @@ final class NSComment extends ManagedObject
 {
 }
 
+/**
+ * @property Set<NSComment>|null $comments
+ * @property string $username
+ * @method void addCommentsObject(NSComment $object)
+ * @method void removeCommentsObject(NSComment $object)
+ * @method void addComments(Set<NSComment> $objects)
+ * @method void removeComments(Set<NSComment> $objects)
+ * @method Set<NSComment> intersectComments(Set<NSComment> $objects)
+ * @method void setComments(Set<NSComment> $objects)
+ */
 final class NSUser extends ManagedObject
 {
 }

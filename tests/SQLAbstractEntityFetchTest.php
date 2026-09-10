@@ -29,6 +29,9 @@ final class TestPropertyAttribute extends TestPropertyBase
 {
 }
 
+/**
+ * @property int $minCount
+ */
 final class TestPropertyRelationship extends TestPropertyBase
 {
 }

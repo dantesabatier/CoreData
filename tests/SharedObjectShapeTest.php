@@ -40,6 +40,25 @@ final class SOComment extends ManagedObject
 {
 }
 
+/**
+ * @property Set<SOComment>|null $comments
+ * @property string $email
+ * @property string $nickname
+ * @property Set<SOPost>|null $posts
+ * @property string $username
+ * @method void addCommentsObject(SOComment $object)
+ * @method void removeCommentsObject(SOComment $object)
+ * @method void addComments(Set<SOComment> $objects)
+ * @method void removeComments(Set<SOComment> $objects)
+ * @method Set<SOComment> intersectComments(Set<SOComment> $objects)
+ * @method void setComments(Set<SOComment> $objects)
+ * @method void addPostsObject(SOPost $object)
+ * @method void removePostsObject(SOPost $object)
+ * @method void addPosts(Set<SOPost> $objects)
+ * @method void removePosts(Set<SOPost> $objects)
+ * @method Set<SOPost> intersectPosts(Set<SOPost> $objects)
+ * @method void setPosts(Set<SOPost> $objects)
+ */
 final class SOUser extends ManagedObject
 {
 }

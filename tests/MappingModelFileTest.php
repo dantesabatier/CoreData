@@ -26,6 +26,10 @@ final class RecipeMigrationPolicy extends EntityMigrationPolicy
 {
 }
 
+/**
+ * @property string|null $directions
+ * @property string|null $instructions
+ */
 final class MappingRecipe extends ManagedObject
 {
 }

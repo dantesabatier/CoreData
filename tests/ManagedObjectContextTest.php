@@ -52,10 +52,24 @@ final class Company extends ManagedObject
 {
 }
 
+/**
+ * @property string $name
+ * @property Set<Worker> $workers
+ * @method void addWorkersObject(Worker $object)
+ * @method void removeWorkersObject(Worker $object)
+ * @method void addWorkers(Set<Worker> $objects)
+ * @method void removeWorkers(Set<Worker> $objects)
+ * @method Set<Worker> intersectWorkers(Set<Worker> $objects)
+ * @method void setWorkers(Set<Worker> $objects)
+ */
 final class Department extends ManagedObject
 {
 }
 
+/**
+ * @property Department $department
+ * @property string $name
+ */
 final class Worker extends ManagedObject
 {
 }

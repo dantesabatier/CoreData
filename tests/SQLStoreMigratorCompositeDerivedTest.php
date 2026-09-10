@@ -14,10 +14,16 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Predicates\Expression;
 
+/**
+ * @property string $title
+ */
 final class Doc extends ManagedObject
 {
 }
 
+/**
+ * @property string $name
+ */
 final class Place extends ManagedObject
 {
 }

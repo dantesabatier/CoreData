@@ -29,6 +29,16 @@ final class SQLGrant extends ManagedObject
 {
 }
 
+/**
+ * @property string $name
+ * @property Set<SQLGrant> $permissions
+ * @method void addPermissionsObject(SQLGrant $object)
+ * @method void removePermissionsObject(SQLGrant $object)
+ * @method void addPermissions(Set<SQLGrant> $objects)
+ * @method void removePermissions(Set<SQLGrant> $objects)
+ * @method Set<SQLGrant> intersectPermissions(Set<SQLGrant> $objects)
+ * @method void setPermissions(Set<SQLGrant> $objects)
+ */
 final class SQLTenant extends ManagedObject
 {
 }

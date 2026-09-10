@@ -35,6 +35,11 @@ final class Author extends ManagedObject
 {
 }
 
+/**
+ * @property ManagedObject $author
+ * @property int $pages
+ * @property string $title
+ */
 final class Book extends ManagedObject
 {
 }

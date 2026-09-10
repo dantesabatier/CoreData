@@ -21,6 +21,10 @@ final class Manuscript extends ManagedObject
 {
 }
 
+/**
+ * @property string $name
+ * @property string $title
+ */
 final class Publisher extends ManagedObject
 {
 }

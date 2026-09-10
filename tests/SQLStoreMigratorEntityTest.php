@@ -11,10 +11,16 @@ use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\Foundation\ArrayClass;
 
+/**
+ * @property string $name
+ */
 final class Scribe extends ManagedObject
 {
 }
 
+/**
+ * @property string $title
+ */
 final class Tome extends ManagedObject
 {
 }

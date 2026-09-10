@@ -20,6 +20,10 @@ final class Learner extends ManagedObject
 {
 }
 
+/**
+ * @property string $name
+ * @property string $topic
+ */
 final class Seminar extends ManagedObject
 {
 }

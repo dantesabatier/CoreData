@@ -28,6 +28,10 @@ final class Composer extends ManagedObject
 {
 }
 
+/**
+ * @property Composer $composer
+ * @property string $title
+ */
 final class Symphony extends ManagedObject
 {
 }

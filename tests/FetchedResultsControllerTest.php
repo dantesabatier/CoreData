@@ -35,11 +35,17 @@ final class Expense extends ManagedObject
 }
 
 /** An entity with nothing to do with Expense, and no attribute in common with it. */
+/**
+ * @property string $note
+ */
 final class Reminder extends ManagedObject
 {
 }
 
 /** A subentity of Expense, so a fetch on the parent legitimately covers it. */
+/**
+ * @property string $period
+ */
 final class RecurringExpense extends ManagedObject
 {
 }
