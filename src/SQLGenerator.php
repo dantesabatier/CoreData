@@ -1957,7 +1957,7 @@ final class SQLGenerator
         $columnNames->appendContentsOf([$entity->entityKey->columnName]);
         $firstObjectToInsert = $objectsToInsert->first ?? fatal_error("Cannot generate INSERT statement with no objects to insert");
         if ($firstObjectToInsert instanceof ManagedObject) {
-            $columnNames->appendContentsOf($firstObjectToInsert->changedValuesForCurrentEvent()->keys);
+            $columnNames->appendContentsOf($firstObjectToInsert->changedValues()->keys);
         }
         $columns = $entity->columnsToCreate->filter(fn(SQLColumn $column): bool => $columnNames->containsElement($column->columnName));
         $this->string = "INSERT INTO `$entity->tableName` ({$columns->map(fn(SQLColumn $column): string => "`$column->columnName`")->join(", ")}) VALUES " . ArrayClass::repeating("(" . ArrayClass::repeating("?", $columns->count)->join(", ") . ")", $objectsToInsert->count)->join(", ") . " RETURNING `{$entity->primaryKey->columnName}`";
