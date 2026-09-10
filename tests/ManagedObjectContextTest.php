@@ -21,7 +21,6 @@ use Sabatier\CoreData\XMLObjectStore;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Date;
 use Sabatier\Foundation\InternalInconsistencyException;
-use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
