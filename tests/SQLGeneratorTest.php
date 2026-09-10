@@ -667,25 +667,23 @@ final class SQLGeneratorTest extends TestCase
 
         $this->assertStringContainsString("EXISTS", $statement->string);
         $this->assertStringNotContainsString("NOT EXISTS", $statement->string, "ANY is a bare EXISTS");
-        $this->assertStringContainsString("zzq-1", $statement->string, "the subquery inlines its constant; see the escaping test below");
-        $this->assertTrue($statement->arguments->isEmpty, "nothing is bound on the subquery path");
+        $this->assertStringNotContainsString("zzq-1", $statement->string, "the inner constant is bound, not inlined");
+        $this->assertSame(["zzq-1"], $statement->arguments->array, "the subquery's argument reaches the outer statement");
     }
 
     /**
-     * The subquery paths are the one place the generator inlines a constant instead of binding
-     * it: everywhere else a value becomes `?`, but ANY and ALL build their correlated EXISTS as
-     * a literal, while the `direct` modifier of the same predicate still binds. That asymmetry
-     * is recorded, not endorsed.
+     * A constant carrying a quote travels as a bound argument, so it never becomes part of the
+     * SQL text and no escaping is involved.
      *
-     * It is nonetheless safe, and this pins why: the value is escaped on the way in. Verified
-     * against MariaDB 12.3 with a real table — the emitted literal
-     * `sku = 'O'Brien' OR '1'='1'` matches only the row actually holding that string, so the
-     * injected `OR '1'='1'` stays inside the quotes rather than becoming SQL. If this ever moves
-     * to a bound parameter the assertion below should flip to expecting an argument.
+     * This case used to pin the opposite. The subquery paths were the one place the generator
+     * inlined a constant, escaping it on the way in — safe, but it made production SQL depend on
+     * the formatter, a debug and pretty-printing layer, and denied MariaDB a reusable prepared
+     * statement. SQLSelectPredicateKeyPathTest carries the end-to-end half of the same change:
+     * a real fetch for this value still resolves to exactly its own row.
      *
      * @throws Exception
      */
-    public function testSubqueryEscapesTheConstantItInlines(): void
+    public function testSubqueryBindsAConstantContainingAQuote(): void
     {
         $request = $this->request("GenSupplier");
         $request->predicate = new ComparisonPredicate(
@@ -695,16 +693,19 @@ final class SQLGeneratorTest extends TestCase
             ComparisonPredicateModifier::any,
         );
 
-        $string = $this->statementFor($request)->string;
+        $statement = $this->statementFor($request);
 
-        $this->assertStringContainsString("O\'Brien", $string, "the quote is escaped, so it cannot close the literal");
-        $this->assertStringNotContainsString("'O'Brien'", $string, "an unescaped quote would end the string early");
+        $this->assertStringNotContainsString("O'Brien", $statement->string, "the value is bound, so it is absent from the SQL");
+        $this->assertSame(["O'Brien"], $statement->arguments->array, "the quote travels untouched as an argument");
     }
 
     /**
-     * The `direct` modifier of the same predicate binds its value and joins instead of building
-     * a subquery — the contrast that makes the inlining above a property of the subquery path
-     * specifically, not of predicates over relationships.
+     * The `direct` modifier of the same predicate joins instead of building a subquery. Both
+     * paths bind their value now, so what this pins is the structural difference — JOIN versus
+     * EXISTS — which is what decides whether the query can multiply the outer rows.
+     *
+     * This contrast is how the old inlining was found: the same predicate bound its value here
+     * and interpolated it on the ANY path, which is what made the asymmetry visible.
      *
      * @throws Exception
      */
@@ -966,10 +967,12 @@ final class SQLGeneratorTest extends TestCase
     {
         $generator = new SQLGenerator(new SQLFetchRequestContext($this->request(), $this->context, $this->store));
         $isDeterministic = true;
+        $condition = Predicate::format("qty > %d", new ArrayClass(["0"]));
+        $this->assertNotNull($condition, "the fixture predicate must parse");
 
         $string = $generator->buildDerivationExpression(
             Expression::expressionForConditional(
-                Predicate::format("qty > %d", new ArrayClass(["0"])),
+                $condition,
                 Expression::expressionForConstantValue("hi"),
                 Expression::expressionForConstantValue("lo"),
             ),

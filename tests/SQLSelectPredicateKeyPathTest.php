@@ -106,6 +106,12 @@ final class SQLSelectPredicateKeyPathTest extends SQLMigrationTestCase
         $resurrection->title = "Resurrection";
         $resurrection->setValueForKey($mahler, "composer");
 
+        $strauss = new Composer($context);
+        $strauss->name = "Strauss";
+        $tilleulenspiegel = new Symphony($context);
+        $tilleulenspiegel->title = "Till O'Brien' OR '1'='1";
+        $tilleulenspiegel->setValueForKey($strauss, "composer");
+
         $context->save();
     }
 
@@ -125,7 +131,9 @@ final class SQLSelectPredicateKeyPathTest extends SQLMigrationTestCase
         $results = $readContext->fetch($request);
 
         $this->assertSame(1, $results->count, "exactly one composer has a work titled 'Eroica'");
-        $this->assertSame("Beethoven", $results->first->name);
+        $composer = $results->first;
+        $this->assertNotNull($composer);
+        $this->assertSame("Beethoven", $composer->name);
     }
 
     /**
@@ -140,5 +148,33 @@ final class SQLSelectPredicateKeyPathTest extends SQLMigrationTestCase
         $request->predicate = Predicate::format("ANY works.title == \"Nonexistent\"");
 
         $this->assertSame(0, $readContext->fetch($request)->count);
+    }
+
+    /**
+     * The subquery binds its constant rather than interpolating it, so a value containing quotes
+     * round-trips through the store untouched.
+     *
+     * This is the end-to-end half of the change: asserting on generated SQL proves the "?" is
+     * emitted, but only a real fetch proves MariaDB still resolves the predicate to the right row.
+     *
+     * Note this case passes both before and after the move to a bound parameter, and that is the
+     * point: the previous inlining escaped the value correctly, so this pins equivalence rather
+     * than a fixed bug. The tests that actually discriminate the two shapes are in
+     * SQLGeneratorTest, which asserts on the statement instead of the result.
+     */
+    public function testAnyOverToManyBindsAQuoteBearingConstant(): void
+    {
+        $this->seed();
+
+        $readContext = $this->freshContext(self::model());
+        $request = Composer::fetchRequest();
+        $request->predicate = Predicate::format("ANY works.title == %@", new ArrayClass(["Till O'Brien' OR '1'='1"]));
+
+        $results = $readContext->fetch($request);
+
+        $this->assertSame(1, $results->count, "the tautology stays data: it matches one title, it does not select every row");
+        $composer = $results->first;
+        $this->assertNotNull($composer);
+        $this->assertSame("Strauss", $composer->name);
     }
 }

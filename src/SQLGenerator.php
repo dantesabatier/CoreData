@@ -1407,15 +1407,29 @@ final class SQLGenerator
         [$relationship, $collectionOperator, $keyPathToProperty] = $this->parseAndValidateKVCExpression($expression);
         $subQueryAlias = $this->aliasGenerator->generateTableAlias();
         $generator = $this->createSubQueryGenerator($relationship, $collectionOperator, $keyPathToProperty, $subQueryAlias);
-        return $this->buildCorrelatedSubqueryString($generator, $relationship, $tableAlias, $subQueryAlias, true);
+        // An aggregate reached this way can end up inside a GENERATED ALWAYS AS column, which cannot carry "?".
+        return $this->buildCorrelatedSubqueryString($generator, $relationship, $tableAlias, $subQueryAlias, true, false);
     }
 
-    private function buildCorrelatedSubqueryString(SQLGenerator $generator, SQLToMany|SQLManyToMany $relationship, string $outerAlias, string $innerAlias, bool $wrapInParentheses = false): string
+    /**
+     * Builds a correlated subquery.
+     *
+     * $bindsArguments decides how the inner constants travel. Bound is the norm: the subquery keeps its "?" and its
+     * arguments are appended here, at the point of construction, which is where they belong because preparePredicate
+     * walks the tree in the same order the SQL text is emitted. Inlined is for the one caller that cannot bind at all
+     * — a GENERATED ALWAYS AS column definition is DDL, and DDL takes no placeholders — so there the statement is
+     * interpolated to literals via the formatter.
+     */
+    private function buildCorrelatedSubqueryString(SQLGenerator $generator, SQLToMany|SQLManyToMany $relationship, string $outerAlias, string $innerAlias, bool $wrapInParentheses = false, bool $bindsArguments = true): string
     {
-        $prefix = $generator->statement;
+        $statement = $generator->statement;
+        $prefix = $bindsArguments ? $statement?->string : (string)$statement;
         $connector = $generator->whereClause ? " AND " : " WHERE ";
         $correlationCondition = $this->buildCorrelationCondition($relationship, $outerAlias, $innerAlias);
         $sql = "$prefix$connector$correlationCondition";
+        if ($bindsArguments && $statement) {
+            $this->arguments->appendContentsOf($statement->arguments);
+        }
         return $wrapInParentheses ? "($sql)" : $sql;
     }
 
@@ -1643,7 +1657,7 @@ final class SQLGenerator
                 $keyPathToProperty = $keyPathComponents->remainderPath ?? $keyPathComponents->key;
             }
         }
-        return $this->buildCorrelatedSubqueryString($this->createSubQueryGenerator($relationship, $keyValueOperator, $keyPathToProperty, $tableAlias, $predicate), $relationship, $entity->tableName, $tableAlias);
+        return $this->buildCorrelatedSubqueryString($this->createSubQueryGenerator($relationship, $keyValueOperator, $keyPathToProperty, $tableAlias, $predicate), $relationship, $entity->tableName, $tableAlias, false, false);
     }
 
     private function buildExpression(Expression $expression, ?bool &$isDeterministic = true, ?string $tableAlias = null): string
