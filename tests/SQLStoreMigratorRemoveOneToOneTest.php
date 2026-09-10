@@ -12,10 +12,17 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
 
+/**
+ * @property Citizen $holder
+ */
 final class Passport extends ManagedObject
 {
 }
 
+/**
+ * @property string|null $name
+ * @property string|null $number
+ */
 final class Citizen extends ManagedObject
 {
 }

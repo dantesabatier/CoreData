@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -19,10 +20,30 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 
+/**
+ * @property Set<Article> $articles
+ * @property string $name
+ * @method void addArticlesObject(Article $object)
+ * @method void removeArticlesObject(Article $object)
+ * @method void addArticles(Set<Article> $objects)
+ * @method void removeArticles(Set<Article> $objects)
+ * @method Set<Article> intersectArticles(Set<Article> $objects)
+ * @method void setArticles(Set<Article> $objects)
+ */
 final class Label extends ManagedObject
 {
 }
 
+/**
+ * @property Set<Label> $labels
+ * @property string $title
+ * @method void addLabelsObject(Label $object)
+ * @method void removeLabelsObject(Label $object)
+ * @method void addLabels(Set<Label> $objects)
+ * @method void removeLabels(Set<Label> $objects)
+ * @method Set<Label> intersectLabels(Set<Label> $objects)
+ * @method void setLabels(Set<Label> $objects)
+ */
 final class Article extends ManagedObject
 {
 }
@@ -129,12 +150,14 @@ final class PartialToManyRelationshipUpdateTest extends TestCase
         return array_values(iterator_to_array($names));
     }
 
+    #[Override]
     protected function setUp(): void
     {
         $this->storePath = sys_get_temp_dir() . "/coredata-partial-tomany-test-" . uniqid("", true) . ".xml";
         $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         if (file_exists($this->storePath)) {

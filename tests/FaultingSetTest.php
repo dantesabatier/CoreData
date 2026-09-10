@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -19,10 +20,24 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 
+/**
+ * @property string $name
+ * @property Set<Player> $roster
+ * @method void addRosterObject(Player $object)
+ * @method void removeRosterObject(Player $object)
+ * @method void addRoster(Set<Player> $objects)
+ * @method void removeRoster(Set<Player> $objects)
+ * @method Set<Player> intersectRoster(Set<Player> $objects)
+ * @method void setRoster(Set<Player> $objects)
+ */
 final class Team extends ManagedObject
 {
 }
 
+/**
+ * @property int $jersey
+ * @property Team $team
+ */
 final class Player extends ManagedObject
 {
 }
@@ -85,6 +100,7 @@ final class FaultingSetTest extends TestCase
     private Team $team;
     private RelationshipDescription $roster;
 
+    #[Override]
     protected function setUp(): void
     {
         $this->storePath = sys_get_temp_dir() . "/coredata-faultingset-test-" . uniqid("", true) . ".xml";
@@ -103,6 +119,7 @@ final class FaultingSetTest extends TestCase
         $this->roster = $roster;
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         if (file_exists($this->storePath)) {

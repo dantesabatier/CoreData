@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Sabatier\CoreData\Tests;
 
 use DOMDocument;
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -17,13 +18,29 @@ use Sabatier\CoreData\PersistentStoreCoordinator;
 use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Set;
 use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\URL;
 
+/**
+ * @property Set<Carton> $crates
+ * @property string $name
+ * @method void addCratesObject(Carton $object)
+ * @method void removeCratesObject(Carton $object)
+ * @method void addCrates(Set<Carton> $objects)
+ * @method void removeCrates(Set<Carton> $objects)
+ * @method Set<Carton> intersectCrates(Set<Carton> $objects)
+ * @method void setCrates(Set<Carton> $objects)
+ */
 final class Shelf extends ManagedObject
 {
 }
 
+/**
+ * @property string $code
+ * @property Shelf $shelf
+ * @property int $weight
+ */
 final class Carton extends ManagedObject
 {
 }
@@ -100,12 +117,14 @@ final class XMLObjectStoreTest extends TestCase
         return $context;
     }
 
+    #[Override]
     protected function setUp(): void
     {
         $this->storePath = sys_get_temp_dir() . "/coredata-xmlstore-test-" . uniqid("", true) . ".xml";
         $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         if (file_exists($this->storePath)) {

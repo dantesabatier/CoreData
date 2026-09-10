@@ -11,6 +11,10 @@ use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\Foundation\ArrayClass;
 
+/**
+ * @property string $label
+ * @property int $value
+ */
 final class Reading extends ManagedObject
 {
 }

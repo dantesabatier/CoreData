@@ -12,10 +12,18 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
 
+/**
+ * @property string $code
+ * @property string $label
+ */
 final class Warehouse extends ManagedObject
 {
 }
 
+/**
+ * @property string $code
+ * @property string $label
+ */
 final class Crate extends ManagedObject
 {
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -17,10 +18,21 @@ use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use const Sabatier\CoreData\ManagedObjectFaultingStateStable;
 use const Sabatier\CoreData\ManagedObjectFaultingStateUnstable;
 
+/**
+ * @property string $name
+ * @property Set<Widget> $parts
+ * @method void addPartsObject(Widget $object)
+ * @method void removePartsObject(Widget $object)
+ * @method void addParts(Set<Widget> $objects)
+ * @method void removeParts(Set<Widget> $objects)
+ * @method Set<Widget> intersectParts(Set<Widget> $objects)
+ * @method void setParts(Set<Widget> $objects)
+ */
 final class Sprocket extends ManagedObject
 {
 }
@@ -98,12 +110,14 @@ final class FaultHandlerTest extends TestCase
         return $context;
     }
 
+    #[Override]
     protected function setUp(): void
     {
         $this->storePath = sys_get_temp_dir() . "/coredata-faulthandler-test-" . uniqid("", true) . ".xml";
         $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         if (file_exists($this->storePath)) {

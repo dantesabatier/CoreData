@@ -16,6 +16,10 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Predicates\Expression;
 
+/**
+ * @property float $amount
+ * @property string $name
+ */
 final class Tally extends ManagedObject
 {
 }

@@ -12,6 +12,9 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Predicates\Predicate;
 
+/**
+ * @property string $sku
+ */
 final class Part extends ManagedObject
 {
 }

@@ -22,7 +22,17 @@ use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\CoreData\SQLInPlaceMigrationManager;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Predicates\Expression;
+use Sabatier\Foundation\Set;
 
+/**
+ * @property Set<InvoiceLine> $lines
+ * @method void addLinesObject(InvoiceLine $object)
+ * @method void removeLinesObject(InvoiceLine $object)
+ * @method void addLines(Set<InvoiceLine> $objects)
+ * @method void removeLines(Set<InvoiceLine> $objects)
+ * @method Set<InvoiceLine> intersectLines(Set<InvoiceLine> $objects)
+ * @method void setLines(Set<InvoiceLine> $objects)
+ */
 final class Invoice extends ManagedObject
 {
 }

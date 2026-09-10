@@ -11,6 +11,10 @@ use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\Foundation\ArrayClass;
 
+/**
+ * @property int $amount
+ * @property string $note
+ */
 final class Ledger extends ManagedObject
 {
 }

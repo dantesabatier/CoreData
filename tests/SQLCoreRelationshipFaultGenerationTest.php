@@ -16,12 +16,27 @@ use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\CoreData\SQLCore;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Predicates\Predicate;
+use Sabatier\Foundation\Set;
 use const Sabatier\CoreData\ManagedObjectQueryResultGenerationKey;
 
+/**
+ * @property Set<Novel> $books
+ * @property string $name
+ * @method void addBooksObject(Novel $object)
+ * @method void removeBooksObject(Novel $object)
+ * @method void addBooks(Set<Novel> $objects)
+ * @method void removeBooks(Set<Novel> $objects)
+ * @method Set<Novel> intersectBooks(Set<Novel> $objects)
+ * @method void setBooks(Set<Novel> $objects)
+ */
 final class Novelist extends ManagedObject
 {
 }
 
+/**
+ * @property Novelist $author
+ * @property string $title
+ */
 final class Novel extends ManagedObject
 {
 }

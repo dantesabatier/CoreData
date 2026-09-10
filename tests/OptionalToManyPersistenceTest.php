@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -15,12 +16,27 @@ use Sabatier\CoreData\PersistentStoreCoordinator;
 use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 
+/**
+ * @property Set<OptionalPersistenceChild> $children
+ * @property string $name
+ * @method void addChildrenObject(OptionalPersistenceChild $object)
+ * @method void removeChildrenObject(OptionalPersistenceChild $object)
+ * @method void addChildren(Set<OptionalPersistenceChild> $objects)
+ * @method void removeChildren(Set<OptionalPersistenceChild> $objects)
+ * @method Set<OptionalPersistenceChild> intersectChildren(Set<OptionalPersistenceChild> $objects)
+ * @method void setChildren(Set<OptionalPersistenceChild> $objects)
+ */
 final class OptionalPersistenceParent extends ManagedObject
 {
 }
 
+/**
+ * @property string $name
+ * @property OptionalPersistenceParent|null $parent
+ */
 final class OptionalPersistenceChild extends ManagedObject
 {
 }
@@ -44,12 +60,14 @@ final class OptionalToManyPersistenceTest extends TestCase
     private string $storePath;
     private URL $storeURL;
 
+    #[Override]
     protected function setUp(): void
     {
         $this->storePath = sys_get_temp_dir() . "/coredata-optional-persist-" . uniqid("", true) . ".xml";
         $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         if (file_exists($this->storePath)) {

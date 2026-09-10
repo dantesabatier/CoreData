@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -25,6 +26,10 @@ use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\URL;
 use const Sabatier\Foundation\NotFound;
 
+/**
+ * @property string $category
+ * @property string $merchant
+ */
 final class Expense extends ManagedObject
 {
 }
@@ -115,6 +120,7 @@ final class FetchedResultsControllerTest extends TestCase
         return $context;
     }
 
+    #[Override]
     protected function setUp(): void
     {
         $this->storePath = sys_get_temp_dir() . "/coredata-frc-" . uniqid("", true) . ".xml";
@@ -129,6 +135,7 @@ final class FetchedResultsControllerTest extends TestCase
         $context->save();
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         foreach ($this->contexts as $context) {
@@ -441,32 +448,39 @@ final class FetchedResultsControllerTest extends TestCase
             public bool $called = false;
             public int $insertions = 0;
 
+            #[Override]
             public function controllerDidChangeContentWithSnapshot(FetchedResultsController $controller, mixed $snapshot): void
             {
             }
 
+            #[Override]
             public function controllerDidChangeContentWithDifference(FetchedResultsController $controller, CollectionDifference $diff): void
             {
                 $this->called = true;
                 $this->insertions = $diff->insertions->count;
             }
 
+            #[Override]
             public function controllerWillChangeContent(FetchedResultsController $controller): void
             {
             }
 
+            #[Override]
             public function controllerDidChangeObject(FetchedResultsController $controller, mixed $object, ?IndexPath $indexPath, FetchedResultsChangeType $type, ?IndexPath $newIndexPath): void
             {
             }
 
+            #[Override]
             public function controllerDidChangeSection(FetchedResultsController $controller, FetchedResultsSectionInfo $sectionInfo, int $sectionIndex, FetchedResultsChangeType $type): void
             {
             }
 
+            #[Override]
             public function controllerDidChangeContent(FetchedResultsController $controller): void
             {
             }
 
+            #[Override]
             public function controllerSectionIndexTitleForSectionName(FetchedResultsController $controller, string $sectionName): string
             {
                 return $sectionName;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -23,6 +24,11 @@ use Sabatier\Foundation\URL;
 use const Sabatier\CoreData\ManagedObjectEntityNameKey;
 use const Sabatier\CoreData\ManagedObjectObjectIDKey;
 
+/**
+ * @property int $amount
+ * @property string $category
+ * @property string $code
+ */
 final class AtomicLedger extends ManagedObject
 {
 }
@@ -93,6 +99,7 @@ final class AtomicStoreFetchTest extends TestCase
         return $context;
     }
 
+    #[Override]
     protected function setUp(): void
     {
         $this->storePath = sys_get_temp_dir() . "/coredata-atomicfetch-" . uniqid("", true) . ".xml";
@@ -108,6 +115,7 @@ final class AtomicStoreFetchTest extends TestCase
         $context->save();
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         if (file_exists($this->storePath)) {

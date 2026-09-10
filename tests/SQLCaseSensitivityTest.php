@@ -13,6 +13,9 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Predicates\Predicate;
 
+/**
+ * @property string $title
+ */
 final class Track extends ManagedObject
 {
 }

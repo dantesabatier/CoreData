@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -40,11 +41,13 @@ final class MappingModelFileTest extends TestCase
 {
     private string $path;
 
+    #[Override]
     protected function setUp(): void
     {
         $this->path = sys_get_temp_dir() . "/" . uniqid("mapping", true) . ".map";
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         if (is_file($this->path)) {

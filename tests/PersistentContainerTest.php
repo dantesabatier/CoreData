@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -20,6 +21,9 @@ use Sabatier\Foundation\URL;
 use const Sabatier\CoreData\SQLStoreType;
 use const Sabatier\CoreData\XMLStoreType;
 
+/**
+ * @property string $label
+ */
 final class ContainerWidget extends ManagedObject
 {
 }
@@ -60,6 +64,7 @@ final class PersistentContainerTest extends TestCase
         return $model;
     }
 
+    #[Override]
     protected function setUp(): void
     {
         $this->storePath = sys_get_temp_dir() . "/coredata-container-" . uniqid("", true) . ".xml";
@@ -70,6 +75,7 @@ final class PersistentContainerTest extends TestCase
      * Clearing the coordinator is what lets a stack be collected: assigning it registers the
      * context as a notification observer, which otherwise keeps both alive for the process.
      */
+    #[Override]
     protected function tearDown(): void
     {
         foreach ($this->contexts as $context) {

@@ -11,11 +11,24 @@ use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Set;
 
+/**
+ * @property Set<Filial> $child
+ * @method void addChildObject(Filial $object)
+ * @method void removeChildObject(Filial $object)
+ * @method void addChild(Set<Filial> $objects)
+ * @method void removeChild(Set<Filial> $objects)
+ * @method Set<Filial> intersectChild(Set<Filial> $objects)
+ * @method void setChild(Set<Filial> $objects)
+ */
 final class Parintore extends ManagedObject
 {
 }
 
+/**
+ * @property Parintore $parent
+ */
 final class Filial extends ManagedObject
 {
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -18,6 +19,10 @@ use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\URL;
 
+/**
+ * @property string $label
+ * @property int $n
+ */
 final class Row extends ManagedObject
 {
 }
@@ -63,6 +68,7 @@ final class FetchRequestTest extends TestCase
         return array_map(static fn(Row $row): int => $row->n, iterator_to_array($result));
     }
 
+    #[Override]
     protected function setUp(): void
     {
         $this->storePath = sys_get_temp_dir() . "/coredata-fetch-test-" . uniqid("", true) . ".xml";
@@ -82,6 +88,7 @@ final class FetchRequestTest extends TestCase
         $this->context->save();
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         if (file_exists($this->storePath)) {

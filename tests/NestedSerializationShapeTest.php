@@ -14,11 +14,27 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Set;
 
+/**
+ * @property Set<NSComment>|null $comments
+ * @property string $folio
+ * @method void addCommentsObject(NSComment $object)
+ * @method void removeCommentsObject(NSComment $object)
+ * @method void addComments(Set<NSComment> $objects)
+ * @method void removeComments(Set<NSComment> $objects)
+ * @method Set<NSComment> intersectComments(Set<NSComment> $objects)
+ * @method void setComments(Set<NSComment> $objects)
+ */
 final class NSOrder extends ManagedObject
 {
 }
 
+/**
+ * @property string $content
+ * @property NSOrder|null $order
+ * @property NSUser|null $user
+ */
 final class NSComment extends ManagedObject
 {
 }

@@ -6,6 +6,7 @@ namespace Sabatier\CoreData\Tests;
 
 use DOMDocument;
 use DOMXPath;
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -19,12 +20,28 @@ use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
+use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 
+/**
+ * @property Set<LedgerEntry>|null $entries
+ * @property string $name
+ * @method void addEntriesObject(LedgerEntry $object)
+ * @method void removeEntriesObject(LedgerEntry $object)
+ * @method void addEntries(Set<LedgerEntry> $objects)
+ * @method void removeEntries(Set<LedgerEntry> $objects)
+ * @method Set<LedgerEntry> intersectEntries(Set<LedgerEntry> $objects)
+ * @method void setEntries(Set<LedgerEntry> $objects)
+ */
 final class LedgerOwner extends ManagedObject
 {
 }
 
+/**
+ * @property double|null $amount
+ * @property string $name
+ * @property LedgerOwner|null $owner
+ */
 final class LedgerEntry extends ManagedObject
 {
 }
@@ -70,12 +87,14 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
     private string $storePath;
     private URL $storeURL;
 
+    #[Override]
     protected function setUp(): void
     {
         $this->storePath = sys_get_temp_dir() . "/coredata-relationship-mutation-" . uniqid("", true) . ".xml";
         $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         if (file_exists($this->storePath)) {

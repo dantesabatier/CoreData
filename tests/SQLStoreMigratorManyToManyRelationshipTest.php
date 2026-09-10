@@ -12,6 +12,10 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
 
+/**
+ * @property string $name
+ * @property string $topic
+ */
 final class Learner extends ManagedObject
 {
 }

@@ -14,10 +14,17 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 
+/**
+ * @property bool $isOptional
+ * @property string $name
+ */
 abstract class TestPropertyBase extends ManagedObject
 {
 }
 
+/**
+ * @property string $attributeType
+ */
 final class TestPropertyAttribute extends TestPropertyBase
 {
 }

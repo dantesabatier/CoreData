@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -22,13 +23,31 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Date;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Predicates\Predicate;
+use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
 
+/**
+ * @property UUID $badge
+ * @property Company $employer
+ * @property Date $hired
+ * @property string $name
+ * @property int $salary
+ */
 final class Employee extends ManagedObject
 {
 }
 
+/**
+ * @property Set<Employee> $employees
+ * @property string $name
+ * @method void addEmployeesObject(Employee $object)
+ * @method void removeEmployeesObject(Employee $object)
+ * @method void addEmployees(Set<Employee> $objects)
+ * @method void removeEmployees(Set<Employee> $objects)
+ * @method Set<Employee> intersectEmployees(Set<Employee> $objects)
+ * @method void setEmployees(Set<Employee> $objects)
+ */
 final class Company extends ManagedObject
 {
 }
@@ -41,17 +60,29 @@ final class Worker extends ManagedObject
 {
 }
 
+/**
+ * @property string $code
+ * @property string $note
+ * @property int<1, 5> $priority
+ */
 final class Ticket extends ManagedObject
 {
 }
 
+/**
+ * @property string $slug
+ * @property string $title
+ */
 final class Page extends ManagedObject
 {
 }
 
+/**
+ * @property string $code
+ */
 final class AutoTicket extends ManagedObject
 {
-    #[\Override]
+    #[Override]
     public function willSave(): void
     {
         if ($this->isDeleted) {
@@ -169,12 +200,14 @@ final class ManagedObjectContextTest extends TestCase
         return $request;
     }
 
+    #[Override]
     protected function setUp(): void
     {
         $this->storePath = sys_get_temp_dir() . "/coredata-context-test-" . uniqid("", true) . ".xml";
         $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         if (file_exists($this->storePath)) {

@@ -15,6 +15,10 @@ use Sabatier\CoreData\SQLDebugLevel;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 
+/**
+ * @property string $name
+ * @property string|null $note
+ */
 final class SQLLockOrderAlpha extends ManagedObject
 {
 }

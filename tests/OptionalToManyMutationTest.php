@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -18,10 +19,24 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 
+/**
+ * @property Set<OptionalToManyMember> $members
+ * @property string|null $name
+ * @method void addMembersObject(OptionalToManyMember $object)
+ * @method void removeMembersObject(OptionalToManyMember $object)
+ * @method void addMembers(Set<OptionalToManyMember> $objects)
+ * @method void removeMembers(Set<OptionalToManyMember> $objects)
+ * @method Set<OptionalToManyMember> intersectMembers(Set<OptionalToManyMember> $objects)
+ * @method void setMembers(Set<OptionalToManyMember> $objects)
+ */
 final class OptionalToManyOwner extends ManagedObject
 {
 }
 
+/**
+ * @property string|null $name
+ * @property OptionalToManyOwner|null $owner
+ */
 final class OptionalToManyMember extends ManagedObject
 {
 }
@@ -55,12 +70,14 @@ final class OptionalToManyMutationTest extends TestCase
     private string $storePath;
     private URL $storeURL;
 
+    #[Override]
     protected function setUp(): void
     {
         $this->storePath = sys_get_temp_dir() . "/coredata-optional-tomany-test-" . uniqid("", true) . ".xml";
         $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         if (file_exists($this->storePath)) {

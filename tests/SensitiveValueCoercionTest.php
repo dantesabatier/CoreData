@@ -202,6 +202,12 @@ final class SensitiveValueCoercionTest extends TestCase
 /**
  * The model needs a real ManagedObject subclass registered via managedObjectClassName.
  */
+/**
+ * @property string $label
+ * @property int $pin
+ * @property int $tier
+ * @property string $token
+ */
 final class SensitiveAccount extends ManagedObject
 {
     public ?int $pin = null;

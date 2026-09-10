@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -25,6 +26,9 @@ use const Sabatier\CoreData\RemovedPersistentStoresKey;
 use const Sabatier\CoreData\StoreTypeKey;
 use const Sabatier\CoreData\StoreUUIDKey;
 
+/**
+ * @property string $body
+ */
 final class CoordinatorNote extends ManagedObject
 {
 }
@@ -107,6 +111,7 @@ final class PersistentStoreCoordinatorTest extends TestCase
         return new URL("file:///" . str_replace("\\", "/", $path));
     }
 
+    #[Override]
     protected function setUp(): void
     {
         $this->storePath = sys_get_temp_dir() . "/coredata-coordinator-" . uniqid("", true) . ".xml";
@@ -117,6 +122,7 @@ final class PersistentStoreCoordinatorTest extends TestCase
      * Clearing the coordinator is what lets the stack be collected: assigning it registers the
      * context as a notification observer, which otherwise keeps both alive for the process.
      */
+    #[Override]
     protected function tearDown(): void
     {
         foreach ($this->contexts as $context) {

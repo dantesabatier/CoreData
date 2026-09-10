@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PDO;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\ManagedObjectContext;
@@ -52,6 +53,7 @@ abstract class SQLMigrationTestCase extends TestCase
     /** @var list<ManagedObjectContext> Every stack this test opened, released in tearDown. */
     private array $contexts = [];
 
+    #[Override]
     protected function setUp(): void
     {
         $this->storeURL = new URL("sql://" . static::DATABASE_NAME);
@@ -80,6 +82,7 @@ abstract class SQLMigrationTestCase extends TestCase
         $this->dropDatabase();
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         $this->releaseContexts();

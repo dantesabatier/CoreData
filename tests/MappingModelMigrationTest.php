@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -20,6 +21,11 @@ use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\URL;
 
+/**
+ * @property string $memo
+ * @property string $note
+ * @property string $reference
+ */
 final class MappedLedger extends ManagedObject
 {
 }
@@ -36,12 +42,14 @@ final class MappingModelMigrationTest extends SQLMigrationTestCase
 {
     private string $mappingPath;
 
+    #[Override]
     protected function setUp(): void
     {
         parent::setUp();
         $this->mappingPath = sys_get_temp_dir() . "/" . uniqid("migration", true) . ".map";
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         if (is_file($this->mappingPath)) {

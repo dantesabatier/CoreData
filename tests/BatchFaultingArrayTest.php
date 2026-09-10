@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -22,6 +23,9 @@ use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\URL;
 
+/**
+ * @property int $n
+ */
 final class Bead extends ManagedObject
 {
 }
@@ -67,12 +71,14 @@ final class BatchFaultingArrayTest extends TestCase
         return $context;
     }
 
+    #[Override]
     protected function setUp(): void
     {
         $this->storePath = sys_get_temp_dir() . "/coredata-batchfaulting-test-" . uniqid("", true) . ".xml";
         $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         if (file_exists($this->storePath)) {

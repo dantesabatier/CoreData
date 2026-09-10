@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\CustomMigrationStage;
@@ -28,6 +29,9 @@ use const Sabatier\CoreData\MappingModelFileExtension;
 use const Sabatier\CoreData\MigratePersistentStoresAutomaticallyOption;
 use const Sabatier\CoreData\PersistentStoreStagedMigrationManagerOptionKey;
 
+/**
+ * @property string $body
+ */
 final class StagedNote extends ManagedObject
 {
 }
@@ -44,6 +48,7 @@ final class StagedMigrationMappingModelTest extends SQLMigrationTestCase
 {
     private string $bundlePath;
 
+    #[Override]
     protected function setUp(): void
     {
         parent::setUp();
@@ -51,6 +56,7 @@ final class StagedMigrationMappingModelTest extends SQLMigrationTestCase
         mkdir($this->bundlePath, 0777, true);
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         foreach (glob($this->bundlePath . "/*") ?: [] as $file) {

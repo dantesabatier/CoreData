@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use Rector\CodeQuality\Rector\Class_\ConvertStaticToSelfRector;
 use Rector\CodeQuality\Rector\ClassMethod\ExplicitReturnNullRector;
 use Rector\CodeQuality\Rector\ClassMethod\LocallyCalledStaticMethodToNonStaticRector;
 use Rector\CodeQuality\Rector\Identical\FlipTypeControlToUseExclusiveTypeRector;
+use Rector\CodeQuality\Rector\If_\ObjectExplicitBoolCompareRector;
 use Rector\CodeQuality\Rector\Isset_\IssetOnPropertyObjectToPropertyExistsRector;
 use Rector\Config\RectorConfig;
 use Rector\DeadCode\Rector\ClassMethod\RemoveEmptyClassMethodRector;
@@ -66,7 +68,12 @@ try {
             RemoveNonExistingVarAnnotationRector::class,
             RemoveUselessVarTagRector::class => [
                 __DIR__ . "/src/SQLPersistentHistoryChangeRequestContext.php",
-            ]
+            ],
+            ConvertStaticToSelfRector::class => [
+                __DIR__ . "/tests/SQLStoreMigratorCompositeDerivedTest.php",
+                __DIR__ . "/tests/SQLStoreMigratorToOneRelationshipTest.php",
+            ],
+            ObjectExplicitBoolCompareRector::class
         ])->withPreparedSets(deadCode: true, codeQuality: true, earlyReturn: true);
 } catch (InvalidConfigurationException $e) {
     error_log($e->getMessage());

@@ -12,10 +12,18 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
 
+/**
+ * @property string $name
+ * @property string $title
+ */
 final class Tome2 extends ManagedObject
 {
 }
 
+/**
+ * @property string $name
+ * @property string $title
+ */
 final class Scribe2 extends ManagedObject
 {
 }

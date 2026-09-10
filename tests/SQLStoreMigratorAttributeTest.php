@@ -11,6 +11,12 @@ use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\Foundation\ArrayClass;
 
+/**
+ * @property string|null $color
+ * @property int $count
+ * @property string $name
+ * @property int $size
+ */
 final class Gadget extends ManagedObject
 {
 }

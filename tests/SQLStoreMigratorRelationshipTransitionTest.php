@@ -11,11 +11,30 @@ use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Set;
 
+/**
+ * @property Set<Holder> $owner
+ * @method void addOwnerObject(Holder $object)
+ * @method void removeOwnerObject(Holder $object)
+ * @method void addOwner(Set<Holder> $objects)
+ * @method void removeOwner(Set<Holder> $objects)
+ * @method Set<Holder> intersectOwner(Set<Holder> $objects)
+ * @method void setOwner(Set<Holder> $objects)
+ */
 final class Item extends ManagedObject
 {
 }
 
+/**
+ * @property Set<Item> $items
+ * @method void addItemsObject(Item $object)
+ * @method void removeItemsObject(Item $object)
+ * @method void addItems(Set<Item> $objects)
+ * @method void removeItems(Set<Item> $objects)
+ * @method Set<Item> intersectItems(Set<Item> $objects)
+ * @method void setItems(Set<Item> $objects)
+ */
 final class Holder extends ManagedObject
 {
 }

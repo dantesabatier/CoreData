@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -19,10 +20,30 @@ use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 
+/**
+ * @property string $name
+ * @property Set<Post> $posts
+ * @method void addPostsObject(Post $object)
+ * @method void removePostsObject(Post $object)
+ * @method void addPosts(Set<Post> $objects)
+ * @method void removePosts(Set<Post> $objects)
+ * @method Set<Post> intersectPosts(Set<Post> $objects)
+ * @method void setPosts(Set<Post> $objects)
+ */
 final class Tag extends ManagedObject
 {
 }
 
+/**
+ * @property Set<Tag> $tags
+ * @property string $title
+ * @method void addTagsObject(Tag $object)
+ * @method void removeTagsObject(Tag $object)
+ * @method void addTags(Set<Tag> $objects)
+ * @method void removeTags(Set<Tag> $objects)
+ * @method Set<Tag> intersectTags(Set<Tag> $objects)
+ * @method void setTags(Set<Tag> $objects)
+ */
 final class Post extends ManagedObject
 {
 }
@@ -113,12 +134,14 @@ final class ClearToManyRelationshipTest extends TestCase
         return $post;
     }
 
+    #[Override]
     protected function setUp(): void
     {
         $this->storePath = sys_get_temp_dir() . "/coredata-clear-tomany-test-" . uniqid("", true) . ".xml";
         $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         if (file_exists($this->storePath)) {

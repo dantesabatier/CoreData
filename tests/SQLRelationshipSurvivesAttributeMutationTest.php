@@ -11,11 +11,27 @@ use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Set;
 
+/**
+ * @property Set<SQLLedgerEntry>|null $entries
+ * @property string $name
+ * @method void addEntriesObject(SQLLedgerEntry $object)
+ * @method void removeEntriesObject(SQLLedgerEntry $object)
+ * @method void addEntries(Set<SQLLedgerEntry> $objects)
+ * @method void removeEntries(Set<SQLLedgerEntry> $objects)
+ * @method Set<SQLLedgerEntry> intersectEntries(Set<SQLLedgerEntry> $objects)
+ * @method void setEntries(Set<SQLLedgerEntry> $objects)
+ */
 final class SQLLedgerOwner extends ManagedObject
 {
 }
 
+/**
+ * @property double|null $amount
+ * @property string $name
+ * @property SQLLedgerOwner|null $owner
+ */
 final class SQLLedgerEntry extends ManagedObject
 {
 }

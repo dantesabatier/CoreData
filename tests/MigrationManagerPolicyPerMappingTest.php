@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -20,6 +21,12 @@ use Sabatier\CoreData\SQLInPlaceMigrationManager;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Predicates\Expression;
 
+/**
+ * @property int $amount
+ * @property string $code
+ * @property string $reference
+ * @property int $total
+ */
 final class PolicyLedger extends ManagedObject
 {
 }
@@ -42,28 +49,28 @@ abstract class RecordingMigrationPolicy extends EntityMigrationPolicy
         static::$calls[static::class . "." . $hook][] = $mapping->name;
     }
 
-    #[\Override]
+    #[Override]
     public function begin(EntityMapping $mapping, MigrationManager $manager): bool
     {
         $this->record("begin", $mapping);
         return parent::begin($mapping, $manager);
     }
 
-    #[\Override]
+    #[Override]
     public function createRelationships(ManagedObject $instance, EntityMapping $mapping, MigrationManager $manager): bool
     {
         $this->record("createRelationships", $mapping);
         return parent::createRelationships($instance, $mapping, $manager);
     }
 
-    #[\Override]
+    #[Override]
     public function performCustomValidation(EntityMapping $mapping, MigrationManager $manager): bool
     {
         $this->record("performCustomValidation", $mapping);
         return parent::performCustomValidation($mapping, $manager);
     }
 
-    #[\Override]
+    #[Override]
     public function end(EntityMapping $mapping, MigrationManager $manager): bool
     {
         $this->record("end", $mapping);
@@ -87,6 +94,7 @@ final class VoucherMigrationPolicy extends RecordingMigrationPolicy
  */
 final class MigrationManagerPolicyPerMappingTest extends SQLMigrationTestCase
 {
+    #[Override]
     protected function setUp(): void
     {
         parent::setUp();

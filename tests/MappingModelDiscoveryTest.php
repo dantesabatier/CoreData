@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -32,12 +33,14 @@ final class MappingModelDiscoveryTest extends TestCase
 {
     private string $bundlePath;
 
+    #[Override]
     protected function setUp(): void
     {
         $this->bundlePath = sys_get_temp_dir() . "/" . uniqid("bundle", true);
         mkdir($this->bundlePath, 0777, true);
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         foreach (glob($this->bundlePath . "/*") ?: [] as $file) {

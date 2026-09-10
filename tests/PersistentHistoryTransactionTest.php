@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\EntityDescription;
 use Sabatier\CoreData\ManagedObjectContext;
@@ -34,11 +35,13 @@ final class PersistentHistoryTransactionTest extends TestCase
 {
     private ?EntityDescription $originalEntityDescription;
 
+    #[Override]
     protected function setUp(): void
     {
         $this->originalEntityDescription = PersistentHistoryTransaction::$entityDescription;
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         PersistentHistoryTransaction::$entityDescription = $this->originalEntityDescription;

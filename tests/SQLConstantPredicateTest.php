@@ -15,6 +15,9 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Predicates\CompoundPredicate;
 use Sabatier\Foundation\Predicates\Predicate;
 
+/**
+ * @property int $n
+ */
 final class ConstantPredicateRow extends ManagedObject
 {
 }

@@ -20,6 +20,9 @@ use Sabatier\CoreData\SQLStatement;
 use Sabatier\CoreData\SQLStoreRequestContext;
 use Sabatier\Foundation\ArrayClass;
 
+/**
+ * @property string $name
+ */
 final class SQLRollbackProbe extends ManagedObject
 {
 }

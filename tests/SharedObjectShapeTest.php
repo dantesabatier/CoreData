@@ -14,11 +14,28 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Set;
 
+/**
+ * @property SOUser|null $author
+ * @property Set<SOComment>|null $comments
+ * @property string $title
+ * @method void addCommentsObject(SOComment $object)
+ * @method void removeCommentsObject(SOComment $object)
+ * @method void addComments(Set<SOComment> $objects)
+ * @method void removeComments(Set<SOComment> $objects)
+ * @method Set<SOComment> intersectComments(Set<SOComment> $objects)
+ * @method void setComments(Set<SOComment> $objects)
+ */
 final class SOPost extends ManagedObject
 {
 }
 
+/**
+ * @property string $content
+ * @property SOPost|null $post
+ * @property SOUser|null $user
+ */
 final class SOComment extends ManagedObject
 {
 }

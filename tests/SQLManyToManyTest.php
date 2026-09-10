@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -106,6 +107,7 @@ final class SQLManyToManyTest extends TestCase
         return $relationship;
     }
 
+    #[Override]
     protected function setUp(): void
     {
         $this->sqlModel = new SQLModel(self::makeManyToManyModel(), "default");

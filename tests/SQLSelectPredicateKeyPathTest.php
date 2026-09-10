@@ -12,7 +12,18 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Predicates\Predicate;
+use Sabatier\Foundation\Set;
 
+/**
+ * @property string $name
+ * @property Set<Symphony> $works
+ * @method void addWorksObject(Symphony $object)
+ * @method void removeWorksObject(Symphony $object)
+ * @method void addWorks(Set<Symphony> $objects)
+ * @method void removeWorks(Set<Symphony> $objects)
+ * @method Set<Symphony> intersectWorks(Set<Symphony> $objects)
+ * @method void setWorks(Set<Symphony> $objects)
+ */
 final class Composer extends ManagedObject
 {
 }

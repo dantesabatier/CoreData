@@ -13,6 +13,10 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
 
+/**
+ * @property string $name
+ * @property string $title
+ */
 final class Manuscript extends ManagedObject
 {
 }

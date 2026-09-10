@@ -15,6 +15,16 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Set;
 
+/**
+ * @property Set<SQLTenant> $accounts
+ * @property string $name
+ * @method void addAccountsObject(SQLTenant $object)
+ * @method void removeAccountsObject(SQLTenant $object)
+ * @method void addAccounts(Set<SQLTenant> $objects)
+ * @method void removeAccounts(Set<SQLTenant> $objects)
+ * @method Set<SQLTenant> intersectAccounts(Set<SQLTenant> $objects)
+ * @method void setAccounts(Set<SQLTenant> $objects)
+ */
 final class SQLGrant extends ManagedObject
 {
 }

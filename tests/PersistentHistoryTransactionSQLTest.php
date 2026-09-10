@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -26,6 +27,10 @@ use Sabatier\Foundation\Number;
 use const Sabatier\CoreData\PersistentHistoryTrackingKey;
 use const Sabatier\CoreData\PersistentStoreIDOption;
 
+/**
+ * @property string|null $label
+ * @property int $quantity
+ */
 final class PersistentHistoryTrackedItem extends ManagedObject
 {
 }
@@ -43,6 +48,7 @@ final class PersistentHistoryTransactionSQLTest extends SQLMigrationTestCase
     private ?PersistentStore $historyStore = null;
     private ?EntityDescription $historyEntity = null;
 
+    #[Override]
     protected function setUp(): void
     {
         parent::setUp();
@@ -63,6 +69,7 @@ final class PersistentHistoryTransactionSQLTest extends SQLMigrationTestCase
         $this->historyContext->persistentStoreCoordinator = $coordinator;
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         if ($this->historyContext) {

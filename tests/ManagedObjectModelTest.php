@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -16,9 +17,20 @@ use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
 
+/**
+ * @property Set<ManagedObject> $books
+ * @property string $name
+ * @method void addBooksObject(ManagedObject $object)
+ * @method void removeBooksObject(ManagedObject $object)
+ * @method void addBooks(Set<ManagedObject> $objects)
+ * @method void removeBooks(Set<ManagedObject> $objects)
+ * @method Set<ManagedObject> intersectBooks(Set<ManagedObject> $objects)
+ * @method void setBooks(Set<ManagedObject> $objects)
+ */
 final class Author extends ManagedObject
 {
 }
@@ -96,6 +108,7 @@ final class ManagedObjectModelTest extends TestCase
         return $model;
     }
 
+    #[Override]
     protected function setUp(): void
     {
         $this->model = self::makeLibraryModel();

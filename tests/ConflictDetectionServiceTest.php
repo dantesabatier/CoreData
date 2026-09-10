@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -26,6 +27,10 @@ use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\URL;
 use const Sabatier\CoreData\ManagedObjectVersionKey;
 
+/**
+ * @property int $balance
+ * @property string $email
+ */
 final class Account extends ManagedObject
 {
 }
@@ -41,11 +46,13 @@ final class StubSnapshotProvider implements SnapshotProvider
     {
     }
 
+    #[Override]
     public function snapshot(ManagedObject $object, ArrayClass $properties): ?Dictionary
     {
         return $this->result;
     }
 
+    #[Override]
     public function snapshotWithExpressions(ManagedObject $object, ArrayClass $properties, ArrayClass $expressions): ?Dictionary
     {
         return $this->result;
@@ -59,6 +66,7 @@ final class StubVersioningStrategy implements VersioningStrategy
     {
     }
 
+    #[Override]
     public function hasConflict(Dictionary $baseline, Dictionary $store): bool
     {
         return $this->conflict;
@@ -136,12 +144,14 @@ final class ConflictDetectionServiceTest extends TestCase
         );
     }
 
+    #[Override]
     protected function setUp(): void
     {
         $this->storePath = sys_get_temp_dir() . "/coredata-conflict-test-" . uniqid("", true) . ".xml";
         $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         if (file_exists($this->storePath)) {
