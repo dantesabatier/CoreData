@@ -987,7 +987,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     {
         /** @var RelationshipDescription $relationship */
         $relationship = $this->entity->relationshipsByName[$key] ?? fatal_error(sprintf("%s %s() does not contains a relationship named \"%s\"", $this->debugDescription, __FUNCTION__, $key));
-        $value = $relationship->isToMany ? $this->mutableSetValueForKey($key) : new Set([$this->primitiveValueForKey($key)]);
+        // Through valueForKey: mutableSetValueForKey answers the unresolved fault, so a to-many nothing has read yet would report no identifiers at all.
+        $value = $relationship->isToMany ? new Set($this->valueForKey($key) ?? []) : new Set([$this->valueForKey($key)]);
         return new ArrayClass($value->map(
         /**
          * @param ManagedObject|ManagedObjectID $e

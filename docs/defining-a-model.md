@@ -85,6 +85,40 @@ genuinely absent until set, mark it `isOptional = true`.
 Note that `binaryData`, `objectID` and `compositeAttributeType` have no type default, so a
 required attribute of one of those types can still be null at save time.
 
+### Give an object something to save
+
+Because required attributes are filled in for you, nothing stops you from inserting an object
+and saving it without ever assigning a value:
+
+```php
+$item = new Item($context);   // nothing assigned
+$context->save();             // succeeds — attributes hold their type defaults
+```
+
+The save succeeds and the row is written, so this failure mode is quiet. It is still a mistake:
+a record whose only content is defaults carries no information, and you usually meant to set
+something. Assign the attributes that justify storing the object.
+
+### Wire a relationship from its to-many side
+
+Assigning the to-one end does not populate the inverse to-many in memory:
+
+```php
+$item->folder = $folder;
+$folder->items->containsElement($item);   // false, until the graph is reloaded
+```
+
+Use the generated to-many mutator instead, which maintains both ends:
+
+```php
+$folder->addItemsObject($item);
+$folder->items->containsElement($item);   // true
+$item->folder === $folder;                // true
+```
+
+Both forms persist the relationship correctly; the difference is only what the in-memory graph
+reports before the objects are refetched.
+
 ## Relationships
 
 A relationship needs a destination and, in practice, an inverse. Declare both sides and point

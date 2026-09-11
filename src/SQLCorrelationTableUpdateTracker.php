@@ -5,11 +5,13 @@ namespace Sabatier\CoreData;
 use Sabatier\Foundation\Notification;
 use Sabatier\Foundation\NotificationCenter;
 use Sabatier\Foundation\ObjectClass;
+use Sabatier\Foundation\ObjectProtocol;
 use Sabatier\Foundation\Set;
 
 /** @internal */
 final class SQLCorrelationTableUpdateTracker extends ObjectClass
 {
+    private ?ObjectProtocol $observer = null;
     /** @var Set<ManagedObject>|null */
     private(set) ?Set $inserts = null;
     /** @var Set<ManagedObject>|null */
@@ -17,15 +19,22 @@ final class SQLCorrelationTableUpdateTracker extends ObjectClass
     /** @var Set<ManagedObject>|null */
     private(set) ?Set $reorders = null;
 
+    /** @param SQLManyToMany $relationship The correlation-table relationship to update after a context save. */
     public function __construct(public readonly SQLManyToMany $relationship)
     {
     }
 
+    /**
+     * @param ManagedObjectID $objectID
+     * @param Set<ManagedObject>|null $inserts
+     * @param Set<ManagedObject>|null $deletes
+     * @param Set<ManagedObject>|null $reorders
+     */
     public function track(ManagedObjectID $objectID, ?Set $inserts = null, ?Set $deletes = null, ?Set $reorders = null): void
     {
-        $observer = null;
-        $observer = NotificationCenter::default()->addObserverForName(ManagedObjectContext::didSaveObjectsNotification, null, function (Notification $notification) use ($inserts, $deletes, $reorders, $objectID, &$observer): void {
-            NotificationCenter::default()->removeObserver($observer);
+        $this->cancel();
+        $this->observer = NotificationCenter::default()->addObserverForName(ManagedObjectContext::didSaveObjectsNotification, null, function (Notification $notification) use ($inserts, $deletes, $reorders, $objectID): void {
+            $this->cancel();
             /** @var ManagedObjectContext $context */
             $context = $notification->object;
             $transform = fn(ManagedObject|ManagedObjectID $e): ManagedObject => $e instanceof ManagedObject ? $e : $context->object($e);
@@ -53,5 +62,14 @@ final class SQLCorrelationTableUpdateTracker extends ObjectClass
             $connection = $store->queryGenerationTrackingConnection;
             $connection->writeCorrelationChangesFromTracker($this);
         });
+    }
+
+    public function cancel(): void
+    {
+        if ($this->observer === null) {
+            return;
+        }
+        NotificationCenter::default()->removeObserver($this->observer);
+        $this->observer = null;
     }
 }

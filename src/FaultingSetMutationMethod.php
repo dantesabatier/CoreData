@@ -9,6 +9,10 @@ use Sabatier\Foundation\Set;
 /** @internal */
 final readonly class FaultingSetMutationMethod
 {
+    /**
+     * @param string $name The modeled mutation method name.
+     * @param Closure $closure The mutation implementation bound to that name.
+     */
     public function __construct(public string $name, public Closure $closure)
     {
     }
