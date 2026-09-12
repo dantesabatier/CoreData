@@ -447,7 +447,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         $this->genericUpdateFromSnapshot($snapshot);
         $this->originalSnapshot ??= $snapshot;
         $this->lastSnapshot = $snapshot;
-        $this->loadedAttributeNames->formUnion(new Set($snapshot->keys->filter(fn(string $key): bool => $this->entity->attributesByName->offsetExists($key))->array));
+        $this->loadedAttributeNames->formUnion($snapshot->keys->filter(fn(string $key): bool => $this->entity->attributesByName->offsetExists($key)));
     }
 
     /**
@@ -459,7 +459,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         $this->refaultEmptyToOneRelationships();
         // An attribute that was never loaded is indistinguishable from one holding zero: both sit at the default. Without tracking what was loaded, the value just read from the store would be discarded for looking like something the object already had.
         $this->genericUpdateFromSnapshot($snapshot->filter(fn(mixed $value, string $key): bool => $this->isPropertyForKeyFault($key) || !$this->loadedAttributeNames->containsElement($key)));
-        $this->loadedAttributeNames->formUnion(new Set($snapshot->keys->filter(fn(string $key): bool => $this->entity->attributesByName->offsetExists($key))->array));
+        $this->loadedAttributeNames->formUnion($snapshot->keys->filter(fn(string $key): bool => $this->entity->attributesByName->offsetExists($key)));
     }
 
     private function refaultEmptyToOneRelationships(): void

@@ -233,7 +233,7 @@ final class XMLObjectStore extends AtomicStore
                     $relationshipNode = $this->createRelationshipChildOnNode($cacheNode->data, $inverseRelationship);
                     $referencesNode = $relationshipNode->getAttributeNode("references");
                     $references = new Set(explode(" ", $relationshipNode->getAttribute("references")));
-                    $references->formUnion(new Set(explode(" ", $this->getIDRefString($object, $inverseRelationship))));
+                    $references->formUnion(explode(" ", $this->getIDRefString($object, $inverseRelationship)));
                     /** @psalm-suppress UndefinedPropertyAssignment */
                     $referencesNode->value = trim($references->join(" "));
                     $destinationNode = $relationshipNode->getAttributeNode("destination");
