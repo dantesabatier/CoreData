@@ -64,6 +64,19 @@ entries remain under **Unreleased**.
 - The XML store no longer serializes an unresolved relationship fault as an empty relationship.
   Saves that only change attributes preserve stored references, while explicitly assigning an
   empty set or `null` still clears the relationship.
+- Assigning a to-one relationship maintains the to-many inverse. Three of the four cardinality
+  combinations in `ManagedObject::setValueForKey()` already did; the to-one whose inverse is
+  to-many did not, so reassigning an object between owners left it in both, and clearing the
+  to-one left it in the one it had just left. Hydrating from an atomic store now describes the
+  cache node the way `SQLFetchRequestContext` describes a row — inserted, not a fault, stable —
+  which is what lets the assignment resolve the old value and know which inverse to take the
+  object out of. The maintenance deliberately does not dirty the inverse: the to-one assignment
+  already marked the side that owns the value, and marking the other one as well makes the save
+  rewrite each member's foreign key from the set, so the owner being moved away from would write
+  its own emptiness over the link just established.
+- A fetch against an atomic store no longer reports the objects it returned as updated. The
+  stored snapshot is applied with change notifications suppressed, as the SQL store does, so a
+  fetch that changes nothing leaves the context with no pending changes.
 
 ### Removed
 

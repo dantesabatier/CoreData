@@ -99,25 +99,34 @@ The save succeeds and the row is written, so this failure mode is quiet. It is s
 a record whose only content is defaults carries no information, and you usually meant to set
 something. Assign the attributes that justify storing the object.
 
-### Wire a relationship from its to-many side
+### Wire a relationship on an object that has not been saved yet
 
-Assigning the to-one end does not populate the inverse to-many in memory:
+Both ends of a relationship maintain each other, so assigning either one updates the other:
 
 ```php
 $item->folder = $folder;
-$folder->items->containsElement($item);   // false, until the graph is reloaded
-```
-
-Use the generated to-many mutator instead, which maintains both ends:
-
-```php
-$folder->addItemsObject($item);
 $folder->items->containsElement($item);   // true
+
+$folder->addItemsObject($item);
 $item->folder === $folder;                // true
 ```
 
-Both forms persist the relationship correctly; the difference is only what the in-memory graph
-reports before the objects are refetched.
+That holds for objects the store has handed back. An object created in this context and not yet
+saved is the exception: it has no stored row behind it, so assigning its to-one end records the
+relationship on the object itself but leaves the other side's set untouched until the graph is
+saved and read again. Reaching for the to-many mutator avoids the asymmetry:
+
+```php
+$folder = new Folder($context);
+$item = new Item($context);
+$item->folder = $folder;                  // recorded on $item
+$folder->items->containsElement($item);   // false, until saved and read back
+
+$folder->addItemsObject($item);           // maintains both ends right away
+```
+
+Either form persists the relationship correctly; what differs is what the in-memory graph reports
+in between.
 
 ## Relationships
 
