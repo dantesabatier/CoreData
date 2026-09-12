@@ -10,8 +10,8 @@ use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
-use Sabatier\CoreData\FetchedPropertyDescription;
 use Sabatier\CoreData\FetchRequest;
+use Sabatier\CoreData\FetchedPropertyDescription;
 use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\ManagedObjectContext;
 use Sabatier\CoreData\ManagedObjectID;
@@ -20,10 +20,12 @@ use Sabatier\CoreData\PersistentStoreCoordinator;
 use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
+use Sabatier\Foundation\UUID;
 
 /**
  * @property string $name
@@ -50,7 +52,7 @@ final class AccessPlayer extends ManagedObject
  */
 final class ManagedObjectRelationshipAccessTest extends TestCase
 {
-    private string $storePath;
+    private URL $storeURL;
     private ManagedObjectContext $context;
 
     private static function model(): ManagedObjectModel
@@ -102,11 +104,12 @@ final class ManagedObjectRelationshipAccessTest extends TestCase
     #[Override]
     protected function setUp(): void
     {
-        $this->storePath = sys_get_temp_dir() . "/coredata-access-test-" . uniqid("", true) . ".xml";
-        $storeURL = new URL("file://" . str_replace("\\", "/", $this->storePath));
+        $this->storeURL = FileManager::default()->temporaryDirectory
+            ->appendingPathComponent(new UUID()->uuidString)
+            ->appendingPathExtension("xml");
 
         $coordinator = new PersistentStoreCoordinator(self::model());
-        $coordinator->addPersistentStoreWithType(PersistentStoreType::xml, null, $storeURL);
+        $coordinator->addPersistentStoreWithType(PersistentStoreType::xml, null, $this->storeURL);
         $this->context = new ManagedObjectContext();
         $this->context->persistentStoreCoordinator = $coordinator;
     }
@@ -115,9 +118,7 @@ final class ManagedObjectRelationshipAccessTest extends TestCase
     protected function tearDown(): void
     {
         $this->context->persistentStoreCoordinator = null;
-        if (is_file($this->storePath)) {
-            unlink($this->storePath);
-        }
+        FileManager::default()->removeItem($this->storeURL);
     }
 
     /**

@@ -17,8 +17,10 @@ use Sabatier\CoreData\PersistentStoreCoordinator;
 use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\NotificationCenter;
 use Sabatier\Foundation\URL;
+use Sabatier\Foundation\UUID;
 use const Sabatier\CoreData\PersistentStoreCoordinatorStoresDidChange;
 use const Sabatier\CoreData\PersistentStoreCoordinatorStoresWillChange;
 use const Sabatier\CoreData\PersistentStoreCoordinatorWillRemoveStore;
@@ -57,7 +59,6 @@ final class CoordinatorTag extends ManagedObject
  */
 final class PersistentStoreCoordinatorTest extends TestCase
 {
-    private string $storePath;
     private URL $storeURL;
     /** @var list<ManagedObjectContext> Every stack this test opened, released in tearDown. */
     private array $contexts = [];
@@ -109,16 +110,12 @@ final class PersistentStoreCoordinatorTest extends TestCase
         return $coordinator;
     }
 
-    private function fileURL(string $path): URL
-    {
-        return new URL("file:///" . str_replace("\\", "/", $path));
-    }
-
     #[Override]
     protected function setUp(): void
     {
-        $this->storePath = sys_get_temp_dir() . "/coredata-coordinator-" . uniqid("", true) . ".xml";
-        $this->storeURL = $this->fileURL($this->storePath);
+        $this->storeURL = FileManager::default()->temporaryDirectory
+            ->appendingPathComponent(new UUID()->uuidString)
+            ->appendingPathExtension("xml");
     }
 
     /**
@@ -132,9 +129,7 @@ final class PersistentStoreCoordinatorTest extends TestCase
             $context->persistentStoreCoordinator = null;
         }
         $this->contexts = [];
-        if (file_exists($this->storePath)) {
-            unlink($this->storePath);
-        }
+        FileManager::default()->removeItem($this->storeURL);
     }
 
     // --- Store registration and lookup ---
@@ -167,7 +162,7 @@ final class PersistentStoreCoordinatorTest extends TestCase
     {
         $coordinator = $this->stack();
 
-        $this->assertNull($coordinator->persistentStore($this->fileURL(sys_get_temp_dir() . "/coredata-not-added.xml")));
+        $this->assertNull($coordinator->persistentStore(FileManager::default()->temporaryDirectory->appendingPathComponent("coredata-not-added.xml")));
     }
 
     public function testUrlReturnsTheStoreLocation(): void
@@ -363,11 +358,11 @@ final class PersistentStoreCoordinatorTest extends TestCase
         $note = new CoordinatorNote($context);
         $note->body = "survives removal";
         $context->save();
-        $this->assertFileExists($this->storePath);
+        $this->assertFileExists($this->storeURL->path);
 
         $coordinator->remove($coordinator->persistentStores[0]);
 
-        $this->assertFileExists($this->storePath, "removing a store from the coordinator must not delete its file");
+        $this->assertFileExists($this->storeURL->path, "removing a store from the coordinator must not delete its file");
     }
 
     /**
@@ -398,12 +393,12 @@ final class PersistentStoreCoordinatorTest extends TestCase
         $note = new CoordinatorNote($context);
         $note->body = "doomed";
         $context->save();
-        $this->assertFileExists($this->storePath);
+        $this->assertFileExists($this->storeURL->path);
 
         $coordinator->remove($coordinator->persistentStores[0]);
         $coordinator->destroyPersistentStoreAtURL($this->storeURL, PersistentStoreType::xml);
 
-        $this->assertFileDoesNotExist($this->storePath, "destroying a store deletes its file");
+        $this->assertFileDoesNotExist($this->storeURL->path, "destroying a store deletes its file");
     }
 
     /**
@@ -413,7 +408,9 @@ final class PersistentStoreCoordinatorTest extends TestCase
     public function testDestroyPersistentStoreAtAnAbsentURLIsHarmless(): void
     {
         $coordinator = $this->coordinator();
-        $absent = $this->fileURL(sys_get_temp_dir() . "/coredata-never-created-" . uniqid("", true) . ".xml");
+        $absent = FileManager::default()->temporaryDirectory
+            ->appendingPathComponent(new UUID()->uuidString)
+            ->appendingPathExtension("xml");
 
         $coordinator->destroyPersistentStoreAtURL($absent, PersistentStoreType::xml);
 

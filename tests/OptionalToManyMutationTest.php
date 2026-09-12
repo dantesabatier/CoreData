@@ -16,8 +16,10 @@ use Sabatier\CoreData\PersistentStoreCoordinator;
 use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
+use Sabatier\Foundation\UUID;
 
 /**
  * @property Set<OptionalToManyMember> $members
@@ -67,22 +69,20 @@ final class OptionalToManyMember extends ManagedObject
  */
 final class OptionalToManyMutationTest extends TestCase
 {
-    private string $storePath;
     private URL $storeURL;
 
     #[Override]
     protected function setUp(): void
     {
-        $this->storePath = sys_get_temp_dir() . "/coredata-optional-tomany-test-" . uniqid("", true) . ".xml";
-        $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
+        $this->storeURL = FileManager::default()->temporaryDirectory
+            ->appendingPathComponent(new UUID()->uuidString)
+            ->appendingPathExtension("xml");
     }
 
     #[Override]
     protected function tearDown(): void
     {
-        if (file_exists($this->storePath)) {
-            unlink($this->storePath);
-        }
+        FileManager::default()->removeItem($this->storeURL);
     }
 
     /**

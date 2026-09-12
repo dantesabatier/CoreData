@@ -19,9 +19,11 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\PersistentStoreCoordinator;
 use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\URL;
+use Sabatier\Foundation\UUID;
 
 /**
  * @property int $n
@@ -43,7 +45,6 @@ final class Bead extends ManagedObject
  */
 final class BatchFaultingArrayTest extends TestCase
 {
-    private string $storePath;
     private URL $storeURL;
 
     private static function model(): ManagedObjectModel
@@ -74,16 +75,15 @@ final class BatchFaultingArrayTest extends TestCase
     #[Override]
     protected function setUp(): void
     {
-        $this->storePath = sys_get_temp_dir() . "/coredata-batchfaulting-test-" . uniqid("", true) . ".xml";
-        $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
+        $this->storeURL = FileManager::default()->temporaryDirectory
+            ->appendingPathComponent(new UUID()->uuidString)
+            ->appendingPathExtension("xml");
     }
 
     #[Override]
     protected function tearDown(): void
     {
-        if (file_exists($this->storePath)) {
-            unlink($this->storePath);
-        }
+        FileManager::default()->removeItem($this->storeURL);
     }
 
     /** Seeds $count beads numbered 0..$count-1. */

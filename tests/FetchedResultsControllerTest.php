@@ -21,9 +21,11 @@ use Sabatier\CoreData\PersistentStoreCoordinator;
 use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\CollectionDifference;
+use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\IndexPath;
 use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\URL;
+use Sabatier\Foundation\UUID;
 use const Sabatier\Foundation\NotFound;
 
 /**
@@ -61,7 +63,6 @@ final class RecurringExpense extends ManagedObject
  */
 final class FetchedResultsControllerTest extends TestCase
 {
-    private string $storePath;
     private URL $storeURL;
     /** @var list<ManagedObjectContext> Every stack this test opened, released in tearDown. */
     private array $contexts = [];
@@ -129,8 +130,9 @@ final class FetchedResultsControllerTest extends TestCase
     #[Override]
     protected function setUp(): void
     {
-        $this->storePath = sys_get_temp_dir() . "/coredata-frc-" . uniqid("", true) . ".xml";
-        $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
+        $this->storeURL = FileManager::default()->temporaryDirectory
+            ->appendingPathComponent(new UUID()->uuidString)
+            ->appendingPathExtension("xml");
 
         $context = $this->context();
         foreach (self::Rows as $row) {
@@ -148,9 +150,7 @@ final class FetchedResultsControllerTest extends TestCase
             $context->persistentStoreCoordinator = null;
         }
         $this->contexts = [];
-        if (file_exists($this->storePath)) {
-            unlink($this->storePath);
-        }
+        FileManager::default()->removeItem($this->storeURL);
     }
 
     /**

@@ -17,7 +17,9 @@ use Sabatier\CoreData\PersistentContainer;
 use Sabatier\CoreData\PersistentStoreDescription;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Error;
+use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\URL;
+use Sabatier\Foundation\UUID;
 use const Sabatier\CoreData\SQLStoreType;
 use const Sabatier\CoreData\XMLStoreType;
 
@@ -43,7 +45,6 @@ final class ContainerWidget extends ManagedObject
  */
 final class PersistentContainerTest extends TestCase
 {
-    private string $storePath;
     private URL $storeURL;
     /** @var list<ManagedObjectContext> Every context this test bound to a coordinator. */
     private array $contexts = [];
@@ -67,8 +68,9 @@ final class PersistentContainerTest extends TestCase
     #[Override]
     protected function setUp(): void
     {
-        $this->storePath = sys_get_temp_dir() . "/coredata-container-" . uniqid("", true) . ".xml";
-        $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
+        $this->storeURL = FileManager::default()->temporaryDirectory
+            ->appendingPathComponent(new UUID()->uuidString)
+            ->appendingPathExtension("xml");
     }
 
     /**
@@ -82,9 +84,7 @@ final class PersistentContainerTest extends TestCase
             $context->persistentStoreCoordinator = null;
         }
         $this->contexts = [];
-        if (file_exists($this->storePath)) {
-            unlink($this->storePath);
-        }
+        FileManager::default()->removeItem($this->storeURL);
     }
 
     private function container(): PersistentContainer
@@ -206,11 +206,13 @@ final class PersistentContainerTest extends TestCase
     public function testTheCompletionHandlerRunsOncePerStore(): void
     {
         $container = $this->container();
-        $secondPath = sys_get_temp_dir() . "/coredata-container-second-" . uniqid("", true) . ".xml";
+        $secondURL = FileManager::default()->temporaryDirectory
+            ->appendingPathComponent(new UUID()->uuidString)
+            ->appendingPathExtension("xml");
 
         $first = new PersistentStoreDescription($this->storeURL);
         $first->type = XMLStoreType;
-        $second = new PersistentStoreDescription(new URL("file:///" . str_replace("\\", "/", $secondPath)));
+        $second = new PersistentStoreDescription($secondURL);
         $second->type = XMLStoreType;
         $container->persistentStoreDescriptions = new ArrayClass([$first, $second]);
 
@@ -219,9 +221,7 @@ final class PersistentContainerTest extends TestCase
             $seen[] = $description->url->absoluteString;
         });
 
-        if (file_exists($secondPath)) {
-            unlink($secondPath);
-        }
+        FileManager::default()->removeItem($secondURL);
 
         $this->assertCount(2, $seen, "one call per description");
         $this->assertSame(2, $container->persistentStoreCoordinator->persistentStores->count);
@@ -244,7 +244,7 @@ final class PersistentContainerTest extends TestCase
 
         $this->assertSame(1, $results->count);
         $this->assertSame("saved through the container", $results->first->label);
-        $this->assertFileExists($this->storePath, "the save reached the store the container opened");
+        $this->assertFileExists($this->storeURL->path, "the save reached the store the container opened");
     }
 
     // --- Background contexts ---

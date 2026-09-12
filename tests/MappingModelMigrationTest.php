@@ -17,9 +17,11 @@ use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\CoreData\PropertyMapping;
 use Sabatier\CoreData\SQLInPlaceMigrationManager;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\URL;
+use Sabatier\Foundation\UUID;
 
 /**
  * @property string $memo
@@ -40,21 +42,21 @@ final class MappedLedger extends ManagedObject
  */
 final class MappingModelMigrationTest extends SQLMigrationTestCase
 {
-    private string $mappingPath;
+    private URL $mappingURL;
 
     #[Override]
     protected function setUp(): void
     {
         parent::setUp();
-        $this->mappingPath = sys_get_temp_dir() . "/" . uniqid("migration", true) . ".map";
+        $this->mappingURL = FileManager::default()->temporaryDirectory
+            ->appendingPathComponent(new UUID()->uuidString)
+            ->appendingPathExtension("map");
     }
 
     #[Override]
     protected function tearDown(): void
     {
-        if (is_file($this->mappingPath)) {
-            unlink($this->mappingPath);
-        }
+        FileManager::default()->removeItem($this->mappingURL);
         parent::tearDown();
     }
 
@@ -117,8 +119,8 @@ final class MappingModelMigrationTest extends SQLMigrationTestCase
         $mappingModel->destinationModel = $destinationModel;
         $mappingModel->entityMappings = new ArrayClass([$mapping]);
 
-        file_put_contents($this->mappingPath, KeyedArchiver::archivedData($mappingModel));
-        return new MappingModel(new URL("file:///" . str_replace("\\", "/", $this->mappingPath)));
+        FileManager::default()->createFile($this->mappingURL->path, KeyedArchiver::archivedData($mappingModel));
+        return new MappingModel($this->mappingURL);
     }
 
     public function testMigrationDrivenByAMappingModelFromAFile(): void

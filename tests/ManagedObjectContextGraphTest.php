@@ -19,8 +19,10 @@ use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\UndoManager;
+use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\URL;
+use Sabatier\Foundation\UUID;
+use Sabatier\Foundation\UndoManager;
 use const Sabatier\CoreData\InsertedObjectsKey;
 
 /**
@@ -51,7 +53,7 @@ final class GraphFolder extends ManagedObject
  */
 final class ManagedObjectContextGraphTest extends TestCase
 {
-    private string $storePath;
+    private URL $storeURL;
     private ManagedObjectContext $context;
     private PersistentStore $store;
 
@@ -103,11 +105,12 @@ final class ManagedObjectContextGraphTest extends TestCase
     #[Override]
     protected function setUp(): void
     {
-        $this->storePath = sys_get_temp_dir() . "/coredata-graph-test-" . uniqid("", true) . ".xml";
-        $storeURL = new URL("file://" . str_replace("\\", "/", $this->storePath));
+        $this->storeURL = FileManager::default()->temporaryDirectory
+            ->appendingPathComponent(new UUID()->uuidString)
+            ->appendingPathExtension("xml");
 
         $coordinator = new PersistentStoreCoordinator(self::model());
-        $this->store = $coordinator->addPersistentStoreWithType(PersistentStoreType::xml, null, $storeURL);
+        $this->store = $coordinator->addPersistentStoreWithType(PersistentStoreType::xml, null, $this->storeURL);
         $this->context = new ManagedObjectContext();
         $this->context->persistentStoreCoordinator = $coordinator;
     }
@@ -116,9 +119,7 @@ final class ManagedObjectContextGraphTest extends TestCase
     protected function tearDown(): void
     {
         $this->context->persistentStoreCoordinator = null;
-        if (is_file($this->storePath)) {
-            unlink($this->storePath);
-        }
+        FileManager::default()->removeItem($this->storeURL);
     }
 
     /** @throws Exception */

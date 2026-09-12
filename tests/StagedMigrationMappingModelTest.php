@@ -22,6 +22,8 @@ use Sabatier\CoreData\StagedMigrationManager;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Bundle;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\FileManager;
+use Sabatier\Foundation\UUID;
 use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\URL;
@@ -46,31 +48,26 @@ final class StagedNote extends ManagedObject
  */
 final class StagedMigrationMappingModelTest extends SQLMigrationTestCase
 {
-    private string $bundlePath;
+    private URL $bundleURL;
 
     #[Override]
     protected function setUp(): void
     {
         parent::setUp();
-        $this->bundlePath = sys_get_temp_dir() . "/" . uniqid("stagedbundle", true);
-        mkdir($this->bundlePath, 0777, true);
+        $this->bundleURL = FileManager::default()->temporaryDirectory->appendingPathComponent(new UUID()->uuidString);
+        FileManager::default()->createDirectory($this->bundleURL, true);
     }
 
     #[Override]
     protected function tearDown(): void
     {
-        foreach (glob($this->bundlePath . "/*") ?: [] as $file) {
-            unlink($file);
-        }
-        if (is_dir($this->bundlePath)) {
-            rmdir($this->bundlePath);
-        }
+        FileManager::default()->removeItem($this->bundleURL);
         parent::tearDown();
     }
 
     private function bundle(): Bundle
     {
-        return Bundle::bundleWithURL(new URL("file:///" . str_replace("\\", "/", $this->bundlePath)));
+        return Bundle::bundleWithURL($this->bundleURL);
     }
 
     private static function attribute(string $name, AttributeType $type): AttributeDescription
@@ -128,7 +125,7 @@ final class StagedMigrationMappingModelTest extends SQLMigrationTestCase
         $mappingModel->destinationModel = $destinationModel;
         $mappingModel->entityMappings = new ArrayClass([$entityMapping]);
 
-        file_put_contents($this->bundlePath . "/StagedNote." . MappingModelFileExtension, KeyedArchiver::archivedData($mappingModel));
+        FileManager::default()->createFile($this->bundleURL->appendingPathComponent("StagedNote." . MappingModelFileExtension)->path, KeyedArchiver::archivedData($mappingModel));
     }
 
     /**

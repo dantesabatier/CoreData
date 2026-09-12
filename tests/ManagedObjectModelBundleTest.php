@@ -19,6 +19,7 @@ use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\PropertyListSerialization;
 use Sabatier\Foundation\URL;
+use Sabatier\Foundation\UUID;
 use Throwable;
 use const Sabatier\CoreData\ManagedObjectModelBundleFileExtension;
 use const Sabatier\CoreData\ManagedObjectModelCurrentVersionNameKey;
@@ -34,20 +35,22 @@ use const Sabatier\CoreData\ManagedObjectModelVersionHashesKey;
  */
 final class ManagedObjectModelBundleTest extends TestCase
 {
-    private string $resources;
+    private URL $resources;
 
     #[Override]
     protected function setUp(): void
     {
-        $this->resources = sys_get_temp_dir() . "/" . uniqid("momd", true) . "/Resources";
-        mkdir($this->resources, 0777, true);
+        $this->resources = FileManager::default()->temporaryDirectory
+            ->appendingPathComponent(new UUID()->uuidString)
+            ->appendingPathComponent("Resources");
+        FileManager::default()->createDirectory($this->resources, true);
     }
 
     #[Override]
     protected function tearDown(): void
     {
         try {
-            FileManager::default()->removeItem(URL::fileURL(dirname($this->resources)));
+            FileManager::default()->removeItem($this->resources->deletingLastPathComponent());
         } catch (Throwable) {
         }
     }
@@ -70,24 +73,24 @@ final class ManagedObjectModelBundleTest extends TestCase
 
     private function url(string $relativePath): URL
     {
-        return URL::fileURL($this->resources . "/" . $relativePath);
+        return $this->resources->appendingPathComponent($relativePath);
     }
 
     private function containingBundle(): Bundle
     {
-        return Bundle::bundleWithURL(URL::fileURL(dirname($this->resources)));
+        return Bundle::bundleWithURL($this->resources->deletingLastPathComponent());
     }
 
     private function writeModel(string $relativePath, ManagedObjectModel $model): void
     {
-        file_put_contents($this->resources . "/" . $relativePath, KeyedArchiver::archivedData($model));
+        FileManager::default()->createFile($this->url($relativePath)->path, KeyedArchiver::archivedData($model));
     }
 
     private function makeBundle(string $name): string
     {
-        $path = $this->resources . "/" . $name . "." . ManagedObjectModelBundleFileExtension;
-        mkdir($path, 0777, true);
-        return $name . "." . ManagedObjectModelBundleFileExtension;
+        $bundle = $name . "." . ManagedObjectModelBundleFileExtension;
+        FileManager::default()->createDirectory($this->url($bundle), true);
+        return $bundle;
     }
 
     /**
@@ -95,7 +98,7 @@ final class ManagedObjectModelBundleTest extends TestCase
      */
     private function writeVersionInfo(string $bundle, Dictionary $versionInfo): void
     {
-        file_put_contents($this->resources . "/" . $bundle . "/VersionInfo.plist", PropertyListSerialization::data($versionInfo));
+        FileManager::default()->createFile($this->url($bundle)->appendingPathComponent("VersionInfo.plist")->path, PropertyListSerialization::data($versionInfo));
     }
 
     public function testAModelFileOnItsOwnStillLoads(): void

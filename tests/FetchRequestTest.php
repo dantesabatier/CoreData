@@ -15,9 +15,11 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\PersistentStoreCoordinator;
 use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\URL;
+use Sabatier\Foundation\UUID;
 
 /**
  * @property string $label
@@ -39,7 +41,7 @@ final class Row extends ManagedObject
  */
 final class FetchRequestTest extends TestCase
 {
-    private string $storePath;
+    private URL $storeURL;
     private ManagedObjectContext $context;
 
     private static function makeModel(): ManagedObjectModel
@@ -71,11 +73,12 @@ final class FetchRequestTest extends TestCase
     #[Override]
     protected function setUp(): void
     {
-        $this->storePath = sys_get_temp_dir() . "/coredata-fetch-test-" . uniqid("", true) . ".xml";
-        $storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
+        $this->storeURL = FileManager::default()->temporaryDirectory
+            ->appendingPathComponent(new UUID()->uuidString)
+            ->appendingPathExtension("xml");
 
         $coordinator = new PersistentStoreCoordinator(self::makeModel());
-        $coordinator->addPersistentStoreWithType(PersistentStoreType::xml, null, $storeURL);
+        $coordinator->addPersistentStoreWithType(PersistentStoreType::xml, null, $this->storeURL);
         $this->context = new ManagedObjectContext();
         $this->context->persistentStoreCoordinator = $coordinator;
 
@@ -91,9 +94,7 @@ final class FetchRequestTest extends TestCase
     #[Override]
     protected function tearDown(): void
     {
-        if (file_exists($this->storePath)) {
-            unlink($this->storePath);
-        }
+        FileManager::default()->removeItem($this->storeURL);
     }
 
     public function testFetchReturnsAllRows(): void

@@ -17,10 +17,12 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\PersistentStoreCoordinator;
 use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\URL;
+use Sabatier\Foundation\UUID;
 use const Sabatier\CoreData\ManagedObjectEntityNameKey;
 use const Sabatier\CoreData\ManagedObjectObjectIDKey;
 
@@ -50,7 +52,6 @@ final class AtomicLedger extends ManagedObject
  */
 final class AtomicStoreFetchTest extends TestCase
 {
-    private string $storePath;
     private URL $storeURL;
 
     /** @var list<array{code: string, amount: int, category: string}> The fixture rows. */
@@ -102,8 +103,9 @@ final class AtomicStoreFetchTest extends TestCase
     #[Override]
     protected function setUp(): void
     {
-        $this->storePath = sys_get_temp_dir() . "/coredata-atomicfetch-" . uniqid("", true) . ".xml";
-        $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
+        $this->storeURL = FileManager::default()->temporaryDirectory
+            ->appendingPathComponent(new UUID()->uuidString)
+            ->appendingPathExtension("xml");
 
         $context = $this->context();
         foreach (self::Rows as $row) {
@@ -118,9 +120,7 @@ final class AtomicStoreFetchTest extends TestCase
     #[Override]
     protected function tearDown(): void
     {
-        if (file_exists($this->storePath)) {
-            unlink($this->storePath);
-        }
+        FileManager::default()->removeItem($this->storeURL);
     }
 
     /**

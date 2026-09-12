@@ -21,6 +21,7 @@ use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\CoreData\XMLObjectStore;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Date;
+use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\Set;
@@ -130,7 +131,6 @@ final class AutoTicket extends ManagedObject
  */
 final class ManagedObjectContextTest extends TestCase
 {
-    private string $storePath;
     private URL $storeURL;
 
     /**
@@ -217,16 +217,15 @@ final class ManagedObjectContextTest extends TestCase
     #[Override]
     protected function setUp(): void
     {
-        $this->storePath = sys_get_temp_dir() . "/coredata-context-test-" . uniqid("", true) . ".xml";
-        $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
+        $this->storeURL = FileManager::default()->temporaryDirectory
+            ->appendingPathComponent(new UUID()->uuidString)
+            ->appendingPathExtension("xml");
     }
 
     #[Override]
     protected function tearDown(): void
     {
-        if (file_exists($this->storePath)) {
-            unlink($this->storePath);
-        }
+        FileManager::default()->removeItem($this->storeURL);
     }
 
     public function testCoordinatorMaterializesAnXMLObjectStore(): void
@@ -266,7 +265,7 @@ final class ManagedObjectContextTest extends TestCase
         $this->assertTrue($context->save(), "save reports success");
         $this->assertCount(0, $context->insertedObjects, "save clears insertedObjects");
         $this->assertFalse($context->hasChanges, "save resets hasChanges");
-        $this->assertFileExists($this->storePath, "save writes the store file");
+        $this->assertFileExists($this->storeURL->path, "save writes the store file");
         $this->assertFalse($alice->objectID->isTemporaryID, "the saved object has a permanent ID");
     }
 

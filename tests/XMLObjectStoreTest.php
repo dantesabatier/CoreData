@@ -18,9 +18,11 @@ use Sabatier\CoreData\PersistentStoreCoordinator;
 use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\URL;
+use Sabatier\Foundation\UUID;
 
 /**
  * @property Set<Carton> $crates
@@ -63,54 +65,55 @@ final class Carton extends ManagedObject
  */
 final class XMLObjectStoreTest extends TestCase
 {
-    private string $storePath;
     private URL $storeURL;
 
-    private static function model(): ManagedObjectModel
-    {
-        $shelfName = new AttributeDescription();
-        $shelfName->name = "name";
-        $shelfName->type = AttributeType::string;
+    /** A fresh model on every read: entity descriptions freeze once bound to a coordinator, so a memoized one could not open a second stack. */
+    private ManagedObjectModel $model {
+        get {
+            $shelfName = new AttributeDescription();
+            $shelfName->name = "name";
+            $shelfName->type = AttributeType::string;
 
-        $crates = new RelationshipDescription();
-        $crates->name = "crates";
-        $crates->lazyDestinationEntityName = "Carton";
-        $crates->lazyInverseRelationshipName = "shelf";
-        $crates->isToMany = true;
-        $crates->deleteRule = DeleteRule::cascadeDeleteRule;
+            $crates = new RelationshipDescription();
+            $crates->name = "crates";
+            $crates->lazyDestinationEntityName = "Carton";
+            $crates->lazyInverseRelationshipName = "shelf";
+            $crates->isToMany = true;
+            $crates->deleteRule = DeleteRule::cascadeDeleteRule;
 
-        $code = new AttributeDescription();
-        $code->name = "code";
-        $code->type = AttributeType::string;
+            $code = new AttributeDescription();
+            $code->name = "code";
+            $code->type = AttributeType::string;
 
-        $weight = new AttributeDescription();
-        $weight->name = "weight";
-        $weight->type = AttributeType::integer32;
+            $weight = new AttributeDescription();
+            $weight->name = "weight";
+            $weight->type = AttributeType::integer32;
 
-        $shelf = new RelationshipDescription();
-        $shelf->name = "shelf";
-        $shelf->lazyDestinationEntityName = "Shelf";
-        $shelf->lazyInverseRelationshipName = "crates";
-        $shelf->maxCount = 1;
+            $shelf = new RelationshipDescription();
+            $shelf->name = "shelf";
+            $shelf->lazyDestinationEntityName = "Shelf";
+            $shelf->lazyInverseRelationshipName = "crates";
+            $shelf->maxCount = 1;
 
-        $shelfEntity = new EntityDescription();
-        $shelfEntity->name = "Shelf";
-        $shelfEntity->managedObjectClassName = Shelf::class;
-        $shelfEntity->properties = new ArrayClass([$shelfName, $crates]);
+            $shelfEntity = new EntityDescription();
+            $shelfEntity->name = "Shelf";
+            $shelfEntity->managedObjectClassName = Shelf::class;
+            $shelfEntity->properties = new ArrayClass([$shelfName, $crates]);
 
-        $crateEntity = new EntityDescription();
-        $crateEntity->name = "Carton";
-        $crateEntity->managedObjectClassName = Carton::class;
-        $crateEntity->properties = new ArrayClass([$code, $weight, $shelf]);
+            $crateEntity = new EntityDescription();
+            $crateEntity->name = "Carton";
+            $crateEntity->managedObjectClassName = Carton::class;
+            $crateEntity->properties = new ArrayClass([$code, $weight, $shelf]);
 
-        $model = new ManagedObjectModel();
-        $model->entities = new ArrayClass([$shelfEntity, $crateEntity]);
-        return $model;
+            $model = new ManagedObjectModel();
+            $model->entities = new ArrayClass([$shelfEntity, $crateEntity]);
+            return $model;
+        }
     }
 
     private function context(): ManagedObjectContext
     {
-        $coordinator = new PersistentStoreCoordinator(self::model());
+        $coordinator = new PersistentStoreCoordinator($this->model);
         $coordinator->addPersistentStoreWithType(PersistentStoreType::xml, null, $this->storeURL);
         $context = new ManagedObjectContext();
         $context->persistentStoreCoordinator = $coordinator;
@@ -120,16 +123,15 @@ final class XMLObjectStoreTest extends TestCase
     #[Override]
     protected function setUp(): void
     {
-        $this->storePath = sys_get_temp_dir() . "/coredata-xmlstore-test-" . uniqid("", true) . ".xml";
-        $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
+        $this->storeURL = FileManager::default()->temporaryDirectory
+            ->appendingPathComponent(new UUID()->uuidString)
+            ->appendingPathExtension("xml");
     }
 
     #[Override]
     protected function tearDown(): void
     {
-        if (file_exists($this->storePath)) {
-            unlink($this->storePath);
-        }
+        FileManager::default()->removeItem($this->storeURL);
     }
 
     /**
@@ -141,7 +143,7 @@ final class XMLObjectStoreTest extends TestCase
     private function elementNodes(): array
     {
         $document = new DOMDocument();
-        $document->load($this->storePath);
+        $document->load($this->storeURL->path);
         $nodes = [];
         foreach ($document->getElementsByTagName("element") as $element) {
             $nodes[] = $element;

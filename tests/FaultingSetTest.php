@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
@@ -17,8 +18,10 @@ use Sabatier\CoreData\PersistentStoreCoordinator;
 use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
+use Sabatier\Foundation\UUID;
 
 /**
  * @property string $name
@@ -56,7 +59,6 @@ final class Player extends ManagedObject
  */
 final class FaultingSetTest extends TestCase
 {
-    private string $storePath;
     private URL $storeURL;
 
     private static function model(): ManagedObjectModel
@@ -100,11 +102,15 @@ final class FaultingSetTest extends TestCase
     private Team $team;
     private RelationshipDescription $roster;
 
+    /**
+     * @throws Exception
+     */
     #[Override]
     protected function setUp(): void
     {
-        $this->storePath = sys_get_temp_dir() . "/coredata-faultingset-test-" . uniqid("", true) . ".xml";
-        $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
+        $this->storeURL = FileManager::default()->temporaryDirectory
+            ->appendingPathComponent(new UUID()->uuidString)
+            ->appendingPathExtension("xml");
 
         $coordinator = new PersistentStoreCoordinator(self::model());
         $coordinator->addPersistentStoreWithType(PersistentStoreType::xml, null, $this->storeURL);
@@ -119,12 +125,13 @@ final class FaultingSetTest extends TestCase
         $this->roster = $roster;
     }
 
+    /**
+     * @throws Exception
+     */
     #[Override]
     protected function tearDown(): void
     {
-        if (file_exists($this->storePath)) {
-            unlink($this->storePath);
-        }
+        FileManager::default()->removeItem($this->storeURL);
     }
 
     private function player(int $jersey): Player
@@ -137,39 +144,37 @@ final class FaultingSetTest extends TestCase
     /**
      * The jersey numbers of the set's elements, in iteration order.
      *
-     * NOTE: iterate with foreach, NOT $set->map(...)->array — map() projects into a new Set, which
-     * deduplicates by value, so two players sharing a jersey number would collapse to one and hide
-     * elements. foreach goes through FaultingSet::current(), which materializes each stored ID.
+     * Through reduce rather than map: map projects into a Set, which deduplicates by value, so two
+     * players sharing a jersey number would collapse into one and hide an element the tests assert on.
      *
      * @return list<int>
      */
     private function jerseys(FaultingSet $set): array
     {
-        $out = [];
-        foreach ($set as $player) {
-            $out[] = $player->jersey;
-        }
-        return $out;
+        return $set->reduce([], function (array &$carry, Player $player): array {
+            $carry[] = $player->jersey;
+            return $carry;
+        });
     }
 
-    /** @return list<string> the object-ID URIs of the set's elements, in iteration order */
+    /**
+     * The object-ID URIs of the set's elements, in iteration order.
+     *
+     * Unlike {@see jerseys()} this one can go through map(): the URIs are distinct by construction,
+     * so the projected Set has nothing to deduplicate.
+     *
+     * @return list<string>
+     */
     private function ids(FaultingSet $set): array
     {
-        $out = [];
-        foreach ($set as $player) {
-            $out[] = $player->objectID->uriRepresentation()->absoluteString;
-        }
-        return $out;
+        return $set->map(fn(Player $player): string => $player->objectID->uriRepresentation()->absoluteString)->array;
     }
 
     public function testSetSetClearsTheFaultFlag(): void
     {
         $set = new FaultingSet($this->team, $this->roster);
 
-        // NOTE: although isFault is declared `= true`, it is already false right after
-        // construction — Set::__construct calls formUnion([]), and FaultingSet overrides
-        // formUnion to clear isFault. So a freshly constructed set is NOT observably a fault.
-        // This pins the actual behavior; setSet is the normal materialization entry point.
+        // setSet is the normal materialization entry point: only the set-algebra mutators clear the flag, so a set filled through insert() alone stays marked as a fault and is refetched.
         $set->setSet(new Set([$this->player(1)]));
         $this->assertFalse($set->isFault, "setSet materializes the set and leaves the fault flag clear");
     }

@@ -17,9 +17,11 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\MappingModel;
 use Sabatier\CoreData\PropertyMapping;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\URL;
+use Sabatier\Foundation\UUID;
 
 /** A policy the mapping model names, to pin that the class name survives being written to a file. */
 final class RecipeMigrationPolicy extends EntityMigrationPolicy
@@ -43,25 +45,20 @@ final class MappingRecipe extends ManagedObject
  */
 final class MappingModelFileTest extends TestCase
 {
-    private string $path;
+    private URL $url;
 
     #[Override]
     protected function setUp(): void
     {
-        $this->path = sys_get_temp_dir() . "/" . uniqid("mapping", true) . ".map";
+        $this->url = FileManager::default()->temporaryDirectory
+            ->appendingPathComponent(new UUID()->uuidString)
+            ->appendingPathExtension("map");
     }
 
     #[Override]
     protected function tearDown(): void
     {
-        if (is_file($this->path)) {
-            unlink($this->path);
-        }
-    }
-
-    private function url(): URL
-    {
-        return new URL("file:///" . str_replace("\\", "/", $this->path));
+        FileManager::default()->removeItem($this->url);
     }
 
     private static function attribute(string $name, AttributeType $type): AttributeDescription
@@ -106,7 +103,7 @@ final class MappingModelFileTest extends TestCase
         $mappingModel->destinationModel = $destinationModel;
         $mappingModel->entityMappings = new ArrayClass([$mapping]);
 
-        file_put_contents($this->path, KeyedArchiver::archivedData($mappingModel));
+        FileManager::default()->createFile($this->url->path, KeyedArchiver::archivedData($mappingModel));
         return $mappingModel;
     }
 
@@ -114,7 +111,7 @@ final class MappingModelFileTest extends TestCase
     {
         $written = $this->writeMappingModel();
 
-        $read = new MappingModel($this->url());
+        $read = new MappingModel($this->url);
 
         $this->assertSame(["RecipeToRecipe"], $read->entityMappingsByName->keys->array, "the entity mapping must be restored under its name");
         $mapping = $read->entityMappingsByName["RecipeToRecipe"];
@@ -132,7 +129,7 @@ final class MappingModelFileTest extends TestCase
     {
         $this->writeMappingModel();
 
-        $read = new MappingModel($this->url());
+        $read = new MappingModel($this->url);
         $attributeMappings = $read->entityMappingsByName["RecipeToRecipe"]?->attributeMappings;
 
         $this->assertNotNull($attributeMappings);
@@ -147,7 +144,7 @@ final class MappingModelFileTest extends TestCase
     {
         $this->writeMappingModel();
 
-        $read = new MappingModel($this->url());
+        $read = new MappingModel($this->url);
 
         $this->assertInstanceOf(ManagedObjectModel::class, $read->sourceModel);
         $this->assertInstanceOf(ManagedObjectModel::class, $read->destinationModel);
@@ -165,7 +162,7 @@ final class MappingModelFileTest extends TestCase
     {
         $this->writeMappingModel();
 
-        $read = new MappingModel($this->url());
+        $read = new MappingModel($this->url);
 
         $this->assertFalse($read->sourceModel?->isEditable, "a model out of a mapping model must not be editable");
         $this->assertTrue($read->sourceModel?->isImmutable, "a model out of a mapping model must be immutable");
@@ -182,7 +179,7 @@ final class MappingModelFileTest extends TestCase
     {
         $this->writeMappingModel();
 
-        $read = new MappingModel($this->url());
+        $read = new MappingModel($this->url);
         $entity = $read->destinationModel?->entitiesByName["Recipe"];
 
         $this->assertNotNull($entity);
