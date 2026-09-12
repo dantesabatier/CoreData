@@ -129,6 +129,10 @@ final class XMLObjectStore extends AtomicStore
             /** @var Dictionary<mixed> $info */
             $info = $this->xmlInfo[$entity->name] ?? new Dictionary();
             $cacheNode = $this->createCacheNodeFromXMLElement($element);
+            // An element in the document is a row that exists: say so the way SQLFetchRequestContext does, so an object hydrated from the file arrives inserted and stable rather than looking unsaved.
+            $cacheNode->setValueForKey(true, ManagedObjectIsInsertedKey);
+            $cacheNode->setValueForKey(false, ManagedObjectIsFaultKey);
+            $cacheNode->setValueForKey(ManagedObjectFaultingStateStable, ManagedObjectFaultingStateKey);
             $attributeElements = $element->getElementsByTagName("attribute");
             /** @var DOMElement $attributeElement */
             foreach ($attributeElements as $attributeElement) {

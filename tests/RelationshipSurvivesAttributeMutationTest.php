@@ -18,10 +18,13 @@ use Sabatier\CoreData\PersistentStoreCoordinator;
 use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
+use Sabatier\Foundation\UUID;
 
 /**
  * @property Set<LedgerEntry>|null $entries
@@ -84,22 +87,20 @@ final class LedgerEntry extends ManagedObject
  */
 final class RelationshipSurvivesAttributeMutationTest extends TestCase
 {
-    private string $storePath;
     private URL $storeURL;
 
     #[Override]
     protected function setUp(): void
     {
-        $this->storePath = sys_get_temp_dir() . "/coredata-relationship-mutation-" . uniqid("", true) . ".xml";
-        $this->storeURL = new URL("file:///" . str_replace("\\", "/", $this->storePath));
+        $this->storeURL = FileManager::default()->temporaryDirectory
+            ->appendingPathComponent(new UUID()->uuidString)
+            ->appendingPathExtension("xml");
     }
 
     #[Override]
     protected function tearDown(): void
     {
-        if (file_exists($this->storePath)) {
-            unlink($this->storePath);
-        }
+        FileManager::default()->removeItem($this->storeURL);
     }
 
     /** LedgerOwner 1 <-> * LedgerEntry, the ordinary to-one/to-many pair. */
@@ -177,7 +178,7 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
     private function relationshipReferences(string $entityName, string $relationshipName): string
     {
         $document = new DOMDocument();
-        $document->load($this->storePath);
+        $document->load($this->storeURL->path);
         $xpath = new DOMXPath($document);
         $node = $xpath->query("//element[@name='$entityName']/relationship[@name='$relationshipName']")->item(0);
         $this->assertNotNull($node, "the relationship is present in the XML store");
@@ -286,5 +287,57 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
         $reloadedEntry = $freshContext->fetch(LedgerEntry::fetchRequest())->first;
         $this->assertNotNull($reloadedEntry);
         $this->assertNull($reloadedEntry->owner, "the explicit null survives a fresh read of the store");
+    }
+
+    /**
+     * Assigning the to-one end must maintain the to-many inverse, as the other three cardinalities do.
+     *
+     * Read back through a context that loaded the graph from the file: an object hydrated that way
+     * arrives inserted and awake, which is what lets the assignment resolve the old value and know
+     * which inverse to take the entry out of.
+     *
+     * @return array{0: LedgerOwner, 1: LedgerOwner, 2: LedgerEntry}
+     */
+    private function loadedPairOfOwners(ManagedObjectContext $seed): array
+    {
+        $first = new LedgerOwner($seed);
+        $first->name = "first";
+        $second = new LedgerOwner($seed);
+        $second->name = "second";
+        $entry = new LedgerEntry($seed);
+        $entry->name = "entry";
+        $first->addEntriesObject($entry);
+        $seed->save();
+
+        $context = $this->makeContext();
+        /** @var Dictionary<LedgerOwner> $byName */
+        $byName = $context->fetch(LedgerOwner::fetchRequest())->reduce(new Dictionary(),
+            static function (Dictionary $owners, LedgerOwner $owner): Dictionary {
+                $owners[$owner->name] = $owner;
+                return $owners;
+            });
+        $loadedEntry = $context->fetch(LedgerEntry::fetchRequest())->first;
+        $this->assertNotNull($loadedEntry);
+        return [$byName["first"], $byName["second"], $loadedEntry];
+    }
+
+    public function testReassigningAToOneMovesItBetweenTheInverses(): void
+    {
+        [$first, $second, $entry] = $this->loadedPairOfOwners($this->makeContext());
+        $this->assertSame(1, $first->entries?->count ?? -1, "precondition: the entry starts on the first owner");
+
+        $entry->owner = $second;
+
+        $this->assertSame(0, $first->entries?->count ?? -1, "the owner it left drops it");
+        $this->assertSame(1, $second->entries?->count ?? -1, "and the owner it moved to holds it");
+    }
+
+    public function testNullingAToOneRemovesItFromTheInverse(): void
+    {
+        [$first, , $entry] = $this->loadedPairOfOwners($this->makeContext());
+
+        $entry->owner = null;
+
+        $this->assertSame(0, $first->entries?->count ?? -1, "clearing the to-one empties the inverse it was in");
     }
 }

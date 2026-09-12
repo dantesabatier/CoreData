@@ -48,13 +48,15 @@ abstract class AtomicStore extends PersistentStore
         $this->updateObject($object);
     }
 
-    private function updateObject(ManagedObject $object, bool $fromFetch = false): void
+    private function updateObject(ManagedObject $object): void
     {
         $cacheNode = $this->cacheNode($object->objectID) ?? fatal_error("Invalid argument: object \"$object\" does not exist in the store");
-        if ($fromFetch) {
-            $object->updateFromSnapshot($cacheNode->propertyCache);
+        $snapshot = $cacheNode->propertyCache;
+        // The node says which it is: one read from the file carries a stable faulting state, and its values are the baseline optimistic locking compares against. A node just built for an object being inserted carries none and has nothing to be the baseline of.
+        if ($snapshot[ManagedObjectFaultingStateKey] === ManagedObjectFaultingStateStable) {
+            $object->updateFromSnapshot($snapshot);
         } else {
-            $object->updateFromRefreshSnapshot($cacheNode->propertyCache);
+            $object->updateFromRefreshSnapshot($snapshot);
         }
         $this->updateCacheNode($cacheNode, $object);
     }
@@ -114,6 +116,40 @@ abstract class AtomicStore extends PersistentStore
         return $predicate;
     }
 
+    /**
+     * @param FetchRequest<mixed> $request
+     * @return ArrayClass<AtomicStoreCacheNode>
+     */
+    private function cacheNodesForFetchRequest(FetchRequest $request): ArrayClass
+    {
+        $entity = $request->entity ?? fatal_error("Invalid fetch request: missing entity");
+        return $this->nodeCache->values->filter(fn(AtomicStoreCacheNode $cacheNode): bool => $request->includesSubentities ? $cacheNode->objectID->entity->isKindOf($entity) : $cacheNode->objectID->entity->isEqual($entity));
+    }
+
+    /**
+     * @param ArrayClass<AtomicStoreCacheNode> $cacheNodes
+     * @return ArrayClass<ManagedObject>
+     */
+    private function managedObjectsFromCacheNodes(ArrayClass $cacheNodes, ManagedObjectContext $context): ArrayClass
+    {
+        return $cacheNodes->map(function (AtomicStoreCacheNode $cacheNode) use ($context): ManagedObject {
+            $object = $context->object($cacheNode->objectID);
+            if ($object->isAwakeFromFetch) {
+                return $object;
+            }
+            // Hydration here reads the live cache rather than snapshots already taken off a statement, so resolving a relationship runs a fetch of its own that lands back in this method for the same object. Marking the object before applying the snapshot is what ends that; SQLFetchRequestContext needs no such guard because its snapshots are closed over before any object is built.
+            $object->isAwakeFromFetch = true;
+            // A fetch can be issued mid-save by conflict detection, where re-applying the stored snapshot would resurrect the values the save is about to remove.
+            if (!$context->updatedObjects->containsElement($object) && !$context->deletedObjects->containsElement($object)) {
+                $object->isSuppressingChangeNotifications = true;
+                $this->updateObject($object);
+                $object->isSuppressingChangeNotifications = false;
+            }
+            $object->awakeFromFetch();
+            return $object;
+        });
+    }
+
     private function executeFetchRequest(FetchRequest $request, ManagedObjectContext $context): ArrayClass
     {
         assert($request->entity !== null, "Invalid fetch request: missing entity");
@@ -123,29 +159,7 @@ abstract class AtomicStore extends PersistentStore
         if (!$propertiesToGroupBy->isEmpty && $resultType !== FetchRequestResultType::dictionaryResultType) {
             fatal_error(sprintf("Invalid fetch request: GROUP BY requires %s, %s given", human_readable_value(FetchRequestResultType::dictionaryResultType), human_readable_value($request->resultType)));
         }
-        /** @var ArrayClass<ManagedObject> $objects */
-        $objects = new ArrayClass();
-        /** @var AtomicStoreCacheNode $cacheNode */
-        foreach ($this->nodeCache as $cacheNode) {
-            /** @var EntityDescription $entity */
-            $entity = $cacheNode->objectID->entity;
-            $object = $context->object($cacheNode->objectID);
-            if (!$object->isAwakeFromFetch) {
-                $object->isAwakeFromFetch = true;
-                // A fetch can be issued mid-save by conflict detection, where re-applying the stored snapshot would resurrect the values the save is about to remove.
-                if (!$context->updatedObjects->containsElement($object) && !$context->deletedObjects->containsElement($object)) {
-                    $this->updateObject($object, fromFetch: true);
-                }
-                $object->awakeFromFetch();
-            }
-            if ($request->includesSubentities) {
-                if ($entity->isKindOf($request->entity)) {
-                    $objects->append($object);
-                }
-            } elseif ($entity->isEqual($request->entity)) {
-                $objects->append($object);
-            }
-        }
+        $objects = $this->managedObjectsFromCacheNodes($this->cacheNodesForFetchRequest($request), $context);
         $predicate = $request->predicate;
         if ($predicate) {
             $predicate = $this->resolvePredicateObjectReferences($predicate, $request->entity);

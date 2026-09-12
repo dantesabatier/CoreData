@@ -11,6 +11,7 @@ use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Set;
 
 /**
@@ -164,5 +165,54 @@ final class SQLRelationshipSurvivesAttributeMutationTest extends SQLMigrationTes
         $reloadedEntry = $freshContext->fetch(SQLLedgerEntry::fetchRequest())->first;
         $this->assertNotNull($reloadedEntry, "the entry is still in the database");
         $this->assertNotNull($reloadedEntry->owner, "and it still knows its owner");
+    }
+
+    /**
+     * The SQL half of RelationshipSurvivesAttributeMutationTest's inverse-maintenance cases.
+     *
+     * @return array{0: SQLLedgerOwner, 1: SQLLedgerOwner, 2: SQLLedgerEntry}
+     */
+    private function loadedPairOfOwners(): array
+    {
+        $seed = $this->bootstrap(self::makeModel());
+        $first = new SQLLedgerOwner($seed);
+        $first->name = "first";
+        $second = new SQLLedgerOwner($seed);
+        $second->name = "second";
+        $entry = new SQLLedgerEntry($seed);
+        $entry->name = "entry";
+        $first->addEntriesObject($entry);
+        $seed->save();
+
+        $context = $this->freshContext(self::makeModel());
+        /** @var Dictionary<SQLLedgerOwner> $byName */
+        $byName = $context->fetch(SQLLedgerOwner::fetchRequest())->reduce(new Dictionary(),
+            static function (Dictionary $owners, SQLLedgerOwner $owner): Dictionary {
+                $owners[$owner->name] = $owner;
+                return $owners;
+            });
+        $loadedEntry = $context->fetch(SQLLedgerEntry::fetchRequest())->first;
+        $this->assertNotNull($loadedEntry);
+        return [$byName["first"], $byName["second"], $loadedEntry];
+    }
+
+    public function testReassigningAToOneMovesItBetweenTheInverses(): void
+    {
+        [$first, $second, $entry] = $this->loadedPairOfOwners();
+        $this->assertSame(1, $first->entries?->count ?? -1, "precondition: the entry starts on the first owner");
+
+        $entry->owner = $second;
+
+        $this->assertSame(0, $first->entries?->count ?? -1, "the owner it left drops it");
+        $this->assertSame(1, $second->entries?->count ?? -1, "and the owner it moved to holds it");
+    }
+
+    public function testNullingAToOneRemovesItFromTheInverse(): void
+    {
+        [$first, , $entry] = $this->loadedPairOfOwners();
+
+        $entry->owner = null;
+
+        $this->assertSame(0, $first->entries?->count ?? -1, "clearing the to-one empties the inverse it was in");
     }
 }

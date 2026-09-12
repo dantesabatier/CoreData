@@ -8,6 +8,7 @@ declare(strict_types=1);
  * Date: 16/06/20
  * Time: 16:37
  */
+
 namespace Sabatier\CoreData;
 
 use Override;
@@ -31,6 +32,14 @@ class AtomicStoreCacheNode extends ObjectClass
         $this->propertyCache = new Dictionary();
     }
 
+    private function holdsKey(string $key): bool
+    {
+        return match ($key) {
+            ManagedObjectObjectIDKey, ManagedObjectEntityNameKey, ManagedObjectVersionKey, ManagedObjectIsInsertedKey, ManagedObjectIsFaultKey, ManagedObjectFaultingStateKey => true,
+            default => $this->objectID->entity->propertiesByName->offsetExists($key),
+        };
+    }
+
     /**
      * Returns the value for a given key.
      *
@@ -41,7 +50,7 @@ class AtomicStoreCacheNode extends ObjectClass
     #[Override]
     public function valueForKey(string $key): mixed
     {
-        if ($this->objectID->entity->propertiesByName[$key]) {
+        if ($this->holdsKey($key)) {
             return $this->propertyCache[$key];
         }
         return parent::valueForKey($key);
@@ -57,7 +66,7 @@ class AtomicStoreCacheNode extends ObjectClass
     #[Override]
     public function setValueForKey(mixed $value, string $key): void
     {
-        if ($this->objectID->entity->propertiesByName[$key]) {
+        if ($this->holdsKey($key)) {
             $this->propertyCache[$key] = $value;
         } else {
             parent::setValueForKey($value, $key);
