@@ -107,6 +107,11 @@ store, the generated statement helps; if it involves a migration, both model ver
 
 Some constraints are deliberate, and a change that violates one will be declined:
 
+- **Implement from the stack.** Foundation and CoreData already solve most of what a change
+  needs: collections, predicates, paths, identifiers, notifications. Reaching for them is not a
+  matter of taste — it is fewer lines, it reads better, it is idiomatic and functional, it is
+  easily verified, and it does not reinvent something already built and tested. A solution that
+  never mentions the stack was probably written in another language.
 - **No SQL in consumer code.** Every statement is generated from a `FetchRequest`, its predicate
   and its sort descriptors. A new capability belongs in the generator, not in a hand-written
   query.
