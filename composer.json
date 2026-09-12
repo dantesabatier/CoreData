@@ -23,6 +23,7 @@
     "ext-mbstring": "*",
     "ext-pdo": "*",
     "ext-pdo_mysql": "*",
+    "ext-libxml": "*",
     "sabatier/foundation": "^1.0@dev"
   },
   "suggest": {
