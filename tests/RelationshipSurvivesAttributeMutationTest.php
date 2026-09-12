@@ -340,4 +340,65 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
 
         $this->assertSame(0, $first->entries?->count ?? -1, "clearing the to-one empties the inverse it was in");
     }
+
+    /**
+     * Two owners and an entry, all inserted in this context and never saved.
+     *
+     * @return array{0: LedgerOwner, 1: LedgerOwner, 2: LedgerEntry}
+     */
+    private function unsavedPairOfOwners(ManagedObjectContext $context): array
+    {
+        $first = new LedgerOwner($context);
+        $first->name = "first";
+        $second = new LedgerOwner($context);
+        $second->name = "second";
+        $entry = new LedgerEntry($context);
+        $entry->name = "entry";
+        return [$first, $second, $entry];
+    }
+
+    public function testAssigningAToOneOnAnUnsavedObjectPopulatesTheInverse(): void
+    {
+        [$first, , $entry] = $this->unsavedPairOfOwners($this->makeContext());
+
+        $entry->owner = $first;
+
+        $this->assertTrue($first->entries?->containsElement($entry) ?? false, "the inverse holds the entry before any save");
+    }
+
+    public function testReassigningAToOneOnAnUnsavedObjectMovesItBetweenTheInverses(): void
+    {
+        [$first, $second, $entry] = $this->unsavedPairOfOwners($this->makeContext());
+        $entry->owner = $first;
+
+        $entry->owner = $second;
+
+        $this->assertSame(0, $first->entries?->count ?? -1, "the owner it left drops it");
+        $this->assertSame(1, $second->entries?->count ?? -1, "and the owner it moved to holds it");
+    }
+
+    public function testNullingAToOneOnAnUnsavedObjectRemovesItFromTheInverse(): void
+    {
+        [$first, , $entry] = $this->unsavedPairOfOwners($this->makeContext());
+        $entry->owner = $first;
+
+        $entry->owner = null;
+
+        $this->assertSame(0, $first->entries?->count ?? -1, "clearing the to-one empties the inverse it was in");
+    }
+
+    /** The link an unsaved assignment records must still be the one the store writes. */
+    public function testAnUnsavedAssignmentPersistsTheRelationship(): void
+    {
+        $context = $this->makeContext();
+        [$first, $second, $entry] = $this->unsavedPairOfOwners($context);
+        $entry->owner = $first;
+        $entry->owner = $second;
+        $context->save();
+
+        $reloaded = $this->makeContext();
+        $loadedEntry = $reloaded->fetch(LedgerEntry::fetchRequest())->first;
+        $this->assertNotNull($loadedEntry);
+        $this->assertSame("second", $loadedEntry->owner?->name, "the entry reads back under the owner it was last assigned to");
+    }
 }

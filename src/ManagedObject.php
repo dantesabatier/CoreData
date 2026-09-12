@@ -925,8 +925,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     $value = $this->managedObjectContext->object($value);
                 }
                 if ($inverseRelationship->isToMany) {
-                    // The other three cardinalities maintain their inverse here. Only when $current was resolved above is the old membership known, so the same four conditions gate this: otherwise the set is an unresolved fault and subtracting from it would record an emptiness that never existed.
-                    if ($changeKind !== KeyValueChange::setting && !$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications && $this->isAwakeFromFetch && $this->isInserted) {
+                    // The other three cardinalities maintain their inverse here. An object with a row behind it needs $current resolved above for the old membership to be known, so the same four conditions gate it: otherwise the set is an unresolved fault and subtracting from it would record an emptiness that never existed. An object that has never been saved has no row to fault in, so its primitive value is already the whole truth and the maintenance is safe with only the suppression flags respected.
+                    if ($changeKind !== KeyValueChange::setting && !$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications && (!$this->isInserted || $this->isAwakeFromFetch)) {
                         if ($current instanceof ManagedObject) {
                             $this->removeFromInverseToMany($current, $inverseRelationship);
                         }

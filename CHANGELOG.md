@@ -74,6 +74,18 @@ entries remain under **Unreleased**.
   already marked the side that owns the value, and marking the other one as well makes the save
   rewrite each member's foreign key from the set, so the owner being moved away from would write
   its own emptiness over the link just established.
+- Assigning a to-one maintains the inverse on an object that has never been saved. The
+  maintenance was gated on the object being awake from a fetch and already inserted, which no
+  newly created object is, so the in-memory graph disagreed with itself until the next save and
+  read. An object with no row behind it has nothing to fault in, so its primitive value is
+  already the whole truth and the gate now admits it.
+  Two things had to follow. Nullifying a to-many no longer blanks a member's to-one when that
+  member has already been given a new owner — the removal being processed is frequently the old
+  owner losing a member precisely because it was reassigned, and clearing it there undid the
+  assignment that caused the removal. And unlinking no longer moves an unsaved object from the
+  inserted set to the updated set: there is no row to update, so the object was dropped from the
+  save request and never written at all. Reassigning a to-one before the first save previously
+  persisted the owner the object was moved *away* from, on both store families.
 - A fetch against an atomic store no longer reports the objects it returned as updated. The
   stored snapshot is applied with change notifications suppressed, as the SQL store does, so a
   fetch that changes nothing leaves the context with no pending changes.

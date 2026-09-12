@@ -661,6 +661,45 @@ final class ManagedObjectContext extends ObjectClass
     }
 
     /**
+     * Answers whether $object's to-one still names $destination.
+     *
+     * Read primitively: the value is only interesting when the object already holds it, and firing
+     * a fault here would hydrate half the graph while the context is processing its changes.
+     * @param ManagedObject $object The object holding the to-one.
+     * @param RelationshipDescription $relationship The to-one relationship to read.
+     * @param ManagedObject $destination The object the to-one is tested against.
+     * @return bool True when the to-one resolves to $destination.
+     */
+    private function isToOnePointingAt(ManagedObject $object, RelationshipDescription $relationship, ManagedObject $destination): bool
+    {
+        $value = $object->primitiveValueForKey($relationship->name);
+        if ($value instanceof ManagedObject) {
+            $value = $value->objectID;
+        }
+        return $value instanceof ManagedObjectID && $value->isEqual($destination->objectID);
+    }
+
+    /**
+     * Records that unlinking left $object with something to write.
+     *
+     * An object the store already holds becomes an update. One that has never been saved stays an
+     * insert: there is no row to update, so demoting it would drop it from the save request and
+     * the object would never be written at all.
+     * @param ManagedObject $object The object whose relationship was nullified.
+     * @throws Exception
+     */
+    private function transitionToUnlinkedState(ManagedObject $object): void
+    {
+        $this->deletedObjects->remove($object);
+        if ($object->isInserted) {
+            $this->insertedObjects->remove($object);
+            $this->updatedObjects->insert($object);
+        } else {
+            $this->insertedObjects->insert($object);
+        }
+    }
+
+    /**
      * @param Set<ManagedObject> $deletions
      * @param RelationshipDescription $relationship
      * @param ManagedObject $object
@@ -673,16 +712,12 @@ final class ManagedObjectContext extends ObjectClass
         if ($deleteRule === DeleteRule::nullifyDeleteRule) {
             if ($relationship->isToMany) {
                 if ($inverseRelationship->isToMany) {
-                    $this->deletedObjects->remove($object);
-                    $this->insertedObjects->remove($object);
-                    $this->updatedObjects->insert($object);
+                    $this->transitionToUnlinkedState($object);
                     foreach ($deletions as $deletion) {
                         $set = $deletion->mutableSetValueForKey($inverseRelationship->name);
                         $set->remove($object);
                         $deletion->setPrimitiveValueForKey($set, $inverseRelationship->name);
-                        $this->deletedObjects->remove($deletion);
-                        $this->insertedObjects->remove($deletion);
-                        $this->updatedObjects->insert($deletion);
+                        $this->transitionToUnlinkedState($deletion);
                     }
                     $store = $object->objectID->persistentStore;
                     if ($store instanceof SQLCore) {
@@ -697,21 +732,18 @@ final class ManagedObjectContext extends ObjectClass
                     $set = $object->mutableSetValueForKey($relationship->name);
                     $set->subtract($deletions);
                     $object->setPrimitiveValueForKey($set, $relationship->name);
-                    $this->deletedObjects->remove($object);
-                    $this->insertedObjects->remove($object);
-                    $this->updatedObjects->insert($object);
+                    $this->transitionToUnlinkedState($object);
                     foreach ($deletions as $deletion) {
-                        $deletion->setPrimitiveValueForKey(Nil::nil(), $inverseRelationship->name);
-                        $this->deletedObjects->remove($deletion);
-                        $this->insertedObjects->remove($deletion);
-                        $this->updatedObjects->insert($deletion);
+                        // Only clear a to-one that still points back here. Assigning a to-one maintains the inverse, so the removal being processed may be the old owner losing a member that has already been given a new one; blanking it then would undo the assignment that caused this removal in the first place.
+                        if ($this->isToOnePointingAt($deletion, $inverseRelationship, $object)) {
+                            $deletion->setPrimitiveValueForKey(Nil::nil(), $inverseRelationship->name);
+                        }
+                        $this->transitionToUnlinkedState($deletion);
                     }
                 }
             } else {
                 $object->setPrimitiveValueForKey(Nil::nil(), $relationship->name);
-                $this->deletedObjects->remove($object);
-                $this->insertedObjects->remove($object);
-                $this->updatedObjects->insert($object);
+                $this->transitionToUnlinkedState($object);
             }
         } elseif ($deleteRule === DeleteRule::cascadeDeleteRule) {
             foreach ($deletions as $deletion) {

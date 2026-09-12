@@ -99,7 +99,7 @@ The save succeeds and the row is written, so this failure mode is quiet. It is s
 a record whose only content is defaults carries no information, and you usually meant to set
 something. Assign the attributes that justify storing the object.
 
-### Wire a relationship on an object that has not been saved yet
+### Wiring a relationship
 
 Both ends of a relationship maintain each other, so assigning either one updates the other:
 
@@ -111,22 +111,17 @@ $folder->addItemsObject($item);
 $item->folder === $folder;                // true
 ```
 
-That holds for objects the store has handed back. An object created in this context and not yet
-saved is the exception: it has no stored row behind it, so assigning its to-one end records the
-relationship on the object itself but leaves the other side's set untouched until the graph is
-saved and read again. Reaching for the to-many mutator avoids the asymmetry:
+This holds whether the objects came from the store or were created in the context and never saved,
+and it holds for reassignment: moving an item to another folder takes it out of the one it left.
 
 ```php
-$folder = new Folder($context);
-$item = new Item($context);
-$item->folder = $folder;                  // recorded on $item
-$folder->items->containsElement($item);   // false, until saved and read back
+$item->folder = $archive;
+$folder->items->containsElement($item);   // false
+$archive->items->containsElement($item);  // true
 
-$folder->addItemsObject($item);           // maintains both ends right away
+$item->folder = null;
+$archive->items->containsElement($item);  // false
 ```
-
-Either form persists the relationship correctly; what differs is what the in-memory graph reports
-in between.
 
 ## Relationships
 

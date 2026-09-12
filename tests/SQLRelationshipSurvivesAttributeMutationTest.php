@@ -8,6 +8,7 @@ use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
 use Sabatier\CoreData\ManagedObject;
+use Sabatier\CoreData\ManagedObjectContext;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
@@ -214,5 +215,66 @@ final class SQLRelationshipSurvivesAttributeMutationTest extends SQLMigrationTes
         $entry->owner = null;
 
         $this->assertSame(0, $first->entries?->count ?? -1, "clearing the to-one empties the inverse it was in");
+    }
+
+    /**
+     * Two owners and an entry, all inserted in this context and never saved.
+     *
+     * @return array{0: SQLLedgerOwner, 1: SQLLedgerOwner, 2: SQLLedgerEntry, 3: ManagedObjectContext}
+     */
+    private function unsavedPairOfOwners(): array
+    {
+        $context = $this->bootstrap(self::makeModel());
+        $first = new SQLLedgerOwner($context);
+        $first->name = "first";
+        $second = new SQLLedgerOwner($context);
+        $second->name = "second";
+        $entry = new SQLLedgerEntry($context);
+        $entry->name = "entry";
+        return [$first, $second, $entry, $context];
+    }
+
+    public function testAssigningAToOneOnAnUnsavedObjectPopulatesTheInverse(): void
+    {
+        [$first, , $entry] = $this->unsavedPairOfOwners();
+
+        $entry->owner = $first;
+
+        $this->assertTrue($first->entries?->containsElement($entry) ?? false, "the inverse holds the entry before any save");
+    }
+
+    public function testReassigningAToOneOnAnUnsavedObjectMovesItBetweenTheInverses(): void
+    {
+        [$first, $second, $entry] = $this->unsavedPairOfOwners();
+        $entry->owner = $first;
+
+        $entry->owner = $second;
+
+        $this->assertSame(0, $first->entries?->count ?? -1, "the owner it left drops it");
+        $this->assertSame(1, $second->entries?->count ?? -1, "and the owner it moved to holds it");
+    }
+
+    public function testNullingAToOneOnAnUnsavedObjectRemovesItFromTheInverse(): void
+    {
+        [$first, , $entry] = $this->unsavedPairOfOwners();
+        $entry->owner = $first;
+
+        $entry->owner = null;
+
+        $this->assertSame(0, $first->entries?->count ?? -1, "clearing the to-one empties the inverse it was in");
+    }
+
+    /** The link an unsaved assignment records must still be the one the store writes. */
+    public function testAnUnsavedAssignmentPersistsTheRelationship(): void
+    {
+        [$first, $second, $entry, $context] = $this->unsavedPairOfOwners();
+        $entry->owner = $first;
+        $entry->owner = $second;
+        $context->save();
+
+        $reloaded = $this->freshContext(self::makeModel());
+        $loadedEntry = $reloaded->fetch(SQLLedgerEntry::fetchRequest())->first;
+        $this->assertNotNull($loadedEntry);
+        $this->assertSame("second", $loadedEntry->owner?->name, "the entry reads back under the owner it was last assigned to");
     }
 }
