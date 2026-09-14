@@ -11,20 +11,17 @@ use Sabatier\Foundation\ObjectClass;
 /** @internal */
 class SQLIndex extends ObjectClass
 {
-    /** @var ArrayClass<SQLStatement> */
+    /** @var ArrayClass<SQLStatement> The one statement that creates this index; a subclass whose index kind needs different DDL overrides this hook outright, because appending to it from a constructor cannot work when reading the property is what initialises it. */
     protected(set) ArrayClass $createTableStatements {
         get {
             if (isset($this->createTableStatements)) {
                 return $this->createTableStatements;
             }
-            $createTableStatements = new ArrayClass();
             $elements = $this->indexDescription->elements->map(fn(FetchIndexElementDescription $element): string => "`{$element->property->name}` $element->order");
             if ($this->isUnique) {
-                $createTableStatements->append(new SQLStatement("ALTER TABLE `{$this->entity->tableName}` ADD CONSTRAINT `{$this->indexDescription->name}` UNIQUE INDEX IF NOT EXISTS ({$elements->join(", ")}) USING BTREE"));
-            } else {
-                $createTableStatements->append(new SQLStatement("ALTER TABLE `{$this->entity->tableName}` ADD INDEX IF NOT EXISTS `{$this->indexDescription->name}` ({$elements->join(", ")}) USING BTREE"));
+                return $this->createTableStatements = new ArrayClass([new SQLStatement("ALTER TABLE `{$this->entity->tableName}` ADD CONSTRAINT `{$this->indexDescription->name}` UNIQUE INDEX IF NOT EXISTS ({$elements->join(", ")}) USING BTREE")]);
             }
-            return $this->createTableStatements = $createTableStatements;
+            return $this->createTableStatements = new ArrayClass([new SQLStatement("ALTER TABLE `{$this->entity->tableName}` ADD INDEX IF NOT EXISTS `{$this->indexDescription->name}` ({$elements->join(", ")}) USING BTREE")]);
         }
     }
     /** @var ArrayClass<SQLStatement> */
