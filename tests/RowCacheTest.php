@@ -491,6 +491,304 @@ final class RowCacheTest extends TestCase
         return $request;
     }
 
+    // --- Bulk operations ---
+    //
+    // The store never caches one row at a time on the hot paths: a batch insert, a save and a
+    // batch fault all hand the cache a whole Dictionary keyed by object-ID URI (SQLCore lines
+    // 291, 332, 368, 421, 456). So the contract these assert is the one SQLCore actually
+    // depends on: the key is `$objectID->uriRepresentation()->absoluteString`, and what
+    // setSnapshots() writes under it, snapshots() reads back under the same key.
+
+    /**
+     * The bulk round-trip, and the key it is keyed by. SQLCore builds the Dictionary it passes
+     * to setSnapshots() with the object ID's URI as the key, then expects snapshots() to answer
+     * under that same URI — not under the cache's internal key, which for a property-scoped
+     * entry would differ.
+     *
+     * @param callable(): ?RowCache $factory
+     */
+    #[DataProvider("cachingBackends")]
+    public function testBulkSnapshotsRoundTripKeyedByObjectIDURI(callable $factory): void
+    {
+        $cache = $this->backend($factory);
+        $first = self::objectID("bulk-first");
+        $second = self::objectID("bulk-second");
+
+        $cache->setSnapshots(new Dictionary([
+            $first->uriRepresentation()->absoluteString => self::snapshot("one"),
+            $second->uriRepresentation()->absoluteString => self::snapshot("two"),
+        ]));
+
+        $snapshots = $cache->snapshots(new ArrayClass([$first, $second]));
+
+        $this->assertSame("one", $snapshots[$first->uriRepresentation()->absoluteString]?->offsetGet("label"));
+        $this->assertSame("two", $snapshots[$second->uriRepresentation()->absoluteString]?->offsetGet("label"));
+    }
+
+    /**
+     * A bulk read is not all-or-nothing: the store asks for the IDs it wants and takes whatever
+     * is cached, fetching the rest from the database. A backend that failed the whole read
+     * because one ID was cold would send every fault to the database.
+     *
+     * @param callable(): ?RowCache $factory
+     */
+    #[DataProvider("cachingBackends")]
+    public function testBulkReadReturnsOnlyTheEntriesThatAreCached(callable $factory): void
+    {
+        $cache = $this->backend($factory);
+        $cached = self::objectID("bulk-present");
+        $cold = self::objectID("bulk-absent");
+
+        $cache->setSnapshots(new Dictionary([$cached->uriRepresentation()->absoluteString => self::snapshot("present")]));
+
+        $snapshots = $cache->snapshots(new ArrayClass([$cached, $cold]));
+
+        $this->assertSame("present", $snapshots[$cached->uriRepresentation()->absoluteString]?->offsetGet("label"));
+        $this->assertNull($snapshots[$cold->uriRepresentation()->absoluteString], "an uncached ID is absent from the result rather than present-and-null");
+        $this->assertFalse($snapshots->keys->containsElement($cold->uriRepresentation()->absoluteString), "and its key is not in the result at all");
+    }
+
+    /**
+     * Asking for nothing returns nothing. The guard matters because two backends short-circuit
+     * on it before touching the network: apcu_fetch([]) and a pipelined MGET with no keys are
+     * both wasted round trips at best.
+     *
+     * @param callable(): ?RowCache $factory
+     */
+    #[DataProvider("cachingBackends")]
+    public function testBulkReadOfNoObjectIDsIsEmpty(callable $factory): void
+    {
+        $cache = $this->backend($factory);
+
+        $this->assertTrue($cache->snapshots(new ArrayClass())->isEmpty);
+    }
+
+    /**
+     * A bulk read where nothing is cached is empty, not a Dictionary of nulls. SQLCore decides
+     * which IDs still need a database round trip by subtracting what came back, so a result
+     * padded with null keys would report every cold ID as already cached.
+     *
+     * @param callable(): ?RowCache $factory
+     */
+    #[DataProvider("cachingBackends")]
+    public function testBulkReadWithNothingCachedIsEmpty(callable $factory): void
+    {
+        $cache = $this->backend($factory);
+
+        $snapshots = $cache->snapshots(new ArrayClass([self::objectID("bulk-never-written")]));
+
+        $this->assertTrue($snapshots->isEmpty, "a fully cold bulk read comes back empty");
+    }
+
+    /**
+     * Writing nothing is a no-op rather than an error. A save with no inserted objects reaches
+     * setSnapshots() with an empty Dictionary.
+     *
+     * @param callable(): ?RowCache $factory
+     */
+    #[DataProvider("cachingBackends")]
+    public function testBulkWriteOfNoSnapshotsIsANoOp(callable $factory): void
+    {
+        $cache = $this->backend($factory);
+        $objectID = self::objectID("bulk-untouched");
+        $cache->setSnapshot(self::snapshot("kept"), $objectID);
+
+        $cache->setSnapshots(new Dictionary());
+
+        $this->assertSame("kept", $cache->snapshot($objectID)?->offsetGet("label"), "an empty bulk write disturbs nothing");
+    }
+
+    /**
+     * A bulk write overwrites an existing entry rather than merging with it — a save writes the
+     * object's current snapshot, and a stale attribute surviving underneath it would be served
+     * to the next fault.
+     *
+     * @param callable(): ?RowCache $factory
+     */
+    #[DataProvider("cachingBackends")]
+    public function testBulkWriteReplacesAnExistingSnapshot(callable $factory): void
+    {
+        $cache = $this->backend($factory);
+        $objectID = self::objectID("bulk-overwrite");
+        $uri = $objectID->uriRepresentation()->absoluteString;
+
+        $cache->setSnapshots(new Dictionary([$uri => new Dictionary(["label" => "before", "dropped" => "gone"])]));
+        $cache->setSnapshots(new Dictionary([$uri => self::snapshot("after")]));
+
+        $snapshot = $cache->snapshots(new ArrayClass([$objectID]))[$uri];
+
+        $this->assertSame("after", $snapshot?->offsetGet("label"));
+        $this->assertNull($snapshot?->offsetGet("dropped"), "the replaced snapshot does not leave its old keys behind");
+    }
+
+    /**
+     * A bulk write is visible to the single-object read, and vice versa: they address the same
+     * entry. SQLCore mixes the two freely — it writes a batch after a save and then faults one
+     * object at a time through snapshot().
+     *
+     * @param callable(): ?RowCache $factory
+     */
+    #[DataProvider("cachingBackends")]
+    public function testBulkAndSingleOperationsShareTheSameEntries(callable $factory): void
+    {
+        $cache = $this->backend($factory);
+        $written = self::objectID("bulk-then-single");
+        $single = self::objectID("single-then-bulk");
+
+        $cache->setSnapshots(new Dictionary([$written->uriRepresentation()->absoluteString => self::snapshot("bulk")]));
+        $cache->setSnapshot(self::snapshot("single"), $single);
+
+        $this->assertSame("bulk", $cache->snapshot($written)?->offsetGet("label"), "a bulk write is readable one object at a time");
+        $this->assertTrue($cache->hasSnapshot($written), "and hasSnapshot agrees with it");
+        $this->assertSame("single", $cache->snapshots(new ArrayClass([$single]))[$single->uriRepresentation()->absoluteString]?->offsetGet("label"), "a single write is readable in bulk");
+    }
+
+    /**
+     * Bulk deletion removes exactly the objects named and leaves the others cached. This is the
+     * invalidation path for an update: SQLCore deletes the snapshots of the objects a save
+     * touched, and over-deleting would cost the cache while under-deleting would serve stale rows.
+     *
+     * @param callable(): ?RowCache $factory
+     */
+    #[DataProvider("cachingBackends")]
+    public function testBulkDeleteRemovesOnlyTheObjectsNamed(callable $factory): void
+    {
+        $cache = $this->backend($factory);
+        $removed = self::objectID("bulk-removed");
+        $kept = self::objectID("bulk-kept");
+
+        $cache->setSnapshots(new Dictionary([
+            $removed->uriRepresentation()->absoluteString => self::snapshot("removed"),
+            $kept->uriRepresentation()->absoluteString => self::snapshot("kept"),
+        ]));
+
+        $cache->deleteSnapshots(new ArrayClass([$removed]));
+
+        $this->assertFalse($cache->hasSnapshot($removed), "the named object is evicted");
+        $this->assertTrue($cache->hasSnapshot($kept), "an object not named survives");
+    }
+
+    /**
+     * Deleting nothing is a no-op. A save that touched no existing object reaches
+     * deleteSnapshots() with an empty collection.
+     *
+     * The backends' `isEmpty` guards survive mutation — removing one breaks no test — and that
+     * is a real limit of testing through the interface rather than an untested branch. They
+     * exist because `Redis::del([])` and `mget([])` are malformed commands that return `false`
+     * instead of raising, and `Memcached` behaves likewise; the failure is a silent wasted round
+     * trip, which no assertion about cache contents can observe. Verified against live servers
+     * on 2026-09-14. Do not delete the guards on the strength of coverage.
+     *
+     * @param callable(): ?RowCache $factory
+     */
+    #[DataProvider("cachingBackends")]
+    public function testBulkDeleteOfNoObjectIDsIsANoOp(callable $factory): void
+    {
+        $cache = $this->backend($factory);
+        $objectID = self::objectID("bulk-delete-untouched");
+        $cache->setSnapshot(self::snapshot("kept"), $objectID);
+
+        $cache->deleteSnapshots(new ArrayClass());
+
+        $this->assertTrue($cache->hasSnapshot($objectID), "an empty bulk delete evicts nothing");
+    }
+
+    /**
+     * Deleting a cold entry is silent. The store does not check before invalidating, so this is
+     * the ordinary case after an object was evicted by TTL.
+     *
+     * @param callable(): ?RowCache $factory
+     */
+    #[DataProvider("cachingBackends")]
+    public function testBulkDeleteOfUncachedObjectsIsSilent(callable $factory): void
+    {
+        $cache = $this->backend($factory);
+
+        $cache->deleteSnapshots(new ArrayClass([self::objectID("bulk-delete-never-written")]));
+
+        $this->assertTrue(true, "deleting what was never cached is not an error");
+    }
+
+    /**
+     * Property snapshots are deleted by URI and property name together. This is the
+     * relationship-invalidation path: when a save changes a relationship, SQLCore drops the
+     * cached relationship for that object (line 371) while leaving the object's own snapshot,
+     * which it has just rewritten, in place.
+     *
+     * @param callable(): ?RowCache $factory
+     */
+    #[DataProvider("cachingBackends")]
+    public function testDeletePropertySnapshotsRemovesTheScopedEntryOnly(callable $factory): void
+    {
+        $cache = $this->backend($factory);
+        $objectID = self::objectID("property-bulk");
+        $relationship = self::propertyNamed("label");
+        $other = self::propertyNamed("untouched");
+
+        $cache->setSnapshot(self::snapshot("object"), $objectID);
+        $cache->setSnapshot(self::snapshot("relationship"), $objectID, 3600, $relationship);
+        $cache->setSnapshot(self::snapshot("other"), $objectID, 3600, $other);
+
+        $cache->deletePropertySnapshots(new Dictionary([
+            $objectID->uriRepresentation()->absoluteString => new ArrayClass([$relationship]),
+        ]));
+
+        $this->assertFalse($cache->hasSnapshot($objectID, $relationship), "the named relationship is invalidated");
+        $this->assertTrue($cache->hasSnapshot($objectID, $other), "a relationship not named survives");
+        $this->assertTrue($cache->hasSnapshot($objectID), "and the object's own snapshot is untouched");
+    }
+
+    /**
+     * One object can have several relationships invalidated at once, and several objects can be
+     * named in the same call — SQLCore accumulates a Dictionary of URI to changed relationships
+     * across every updated object in the save.
+     *
+     * @param callable(): ?RowCache $factory
+     */
+    #[DataProvider("cachingBackends")]
+    public function testDeletePropertySnapshotsSpansObjectsAndProperties(callable $factory): void
+    {
+        $cache = $this->backend($factory);
+        $first = self::objectID("property-span-first");
+        $second = self::objectID("property-span-second");
+        $left = self::propertyNamed("left");
+        $right = self::propertyNamed("right");
+
+        foreach ([$first, $second] as $objectID) {
+            $cache->setSnapshot(self::snapshot("left"), $objectID, 3600, $left);
+            $cache->setSnapshot(self::snapshot("right"), $objectID, 3600, $right);
+        }
+
+        $cache->deletePropertySnapshots(new Dictionary([
+            $first->uriRepresentation()->absoluteString => new ArrayClass([$left, $right]),
+            $second->uriRepresentation()->absoluteString => new ArrayClass([$left]),
+        ]));
+
+        $this->assertFalse($cache->hasSnapshot($first, $left), "both of the first object's relationships go");
+        $this->assertFalse($cache->hasSnapshot($first, $right));
+        $this->assertFalse($cache->hasSnapshot($second, $left), "the second object's named relationship goes");
+        $this->assertTrue($cache->hasSnapshot($second, $right), "and the one not named survives");
+    }
+
+    /**
+     * Deleting no property snapshots is a no-op: a save that changed only attributes reaches
+     * this path with an empty Dictionary.
+     *
+     * @param callable(): ?RowCache $factory
+     */
+    #[DataProvider("cachingBackends")]
+    public function testDeletePropertySnapshotsOfNothingIsANoOp(callable $factory): void
+    {
+        $cache = $this->backend($factory);
+        $objectID = self::objectID("property-bulk-untouched");
+        $property = self::propertyNamed("label");
+        $cache->setSnapshot(self::snapshot("kept"), $objectID, 3600, $property);
+
+        $cache->deletePropertySnapshots(new Dictionary());
+
+        $this->assertTrue($cache->hasSnapshot($objectID, $property), "an empty property invalidation evicts nothing");
+    }
+
     // --- NullRowCache: the deliberate counter-example ---
 
     /**
