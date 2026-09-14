@@ -32,6 +32,7 @@ use Sabatier\CoreData\SQLGenerator;
 use Sabatier\CoreData\SQLStatement;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\ComparisonPredicateModifier;
 use Sabatier\Foundation\Predicates\ComparisonPredicateOptions;
@@ -985,5 +986,410 @@ final class SQLGeneratorTest extends TestCase
         // as booleans (the plist convention), so they would render as the literals true/false.
         $this->assertMatchesRegularExpression("/IF\(.+, 'hi', 'lo'\)/", $string, "the true branch comes first");
         $this->assertFalse($isDeterministic, "a conditional cannot be persisted as a deterministic column");
+    }
+
+    // --- The function-operator table ---
+    //
+    // buildFunctionExpression maps every ExpressionOperatorType to its MariaDB spelling, and it
+    // is by far the largest single gap in this class: one case per operator, sixty-odd of them.
+    // A wrong entry here is silent in exactly the way this file exists to catch — the query runs
+    // and returns the wrong number, or names a function the server does not have.
+    //
+    // The three shapes are asserted separately because they are three different rules: infix
+    // operators render as (a OP b), most functions upper-case their own symbol, and a handful
+    // spell out a MariaDB name that is nothing like the Foundation one (average: -> AVG,
+    // raise:toPower: -> POW, concat: -> CONCAT_WS). The third group is where a typo hides.
+
+    /**
+     * Operators that render infix rather than as a call, with the argument list joined by the
+     * operator's own symbol.
+     *
+     * @return array<string, array{string, string}>
+     */
+    public static function infixOperators(): array
+    {
+        return [
+            "add:to:" => ["add:to:", "+"],
+            "from:subtract:" => ["from:subtract:", "-"],
+            "multiply:by:" => ["multiply:by:", "*"],
+            "divide:by:" => ["divide:by:", "/"],
+            "modulus:by:" => ["modulus:by:", "%"],
+            "bitwiseAnd:with:" => ["bitwiseAnd:with:", "&"],
+            "bitwiseOr:with:" => ["bitwiseOr:with:", "|"],
+            "bitwiseXor:with:" => ["bitwiseXor:with:", "^"],
+            "leftshift:by:" => ["leftshift:by:", "<<"],
+            "rightshift:by:" => ["rightshift:by:", ">>"],
+        ];
+    }
+
+    /**
+     * An infix operator wraps its arguments in parentheses and joins them with its symbol. The
+     * parentheses are not cosmetic: the expression becomes one column of a larger SELECT, and
+     * without them `a + b` inside a comparison would rebind against the surrounding operators.
+     */
+    #[DataProvider("infixOperators")]
+    public function testAnInfixOperatorRendersBetweenItsArguments(string $functionName, string $symbol): void
+    {
+        $generator = new SQLGenerator(new SQLFetchRequestContext($this->request(), $this->context, $this->store));
+
+        $string = $generator->buildDerivationExpression(Expression::expressionForFunction($functionName, new ArrayClass([
+            Expression::expressionForKeyPath("qty"),
+            Expression::expressionForKeyPath("qty"),
+        ])));
+
+        $this->assertStringContainsString(" $symbol ", $string, "the operator sits between its arguments");
+        $this->assertStringStartsWith("(", $string, "and the whole expression is parenthesised");
+        $this->assertStringEndsWith(")", $string);
+    }
+
+    /**
+     * Operators whose MariaDB name differs from the Foundation function name. These are the ones
+     * a typo would bury: the others can be derived from the symbol, but each of these is a
+     * deliberate translation.
+     *
+     * @return array<string, array{string, string, list<string>}>
+     */
+    public static function renamedFunctions(): array
+    {
+        return [
+            "average: -> AVG" => ["average:", "AVG", ["qty"]],
+            "raise:toPower: -> POW" => ["raise:toPower:", "POW", ["qty", "qty"]],
+            "random: -> RAND" => ["random:", "RAND", []],
+            "trunc: -> TRUNCATE" => ["trunc:", "TRUNCATE", ["qty"]],
+            "uppercase: -> UPPER" => ["uppercase:", "UPPER", ["sku"]],
+            "lowercase: -> LOWER" => ["lowercase:", "LOWER", ["sku"]],
+            "concat: -> CONCAT_WS" => ["concat:", "CONCAT_WS", ["sku", "sku"]],
+            "regexpReplace: -> REGEXP_REPLACE" => ["regexpReplace:", "REGEXP_REPLACE", ["sku", "sku", "sku"]],
+            "index: -> ELT" => ["index:", "ELT", ["qty", "sku"]],
+            "curdate: -> CURDATE" => ["curdate:", "CURDATE", []],
+            "date:format: -> DATE_FORMAT" => ["date:format:", "DATE_FORMAT", ["sku", "sku"]],
+            "datediff: -> TIMESTAMPDIFF" => ["datediff:", "TIMESTAMPDIFF", ["sku", "sku"]],
+            "dateadd: -> DATE_ADD" => ["dateadd:", "DATE_ADD", ["sku", "sku"]],
+            "datesub: -> DATE_SUB" => ["datesub:", "DATE_SUB", ["sku", "sku"]],
+            "dayofweek: -> DAYOFWEEK" => ["dayofweek:", "DAYOFWEEK", ["sku"]],
+            "dayofyear: -> DAYOFYEAR" => ["dayofyear:", "DAYOFYEAR", ["sku"]],
+            "lastday: -> LAST_DAY" => ["lastday:", "LAST_DAY", ["sku"]],
+            "fromunixtime: -> FROM_UNIXTIME" => ["fromunixtime:", "FROM_UNIXTIME", ["qty"]],
+            "unixtimestamp: -> UNIX_TIMESTAMP" => ["unixtimestamp:", "UNIX_TIMESTAMP", ["sku"]],
+            "addtime: -> ADDTIME" => ["addtime:", "ADDTIME", ["sku", "sku"]],
+            "subtime: -> SUBTIME" => ["subtime:", "SUBTIME", ["sku", "sku"]],
+            "quarter: -> QUARTER" => ["quarter:", "QUARTER", ["sku"]],
+        ];
+    }
+
+    /**
+     * @param list<string> $keyPaths
+     */
+    #[DataProvider("renamedFunctions")]
+    public function testARenamedFunctionUsesItsMariaDBSpelling(string $functionName, string $sqlName, array $keyPaths): void
+    {
+        $generator = new SQLGenerator(new SQLFetchRequestContext($this->request(), $this->context, $this->store));
+        $arguments = new ArrayClass($keyPaths)->map(fn(string $keyPath): Expression => Expression::expressionForKeyPath($keyPath));
+
+        $string = $generator->buildDerivationExpression(Expression::expressionForFunction($functionName, $arguments));
+
+        $this->assertStringStartsWith("$sqlName(", $string, "$functionName must render as $sqlName");
+    }
+
+    /**
+     * Operators whose SQL name is their own symbol upper-cased. Asserted as a group rather than
+     * individually: the rule is one line of the generator, so what matters is that the whole
+     * group follows it.
+     *
+     * @return array<string, array{string, string, list<string>}>
+     */
+    public static function symbolFunctions(): array
+    {
+        return [
+            "sum:" => ["sum:", "SUM", ["qty"]],
+            "count:" => ["count:", "COUNT", ["qty"]],
+            "min:" => ["min:", "MIN", ["qty"]],
+            "max:" => ["max:", "MAX", ["qty"]],
+            "sqrt:" => ["sqrt:", "SQRT", ["qty"]],
+            "ln:" => ["ln:", "LN", ["qty"]],
+            "log:" => ["log:", "LOG", ["qty"]],
+            "exp:" => ["exp:", "EXP", ["qty"]],
+            "abs:" => ["abs:", "ABS", ["qty"]],
+            "floor:" => ["floor:", "FLOOR", ["qty"]],
+            "round:" => ["round:", "ROUND", ["qty"]],
+            "length:" => ["length:", "LENGTH", ["sku"]],
+            "trim:" => ["trim:", "TRIM", ["sku"]],
+            "reverse:" => ["reverse:", "REVERSE", ["sku"]],
+            "repeat:" => ["repeat:", "REPEAT", ["sku", "qty"]],
+            "replace:" => ["replace:", "REPLACE", ["sku", "sku", "sku"]],
+            "substring:" => ["substring:", "SUBSTRING", ["sku", "qty"]],
+            "lpad:" => ["lpad:", "LPAD", ["sku", "qty", "sku"]],
+            "rpad:" => ["rpad:", "RPAD", ["sku", "qty", "sku"]],
+            "left:" => ["left:", "LEFT", ["sku", "qty"]],
+            "right:" => ["right:", "RIGHT", ["sku", "qty"]],
+            "instr:" => ["instr:", "INSTR", ["sku", "sku"]],
+            "year:" => ["year:", "YEAR", ["sku"]],
+            "month:" => ["month:", "MONTH", ["sku"]],
+            "week:" => ["week:", "WEEK", ["sku"]],
+            "day:" => ["day:", "DAY", ["sku"]],
+            "hour:" => ["hour:", "HOUR", ["sku"]],
+            "minute:" => ["minute:", "MINUTE", ["sku"]],
+            "second:" => ["second:", "SECOND", ["sku"]],
+            "date:" => ["date:", "DATE", ["sku"]],
+            "now:" => ["now:", "NOW", []],
+            "uuid:" => ["uuid:", "UUID", []],
+            "ifNull:" => ["ifNull:", "IFNULL", ["qty", "qty"]],
+            "nullIf:" => ["nullIf:", "NULLIF", ["qty", "qty"]],
+            "coalesce:" => ["coalesce:", "COALESCE", ["qty", "qty"]],
+            "greatest:" => ["greatest:", "GREATEST", ["qty", "qty"]],
+            "least:" => ["least:", "LEAST", ["qty", "qty"]],
+            "stddev:" => ["stddev:", "STDDEV", ["qty"]],
+        ];
+    }
+
+    /**
+     * @param list<string> $keyPaths
+     */
+    #[DataProvider("symbolFunctions")]
+    public function testASymbolFunctionRendersUpperCased(string $functionName, string $sqlName, array $keyPaths): void
+    {
+        $generator = new SQLGenerator(new SQLFetchRequestContext($this->request(), $this->context, $this->store));
+        $arguments = new ArrayClass($keyPaths)->map(fn(string $keyPath): Expression => Expression::expressionForKeyPath($keyPath));
+
+        $string = $generator->buildDerivationExpression(Expression::expressionForFunction($functionName, $arguments));
+
+        $this->assertStringStartsWith("$sqlName(", $string, "$functionName must render as $sqlName");
+    }
+
+    /**
+     * A cast joins its two arguments with AS rather than a comma — it is the one call whose
+     * argument separator is not ", ", and a comma there is a syntax error rather than a wrong
+     * result.
+     */
+    public function testACastSeparatesItsArgumentsWithAs(): void
+    {
+        $generator = new SQLGenerator(new SQLFetchRequestContext($this->request(), $this->context, $this->store));
+
+        $string = $generator->buildDerivationExpression(Expression::expressionForFunction("cast:", new ArrayClass([
+            Expression::expressionForKeyPath("qty"),
+            Expression::expressionForConstantValue("CHAR"),
+        ])));
+
+        $this->assertStringStartsWith("CAST(", $string);
+        $this->assertStringContainsString(" AS ", $string, "a cast separates its arguments with AS, not a comma");
+    }
+
+    /**
+     * An operator the generator has no mapping for is refused rather than emitted as an empty
+     * call. `()` would be a syntax error at the server; failing here names the expression.
+     */
+    public function testAnUnmappedOperatorIsRefused(): void
+    {
+        $generator = new SQLGenerator(new SQLFetchRequestContext($this->request(), $this->context, $this->store));
+
+        $this->expectException(InternalInconsistencyException::class);
+        $generator->buildDerivationExpression(Expression::expressionForFunction("median:", new ArrayClass([
+            Expression::expressionForKeyPath("qty"),
+        ])));
+    }
+
+    /**
+     * Functions whose value changes between evaluations of the same row.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function nonDeterministicFunctions(): array
+    {
+        return [
+            "now:" => ["now:"],
+            "curdate:" => ["curdate:"],
+            "random:" => ["random:"],
+            "uuid:" => ["uuid:"],
+        ];
+    }
+
+    /**
+     * A function whose value is not stable for a given row is reported as non-deterministic, and
+     * the flag is what stops the schema generator from persisting it as a generated column —
+     * MariaDB refuses one, and a stored NOW() would freeze at write time regardless.
+     *
+     * The line the rule is drawn on is stability, not aggregation: SUM and COUNT are
+     * deterministic here, because for a fixed set of rows they always give the same answer.
+     */
+    #[DataProvider("nonDeterministicFunctions")]
+    public function testAnUnstableFunctionIsReportedAsNonDeterministic(string $functionName): void
+    {
+        $generator = new SQLGenerator(new SQLFetchRequestContext($this->request(), $this->context, $this->store));
+        $isDeterministic = true;
+
+        $generator->buildDerivationExpression(
+            Expression::expressionForFunction($functionName, new ArrayClass()),
+            isDeterministic: $isDeterministic,
+        );
+
+        $this->assertFalse($isDeterministic, "$functionName cannot back a deterministic generated column");
+    }
+
+    /**
+     * An aggregate, by contrast, IS deterministic: for a fixed set of rows it always produces the
+     * same answer, so the flag does not exclude it. Pinned explicitly because the intuitive
+     * reading — "an aggregate reads more than its own row, so it must be non-deterministic" —
+     * is wrong here and would look like a bug to whoever assumes it.
+     */
+    public function testAnAggregateStaysDeterministic(): void
+    {
+        $generator = new SQLGenerator(new SQLFetchRequestContext($this->request(), $this->context, $this->store));
+        $isDeterministic = true;
+
+        $generator->buildDerivationExpression(
+            Expression::expressionForFunction("sum:", new ArrayClass([Expression::expressionForKeyPath("qty")])),
+            isDeterministic: $isDeterministic,
+        );
+
+        $this->assertTrue($isDeterministic, "an aggregate is stable for a fixed set of rows");
+    }
+
+    /**
+     * A plain arithmetic expression over the row's own columns IS deterministic, which is what
+     * lets a derived attribute be stored as a generated column rather than computed per query.
+     */
+    public function testRowLocalArithmeticStaysDeterministic(): void
+    {
+        $generator = new SQLGenerator(new SQLFetchRequestContext($this->request(), $this->context, $this->store));
+        $isDeterministic = true;
+
+        $generator->buildDerivationExpression(
+            Expression::expressionForFunction("add:to:", new ArrayClass([
+                Expression::expressionForKeyPath("qty"),
+                Expression::expressionForKeyPath("qty"),
+            ])),
+            isDeterministic: $isDeterministic,
+        );
+
+        $this->assertTrue($isDeterministic, "arithmetic over the row's own columns can be persisted");
+    }
+
+    // --- Correlated subqueries ---
+    //
+    // A SUBQUERY over a to-many becomes a correlated SELECT in the WHERE clause. The whole
+    // construct hinges on one clause: the correlation condition tying the inner table back to
+    // the outer row. Without it the subquery would count every row in the table and the
+    // predicate would match all suppliers or none — a wrong result, never an error, which is
+    // exactly the failure mode this file exists to catch.
+
+    /**
+     * A SUBQUERY over a to-many relationship, counted, becomes a scalar subselect compared
+     * against the count — and the inner SELECT is correlated to the outer row.
+     */
+    public function testACountedSubqueryBecomesACorrelatedScalarSelect(): void
+    {
+        $request = $this->request("GenSupplier");
+        $request->predicate = Predicate::format('SUBQUERY(parts, $p, $p.qty > 5).@count > 0', new ArrayClass());
+        $this->assertNotNull($request->predicate, "the fixture predicate must parse");
+
+        $string = $this->statementFor($request)->string;
+
+        $this->assertStringContainsString("SELECT COUNT(", $string, "the subquery counts");
+        $this->assertStringContainsString("FROM `GenPart`", $string, "over the destination entity's table");
+        $this->assertStringContainsString("= GenSupplier.objectID", $string, "correlated back to the outer row");
+    }
+
+    /**
+     * The subquery's own predicate survives into the inner WHERE, alongside the correlation.
+     * Both have to be there: only the correlation, and the filter is lost; only the filter, and
+     * every supplier sees every part.
+     */
+    public function testTheSubqueryPredicateAndTheCorrelationAreBothApplied(): void
+    {
+        $request = $this->request("GenSupplier");
+        $request->predicate = Predicate::format('SUBQUERY(parts, $p, $p.qty > 5).@count > 0', new ArrayClass());
+        $this->assertNotNull($request->predicate, "the fixture predicate must parse");
+
+        $string = $this->statementFor($request)->string;
+
+        $this->assertMatchesRegularExpression(
+            "/WHERE [^)]*qty > 5 AND [^)]*supplierID = GenSupplier\.objectID/",
+            $string,
+            "the subquery's filter and the correlation are ANDed inside the inner WHERE",
+        );
+    }
+
+    /**
+     * The subquery's variable names its table alias, so the inner table is addressed by the name
+     * the predicate chose rather than by the entity's own table name — which is what keeps a
+     * self-referential subquery from colliding with its outer table.
+     */
+    public function testTheSubqueryVariableNamesTheInnerTableAlias(): void
+    {
+        $request = $this->request("GenSupplier");
+        $request->predicate = Predicate::format('SUBQUERY(parts, $item, $item.qty > 5).@count > 0', new ArrayClass());
+        $this->assertNotNull($request->predicate, "the fixture predicate must parse");
+
+        $string = $this->statementFor($request)->string;
+
+        $this->assertStringContainsString("AS item", $string, "the alias comes from the subquery variable, with its sigil stripped");
+    }
+
+    /**
+     * ANY over a to-many is the existence form: it needs no count, so the generator emits
+     * EXISTS instead of comparing a scalar. Semantically the same question, but EXISTS can stop
+     * at the first matching row.
+     */
+    public function testAnyOverAToManyBecomesAnExistsSubquery(): void
+    {
+        $request = $this->request("GenSupplier");
+        $request->predicate = Predicate::format("ANY parts.qty > %d", new ArrayClass([5]));
+        $this->assertNotNull($request->predicate, "the fixture predicate must parse");
+
+        $string = $this->statementFor($request)->string;
+
+        $this->assertStringContainsString("EXISTS (SELECT", $string, "an existence test does not need a count");
+        $this->assertStringContainsString("= GenSupplier.objectID", $string, "and is correlated like any other subquery");
+        $this->assertStringNotContainsString("COUNT(", $string, "no count is generated for an existence test");
+    }
+
+    /**
+     * An EXISTS subquery generated from ANY takes its alias from the generator rather than from
+     * a variable the predicate named, since there is none — so it must still not collide with
+     * the outer table's name.
+     */
+    public function testAnExistsSubqueryAliasDoesNotCollideWithTheOuterTable(): void
+    {
+        $request = $this->request("GenSupplier");
+        $request->predicate = Predicate::format("ANY parts.qty > %d", new ArrayClass([5]));
+        $this->assertNotNull($request->predicate, "the fixture predicate must parse");
+
+        $string = $this->statementFor($request)->string;
+
+        $this->assertMatchesRegularExpression("/FROM `GenPart` AS (?!GenSupplier\b)\w+/", $string, "the inner alias is distinct from the outer table");
+    }
+
+    /**
+     * A subquery's comparison value is bound rather than interpolated, the same as any other
+     * predicate value — the count on the right of the comparison becomes a placeholder.
+     */
+    public function testASubqueryComparisonValueIsBound(): void
+    {
+        $request = $this->request("GenSupplier");
+        $request->predicate = Predicate::format('SUBQUERY(parts, $p, $p.qty > 5).@count == 2', new ArrayClass());
+        $this->assertNotNull($request->predicate, "the fixture predicate must parse");
+
+        $statement = $this->statementFor($request);
+
+        $this->assertStringContainsString("= ?", $statement->string, "the compared count is a placeholder");
+        $this->assertFalse($statement->arguments->isEmpty, "and it is carried as an argument");
+    }
+
+    /**
+     * Nesting composes: a function whose argument is another function renders the inner call
+     * inside the outer one, because every argument goes back through buildExpression.
+     */
+    public function testFunctionsNest(): void
+    {
+        $generator = new SQLGenerator(new SQLFetchRequestContext($this->request(), $this->context, $this->store));
+
+        $string = $generator->buildDerivationExpression(Expression::expressionForFunction("abs:", new ArrayClass([
+            Expression::expressionForFunction("from:subtract:", new ArrayClass([
+                Expression::expressionForKeyPath("qty"),
+                Expression::expressionForKeyPath("qty"),
+            ])),
+        ])));
+
+        $this->assertMatchesRegularExpression("/^ABS\(\(.+ - .+\)\)$/", $string, "the inner call is built inside the outer one");
     }
 }
