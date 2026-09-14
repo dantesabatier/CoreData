@@ -25,7 +25,7 @@ abstract class RowCache implements PersistentStoreCache
     }
 
     /**
-     * The canonical description is digested rather than escaped: urlencode grew the key past the
+     * The canonical description is digested rather than escaped: urlencode() grew the key past the
      * length of its input (a predicate with a few clauses reached 339 characters from 255), and
      * a key that long is carried on every cached query and has to fit the backends' own limits —
      * Memcached rejects keys over 250 bytes. xxh128 is non-cryptographic on purpose: this
