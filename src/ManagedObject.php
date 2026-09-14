@@ -916,7 +916,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     $changeKind = KeyValueChange::insertion;
                 } elseif ($current !== null && $value === null) {
                     $changeKind = KeyValueChange::removal;
-                } elseif (!$current?->isEqual($value)) {
+                } elseif (!($current instanceof ManagedObject ? $current->objectID : $current)?->isEqual($value instanceof ManagedObject ? $value->objectID : $value)) {
                     $changeKind = KeyValueChange::replacement;
                 } else {
                     $changeKind = KeyValueChange::setting;
@@ -928,10 +928,22 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     // The other three cardinalities maintain their inverse here. An object with a row behind it needs $current resolved above for the old membership to be known, so the same four conditions gate it: otherwise the set is an unresolved fault and subtracting from it would record an emptiness that never existed. An object that has never been saved has no row to fault in, so its primitive value is already the whole truth and the maintenance is safe with only the suppression flags respected.
                     if ($changeKind !== KeyValueChange::setting && !$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications && (!$this->isInserted || $this->isAwakeFromFetch)) {
                         if ($current instanceof ManagedObject) {
-                            $this->removeFromInverseToMany($current, $inverseRelationship);
+                            $inverse = $current->valueForKey($inverseRelationship->name);
+                            if ($inverse instanceof Set && $inverse->containsElement($this)) {
+                                $members = new Set([$this]);
+                                $current->willChangeValueForKey($inverseRelationship->name, KeyValueChange::removal, $members);
+                                $inverse->remove($this);
+                                $current->didChangeValueForKey($inverseRelationship->name, KeyValueChange::removal, $members);
+                            }
                         }
                         if ($value instanceof ManagedObject) {
-                            $this->addToInverseToMany($value, $inverseRelationship);
+                            $inverse = $value->mutableSetValueForKey($inverseRelationship->name);
+                            if (!$inverse->containsElement($this)) {
+                                $members = new Set([$this]);
+                                $value->willChangeValueForKey($inverseRelationship->name, KeyValueChange::insertion, $members);
+                                $inverse->formUnion($members);
+                                $value->didChangeValueForKey($inverseRelationship->name, KeyValueChange::insertion, $members);
+                            }
                         }
                     }
                     $this->setPrimitiveValueForKey($value?->objectID, $property->name);
@@ -964,32 +976,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
             return;
         }
         $this->changedValuesForCurrentEvent[$propertyName] = $newValue ?? Nil::nil();
-    }
-
-    /** Deliberately without updateDirtyState: the to-one assignment that triggered this already marked the side that owns the value. Dirtying the inverse as well makes the save rewrite every member's foreign key from the set, so the object being moved away from writes its own emptiness over the link just established. */
-    private function addToInverseToMany(ManagedObject $destination, RelationshipDescription $inverseRelationship): void
-    {
-        $inverse = $destination->valueForKey($inverseRelationship->name) ?? $destination->mutableSetValueForKey($inverseRelationship->name);
-        if (!$inverse instanceof Set || $inverse->containsElement($this)) {
-            return;
-        }
-        $members = new Set([$this]);
-        $destination->willChangeValueForKey($inverseRelationship->name, KeyValueChange::insertion, $members);
-        // formUnion rather than insert: only the set-algebra mutators clear the fault flag, and a set still marked as a fault is refetched on the next read, discarding what was put into it.
-        $inverse->formUnion($members);
-        $destination->didChangeValueForKey($inverseRelationship->name, KeyValueChange::insertion, $members);
-    }
-
-    private function removeFromInverseToMany(ManagedObject $destination, RelationshipDescription $inverseRelationship): void
-    {
-        $inverse = $destination->valueForKey($inverseRelationship->name);
-        if (!$inverse instanceof Set || !$inverse->containsElement($this)) {
-            return;
-        }
-        $members = new Set([$this]);
-        $destination->willChangeValueForKey($inverseRelationship->name, KeyValueChange::removal, $members);
-        $inverse->subtract($members);
-        $destination->didChangeValueForKey($inverseRelationship->name, KeyValueChange::removal, $members);
     }
 
     #[Override]
