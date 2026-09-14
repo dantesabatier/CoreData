@@ -1857,7 +1857,11 @@ final class SQLGenerator
         $sqlColumns = $columnNames->map(fn(string $columnName): string => "`$columnName`")->join(", ");
         $placeholders = "(" . ArrayClass::repeating("?", $columnNames->count)->join(", ") . ")";
         $sqlValues = ArrayClass::repeating($placeholders, $insertedObjects->count)->join(", ");
-        $updateClause = $columnNames->map(fn(string $columName): string => "`$columName` = VALUES(`$columName`)")->join(", ");
+        // The primary key is written on insert but must never be part of the upsert: rewriting it
+        // renumbers the row a unique index collided with, orphaning every foreign key that still
+        // points at the old value. The surviving row keeps its identity; resolveUpsertConflicts
+        // then repoints the colliding object at it.
+        $updateClause = $columnNames->filter(fn(string $columnName): bool => !($entity->propertiesByName[$columnName] instanceof SQLPrimaryKey))->map(fn(string $columnName): string => "`$columnName` = VALUES(`$columnName`)")->join(", ");
         $query = "INSERT INTO `$entity->tableName` ($sqlColumns) VALUES $sqlValues ON DUPLICATE KEY UPDATE $updateClause";
         $this->string = $query;
         $this->arguments = $arguments;

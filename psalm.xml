@@ -90,11 +90,6 @@
             </errorLevel>
         </RedundantCondition>
         <InvalidAttribute errorLevel="suppress"/>
-        <ArgumentTypeCoercion>
-            <errorLevel type="suppress">
-                <file name="src/SQLCore.php"/>
-            </errorLevel>
-        </ArgumentTypeCoercion>
     </issueHandlers>
     <plugins>
         <pluginClass class="Sabatier\Foundation\Plugins\Psalm\Plugin"/>
