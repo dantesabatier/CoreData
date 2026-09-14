@@ -17,11 +17,18 @@ use Sabatier\CoreData\MergePolicy;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\InternalInconsistencyException;
+use Sabatier\Foundation\Set;
 
 /**
  * @property string $code
  * @property string $label
- * @property \Sabatier\Foundation\Set<UpsertTag> $tags
+ * @property Set<UpsertTag> $tags
+ * @method void addTagsObject(UpsertTag $object)
+ * @method void removeTagsObject(UpsertTag $object)
+ * @method void addTags(Set<UpsertTag> $objects)
+ * @method void removeTags(Set<UpsertTag> $objects)
+ * @method Set<UpsertTag> intersectTags(Set<UpsertTag> $objects)
+ * @method void setTags(Set<UpsertTag> $objects)
  */
 final class UpsertRow extends ManagedObject
 {
@@ -252,10 +259,16 @@ final class SQLUpsertConflictTest extends SQLMigrationTestCase
         $secondDuplicate->label = "dup two";
         $context->save();
 
-        $stored = [];
-        foreach ($this->freshContext(self::model())->fetch(UpsertRow::fetchRequest()) as $row) {
-            $stored[$row->code] = (string)$row->objectID->referenceObject;
-        }
+        $stored = $this->freshContext(self::model())->fetch(UpsertRow::fetchRequest())->reduce([],
+            /**
+             * @param array<string, string> $carry
+             * @param UpsertRow $row
+             * @return array<string, string>
+             */
+            static function (array &$carry, UpsertRow $row): array {
+                $carry[$row->code] = (string)$row->objectID->referenceObject;
+                return $carry;
+            });
 
         $this->assertCount(2, $stored, "two codes, still two rows");
         $this->assertSame($stored["B1"], (string)$firstDuplicate->objectID->referenceObject);

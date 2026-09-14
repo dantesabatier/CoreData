@@ -26,6 +26,12 @@ final class OrderedTrack extends ManagedObject
 /**
  * @property string $name
  * @property Set<OrderedTrack> $tracks
+ * @method void addTracksObject(OrderedTrack $object)
+ * @method void removeTracksObject(OrderedTrack $object)
+ * @method void addTracks(Set<OrderedTrack> $objects)
+ * @method void removeTracks(Set<OrderedTrack> $objects)
+ * @method Set<OrderedTrack> intersectTracks(Set<OrderedTrack> $objects)
+ * @method void setTracks(Set<OrderedTrack> $objects)
  */
 final class OrderedAlbum extends ManagedObject
 {
@@ -215,11 +221,16 @@ final class SQLOrderedRelationshipTest extends SQLMigrationTestCase
         $this->album($context, "First", ["A", "B", "C"]);
         $this->album($context, "Second", ["D"]);
 
-        $fresh = $this->freshContext(self::model());
-        $counts = [];
-        foreach ($fresh->fetch(OrderedAlbum::fetchRequest()) as $album) {
-            $counts[$album->name] = $album->tracks->count;
-        }
+        $counts = $this->freshContext(self::model())->fetch(OrderedAlbum::fetchRequest())->reduce([],
+            /**
+             * @param array<string, int> $carry
+             * @param OrderedAlbum $album
+             * @return array<string, int>
+             */
+            static function (array &$carry, OrderedAlbum $album): array {
+                $carry[$album->name] = $album->tracks->count;
+                return $carry;
+            });
 
         $this->assertSame(["First" => 3, "Second" => 1], $counts, "each album sees only its own tracks");
     }
