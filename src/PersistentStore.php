@@ -258,7 +258,7 @@ abstract class PersistentStore extends ObjectClass
     final public function referenceObject(ManagedObjectID $objectID): int|string
     {
         /** @var ManagedObjectID $managedObjectID */
-        $managedObjectID = $this->cacheEntities[$objectID->entity->name][(string)$objectID] ?? fatal_error("Object id wasn't created by this store.");
+        $managedObjectID = $this->cacheEntities[$objectID->entity->name][(string)$objectID->referenceObject] ?? fatal_error("Object id wasn't created by this store.");
         return $managedObjectID->referenceObject;
     }
 
