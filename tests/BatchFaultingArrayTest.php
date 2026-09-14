@@ -196,4 +196,75 @@ final class BatchFaultingArrayTest extends TestCase
         $this->expectException(InternalInconsistencyException::class);
         $batch->removeAt(0);
     }
+
+    public function testInsertAtIsRejected(): void
+    {
+        $this->seed(1);
+        $batch = $this->batchArray(1);
+        $this->expectException(InternalInconsistencyException::class);
+        $batch->insertAt(new Bead($this->context()), 0);
+    }
+
+    public function testSetArrayIsRejected(): void
+    {
+        $this->seed(1);
+        $batch = $this->batchArray(1);
+        $this->expectException(InternalInconsistencyException::class);
+        $batch->setArray(new ArrayClass([new Bead($this->context())]));
+    }
+
+    /**
+     * offsetExists answers from the index range alone, without materializing anything — it is
+     * what a foreach consults on every step, so a version that faulted the element in would
+     * defeat the batching this class exists for.
+     */
+    public function testOffsetExistsCoversTheFetchedRangeOnly(): void
+    {
+        $this->seed(3);
+        $batch = $this->batchArray(2);
+
+        $this->assertTrue($batch->offsetExists(0), "the first index is in range");
+        $this->assertTrue($batch->offsetExists(2), "and so is the last");
+        $this->assertFalse($batch->offsetExists(3), "one past the end is not");
+        $this->assertFalse($batch->offsetExists(-1), "and neither is a negative index");
+    }
+
+    /**
+     * offsetGet materializes: the array stores object IDs and hands back real objects, which is
+     * the whole point of the indirection.
+     *
+     * It reads the current batch, which iteration is what loads — the constructor only counts,
+     * and the IDs arrive in rewind() and on each batch boundary in next(). So this pins
+     * offsetGet against an array that has been iterated, which is how the framework reaches it.
+     * See testOffsetGetBeforeIterationDivergesFromOffsetExists for the other side of that.
+     */
+    public function testOffsetGetMaterializesTheObject(): void
+    {
+        $this->seed(2);
+        $batch = $this->batchArray(1);
+        $batch->rewind();
+
+        $this->assertInstanceOf(Bead::class, $batch->offsetGet(0), "an element reads back as a materialized object");
+    }
+
+    /**
+     * The two offset accessors disagree on a freshly constructed array, and this pins that as it
+     * stands rather than asserting a fix. offsetExists() answers from `indices`, derived from the
+     * count the constructor took, so it reports true for every index in range; offsetGet() reads
+     * `objectIDs`, which is empty until rewind() or a next() batch boundary fills it, so it
+     * raises out-of-bounds for the very index offsetExists() just accepted.
+     *
+     * Nothing in the framework reaches offsetGet() without iterating first, so this is latent
+     * rather than live — but `isset($batch[0]) ? $batch[0] : ...` is exactly the shape that would
+     * find it, which is why it is recorded here instead of left undescribed.
+     */
+    public function testOffsetGetBeforeIterationDivergesFromOffsetExists(): void
+    {
+        $this->seed(2);
+        $batch = $this->batchArray(1);
+
+        $this->assertTrue($batch->offsetExists(0), "the index is reported as present");
+        $this->expectException(InternalInconsistencyException::class);
+        $batch->offsetGet(0);
+    }
 }

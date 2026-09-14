@@ -9,13 +9,17 @@ use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
+use Sabatier\CoreData\FetchRequest;
+use Sabatier\CoreData\FetchedPropertyDescription;
 use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\ManagedObjectContext;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\PersistentStoreCoordinator;
 use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\FileManager;
+use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\URL;
@@ -68,6 +72,38 @@ final class FetchRequestTest extends TestCase
     private static function order(ArrayClass $result): array
     {
         return array_map(static fn(Row $row): int => $row->n, iterator_to_array($result));
+    }
+
+    /**
+     * A request over a Row entity that declares the given fetched property.
+     *
+     * The property has to be part of the entity's `properties` from the start: an
+     * EntityDescription stops being editable the moment it joins a ManagedObjectModel
+     * (EntityDescription::throwIfNotEditable), so it cannot be amended afterwards — not even
+     * before a coordinator sees it. This builds its own model rather than touching setUp's.
+     */
+    private static function requestCarrying(FetchedPropertyDescription $fetchedProperty): FetchRequest
+    {
+        $n = new AttributeDescription();
+        $n->name = "n";
+        $n->type = AttributeType::integer32;
+
+        $label = new AttributeDescription();
+        $label->name = "label";
+        $label->type = AttributeType::string;
+
+        $row = new EntityDescription();
+        $row->name = "Row";
+        $row->managedObjectClassName = Row::class;
+        $row->properties = new ArrayClass([$n, $label, $fetchedProperty]);
+
+        $model = new ManagedObjectModel();
+        $model->entities = new ArrayClass([$row]);
+
+        $request = new FetchRequest("Row");
+        $request->entity = $row;
+        $request->propertiesToFetch = new ArrayClass([$row->propertiesByName[$fetchedProperty->name]]);
+        return $request;
     }
 
     #[Override]
@@ -217,5 +253,85 @@ final class FetchRequestTest extends TestCase
         $request->predicate = Predicate::format("n <= %d", new ArrayClass([3]));
 
         $this->assertCount(3, $this->context->fetch($request), "n <= 3 matches 1, 2, 3");
+    }
+
+    /**
+     * execute() resolves its own context from the operation queue rather than taking one, so it
+     * works only inside a block the context is running — performBlockAndWait is what associates
+     * the two. Inside that block it agrees with an explicit fetch on the same context.
+     */
+    public function testExecuteRunsAgainstTheContextOfTheCurrentQueue(): void
+    {
+        $request = Row::fetchRequest();
+        $request->predicate = Predicate::format("n <= %d", new ArrayClass([3]));
+        $request->sortDescriptors = new ArrayClass([new SortDescriptor("n", true)]);
+
+        $expected = self::order($this->context->fetch($request));
+        $actual = [];
+        $this->context->performBlockAndWait(function () use ($request, &$actual): void {
+            $actual = self::order($request->execute());
+        });
+
+        $this->assertSame($expected, $actual, "execute() and an explicit fetch on the same context return the same rows");
+    }
+
+    /**
+     * Outside such a block there is no context to resolve, and execute() says so rather than
+     * silently reaching for some other context. This is the trap behind the project rule that a
+     * bare `new FetchRequest("Entity")` dies in tests: it is this resolution failing.
+     */
+    public function testExecuteWithoutAnAssociatedContextRaises(): void
+    {
+        $request = new FetchRequest("Row");
+
+        $this->expectException(InternalInconsistencyException::class);
+        $request->execute();
+    }
+
+    /**
+     * A fetched property serializes as the shape of the entity it fetches, not of the entity it
+     * hangs off — it is a stored query, so its cached shape has to describe the rows it will
+     * bring back.
+     *
+     * The property is declared while the model is still being built: an EntityDescription
+     * refuses edits once it has been initialized into a coordinator, so this uses its own stack
+     * rather than amending the one setUp created.
+     */
+    public function testSerializationOfAFetchedPropertyDescribesItsDestinationEntity(): void
+    {
+        $peer = new FetchRequest("Row");
+        $peer->predicate = Predicate::format("n > %d", new ArrayClass([0]));
+
+        $fetched = new FetchedPropertyDescription();
+        $fetched->name = "peers";
+        $fetched->fetchRequest = $peer;
+
+        $request = self::requestCarrying($fetched);
+
+        /** @var Dictionary<mixed> $shape */
+        $shape = $request->serialization["peers"];
+
+        $this->assertInstanceOf(Dictionary::class, $shape, "a fetched property serializes as a nested shape");
+        $this->assertSame(AttributeType::integer32, $shape["n"], "and that shape is the fetched entity's own attributes");
+        $this->assertSame(AttributeType::string, $shape["label"]);
+    }
+
+    /**
+     * A fetched property whose request names no entity has no shape to describe, so it
+     * serializes as an empty dictionary rather than raising — the model is still loadable, the
+     * property simply contributes nothing to the cached shape.
+     */
+    public function testSerializationOfAFetchedPropertyWithNoEntityIsEmpty(): void
+    {
+        $fetched = new FetchedPropertyDescription();
+        $fetched->name = "unbound";
+        $fetched->fetchRequest = new FetchRequest();
+
+        $request = self::requestCarrying($fetched);
+
+        /** @var Dictionary<mixed> $shape */
+        $shape = $request->serialization["unbound"];
+
+        $this->assertTrue($shape->isEmpty, "a fetched property with no destination entity describes nothing");
     }
 }

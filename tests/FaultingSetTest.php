@@ -278,4 +278,56 @@ final class FaultingSetTest extends TestCase
         $single->sort(fn(Player $a, Player $b): int => $a->jersey <=> $b->jersey);
         $this->assertSame([7], $this->jerseys($single), "sorting a singleton leaves it intact");
     }
+
+    /**
+     * insertAt() coerces the same way every other mutator does. The set stores ManagedObjectID
+     * and presents ManagedObject, so an object handed to a mutator has to be reduced to its ID
+     * on the way in — otherwise the set holds two representations of one element and
+     * containsElement() disagrees with itself.
+     */
+    public function testInsertAtCoercesAManagedObjectToItsObjectID(): void
+    {
+        $set = new FaultingSet($this->team, $this->roster);
+        $set->setSet(new Set([$this->player(1)]));
+        $inserted = $this->player(2);
+
+        $set->insertAt($inserted, 0);
+
+        $this->assertTrue($set->containsElement($inserted), "the inserted object is a member");
+        $this->assertSame([2, 1], $this->jerseys($set), "and it landed at the index asked for");
+    }
+
+    /**
+     * update() takes the same coercion path. It is the accessor a to-many uses to replace an
+     * equal element, so an uncoerced ManagedObject would be stored alongside the ID already
+     * there rather than replacing it.
+     */
+    public function testUpdateCoercesAManagedObjectToItsObjectID(): void
+    {
+        $set = new FaultingSet($this->team, $this->roster);
+        $player = $this->player(9);
+        $set->setSet(new Set([$player]));
+
+        $set->update($player);
+
+        $this->assertSame(1, $set->count, "updating an existing element does not grow the set");
+        $this->assertSame([9], $this->jerseys($set));
+    }
+
+    /**
+     * Every set-algebra mutator clears the fault: once the contents have been combined with
+     * another set, the collection no longer stands for "not loaded yet", and leaving the flag on
+     * would let a later access re-fire the fault and discard what was just computed.
+     */
+    public function testFormSymmetricDifferenceClearsTheFaultFlag(): void
+    {
+        $set = new FaultingSet($this->team, $this->roster);
+        $shared = $this->player(1);
+        $set->setSet(new Set([$shared, $this->player(2)]));
+
+        $set->formSymmetricDifference(new Set([$shared, $this->player(3)]));
+
+        $this->assertFalse($set->isFault, "a combined set is no longer a fault");
+        $this->assertSame([2, 3], $this->jerseys($set), "and holds exactly the elements not shared");
+    }
 }
