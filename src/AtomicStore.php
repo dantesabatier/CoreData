@@ -353,8 +353,7 @@ abstract class AtomicStore extends PersistentStore
     #[Override]
     public function newOrderedRelationshipInformationForRelationship(RelationshipDescription $relationship, ManagedObjectID $objectID, ManagedObjectContext $context): ArrayClass|Nil
     {
-        $toOne = $relationship->inverseRelationship;
-        $columnName = $toOne->destinationEntity->attributesByName->first?->name ?? ManagedObjectObjectIDKey;
+        $columnName = $relationship->destinationEntity->attributesByName->first?->name ?? ManagedObjectObjectIDKey;
         /** @var ArrayClass<ManagedObjectID>|Nil $newValue */
         $newValue = $this->newValueForRelationship($relationship, $objectID, $context);
         if ($newValue instanceof Nil) {
