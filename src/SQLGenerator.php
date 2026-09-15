@@ -13,7 +13,6 @@ namespace Sabatier\CoreData;
 
 use Closure;
 use Sabatier\Foundation\ArrayClass;
-use Sabatier\Foundation\ComparisonResult;
 use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\KeyValueOperator;
@@ -2028,6 +2027,48 @@ final class SQLGenerator
      * @param Set $objects
      * @return Dictionary<ArrayClass>
      */
+    /**
+     * Dependency is transitive, so it cannot be a comparator: usort compares pairs, and an unrelated entity sorting between two related ones means the pair that matters is never compared.
+     * @param Dictionary<ArrayClass> $map
+     * @param iterable<ManagedObject> $objects
+     * @return Dictionary<ArrayClass>
+     */
+    private function topologicallySortedGroups(Dictionary $map, iterable $objects): Dictionary
+    {
+        /** @var Dictionary<Set<string>> $dependencies */
+        $dependencies = $map->keys->reduce(new Dictionary(), function (Dictionary $result, string $name): Dictionary {
+            $result[$name] = new Set();
+            return $result;
+        });
+        foreach ($objects as $object) {
+            $name = $object->entity->name;
+            foreach ($object->entity->relationshipsByName as $relationship) {
+                // Only a to-one carries the foreign key, so only it depends on the other row.
+                if ($relationship->isToMany || $object->primitiveValueForKey($relationship->name) === null) {
+                    continue;
+                }
+                $destination = $relationship->destinationEntity->name;
+                if ($destination !== $name && $dependencies->offsetExists($destination)) {
+                    $dependencies[$name]?->insert($destination);
+                }
+            }
+        }
+        /** @var Dictionary<ArrayClass> $sorted */
+        $sorted = new Dictionary();
+        while (!$dependencies->isEmpty) {
+            $ready = $dependencies->keys->filter(fn(string $name): bool => !$dependencies[$name]?->contains(fn(string $destination): bool => $dependencies->offsetExists($destination)))->sort();
+            if ($ready->isEmpty) {
+                // A cycle satisfies no order; take them by name rather than drop them.
+                $ready = $dependencies->keys->sort();
+            }
+            foreach ($ready as $name) {
+                $sorted[$name] = $map[$name];
+                $dependencies->removeValueForKey($name);
+            }
+        }
+        return $sorted;
+    }
+
     private function groupedObjects(Set $objects): Dictionary
     {
         /** @var Dictionary<ArrayClass> $map */
@@ -2038,20 +2079,7 @@ final class SQLGenerator
         } elseif ($first instanceof PersistentHistoryChange) {
             $map["PersistentHistoryChange"] = new ArrayClass($objects);
         } elseif ($first instanceof ManagedObject) {
-            $dependsOn = fn(ManagedObject $source, ManagedObject $target): bool => $source->entity->relationshipsByName->compactMap(fn(RelationshipDescription $relationship): ?EntityDescription => $source->hasFaultForRelationshipNamed($relationship->name) ? $relationship->destinationEntity : null)->containsElement($target->entity);
-            // Two concurrent saves touching the same rows must lock them in the same order, or InnoDB deadlocks one of them. Dependency order alone leaves every unrelated pair undefined, so entity name and primary key break the ties and make the emitted order total.
-            $objects = $objects->sort(function (ManagedObject $e0, ManagedObject $e1) use ($dependsOn): int {
-                if ($dependsOn($e0, $e1)) {
-                    return ComparisonResult::orderedDescending->value;
-                }
-                if ($dependsOn($e1, $e0)) {
-                    return ComparisonResult::orderedAscending->value;
-                }
-                if ($result = $e0->entity->name <=> $e1->entity->name) {
-                    return $result;
-                }
-                return (string)$e0->objectID->referenceObject <=> (string)$e1->objectID->referenceObject;
-            });
+            $objects = $objects->sort(fn(ManagedObject $e0, ManagedObject $e1): int => ($e0->entity->name <=> $e1->entity->name) ?: ((string)$e0->objectID->referenceObject <=> (string)$e1->objectID->referenceObject));
             foreach ($objects as $object) {
                 /** @var ArrayClass $value */
                 $value = $map[$object->entity->name] ?? new ArrayClass();
@@ -2060,6 +2088,7 @@ final class SQLGenerator
                 }
                 $map[$object->entity->name] = $value;
             }
+            $map = $this->topologicallySortedGroups($map, $objects);
         }
         return $map;
     }
