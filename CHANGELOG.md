@@ -89,6 +89,36 @@ entries remain under **Unreleased**.
 - A fetch against an atomic store no longer reports the objects it returned as updated. The
   stored snapshot is applied with change notifications suppressed, as the SQL store does, so a
   fetch that changes nothing leaves the context with no pending changes.
+- `PersistentStoreCoordinator::setURL()` relocates a store towards the URL it was asked for. Its
+  arguments were inverted, so the call moved the store to where it already was.
+- The primary key is no longer written inside `ON DUPLICATE KEY UPDATE`. A unique-index collision
+  therefore renumbered the surviving row's primary key to the colliding object's reference,
+  orphaning every foreign key still pointing at the old value — silent referential data loss with
+  no error anywhere. The same defect masked `resolveUpsertConflicts` into looking like dead code:
+  the key had already been rewritten to the inserted object's reference, so its guard compared a
+  reference with itself and never assigned.
+- Specialised SQL indexes no longer emit duplicate and invalid DDL. A spatial or binary index was
+  written as `ADD CONSTRAINT … SPATIAL INDEX` carrying a sort order, which MariaDB rejects
+  outright.
+- Assigning a to-one relationship no longer hydrates the object graph to maintain its inverse.
+  The membership check read the inverse through `valueForKey`, which fires the fault: a payload
+  naming one object pulled in 2415, and a save from a page that touched a deep graph exhausted
+  memory instead of completing. The insertion side now takes the set through
+  `mutableSetValueForKey`, which does not fault, and the removal side only looks at an inverse
+  that is already resolved.
+- `SQLGenerator::groupedObjects()` orders the save groups by dependency again. An entity carrying
+  a foreign key must be written after the row it points at, and that had been reinterpreted as an
+  ordinary sort, so a save could ask the server to store a reference to a row that did not exist
+  yet. Dependency is transitive and a comparator is not — `usort` only ever compares pairs, so an
+  unrelated entity sorting between two related ones means the pair that matters is never compared
+  — and the ordering is now a topological sort, with a cycle falling back to name order rather
+  than dropping the groups it cannot order.
+- An ordered relationship in an atomic store sorts by the first attribute of the entity it points
+  at. It read that attribute off the inverse's destination, which is the entity the relationship
+  starts *from*, and then asked the destination's cache nodes for it; a node answers only for its
+  own entity's properties, so any ordered relationship whose two entities did not happen to name
+  their first attribute identically raised `UndefinedKeyException`. Only atomic stores were
+  affected: the SQL store keeps a dedicated order column.
 
 ### Removed
 
