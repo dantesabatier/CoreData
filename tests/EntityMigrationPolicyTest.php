@@ -21,6 +21,8 @@ use Sabatier\CoreData\PropertyMapping;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\CoreData\SQLInPlaceMigrationManager;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Error;
+use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Set;
 
@@ -50,6 +52,26 @@ final class InvoiceLine extends ManagedObject
  */
 final class InheritedMigrationPolicy extends EntityMigrationPolicy
 {
+}
+
+/**
+ * A policy that refuses the data it is given and aborts the whole migration, which is what
+ * cancelMigrationWithError exists for: a policy is the only place that knows a source row cannot
+ * be carried forward, and stopping is better than writing a destination it cannot vouch for.
+ */
+final class CancellingMigrationPolicy extends EntityMigrationPolicy
+{
+    /** The domain the cancelling error carries, so the test can recognise it. */
+    public const string Domain = "SabatierCoreDataTestsCancellation";
+    /** The code the cancelling error carries. */
+    public const int Code = 4242;
+
+    #[Override]
+    public function createDestinationInstances(ManagedObject $sourceInstance, EntityMapping $mapping, MigrationManager $manager): bool
+    {
+        $manager->cancelMigrationWithError(new Error(self::Domain, self::Code));
+        return false;
+    }
 }
 
 /**
@@ -402,5 +424,76 @@ final class EntityMigrationPolicyTest extends SQLMigrationTestCase
         ]);
 
         $this->assertSame(["A"], $this->columnValues("Invoice", "series"), "the migration completed without any relationship mapping");
+    }
+
+    // --- Cancellation ---
+
+    /**
+     * A policy that cancels aborts the whole migration rather than letting it finish short. The
+     * manager raises the error the policy handed it, which is how a caller learns why the store
+     * was left alone.
+     */
+    public function testAPolicyCanCancelTheMigration(): void
+    {
+        $this->expectException(InternalInconsistencyException::class);
+
+        $this->migrate(CancellingMigrationPolicy::class, [
+            new PropertyMapping("series", Expression::expressionWithFormat("\$source.series")),
+        ]);
+    }
+
+    /**
+     * And a cancelled migration writes nothing. The destination context still holds whatever the
+     * policy produced before it gave up, so saving it would leave the store in a state no policy
+     * vouched for — the half-written destination is worse than the untouched source.
+     *
+     * The cancellation has to be raised where the passes end, not only on the way into the next
+     * mapping: a model with one entity mapping, as here, cancels on the last one there is.
+     */
+    public function testACancelledMigrationWritesNothing(): void
+    {
+        $sourceModel = self::sourceModel();
+        $context = $this->bootstrap($sourceModel);
+        $invoice = new Invoice($context);
+        $invoice->series = "A";
+        $invoice->folio = 42;
+        $context->save();
+
+        $manager = new SQLInPlaceMigrationManager($sourceModel, self::destinationModel());
+        $mappingModel = self::mappingModel(CancellingMigrationPolicy::class, [
+            new PropertyMapping("label", Expression::expressionWithFormat("\$source.series")),
+        ]);
+
+        try {
+            $manager->migrateStore($this->storeURL, PersistentStoreType::sql, null, $mappingModel, $this->storeURL, PersistentStoreType::sql, null);
+            self::fail("a cancelled migration must not report success");
+        } catch (InternalInconsistencyException) {
+        }
+
+        $this->assertSame([""], $this->columnValues("Invoice", "label"), "the cancelled migration left the destination column empty");
+    }
+
+    /**
+     * And resetting the manager clears the cancellation, so an instance that was stopped can be
+     * used again instead of staying permanently poisoned.
+     */
+    public function testResettingClearsACancellation(): void
+    {
+        $manager = new SQLInPlaceMigrationManager(self::sourceModel(), self::destinationModel());
+        $manager->cancelMigrationWithError(new Error(CancellingMigrationPolicy::Domain, CancellingMigrationPolicy::Code));
+
+        $manager->reset();
+
+        $context = $this->bootstrap(self::sourceModel());
+        $invoice = new Invoice($context);
+        $invoice->series = "A";
+        $invoice->folio = 42;
+        $context->save();
+
+        $manager->migrateStore($this->storeURL, PersistentStoreType::sql, null, self::mappingModel(InheritedMigrationPolicy::class, [
+            new PropertyMapping("series", Expression::expressionWithFormat("\$source.series")),
+        ]), $this->storeURL, PersistentStoreType::sql, null);
+
+        $this->assertSame(["A"], $this->columnValues("Invoice", "series"), "the reset manager ran the migration to completion");
     }
 }
