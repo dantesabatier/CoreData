@@ -11,6 +11,7 @@ use Sabatier\CoreData\CustomMigrationStage;
 use Sabatier\CoreData\EntityDescription;
 use Sabatier\CoreData\EntityMapping;
 use Sabatier\CoreData\EntityMappingType;
+use Sabatier\CoreData\LightweightMigrationStage;
 use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\ManagedObjectModelReference;
@@ -27,6 +28,7 @@ use Sabatier\Foundation\UUID;
 use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\URL;
+use const Sabatier\CoreData\InferMappingModelAutomaticallyOption;
 use const Sabatier\CoreData\MappingModelFileExtension;
 use const Sabatier\CoreData\MigratePersistentStoresAutomaticallyOption;
 use const Sabatier\CoreData\PersistentStoreStagedMigrationManagerOptionKey;
@@ -165,5 +167,44 @@ final class StagedMigrationMappingModelTest extends SQLMigrationTestCase
         $this->openWithStages($destinationModel, $this->stagedOptions($sourceModel, $destinationModel));
 
         $this->assertSame("longblob", $this->columnType("StagedNote", "body"), "the authored mapping model must have driven the migration");
+    }
+
+    /**
+     * A model the destination merely adds an attribute to, which inference handles on its own.
+     */
+    private static function widenedModel(): ManagedObjectModel
+    {
+        return self::model([
+            self::attribute("body", AttributeType::string),
+            self::attribute("subject", AttributeType::string),
+        ]);
+    }
+
+    /**
+     * A lightweight stage migrates through the checksums it names, without a mapping model. It is
+     * the other half of performStagedMigration, and the branch a staged deployment takes whenever
+     * the change between two versions is one inference can derive.
+     *
+     * The stage names the source and destination checksums, so the walk from the store's current
+     * checksum has somewhere to go; a stage listing only one would have nothing to migrate to.
+     */
+    public function testALightweightStageMigratesThroughItsChecksums(): void
+    {
+        $sourceModel = self::sourceModel();
+        $context = $this->bootstrap($sourceModel);
+        $note = new StagedNote($context);
+        $note->body = "kept";
+        $context->save();
+
+        $destinationModel = self::widenedModel();
+        $stage = new LightweightMigrationStage(new ArrayClass([$sourceModel->versionChecksum, $destinationModel->versionChecksum]));
+        $this->openWithStages($destinationModel, new Dictionary([
+            MigratePersistentStoresAutomaticallyOption => true,
+            InferMappingModelAutomaticallyOption => true,
+            PersistentStoreStagedMigrationManagerOptionKey => new StagedMigrationManager(new ArrayClass([$stage])),
+        ]));
+
+        $this->assertTrue($this->hasColumn("StagedNote", "subject"), "the lightweight stage added the destination's new column");
+        $this->assertSame(["kept"], $this->columnValues("StagedNote", "body"), "and carried the existing data across");
     }
 }

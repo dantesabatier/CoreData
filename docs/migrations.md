@@ -108,6 +108,27 @@ The passes are separated because relationships cannot be wired until every desti
 exists. In `createDestinationInstances()` you create the destination object and set its
 attributes; in `createRelationships()` you connect it to objects other mappings created.
 
+### Aborting a migration
+
+A policy is the only place that knows a source row cannot be carried forward. Call
+`cancelMigrationWithError()` on the manager from any hook to stop:
+
+```php
+public function createDestinationInstances(ManagedObject $sourceInstance, EntityMapping $mapping, MigrationManager $manager): bool
+{
+    if ($sourceInstance->legacyCode === null) {
+        $manager->cancelMigrationWithError(new Error("MyApp", 1));
+        return false;
+    }
+    return parent::createDestinationInstances($sourceInstance, $mapping, $manager);
+}
+```
+
+`migrateStore()` then raises the error you supplied rather than returning, and the destination
+context is never saved: a cancelled migration writes nothing, so the store is left as it was
+instead of holding a half-written destination. Call `reset()` on the manager to clear the
+cancellation if you intend to reuse the instance.
+
 ## Staged migrations
 
 A migration can be expressed as a sequence of stages. Create a `StagedMigrationManager` with the

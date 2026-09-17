@@ -119,6 +119,20 @@ entries remain under **Unreleased**.
   own entity's properties, so any ordered relationship whose two entities did not happen to name
   their first attribute identically raised `UndefinedKeyException`. Only atomic stores were
   affected: the SQL store keeps a dedicated order column.
+- A cancelled migration aborts instead of reporting success. `cancelMigrationWithError()`
+  documents that `migrateStore()` aborts and returns the error; it stopped the passes but then
+  carried on, saving the destination context, setting the progress to 1.0 and returning `true`.
+  The error was only raised on the way *into* the next entity mapping, so it needed another
+  mapping left to enter — cancelling on the last mapping of a pass, or in a model with a single
+  one, fell straight through. Worse than the wrong return value, the save wrote whatever the
+  policy had produced before it gave up, leaving a destination no policy vouched for. Raising it
+  where the passes end fixes both halves, since reaching it before the save is what keeps the
+  partial work off disk.
+- `XMLObjectStore::metadataForPersistentStore()` reads the file it is given. It parsed a
+  `DOMDocument` it had just constructed and never loaded the URL, so a valid store on disk
+  answered with nothing at all; its sibling `setMetadata()` reads the file the same way and
+  always did. A URL with no store behind it is the caller's error and now fails as one, naming
+  the path, rather than reaching an assertion two levels down that production has switched off.
 
 ### Removed
 
