@@ -90,6 +90,18 @@
             </errorLevel>
         </RedundantCondition>
         <InvalidAttribute errorLevel="suppress"/>
+        <!-- A collection whose element type is decided at runtime crossing into one whose template is narrower. Six of these come from joined(), which flattens a collection of collections and so returns the element OF the element: its annotation says FlattenSequence<Element> because Psalm has no way to write Element::Element. The rest are the batch contexts, whose match answers a Number for the count and status result types and object IDs for the third, into a mixed property. -->
+        <IncompatibleTypeParameters>
+            <errorLevel type="suppress">
+                <file name="src/BatchDeleteResult.php"/>
+                <file name="src/BatchInsertResult.php"/>
+                <file name="src/BatchUpdateResult.php"/>
+                <file name="src/ManagedObjectContext.php"/>
+                <file name="src/PersistentStoreCoordinator.php"/>
+                <file name="src/SQLBatchDeleteRequestContext.php"/>
+                <file name="src/SQLBatchUpdateRequestContext.php"/>
+            </errorLevel>
+        </IncompatibleTypeParameters>
     </issueHandlers>
     <plugins>
         <pluginClass class="Sabatier\Foundation\Plugins\Psalm\Plugin"/>
