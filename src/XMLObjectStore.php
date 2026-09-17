@@ -75,9 +75,12 @@ final class XMLObjectStore extends AtomicStore
     #[Override]
     public static function metadataForPersistentStore(URL $url): Dictionary
     {
+        $path = $url->path;
+        FileManager::default()->fileExists($path) ?: fatal_error("No persistent store found at \"$path\"");
         $document = new DOMDocument("1.0", "UTF-8");
         $document->preserveWhiteSpace = false;
         $document->formatOutput = true;
+        $document->load($path);
         return self::loadMetadataFromDocument($document);
     }
 
