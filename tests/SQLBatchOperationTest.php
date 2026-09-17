@@ -376,4 +376,38 @@ final class SQLBatchOperationTest extends SQLMigrationTestCase
         $this->assertSame(1, $widget->valueForKey("qty"), "the already-materialized object keeps the value it was loaded with");
         $this->assertSame(["W-1" => 42], $this->widgetsBySku($this->freshContext(self::model())), "while the store really did change");
     }
+
+    /**
+     * The other way to feed a batch insert: a handler that fills a managed object instead of a
+     * dictionary, for callers that would rather assign through the model's own properties than
+     * know the column names.
+     *
+     * The objects exist only to carry the values into the statement — the batch bypasses the
+     * object graph either way, which is what lets it write a million rows without registering a
+     * million objects.
+     *
+     * @throws Exception
+     */
+    public function testBatchInsertAcceptsAManagedObjectHandler(): void
+    {
+        $context = $this->bootstrap(self::model());
+        $rows = new ArrayClass([["sku" => "M-1", "qty" => 7], ["sku" => "M-2", "qty" => 8]]);
+        $request = new BatchInsertRequest(
+            BatchWidget::entity(),
+            managedObjectHandler: static function (ManagedObject $object) use ($rows): bool {
+                if ($rows->isEmpty) {
+                    return false;
+                }
+                /** @var array{sku: string, qty: int} $row */
+                $row = $rows->popFirst();
+                $object->sku = $row["sku"];
+                $object->qty = $row["qty"];
+                return true;
+            },
+        );
+
+        $context->execute($request);
+
+        $this->assertSame(["M-1" => 7, "M-2" => 8], $this->widgetsBySku($this->freshContext(self::model())), "the handler's objects reached the store");
+    }
 }
