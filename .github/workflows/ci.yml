@@ -14,6 +14,22 @@ jobs:
     name: Tests
     runs-on: ubuntu-latest
 
+    # The SQL suites open a real server: they create and drop `coredata_migration_test`
+    # around every test, and connect to 127.0.0.1 as root with no password, which is what
+    # CONTRIBUTING asks a developer to provide locally.
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "yes"
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
     steps:
       - uses: actions/checkout@v5
 
@@ -38,6 +54,15 @@ jobs:
 
       - name: Install dependencies
         run: composer update --prefer-dist --no-interaction --no-progress
+
+      - name: Wait for MariaDB
+        run: |
+          for i in $(seq 1 30); do
+            mysqladmin ping -h 127.0.0.1 -u root --silent && exit 0
+            sleep 2
+          done
+          echo "MariaDB did not become ready" >&2
+          exit 1
 
       - name: Run the test suite
         run: vendor/bin/phpunit --no-coverage
