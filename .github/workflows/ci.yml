@@ -15,10 +15,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Check out Foundation
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: dantesabatier/Foundation
           ref: master
@@ -29,6 +29,7 @@ jobs:
         with:
           php-version: "8.5"
           extensions: dom, intl, mbstring, pdo, pdo_mysql, libxml
+          ini-values: zend.assertions=1
           coverage: none
 
       - name: Resolve the stack from the sibling checkouts
@@ -46,10 +47,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Check out Foundation
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: dantesabatier/Foundation
           ref: master
@@ -60,6 +61,7 @@ jobs:
         with:
           php-version: "8.5"
           extensions: dom, intl, mbstring, pdo, pdo_mysql, libxml
+          ini-values: zend.assertions=1
           coverage: none
 
       - name: Resolve the stack from the sibling checkouts
@@ -72,5 +74,8 @@ jobs:
       - name: Psalm
         run: vendor/bin/psalm --output-format=github --no-progress
 
+      # Advisory, as CONTRIBUTING says: Rector proposes modernisations and not every
+      # proposal is wanted, so its report informs a review rather than blocking one.
       - name: Rector
+        continue-on-error: true
         run: vendor/bin/rector process src --dry-run --no-progress-bar
