@@ -135,6 +135,13 @@ Some constraints are deliberate, and a change that violates one will be declined
 
 Contributions are accepted under the [MIT Licence](LICENSE.md), the same terms as the project.
 
+## Versioning
+
+This package follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+What counts as the public API here, what a major release is for, and the checks
+that run before a tag are documented once for the whole stack in
+[Foundation's VERSIONING.md](https://github.com/dantesabatier/Foundation/blob/master/VERSIONING.md).
+
 ## Code of conduct
 
 This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md). By

@@ -5,7 +5,7 @@ All notable changes to Sabatier CoreData are documented in this file.
 The project follows [Semantic Versioning](https://semver.org/). Until the first stable release,
 entries remain under **Unreleased**.
 
-## Unreleased
+## [1.0.0] - 2026-09-18
 
 ### Added
 
