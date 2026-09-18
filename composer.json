@@ -8,7 +8,7 @@
     "persistence",
     "objectgraph"
   ],
-  "homepage": "https://github.com/dantesabatier/coredata",
+  "homepage": "https://github.com/dantesabatier/CoreData",
   "license": "MIT",
   "authors": [
     {
@@ -16,6 +16,11 @@
       "email": "dantesabatier@me.com"
     }
   ],
+  "support": {
+    "issues": "https://github.com/dantesabatier/CoreData/issues",
+    "source": "https://github.com/dantesabatier/CoreData",
+    "security": "https://github.com/dantesabatier/CoreData/security/policy"
+  },
   "require": {
     "php": "^8.5",
     "ext-dom": "*",
@@ -24,7 +29,12 @@
     "ext-pdo": "*",
     "ext-pdo_mysql": "*",
     "ext-libxml": "*",
-    "sabatier/foundation": "^1.0@dev"
+    "sabatier/foundation": "^1.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^13.3",
+    "vimeo/psalm": "^6.17",
+    "rector/rector": "^2.6"
   },
   "suggest": {
     "ext-apcu": "Required when selecting APCuRowCache for a cache shared by requests on one server.",
@@ -61,11 +71,5 @@
     "branch-alias": {
       "dev-master": "1.0-dev"
     }
-  },
-  "repositories": [
-    {
-      "type": "path",
-      "url": "../Foundation"
-    }
-  ]
+  }
 }

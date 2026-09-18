@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out Foundation
+        uses: actions/checkout@v4
+        with:
+          repository: dantesabatier/Foundation
+          ref: master
+          path: stack/Foundation
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          extensions: dom, intl, mbstring, pdo, pdo_mysql, libxml
+          coverage: none
+
+      - name: Resolve the stack from the sibling checkouts
+        run: |
+          composer config repositories.foundation --json '{"type":"path","url":"stack/Foundation","options":{"symlink":false,"versions":{"sabatier/foundation":"1.0.0"}}}'
+
+      - name: Install dependencies
+        run: composer update --prefer-dist --no-interaction --no-progress
+
+      - name: Run the test suite
+        run: vendor/bin/phpunit --no-coverage
+
+  analysis:
+    name: Static analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out Foundation
+        uses: actions/checkout@v4
+        with:
+          repository: dantesabatier/Foundation
+          ref: master
+          path: stack/Foundation
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          extensions: dom, intl, mbstring, pdo, pdo_mysql, libxml
+          coverage: none
+
+      - name: Resolve the stack from the sibling checkouts
+        run: |
+          composer config repositories.foundation --json '{"type":"path","url":"stack/Foundation","options":{"symlink":false,"versions":{"sabatier/foundation":"1.0.0"}}}'
+
+      - name: Install dependencies
+        run: composer update --prefer-dist --no-interaction --no-progress
+
+      - name: Psalm
+        run: vendor/bin/psalm --output-format=github --no-progress
+
+      - name: Rector
+        run: vendor/bin/rector process src --dry-run --no-progress-bar

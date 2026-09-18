@@ -14,9 +14,9 @@ For a security problem, do not open an issue — see [SECURITY.md](SECURITY.md).
 - **[Foundation](https://github.com/dantesabatier/Foundation)**, the sibling library that
   provides the collections, predicates, KVO and notifications this framework is built on.
 
-The QA tools — PHPUnit, Psalm, Rector — are installed **globally** with Composer, not in the
-project's `vendor/`, which only holds the autoloader. Do not expect `composer install` to
-provide them.
+The QA tools — PHPUnit, Psalm, Rector — are declared in `require-dev`, so `composer install`
+provides them under `vendor/bin`. Installing them globally works too, and lets you invoke them
+by bare name from any of the stack's repositories.
 
 ## Getting set up
 
@@ -36,15 +36,15 @@ recreate that database around every test, so give it a name you are willing to l
 ## Running the checks
 
 ```bash
-phpunit
+vendor/bin/phpunit
 ```
 
 ```bash
-psalm --config=psalm.xml
+vendor/bin/psalm --config=psalm.xml
 ```
 
 ```bash
-rector process --dry-run
+vendor/bin/rector process --dry-run
 ```
 
 A change is expected to leave the suite green and Psalm reporting no errors. Rector's dry run is
@@ -134,3 +134,9 @@ Some constraints are deliberate, and a change that violates one will be declined
 ## Licence
 
 Contributions are accepted under the [MIT Licence](LICENSE.md), the same terms as the project.
+
+## Code of conduct
+
+This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md). By
+participating, you are expected to uphold it. Report unacceptable behavior to
+`dantesabatier@me.com`.
