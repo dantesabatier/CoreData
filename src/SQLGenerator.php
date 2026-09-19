@@ -485,6 +485,7 @@ final class SQLGenerator
                 $expressions->insert(Expression::expressionForKeyPath($descriptor->key));
             }
         }
+        $expressions->formUnion($this->keyPathExpressionsForFetchRequestDerivations());
         foreach ($expressions as $expression) {
             $this->appendJoinsForRelationships($this->relationshipsFromKeyPathExpression($expression));
         }
@@ -561,12 +562,6 @@ final class SQLGenerator
         return false;
     }
 
-    /**
-     * Whether a paginated fetch must resolve its page of distinct primary keys through a subquery before joining
-     * row-multiplying relationships. A to-many (or many-to-many) join, whether introduced by the serialization
-     * (prefetching) or by a predicate/sort key path, multiplies rows so that LIMIT/OFFSET would otherwise count rows
-     * rather than objects and could truncate the last object graph.
-     */
     private function requiresPaginationSubquery(FetchRequest $request): bool
     {
         if (!$request->fetchLimit && !$request->fetchOffset) {
@@ -812,6 +807,51 @@ final class SQLGenerator
                 $current = $parent . $key;
                 $expressions->insert(Expression::expressionForKeyPath($current));
                 $expressions->formUnion($this->keyPathExpressionsForFetchRequestSerialization($value, $current, $property->destinationEntity));
+            }
+        }
+        return $expressions;
+    }
+
+    /**
+     * @param Dictionary<mixed>|null $serialization
+     * @param string|null $parent
+     * @param EntityDescription|null $entity
+     * @return Set<Expression>
+     */
+    private function keyPathExpressionsForFetchRequestDerivations(?Dictionary $serialization = null, ?string $parent = null, ?EntityDescription $entity = null): Set
+    {
+        /** @var Set<Expression> $expressions */
+        $expressions = new Set();
+        if (!$this->request->includesPropertyValues || $this->request->resultType === FetchRequestResultType::countResultType) {
+            return $expressions;
+        }
+        $entity ??= $this->request->entity;
+        assert($entity instanceof EntityDescription);
+        $serialization ??= $this->request->serialization;
+        $prefix = $parent === null ? "" : "$parent.";
+        foreach ($serialization as $key => $value) {
+            $property = $entity->propertiesByName[$key];
+            if ($property instanceof RelationshipDescription) {
+                $expressions->formUnion($this->keyPathExpressionsForFetchRequestDerivations($value, $prefix . $key, $property->destinationEntity));
+                continue;
+            }
+            if (!$property instanceof DerivedAttributeDescription || $property->isTransient) {
+                continue;
+            }
+            $derivationExpression = $property->derivationExpression;
+            if (!$derivationExpression instanceof Expression) {
+                continue;
+            }
+            $compatibility = new DerivationSchemaCompatibility($derivationExpression);
+            if (!$compatibility->usesKeyValueCoding) {
+                continue;
+            }
+            foreach ($compatibility->analyser->keyPathExpressions as $keyPathExpression) {
+                $description = $keyPathExpression->description;
+                if (!str_contains($description, ".")) {
+                    continue;
+                }
+                $expressions->insert(Expression::expressionForKeyPath($prefix . $description));
             }
         }
         return $expressions;
