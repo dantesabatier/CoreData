@@ -2,6 +2,7 @@
 
 namespace Sabatier\CoreData;
 
+use Override;
 use Sabatier\Foundation\ArrayClass;
 use function Sabatier\Foundation\fatal_error;
 use function Sabatier\Foundation\human_readable_value;
@@ -10,6 +11,7 @@ use function Sabatier\Foundation\human_readable_value;
 final class SQLRTreeIndex extends SQLIndex
 {
     /** @var ArrayClass<SQLStatement> ADD SPATIAL INDEX takes neither a CONSTRAINT symbol nor an index_type, and rejects a sort order on its columns outright (MariaDB 1064) — the keyword already states the index kind. */
+    #[Override]
     protected(set) ArrayClass $createTableStatements {
         get => $this->createTableStatements ??= new ArrayClass([new SQLStatement("ALTER TABLE `{$this->entity->tableName}` ADD SPATIAL INDEX IF NOT EXISTS `{$this->indexDescription->name}` ({$this->indexDescription->elements->map(fn(FetchIndexElementDescription $element): string => "`{$element->property->name}`")->join(", ")})")]);
     }
