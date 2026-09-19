@@ -104,11 +104,8 @@ final class SQLFormatter extends Formatter
             if (in_array($string[1], ["\"", "'", "`"], true)) {
                 /** @psalm-suppress PossiblyNullOperand */
                 $ret->value = $string[0] . $this->quoted(substr($string, 1));
-            } else {
-                preg_match("/^(" . $string[0] . "[a-zA-Z\d._\$]+)/", $string, $matches);
-                if ($matches) {
-                    $ret->value = $matches[1];
-                }
+            } elseif (preg_match("/^(" . $string[0] . "[a-zA-Z\d._\$]+)/", $string, $matches)) {
+                $ret->value = $matches[1];
             }
             if ($ret->value !== null) {
                 return $ret;
