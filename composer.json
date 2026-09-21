@@ -1,6 +1,6 @@
 {
   "name": "sabatier/coredata",
-  "description": "Core Data is an Object graph and Persistence framework that enables the organization and manipulation of data from an entity-attribute relational model.",
+  "description": "An object graph and persistence framework for PHP: managed objects, identity, faulting, change tracking and automatic schema migration.",
   "keywords": [
     "sabatier",
     "coredata",

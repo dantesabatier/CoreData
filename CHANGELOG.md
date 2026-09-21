@@ -2,8 +2,8 @@
 
 All notable changes to Sabatier CoreData are documented in this file.
 
-The project follows [Semantic Versioning](https://semver.org/). Until the first stable release,
-entries remain under **Unreleased**.
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
+adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.1] - 2026-09-21
 
