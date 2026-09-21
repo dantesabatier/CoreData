@@ -843,7 +843,8 @@ final class SQLGenerator
                 continue;
             }
             $compatibility = new DerivationSchemaCompatibility($derivationExpression);
-            if (!$compatibility->usesKeyValueCoding) {
+            // A traversal reads a column through the join that defines its alias, so it needs one emitted here. An aggregate becomes a correlated subquery carrying its own FROM, and joining its relationship as well multiplies the rows the outer query carries while the subquery is re-evaluated over each one.
+            if (!$compatibility->usesKeyValueCoding || $compatibility->usesKeyValueOperator) {
                 continue;
             }
             foreach ($compatibility->analyser->keyPathExpressions as $keyPathExpression) {
