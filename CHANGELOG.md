@@ -5,6 +5,17 @@ All notable changes to Sabatier CoreData are documented in this file.
 The project follows [Semantic Versioning](https://semver.org/). Until the first stable release,
 entries remain under **Unreleased**.
 
+## [1.0.1] - 2026-09-21
+
+### Fixed
+
+- An aggregate derivation no longer joins the relationship its correlated subquery already
+  resolves. The join multiplied the rows the outer query carried and the subquery was
+  re-evaluated over each one, so a fetch whose serialization reached three to-many
+  relationships and their contacts gathered twelve joins under a `DISTINCT` that discarded the
+  surplus only after the aggregates had been computed across it. A traversal still gets the
+  join that defines its alias, without which its column cannot resolve.
+
 ## [1.0.0] - 2026-09-18
 
 ### Added
