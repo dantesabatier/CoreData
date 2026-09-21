@@ -68,6 +68,7 @@
             <errorLevel type="suppress">
                 <file name="src/FaultingSet.php"/>
                 <file name="src/ManagedObjectContext.php"/>
+                <file name="src/MemcachedRowCache.php"/>
             </errorLevel>
         </PossiblyInvalidArgument>
         <InvalidReturnType>
