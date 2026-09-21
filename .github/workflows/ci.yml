@@ -44,7 +44,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.5"
-          extensions: dom, intl, mbstring, pdo, pdo_mysql, libxml
+          extensions: dom, intl, mbstring, pdo, pdo_mysql, libxml, apcu, redis, memcached
           ini-values: zend.assertions=1
           coverage: none
 
@@ -85,7 +85,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.5"
-          extensions: dom, intl, mbstring, pdo, pdo_mysql, libxml
+          extensions: dom, intl, mbstring, pdo, pdo_mysql, libxml, apcu, redis, memcached
           ini-values: zend.assertions=1
           coverage: none
 
