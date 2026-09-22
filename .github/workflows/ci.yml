@@ -33,13 +33,6 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Check out Foundation
-        uses: actions/checkout@v5
-        with:
-          repository: dantesabatier/Foundation
-          ref: master
-          path: stack/Foundation
-
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -48,10 +41,10 @@ jobs:
           ini-values: zend.assertions=1
           coverage: none
 
-      - name: Resolve the stack from the sibling checkouts
-        run: |
-          composer config repositories.foundation --json '{"type":"path","url":"stack/Foundation","options":{"symlink":false,"versions":{"sabatier/foundation":"1.0.0"}}}'
-
+      # The stack is consumed from Packagist like any other application would
+      # consume it. Resolving the siblings' master instead would test a combination
+      # no user can install, and would fail this repository's CI whenever an
+      # unrelated one committed.
       - name: Install dependencies
         run: composer update --prefer-dist --no-interaction --no-progress
 
@@ -74,13 +67,6 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Check out Foundation
-        uses: actions/checkout@v5
-        with:
-          repository: dantesabatier/Foundation
-          ref: master
-          path: stack/Foundation
-
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -89,10 +75,10 @@ jobs:
           ini-values: zend.assertions=1
           coverage: none
 
-      - name: Resolve the stack from the sibling checkouts
-        run: |
-          composer config repositories.foundation --json '{"type":"path","url":"stack/Foundation","options":{"symlink":false,"versions":{"sabatier/foundation":"1.0.0"}}}'
-
+      # The stack is consumed from Packagist like any other application would
+      # consume it. Resolving the siblings' master instead would test a combination
+      # no user can install, and would fail this repository's CI whenever an
+      # unrelated one committed.
       - name: Install dependencies
         run: composer update --prefer-dist --no-interaction --no-progress
 
