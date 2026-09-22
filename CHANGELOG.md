@@ -5,6 +5,12 @@ All notable changes to Sabatier CoreData are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `Info.plist` reports the released version. It still read `0.3` after `1.0.1` was published, because nothing derives the bundle version from the tag.
+
 ## [1.0.1] - 2026-09-21
 
 ### Fixed
