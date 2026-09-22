@@ -101,7 +101,9 @@ store, the generated statement helps; if it involves a migration, both model ver
 - **Say what you measured.** "Reverting the guard fails three tests" is worth more than a claim
   that the fix works.
 - Update `CHANGELOG.md` under **Unreleased** when the change is visible to someone using the
-  framework.
+  framework, in the same commit that makes it. Behaviour, a signature, a default, a message
+  they read — not test scaffolding, CI or analysis configuration. What changed and why are
+  known now and reconstructed badly at tag time.
 
 ## What the framework will not accept
 
