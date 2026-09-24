@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -459,7 +460,7 @@ final class ManagedObjectContextTest extends TestCase
         $this->assertCount(0, $rereadContext->fetch(Worker::fetchRequest()), "the cascade is persisted, not just in-memory");
     }
 
-    private static function makeCascadeModel(): ManagedObjectModel
+    private static function makeCascadeModel(DeleteRule $departmentDeleteRule = DeleteRule::nullifyDeleteRule): ManagedObjectModel
     {
         $departmentName = new AttributeDescription();
         $departmentName->name = "name";
@@ -486,6 +487,7 @@ final class ManagedObjectContextTest extends TestCase
         $departmentRelationship->lazyDestinationEntityName = "Department";
         $departmentRelationship->lazyInverseRelationshipName = "workers";
         $departmentRelationship->maxCount = 1;
+        $departmentRelationship->deleteRule = $departmentDeleteRule;
 
         $worker = new EntityDescription();
         $worker->name = "Worker";
@@ -497,9 +499,9 @@ final class ManagedObjectContextTest extends TestCase
         return $model;
     }
 
-    private function makeCascadeContext(): ManagedObjectContext
+    private function makeCascadeContext(DeleteRule $departmentDeleteRule = DeleteRule::nullifyDeleteRule): ManagedObjectContext
     {
-        $coordinator = new PersistentStoreCoordinator(self::makeCascadeModel());
+        $coordinator = new PersistentStoreCoordinator(self::makeCascadeModel($departmentDeleteRule));
         $coordinator->addPersistentStoreWithType(PersistentStoreType::xml, null, $this->storeURL);
         $context = new ManagedObjectContext();
         $context->persistentStoreCoordinator = $coordinator;
@@ -698,6 +700,180 @@ final class ManagedObjectContextTest extends TestCase
         $this->assertNotNull($reloaded, "the ticket reached the store");
         $this->assertSame("outer", (string)$reloaded->note, "the outer save was persisted");
         $this->assertSame(2, $reloaded->priority, "the nested save was persisted");
+    }
+
+    /**
+     * @return list<string>
+     * @throws Exception
+     */
+    private function persistedTicketCodes(): array
+    {
+        return $this->makeTicketContext()->fetch(Ticket::fetchRequest())->map(fn(Ticket $ticket): string => $ticket->code)->array;
+    }
+
+    /**
+     * Regression: deleting an object the store holds no row for scheduled a store delete, and
+     * the next save threw "Unable to delete an uncached object". Such an object is forgotten.
+     * @throws Exception
+     */
+    public function testDeletingAnUnsavedObjectForgetsIt(): void
+    {
+        $context = $this->makeTicketContext();
+        $discarded = new Ticket($context);
+        $discarded->code = "DISCARDED";
+        $context->processPendingChanges();
+
+        $context->delete($discarded);
+        $this->assertFalse($context->insertedObjects->containsElement($discarded), "the object is no longer inserted");
+        $this->assertFalse($context->deletedObjects->containsElement($discarded), "there is no row to delete");
+
+        $kept = new Ticket($context);
+        $kept->code = "KEPT";
+        $this->assertTrue($context->save(), "the next save reports success");
+        $this->assertSame(["KEPT"], $this->persistedTicketCodes(), "only the kept object reached the store");
+    }
+
+    /**
+     * Same regression with the object's changes still unprocessed when it is deleted: they
+     * must not bring it back into the save.
+     * @throws Exception
+     */
+    public function testDeletingAnUnsavedObjectWithUnprocessedChangesForgetsIt(): void
+    {
+        $context = $this->makeTicketContext();
+        $discarded = new Ticket($context);
+        $discarded->code = "DISCARDED";
+        $context->delete($discarded);
+
+        $kept = new Ticket($context);
+        $kept->code = "KEPT";
+        $this->assertTrue($context->save(), "the next save reports success");
+        $this->assertNull($context->registeredObject($discarded->objectID), "the pending changes did not register a stand-in for the forgotten object");
+        $this->assertSame(["KEPT"], $this->persistedTicketCodes(), "only the kept object reached the store");
+    }
+
+    /**
+     * A save that throws has already given its objects permanent IDs, so a permanent ID does not
+     * mean the store holds a row: deleting the object afterwards must still forget it.
+     * @throws Exception
+     */
+    public function testDeletingAnObjectAfterASaveRejectedByValidationForgetsIt(): void
+    {
+        $context = $this->makeTicketContext();
+        $discarded = new Ticket($context);
+        $discarded->code = "DISCARDED";
+        /** @psalm-suppress InvalidPropertyAssignmentValue the out-of-range value is what makes validation reject the save */
+        $discarded->priority = 99;
+        try {
+            $context->save();
+            $this->fail("the out-of-range priority must reject the save");
+        } catch (InternalInconsistencyException) {
+        }
+        $this->assertFalse($discarded->objectID->isTemporaryID, "the rejected save left a permanent ID behind");
+
+        $context->delete($discarded);
+        $kept = new Ticket($context);
+        $kept->code = "KEPT";
+        $this->assertTrue($context->save(), "the next save reports success");
+        $this->assertSame(["KEPT"], $this->persistedTicketCodes(), "only the kept object reached the store");
+    }
+
+    /** @throws Exception */
+    public function testDeletingAnObjectAfterASaveDeniedByAWillSaveObserverForgetsIt(): void
+    {
+        $context = $this->makeTicketContext();
+        $discarded = new Ticket($context);
+        $discarded->code = "DISCARDED";
+        $observer = NotificationCenter::default()->addObserverForName(
+            ManagedObjectContext::willSaveObjectsNotification,
+            $context,
+            function (): void {
+                throw new RuntimeException("write denied");
+            },
+        );
+        try {
+            $context->save();
+            $this->fail("the observer must deny the save");
+        } catch (RuntimeException) {
+        } finally {
+            NotificationCenter::default()->removeObserver($observer);
+        }
+
+        $context->delete($discarded);
+        $kept = new Ticket($context);
+        $kept->code = "KEPT";
+        $this->assertTrue($context->save(), "the next save reports success");
+        $this->assertSame(["KEPT"], $this->persistedTicketCodes(), "only the kept object reached the store");
+    }
+
+    /**
+     * A cascade reaching unsaved objects forgets them too, while the saved ones it reaches are
+     * still deleted from the store.
+     * @throws Exception
+     */
+    public function testCascadeDeleteForgetsTheUnsavedObjectsItReaches(): void
+    {
+        $context = $this->makeCascadeContext();
+        $engineering = new Department($context);
+        $engineering->name = "Engineering";
+        $engineering->mutableSetValueForKey("workers")->insert($this->insertWorker($context, "Ann"));
+        $this->assertTrue($context->save(), "saving the department and its first worker reports success");
+
+        $ben = $this->insertWorker($context, "Ben");
+        $engineering->mutableSetValueForKey("workers")->insert($ben);
+        $context->processPendingChanges();
+        $context->delete($engineering);
+        $this->assertFalse($context->insertedObjects->containsElement($ben), "the unsaved worker is no longer inserted");
+        $this->assertFalse($context->deletedObjects->containsElement($ben), "the unsaved worker has no row to delete");
+
+        $sales = new Department($context);
+        $sales->name = "Sales";
+        $this->assertTrue($context->save(), "the cascade saves without throwing");
+
+        $rereadContext = $this->makeCascadeContext();
+        $this->assertSame(["Sales"], $rereadContext->fetch(Department::fetchRequest())->map(fn(Department $department): string => $department->name)->array, "only the new department is left");
+        $this->assertCount(0, $rereadContext->fetch(Worker::fetchRequest()), "the saved worker was deleted and the unsaved one never written");
+    }
+
+    /** @throws Exception */
+    public function testCascadeDeleteOfAnUnsavedGraphForgetsAllOfIt(): void
+    {
+        $context = $this->makeCascadeContext();
+        $engineering = new Department($context);
+        $engineering->name = "Engineering";
+        $engineering->mutableSetValueForKey("workers")->insert($this->insertWorker($context, "Ann"));
+        $context->processPendingChanges();
+
+        $context->delete($engineering);
+        $this->assertCount(0, $context->insertedObjects, "nothing is left to insert");
+        $this->assertCount(0, $context->deletedObjects, "nothing is left to delete");
+
+        $sales = new Department($context);
+        $sales->name = "Sales";
+        $this->assertTrue($context->save(), "the next save reports success");
+        $rereadContext = $this->makeCascadeContext();
+        $this->assertCount(1, $rereadContext->fetch(Department::fetchRequest()), "only the new department reached the store");
+        $this->assertCount(0, $rereadContext->fetch(Worker::fetchRequest()), "the forgotten worker never reached the store");
+    }
+
+    /**
+     * A forgotten object never enters deletedObjects, so that set cannot stop a cascade that
+     * leads back to it: without another guard, deleting either side recursed until the stack ran out.
+     * @throws Exception
+     */
+    public function testAMutualCascadeBetweenUnsavedObjectsEnds(): void
+    {
+        $context = $this->makeCascadeContext(DeleteRule::cascadeDeleteRule);
+        $engineering = new Department($context);
+        $engineering->name = "Engineering";
+        $ann = $this->insertWorker($context, "Ann");
+        $ann->department = $engineering;
+        $context->processPendingChanges();
+        $this->assertTrue($engineering->workers->containsElement($ann), "the cascade runs both ways");
+
+        $context->delete($engineering);
+        $this->assertCount(0, $context->insertedObjects, "nothing is left to insert");
+        $this->assertCount(0, $context->deletedObjects, "nothing is left to delete");
     }
 
     public function testSaveSucceedsOnceTheRequiredAttributeIsSet(): void

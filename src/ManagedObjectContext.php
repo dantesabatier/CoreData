@@ -489,16 +489,40 @@ final class ManagedObjectContext extends ObjectClass
         if ($this->deletedObjects->containsElement($object)) {
             return;
         }
+        // Without a row and no longer pending insertion, the object has already been forgotten; returning here is what ends a cascade that cycles back to it.
+        if (!$this->insertedObjects->containsElement($object) && !$object->isInserted) {
+            return;
+        }
         $this->transitionToDeletedState($object);
         $this->processCascadeDeletions($object);
     }
 
+    /**
+     * Only an object the store holds a row for is scheduled for deletion. One that has never been
+     * saved is forgotten instead: asking the store to delete a row it never had fails the save.
+     */
     private function transitionToDeletedState(ManagedObject $object): void
     {
         $this->hasChanges = true;
         $this->insertedObjects->remove($object);
         $this->updatedObjects->remove($object);
-        $this->deletedObjects->insert($object);
+        if ($object->isInserted) {
+            $this->deletedObjects->insert($object);
+        } else {
+            $this->forget($object);
+        }
+    }
+
+    /**
+     * Its pending changes go too: processing them would register a stand-in under its ID, which every walk over the registered objects then meets.
+     */
+    private function forget(ManagedObject $object): void
+    {
+        $node = new IncrementalStoreNode($object->objectID, new Dictionary());
+        $this->unprocessedInserts->remove($node);
+        $this->unprocessedDeletes->remove($node);
+        $this->unprocessedChanges->remove($node);
+        $this->unregister($object);
     }
 
     private function processCascadeDeletions(ManagedObject $object): void
@@ -559,6 +583,8 @@ final class ManagedObjectContext extends ObjectClass
     private function obtainPermanentID(ManagedObject $object): bool
     {
         if ($object->objectID->isTemporaryID && (($persistentStore = $this->persistentStoreCoordinator?->persistentStoreForObject($object)))) {
+            // Left behind, the temporary key outlives unregister(), and the object stays among the registered objects after it is gone.
+            $this->byHashAssociationTable->removeValueForKey((string)$object->objectID);
             $object->objectID = $persistentStore->objectID($object->entity, $persistentStore->newReferenceObject($object));
             $this->register($object);
             return true;

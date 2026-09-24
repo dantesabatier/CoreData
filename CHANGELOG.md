@@ -17,6 +17,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A `save()` made from a `ManagedObjectContextDidSave` observer now reaches the store. The
   notification was posted while the outer save was still in progress, so the nested call returned
   `true` without writing, and its changes stayed pending while `hasChanges` read `false`.
+- Deleting an object that has never been saved no longer breaks the next `save()`. The context
+  scheduled a store delete for a row that never existed, and an atomic store (XML, binary) threw
+  "Unable to delete an uncached object"; this held too after a `save()` that threw, since that save
+  had already given the object a permanent ID. Such an object is now forgotten: it leaves
+  `insertedObjects` and the context's registered objects and never enters `deletedObjects`, so it
+  no longer collides with a sibling's unique value either. A cascade that reaches it forgets it
+  the same way, and a cascade that cycles back to it ends.
 
 ## [1.0.1] - 2026-09-21
 
