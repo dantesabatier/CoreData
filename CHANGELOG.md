@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-09-24
+
 ### Fixed
 
 - `Info.plist` reports the released version. It still read `0.3` after `1.0.1` was published, because nothing derives the bundle version from the tag.
