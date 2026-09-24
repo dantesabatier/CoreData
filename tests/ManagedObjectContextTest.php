@@ -6,6 +6,7 @@ namespace Sabatier\CoreData\Tests;
 
 use Override;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\DeleteRule;
@@ -23,10 +24,13 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Date;
 use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\InternalInconsistencyException;
+use Sabatier\Foundation\Notification;
+use Sabatier\Foundation\NotificationCenter;
 use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
+use const Sabatier\CoreData\UpdatedObjectsKey;
 
 /**
  * @property UUID $badge
@@ -585,10 +589,115 @@ final class ManagedObjectContextTest extends TestCase
         $context = $this->makeTicketContext();
         $ticket = new Ticket($context);
         $ticket->code = "ABC-9";
-        $ticket->priority = 99; // outside the modeled [1, 5] range
+        $ticket->priority = 99;
 
         $this->expectException(InternalInconsistencyException::class);
         $context->save();
+    }
+
+    /**
+     * Regression: a save that throws must not leave the context believing a save is still in
+     * progress, or every later save() returns true without reaching the store.
+     */
+    public function testASaveRejectedByValidationDoesNotSwallowTheNextSave(): void
+    {
+        $context = $this->makeTicketContext();
+        $ticket = new Ticket($context);
+        $ticket->code = "ABC-7";
+        /** @psalm-suppress InvalidPropertyAssignmentValue the out-of-range value is what makes validation reject the save */
+        $ticket->priority = 99;
+
+        try {
+            $context->save();
+            $this->fail("the out-of-range priority must reject the save");
+        } catch (InternalInconsistencyException) {
+        }
+
+        $ticket->priority = 4;
+        $this->assertTrue($context->save(), "the corrected save reports success");
+
+        $rereadContext = $this->makeTicketContext();
+        $reloaded = $rereadContext->fetch(Ticket::fetchRequest())->first();
+        $this->assertNotNull($reloaded, "the corrected object reached the store");
+        $this->assertSame(4, $reloaded->priority, "the corrected value was persisted");
+    }
+
+    /**
+     * Same regression through the will-save notification: an observer that denies the save by
+     * throwing must leave the context able to save once the denial no longer applies.
+     */
+    public function testASaveDeniedByAWillSaveObserverDoesNotSwallowTheNextSave(): void
+    {
+        $context = $this->makeTicketContext();
+        $ticket = new Ticket($context);
+        $ticket->code = "RETRIED";
+
+        $observer = NotificationCenter::default()->addObserverForName(
+            ManagedObjectContext::willSaveObjectsNotification,
+            $context,
+            function (): void {
+                throw new RuntimeException("write denied");
+            },
+        );
+        try {
+            $context->save();
+            $this->fail("the observer must deny the save");
+        } catch (RuntimeException) {
+        } finally {
+            NotificationCenter::default()->removeObserver($observer);
+        }
+
+        $this->assertTrue($context->save(), "the retried save reports success");
+
+        $rereadContext = $this->makeTicketContext();
+        $reloaded = $rereadContext->fetch(Ticket::fetchRequest())->first();
+        $this->assertNotNull($reloaded, "the retried save reached the store");
+        $this->assertSame("RETRIED", (string)$reloaded->code, "the retried value was persisted");
+    }
+
+    /**
+     * Regression: a save() made from a ManagedObjectContextDidSave observer used to be a no-op,
+     * because the flag was still set while the notification was posted. Its changes stayed
+     * pending while hasChanges read false, so a guarded save skipped them and they were lost.
+     * The notification must also still carry the objects of the save that posted it.
+     */
+    public function testASaveMadeFromADidSaveObserverReachesTheStore(): void
+    {
+        $context = $this->makeTicketContext();
+        $ticket = new Ticket($context);
+        $ticket->code = "NESTED";
+        $ticket->priority = 1;
+        $context->save();
+
+        $observed = null;
+        $observer = NotificationCenter::default()->addObserverForName(
+            ManagedObjectContext::didSaveObjectsNotification,
+            $context,
+            function (Notification $notification) use ($context, $ticket, &$observed): void {
+                if ($observed !== null) {
+                    return;
+                }
+                $observed = $notification->userInfo[UpdatedObjectsKey];
+                $ticket->priority = 2;
+                $context->save();
+            },
+        );
+        try {
+            $ticket->note = "outer";
+            $context->save();
+        } finally {
+            NotificationCenter::default()->removeObserver($observer);
+        }
+
+        $this->assertInstanceOf(Set::class, $observed, "the notification carries the updated objects");
+        $this->assertTrue($observed->containsElement($ticket), "the notification's objects survive the state reset");
+        $this->assertFalse($context->hasChanges, "nothing is left pending after the nested save");
+
+        $rereadContext = $this->makeTicketContext();
+        $reloaded = $rereadContext->fetch(Ticket::fetchRequest())->first();
+        $this->assertNotNull($reloaded, "the ticket reached the store");
+        $this->assertSame("outer", (string)$reloaded->note, "the outer save was persisted");
+        $this->assertSame(2, $reloaded->priority, "the nested save was persisted");
     }
 
     public function testSaveSucceedsOnceTheRequiredAttributeIsSet(): void

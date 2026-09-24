@@ -925,19 +925,21 @@ final class ManagedObjectContext extends ObjectClass
             return true;
         }
         $this->savingInProgress = true;
-        $this->stabilizeDomainState();
-        if (!$this->hasPendingChanges()) {
+        try {
+            $this->stabilizeDomainState();
+            if (!$this->hasPendingChanges()) {
+                return true;
+            }
+            $changesRequest = $this->createSaveChangesRequest();
+            NotificationCenter::default()->postNotificationName(self::willSaveObjectsNotification, $this);
+            $this->executeSaveChangesRequest($changesRequest);
+            $this->commitChangeTracking($changesRequest);
+            $this->notifyObjectsDidSave($changesRequest);
+            $this->resetState();
+        } finally {
             $this->savingInProgress = false;
-            return true;
         }
-        $changesRequest = $this->createSaveChangesRequest();
-        NotificationCenter::default()->postNotificationName(self::willSaveObjectsNotification, $this);
-        $this->executeSaveChangesRequest($changesRequest);
-        $this->commitChangeTracking($changesRequest);
-        $this->notifyObjectsDidSave($changesRequest);
         NotificationCenter::default()->postNotificationName(self::didSaveObjectsNotification, $this, new Dictionary([InsertedObjectsKey => $changesRequest->insertedObjects, UpdatedObjectsKey => $changesRequest->updatedObjects, DeletedObjectsKey => $changesRequest->deletedObjects]));
-        $this->resetState();
-        $this->savingInProgress = false;
         return true;
     }
 
@@ -1030,7 +1032,7 @@ final class ManagedObjectContext extends ObjectClass
 
     private function createSaveChangesRequest(): SaveChangesRequest
     {
-        return new SaveChangesRequest(...new ArrayClass([$this->insertedObjects, $this->updatedObjects, $this->deletedObjects])->map(fn(Set $set): ?Set => $set->isEmpty ? null : $set)->array);
+        return new SaveChangesRequest(...new ArrayClass([$this->insertedObjects, $this->updatedObjects, $this->deletedObjects])->map(fn(Set $set): ?Set => $set->isEmpty ? null : clone $set)->array);
     }
 
     private function obtainPermanentIDsForInsertedObjects(): void

@@ -10,6 +10,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - `Info.plist` reports the released version. It still read `0.3` after `1.0.1` was published, because nothing derives the bundle version from the tag.
+- A `ManagedObjectContext` whose `save()` threw — a validation failure, or a
+  `ManagedObjectContextWillSave` observer that denied the save — no longer ignores every later
+  `save()` on it. The context kept believing a save was in progress, so each later call returned
+  `true` without writing anything.
+- A `save()` made from a `ManagedObjectContextDidSave` observer now reaches the store. The
+  notification was posted while the outer save was still in progress, so the nested call returned
+  `true` without writing, and its changes stayed pending while `hasChanges` read `false`.
 
 ## [1.0.1] - 2026-09-21
 
