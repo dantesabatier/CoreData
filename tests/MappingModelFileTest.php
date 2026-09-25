@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
@@ -55,12 +56,14 @@ final class MappingModelFileTest extends TestCase
             ->appendingPathExtension("map");
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
         FileManager::default()->removeItem($this->url);
     }
 
+    /** @noinspection PhpSameParameterValueInspection */
     private static function attribute(string $name, AttributeType $type): AttributeDescription
     {
         $attribute = new AttributeDescription();
@@ -82,6 +85,7 @@ final class MappingModelFileTest extends TestCase
         return $model;
     }
 
+    /** @throws Exception */
     private function writeMappingModel(): MappingModel
     {
         $sourceModel = self::model("directions");
@@ -107,6 +111,7 @@ final class MappingModelFileTest extends TestCase
         return $mappingModel;
     }
 
+    /** @throws Exception */
     public function testEntityMappingsSurviveARoundTrip(): void
     {
         $written = $this->writeMappingModel();
@@ -125,6 +130,7 @@ final class MappingModelFileTest extends TestCase
         );
     }
 
+    /** @throws Exception */
     public function testValueExpressionsSurviveARoundTrip(): void
     {
         $this->writeMappingModel();
@@ -140,6 +146,7 @@ final class MappingModelFileTest extends TestCase
         $this->assertNotNull($attributeMapping->valueExpression, "the value expression must be restored, it is what produces the destination value");
     }
 
+    /** @throws Exception */
     public function testBothModelsAreRestoredAsUsableModels(): void
     {
         $this->writeMappingModel();
@@ -157,6 +164,8 @@ final class MappingModelFileTest extends TestCase
      * arrives frozen and fully indexed — the same state a model read from its own file has. Handing
      * back the raw unarchived graph instead would yield an editable model whose indexes were never
      * rebuilt by addEntity().
+     *
+     * @throws Exception
      */
     public function testRestoredModelsAreFrozenLikeAModelReadFromItsOwnFile(): void
     {
@@ -174,6 +183,8 @@ final class MappingModelFileTest extends TestCase
      * subclass — without that ManagedObject::entity() has nothing to resolve and raises. Loading a
      * mapping model therefore has to make its models' classes usable, exactly as loading a model
      * file does.
+     *
+     * @throws Exception
      */
     public function testRestoredModelsRegisterTheirEntitiesOnTheManagedObjectClass(): void
     {

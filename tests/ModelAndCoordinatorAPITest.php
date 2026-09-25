@@ -88,7 +88,11 @@ final class ModelAndCoordinatorAPITest extends TestCase
         return $model;
     }
 
-    /** A coordinator over an XML store at this test's own URL. */
+    /**
+     * A coordinator over an XML store at this test's own URL.
+     *
+     * @throws Exception
+     */
     private function coordinator(?ManagedObjectModel $model = null): PersistentStoreCoordinator
     {
         $coordinator = new PersistentStoreCoordinator($model ?? self::model());
@@ -104,6 +108,7 @@ final class ModelAndCoordinatorAPITest extends TestCase
             ->appendingPathExtension("xml");
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {

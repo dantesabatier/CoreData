@@ -113,6 +113,7 @@ final class RowCacheTest extends TestCase
         $entity->name = $name;
         $entity->properties = new ArrayClass([$label]);
 
+        /** @noinspection PhpObjectFieldsAreOnlyWrittenInspection */
         $model = new ManagedObjectModel();
         $model->entities = new ArrayClass([$entity]);
         return $entity;
@@ -207,6 +208,7 @@ final class RowCacheTest extends TestCase
     public function testEntityNameParticipatesInTheKey(callable $factory): void
     {
         $cache = $this->backend($factory);
+        /** @noinspection PhpRedundantOptionalArgumentInspection */
         $person = self::objectID("shared-reference", "Person");
         $company = self::objectID("shared-reference", "Company");
 
@@ -828,6 +830,7 @@ final class RowCacheTest extends TestCase
         $cache = new NullRowCache();
 
         $before = $cache->currentGenerationForStore("any-store");
+        /** @noinspection PhpExpressionResultUnusedInspection */
         $cache->advanceGenerationForStore("any-store");
 
         $this->assertSame($before, $cache->currentGenerationForStore("any-store"), "a disabled cache has no generation to advance");

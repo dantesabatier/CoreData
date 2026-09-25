@@ -1,9 +1,12 @@
 <?php
 
+/** @noinspection PhpPipeOperatorCanBeUsedInspection */
+
 declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -62,6 +65,8 @@ final class SQLWildcardEscapingTest extends SQLMigrationTestCase
      * Seeds one row per SKU, plus a decoy that a wildcard-interpreting query would match but an
      * exact comparison must not: if `_` were treated as "any character", "AUDIT_TEST_50" would
      * also match "AUDITxTESTx50".
+     *
+     * @throws Exception
      */
     private function seed(): void
     {
@@ -75,6 +80,7 @@ final class SQLWildcardEscapingTest extends SQLMigrationTestCase
 
     /**
      * @return list<string> the sku of every Part matching $predicate, fetched through the model
+     * @throws Exception
      */
     private function fetchSKUs(string $predicate): array
     {
@@ -92,6 +98,8 @@ final class SQLWildcardEscapingTest extends SQLMigrationTestCase
     /**
      * The regression: an exact match on a value containing `_` must return that row. Before the
      * fix the bound argument was "AUDIT\_TEST\_50" and this fetch returned nothing.
+     *
+     * @throws Exception
      */
     public function testExactMatchFindsValueContainingUnderscore(): void
     {
@@ -101,6 +109,8 @@ final class SQLWildcardEscapingTest extends SQLMigrationTestCase
 
     /**
      * The same failure for `%`, the other character addcslashes was escaping.
+     *
+     * @throws Exception
      */
     public function testExactMatchFindsValueContainingPercent(): void
     {
@@ -111,6 +121,8 @@ final class SQLWildcardEscapingTest extends SQLMigrationTestCase
     /**
      * An exact match stays exact: `_` is a literal, never a single-character wildcard, so the
      * decoy row "AUDITxTESTx50" must not come back.
+     *
+     * @throws Exception
      */
     public function testExactMatchDoesNotTreatUnderscoreAsWildcard(): void
     {
@@ -121,6 +133,8 @@ final class SQLWildcardEscapingTest extends SQLMigrationTestCase
     /**
      * != is routed through the same comparison path and must agree with ==: the row whose sku
      * equals the value is the one row excluded.
+     *
+     * @throws Exception
      */
     public function testNotEqualExcludesOnlyTheEscapedValue(): void
     {
@@ -131,6 +145,8 @@ final class SQLWildcardEscapingTest extends SQLMigrationTestCase
     /**
      * The other half of the contract: the LIKE family still escapes, so a pattern containing
      * `_` and `%` matches them literally and does not behave as a wildcard search.
+     *
+     * @throws Exception
      */
     public function testLikeTreatsWildcardsInThePatternAsLiterals(): void
     {
@@ -141,6 +157,8 @@ final class SQLWildcardEscapingTest extends SQLMigrationTestCase
     /**
      * BEGINSWITH appends its own trailing wildcard but must still escape the ones inside the
      * user's value, matching the literal prefix only.
+     *
+     * @throws Exception
      */
     public function testBeginsWithEscapesWildcardsInsideTheValue(): void
     {
@@ -151,6 +169,8 @@ final class SQLWildcardEscapingTest extends SQLMigrationTestCase
     /**
      * CONTAINS wraps the value in wildcards on both sides; the `%` inside the value stays
      * literal, so "50NOTOFF" is not a match.
+     *
+     * @throws Exception
      */
     public function testContainsEscapesWildcardsInsideTheValue(): void
     {
@@ -161,6 +181,8 @@ final class SQLWildcardEscapingTest extends SQLMigrationTestCase
     /**
      * IN parameterizes its list directly rather than going through the comparison path, so it
      * never escaped; this pins that it agrees with == on the same values.
+     *
+     * @throws Exception
      */
     public function testInMatchesValuesContainingWildcards(): void
     {

@@ -1,9 +1,12 @@
 <?php
 
+/** @noinspection PhpUndefinedFieldInspection */
+
 declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\DeleteRule;
@@ -46,6 +49,7 @@ final class Sack extends ManagedObject
  */
 final class SQLStoreMigratorDeleteRuleTest extends SQLMigrationTestCase
 {
+    /** @noinspection PhpSameParameterValueInspection */
     private static function attribute(string $name, AttributeType $type): AttributeDescription
     {
         $attribute = new AttributeDescription();
@@ -57,9 +61,6 @@ final class SQLStoreMigratorDeleteRuleTest extends SQLMigrationTestCase
     /**
      * Silo with a to-many "sacks" under $toManyRule, and Sack with its to-one inverse "silo"
      * under $toOneRule.
-     *
-     * @param DeleteRule $toManyRule
-     * @param DeleteRule $toOneRule
      */
     private static function model(DeleteRule $toManyRule, DeleteRule $toOneRule): ManagedObjectModel
     {
@@ -95,6 +96,7 @@ final class SQLStoreMigratorDeleteRuleTest extends SQLMigrationTestCase
     /**
      * The ON DELETE clause of the foreign key on $tableName, as the server reports it, or null
      * when no such constraint exists.
+     * @noinspection PhpSameParameterValueInspection
      */
     private function deleteRuleOf(string $tableName): ?string
     {
@@ -102,7 +104,7 @@ final class SQLStoreMigratorDeleteRuleTest extends SQLMigrationTestCase
             "SELECT DELETE_RULE FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS
              WHERE CONSTRAINT_SCHEMA = ? AND TABLE_NAME = ?",
         );
-        $statement->execute([static::DATABASE_NAME, $tableName]);
+        $statement->execute([self::DATABASE_NAME, $tableName]);
         $rule = $statement->fetchColumn();
         return $rule === false ? null : (string)$rule;
     }
@@ -110,6 +112,8 @@ final class SQLStoreMigratorDeleteRuleTest extends SQLMigrationTestCase
     /**
      * Changing the to-many's rule rewrites the foreign key's ON DELETE, which is only possible
      * by dropping the constraint and creating it again.
+     *
+     * @throws Exception
      */
     public function testChangingTheToManyRuleRewritesTheForeignKeyOnDeleteClause(): void
     {
@@ -132,6 +136,8 @@ final class SQLStoreMigratorDeleteRuleTest extends SQLMigrationTestCase
      * Changing only the to-one's rule alters the model's version hash, so a migration does run,
      * but it neither reaches the FK-versus-FK branch nor changes the emitted DDL. What must hold
      * is that it leaves a usable constraint rather than dropping it and stopping.
+     *
+     * @throws Exception
      */
     public function testChangingTheToOneRuleLeavesTheConstraintIntact(): void
     {

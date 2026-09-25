@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
@@ -107,6 +108,7 @@ final class FaultHandlerTest extends TestCase
         return $model;
     }
 
+    /** @throws Exception */
     private function context(): ManagedObjectContext
     {
         $coordinator = new PersistentStoreCoordinator(self::model());
@@ -124,12 +126,14 @@ final class FaultHandlerTest extends TestCase
             ->appendingPathExtension("xml");
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
         FileManager::default()->removeItem($this->storeURL);
     }
 
+    /** @throws Exception */
     private function seedWidget(string $label, int $qty): void
     {
         $context = $this->context();
@@ -139,6 +143,7 @@ final class FaultHandlerTest extends TestCase
         $context->save();
     }
 
+    /** @throws Exception */
     public function testTurnObjectIntoFaultReflagsAMaterializedObject(): void
     {
         $this->seedWidget("hammer", 3);
@@ -153,6 +158,7 @@ final class FaultHandlerTest extends TestCase
         $this->assertSame(ManagedObjectFaultingStateUnstable, $widget->faultingState, "faulting state becomes unstable");
     }
 
+    /** @throws Exception */
     public function testTurnObjectIntoFaultIsIdempotentOnAnExistingFault(): void
     {
         $this->seedWidget("wrench", 1);
@@ -166,6 +172,7 @@ final class FaultHandlerTest extends TestCase
         $this->assertTrue($widget->isFault, "turning an existing fault into a fault is a harmless no-op");
     }
 
+    /** @throws Exception */
     public function testTurnObjectIntoFaultEvictsTheRowCacheSnapshot(): void
     {
         $this->seedWidget("drill", 7);
@@ -185,6 +192,7 @@ final class FaultHandlerTest extends TestCase
         $this->assertNull($store->rowCache->snapshot($objectID), "turnObjectIntoFault evicts the row-cache snapshot");
     }
 
+    /** @throws Exception */
     public function testFulfillFaultRehydratesValuesFromTheStore(): void
     {
         $this->seedWidget("saw", 9);
@@ -200,6 +208,7 @@ final class FaultHandlerTest extends TestCase
         $this->assertSame(9, $widget->qty, "typed attribute is hydrated with its type");
     }
 
+    /** @throws Exception */
     public function testFulfillFaultIsANoOpOnAMaterializedObject(): void
     {
         $this->seedWidget("plane", 2);
@@ -213,6 +222,7 @@ final class FaultHandlerTest extends TestCase
         $this->assertSame("plane", (string)$widget->label, "values are unchanged");
     }
 
+    /** @throws Exception */
     public function testTurnObjectIntoFaultRefaultsAToManyRelationship(): void
     {
         // Seed a gadget with two parts, so the gadget's "parts" is a populated FaultingSet.
@@ -238,6 +248,7 @@ final class FaultHandlerTest extends TestCase
 
         $reloaded->faultHandler->turnObjectIntoFault($reloaded);
 
+        /** @noinspection PhpConditionAlreadyCheckedInspection */
         $this->assertTrue($parts->isFault, "the to-many relationship set is turned back into a fault");
         $this->assertSame(0, $parts->count, "refaulting the relationship drops its materialized members");
     }

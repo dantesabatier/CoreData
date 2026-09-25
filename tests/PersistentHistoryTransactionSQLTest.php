@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -23,7 +24,6 @@ use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Dictionary;
-use Sabatier\Foundation\Number;
 use const Sabatier\CoreData\PersistentHistoryTrackingKey;
 use const Sabatier\CoreData\PersistentStoreIDOption;
 
@@ -48,6 +48,7 @@ final class PersistentHistoryTransactionSQLTest extends SQLMigrationTestCase
     private ?PersistentStore $historyStore = null;
     private ?EntityDescription $historyEntity = null;
 
+    /** @throws Exception */
     #[Override]
     protected function setUp(): void
     {
@@ -73,6 +74,7 @@ final class PersistentHistoryTransactionSQLTest extends SQLMigrationTestCase
     protected function tearDown(): void
     {
         if ($this->historyContext) {
+            /** @noinspection PhpFieldImmediatelyRewrittenInspection */
             $this->historyContext->persistentStoreCoordinator = null;
         }
         $this->historyContext = null;
@@ -124,6 +126,7 @@ final class PersistentHistoryTransactionSQLTest extends SQLMigrationTestCase
         return $this->historyEntity ?? self::fail("history entity was not initialized");
     }
 
+    /** @throws Exception */
     private function saveAs(string $contextName, string $author): void
     {
         $context = $this->context();
@@ -134,10 +137,11 @@ final class PersistentHistoryTransactionSQLTest extends SQLMigrationTestCase
 
     /**
      * @return ArrayClass<PersistentHistoryTransaction>
+     * @throws Exception
      */
-    private function transactionsAfter(?PersistentHistoryTransaction $transaction = null): ArrayClass
+    private function transactionsAfter(): ArrayClass
     {
-        $request = PersistentHistoryChangeRequest::fetchHistoryAfterTransaction($transaction);
+        $request = PersistentHistoryChangeRequest::fetchHistoryAfterTransaction(null);
         $request->resultType = PersistentHistoryResultType::transactionsAndChanges;
         $result = $this->context()->execute($request);
 
@@ -159,6 +163,7 @@ final class PersistentHistoryTransactionSQLTest extends SQLMigrationTestCase
         return $ordered;
     }
 
+    /** @throws Exception */
     public function testSavesRoundTripTransactionMetadataAndAllChangeTypes(): void
     {
         $context = $this->context();
@@ -217,6 +222,7 @@ final class PersistentHistoryTransactionSQLTest extends SQLMigrationTestCase
         $this->assertFalse($tombstone->offsetExists("quantity"), "only attributes marked for history preservation enter the tombstone");
     }
 
+    /** @throws Exception */
     public function testFetchingAfterATransactionTokenReturnsOnlyNewerTransactions(): void
     {
         $item = new PersistentHistoryTrackedItem($this->context());
@@ -240,6 +246,7 @@ final class PersistentHistoryTransactionSQLTest extends SQLMigrationTestCase
         $this->assertSame("second-author", $result->result->first->author);
     }
 
+    /** @throws Exception */
     public function testObjectIDAndTransactionOnlyResultsRetainTheirExpectedShapes(): void
     {
         $item = new PersistentHistoryTrackedItem($this->context());

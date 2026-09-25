@@ -92,6 +92,7 @@ final class SQLSchemaTypesTest extends TestCase
         return $index->createTableStatements->map(fn(SQLStatement $statement): string => $statement->string)->join("\n");
     }
 
+    /** @noinspection PhpSameParameterValueInspection */
     private function index(string $name): SQLIndex
     {
         /** @var SQLEntity $entity */

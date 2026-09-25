@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
@@ -110,6 +111,7 @@ final class PartialToManyRelationshipUpdateTest extends TestCase
         return $model;
     }
 
+    /** @throws Exception */
     private function makeContext(): ManagedObjectContext
     {
         $coordinator = new PersistentStoreCoordinator(self::makeModel());
@@ -123,6 +125,7 @@ final class PartialToManyRelationshipUpdateTest extends TestCase
      * An Article carrying three named Labels, already saved.
      *
      * @return array{0: Article, 1: Dictionary<Label>}
+     * @throws Exception
      */
     private function makeSavedArticleWithThreeLabels(ManagedObjectContext $context): array
     {
@@ -147,7 +150,7 @@ final class PartialToManyRelationshipUpdateTest extends TestCase
      */
     private function labelNames(ManagedObject $article): array
     {
-        $names = $article->labels->map(fn(Label $label): string => (string)$label->name)->sorted([]);
+        $names = $article->labels->map(fn(Label $label): string => $label->name)->sorted([]);
         return array_values(iterator_to_array($names));
     }
 
@@ -159,12 +162,14 @@ final class PartialToManyRelationshipUpdateTest extends TestCase
             ->appendingPathExtension("xml");
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
         FileManager::default()->removeItem($this->storeURL);
     }
 
+    /** @throws Exception */
     public function testAssigningASubsetKeepsTheRemainingObjects(): void
     {
         $context = $this->makeContext();
@@ -177,6 +182,7 @@ final class PartialToManyRelationshipUpdateTest extends TestCase
         $this->assertSame(["alpha", "gamma"], $this->labelNames($article), "exactly the label left out is gone");
     }
 
+    /** @throws Exception */
     public function testAssigningASubsetPersistsAndSurvivesAReload(): void
     {
         $context = $this->makeContext();
@@ -193,6 +199,8 @@ final class PartialToManyRelationshipUpdateTest extends TestCase
 
     /**
      * Only the removed object's inverse may change; the ones that stayed must keep theirs.
+     *
+     * @throws Exception
      */
     public function testAssigningASubsetOnlyClearsTheInverseOfTheRemovedObject(): void
     {
@@ -209,6 +217,8 @@ final class PartialToManyRelationshipUpdateTest extends TestCase
     /**
      * The route a framework layer takes when it applies a request body: the client sends back
      * the objects that remain, as a list of references.
+     *
+     * @throws Exception
      */
     public function testUpdateFromSnapshotWithASubsetKeepsTheRemainingObjects(): void
     {
@@ -224,6 +234,7 @@ final class PartialToManyRelationshipUpdateTest extends TestCase
         $this->assertSame(["alpha", "gamma"], $this->labelNames($article), "the right label was dropped");
     }
 
+    /** @throws Exception */
     public function testUpdateFromSnapshotWithASubsetPersists(): void
     {
         $context = $this->makeContext();
@@ -242,6 +253,8 @@ final class PartialToManyRelationshipUpdateTest extends TestCase
     /**
      * Removing one, saving, then removing another: the second update must start from the saved
      * state rather than from a stale snapshot of the original three.
+     *
+     * @throws Exception
      */
     public function testRemovingOneAtATimeAcrossSavesIsCumulative(): void
     {
@@ -264,6 +277,8 @@ final class PartialToManyRelationshipUpdateTest extends TestCase
 
     /**
      * Adding and removing in a single assignment: the diff has to handle both directions at once.
+     *
+     * @throws Exception
      */
     public function testAssigningASetThatBothAddsAndRemoves(): void
     {

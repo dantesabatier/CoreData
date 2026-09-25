@@ -1026,6 +1026,8 @@ final class SQLGeneratorTest extends TestCase
      * An infix operator wraps its arguments in parentheses and joins them with its symbol. The
      * parentheses are not cosmetic: the expression becomes one column of a larger SELECT, and
      * without them `a + b` inside a comparison would rebind against the surrounding operators.
+     *
+     * @throws Exception
      */
     #[DataProvider("infixOperators")]
     public function testAnInfixOperatorRendersBetweenItsArguments(string $functionName, string $symbol): void
@@ -1079,6 +1081,7 @@ final class SQLGeneratorTest extends TestCase
 
     /**
      * @param list<string> $keyPaths
+     * @throws Exception
      */
     #[DataProvider("renamedFunctions")]
     public function testARenamedFunctionUsesItsMariaDBSpelling(string $functionName, string $sqlName, array $keyPaths): void
@@ -1144,6 +1147,7 @@ final class SQLGeneratorTest extends TestCase
 
     /**
      * @param list<string> $keyPaths
+     * @throws Exception
      */
     #[DataProvider("symbolFunctions")]
     public function testASymbolFunctionRendersUpperCased(string $functionName, string $sqlName, array $keyPaths): void
@@ -1160,6 +1164,8 @@ final class SQLGeneratorTest extends TestCase
      * A cast joins its two arguments with AS rather than a comma — it is the one call whose
      * argument separator is not ", ", and a comma there is a syntax error rather than a wrong
      * result.
+     *
+     * @throws Exception
      */
     public function testACastSeparatesItsArgumentsWithAs(): void
     {
@@ -1177,6 +1183,8 @@ final class SQLGeneratorTest extends TestCase
     /**
      * An operator the generator has no mapping for is refused rather than emitted as an empty
      * call. `()` would be a syntax error at the server; failing here names the expression.
+     *
+     * @throws Exception
      */
     public function testAnUnmappedOperatorIsRefused(): void
     {
@@ -1210,6 +1218,8 @@ final class SQLGeneratorTest extends TestCase
      *
      * The line the rule is drawn on is stability, not aggregation: SUM and COUNT are
      * deterministic here, because for a fixed set of rows they always give the same answer.
+     *
+     * @throws Exception
      */
     #[DataProvider("nonDeterministicFunctions")]
     public function testAnUnstableFunctionIsReportedAsNonDeterministic(string $functionName): void
@@ -1230,6 +1240,8 @@ final class SQLGeneratorTest extends TestCase
      * same answer, so the flag does not exclude it. Pinned explicitly because the intuitive
      * reading — "an aggregate reads more than its own row, so it must be non-deterministic" —
      * is wrong here and would look like a bug to whoever assumes it.
+     *
+     * @throws Exception
      */
     public function testAnAggregateStaysDeterministic(): void
     {
@@ -1247,6 +1259,8 @@ final class SQLGeneratorTest extends TestCase
     /**
      * A plain arithmetic expression over the row's own columns IS deterministic, which is what
      * lets a derived attribute be stored as a generated column rather than computed per query.
+     *
+     * @throws Exception
      */
     public function testRowLocalArithmeticStaysDeterministic(): void
     {
@@ -1275,6 +1289,8 @@ final class SQLGeneratorTest extends TestCase
     /**
      * A SUBQUERY over a to-many relationship, counted, becomes a scalar subselect compared
      * against the count — and the inner SELECT is correlated to the outer row.
+     *
+     * @throws Exception
      */
     public function testACountedSubqueryBecomesACorrelatedScalarSelect(): void
     {
@@ -1293,6 +1309,8 @@ final class SQLGeneratorTest extends TestCase
      * The subquery's own predicate survives into the inner WHERE, alongside the correlation.
      * Both have to be there: only the correlation, and the filter is lost; only the filter, and
      * every supplier sees every part.
+     *
+     * @throws Exception
      */
     public function testTheSubqueryPredicateAndTheCorrelationAreBothApplied(): void
     {
@@ -1313,6 +1331,8 @@ final class SQLGeneratorTest extends TestCase
      * The subquery's variable names its table alias, so the inner table is addressed by the name
      * the predicate chose rather than by the entity's own table name — which is what keeps a
      * self-referential subquery from colliding with its outer table.
+     *
+     * @throws Exception
      */
     public function testTheSubqueryVariableNamesTheInnerTableAlias(): void
     {
@@ -1329,6 +1349,8 @@ final class SQLGeneratorTest extends TestCase
      * ANY over a to-many is the existence form: it needs no count, so the generator emits
      * EXISTS instead of comparing a scalar. Semantically the same question, but EXISTS can stop
      * at the first matching row.
+     *
+     * @throws Exception
      */
     public function testAnyOverAToManyBecomesAnExistsSubquery(): void
     {
@@ -1347,6 +1369,8 @@ final class SQLGeneratorTest extends TestCase
      * An EXISTS subquery generated from ANY takes its alias from the generator rather than from
      * a variable the predicate named, since there is none — so it must still not collide with
      * the outer table's name.
+     *
+     * @throws Exception
      */
     public function testAnExistsSubqueryAliasDoesNotCollideWithTheOuterTable(): void
     {
@@ -1362,6 +1386,8 @@ final class SQLGeneratorTest extends TestCase
     /**
      * A subquery's comparison value is bound rather than interpolated, the same as any other
      * predicate value — the count on the right of the comparison becomes a placeholder.
+     *
+     * @throws Exception
      */
     public function testASubqueryComparisonValueIsBound(): void
     {
@@ -1378,6 +1404,8 @@ final class SQLGeneratorTest extends TestCase
     /**
      * Nesting composes: a function whose argument is another function renders the inner call
      * inside the outer one, because every argument goes back through buildExpression.
+     *
+     * @throws Exception
      */
     public function testFunctionsNest(): void
     {

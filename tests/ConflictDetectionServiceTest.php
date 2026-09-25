@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
@@ -44,7 +45,7 @@ final class Account extends ManagedObject
 final class StubSnapshotProvider implements SnapshotProvider
 {
     /** @param Dictionary<mixed>|null $result */
-    public function __construct(private ?Dictionary $result = null)
+    public function __construct(/** @noinspection PhpPropertyCanBeReadonlyInspection */ private ?Dictionary $result = null)
     {
     }
 
@@ -64,7 +65,7 @@ final class StubSnapshotProvider implements SnapshotProvider
 /** A VersioningStrategy stub with a fixed verdict. */
 final class StubVersioningStrategy implements VersioningStrategy
 {
-    public function __construct(private bool $conflict)
+    public function __construct(/** @noinspection PhpPropertyCanBeReadonlyInspection */ private bool $conflict)
     {
     }
 
@@ -117,6 +118,7 @@ final class ConflictDetectionServiceTest extends TestCase
         return $model;
     }
 
+    /** @throws Exception */
     private function context(): ManagedObjectContext
     {
         $coordinator = new PersistentStoreCoordinator(self::model());
@@ -153,6 +155,7 @@ final class ConflictDetectionServiceTest extends TestCase
             ->appendingPathExtension("xml");
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
@@ -161,6 +164,7 @@ final class ConflictDetectionServiceTest extends TestCase
 
     // --- detectConstraintConflicts ---
 
+    /** @throws Exception */
     public function testDuplicateAgainstAStoredRowRaisesAConstraintConflict(): void
     {
         // Seed a stored row with email "a@x.com".
@@ -180,6 +184,7 @@ final class ConflictDetectionServiceTest extends TestCase
         $service->detectConstraintConflicts($dup);
     }
 
+    /** @throws Exception */
     public function testUniqueValuePassesWithoutConflict(): void
     {
         $seed = $this->context();
@@ -198,6 +203,7 @@ final class ConflictDetectionServiceTest extends TestCase
         $this->addToAssertionCount(1);
     }
 
+    /** @throws Exception */
     public function testDuplicateAgainstAPendingPeerRaisesAConstraintConflict(): void
     {
         // Two brand-new objects in the SAME save sharing an email. Neither is in the store yet, so
@@ -213,6 +219,7 @@ final class ConflictDetectionServiceTest extends TestCase
         $service->detectConstraintConflicts($a);
     }
 
+    /** @throws Exception */
     public function testPendingPeerCollisionIsCaseInsensitiveForStrings(): void
     {
         // valuesCollide mirrors the store's LIKE comparison for strings: case-insensitive.
@@ -227,6 +234,7 @@ final class ConflictDetectionServiceTest extends TestCase
         $service->detectConstraintConflicts($b);
     }
 
+    /** @throws Exception */
     public function testDeletedPeerDoesNotCollide(): void
     {
         // A peer that shares the value but is being deleted frees its value → no conflict.
@@ -242,6 +250,7 @@ final class ConflictDetectionServiceTest extends TestCase
         $this->addToAssertionCount(1); // no throw: the deleted peer does not count
     }
 
+    /** @throws Exception */
     public function testNoUniqueAttributesIsANoOp(): void
     {
         // An entity with no unique index/constraint: detectConstraintConflicts returns immediately,
@@ -263,6 +272,7 @@ final class ConflictDetectionServiceTest extends TestCase
 
     // --- detectConflicts (optimistic locking) ---
 
+    /** @throws Exception */
     public function testTemporaryIdObjectIsSkipped(): void
     {
         $context = $this->context();
@@ -279,6 +289,7 @@ final class ConflictDetectionServiceTest extends TestCase
         $this->addToAssertionCount(1);
     }
 
+    /** @throws Exception */
     public function testMissingOriginalSnapshotIsSkipped(): void
     {
         $context = $this->context();
@@ -299,6 +310,7 @@ final class ConflictDetectionServiceTest extends TestCase
         $this->addToAssertionCount(1);
     }
 
+    /** @throws Exception */
     public function testVersionConflictOnAnUpdatedObjectRaises(): void
     {
         $context = $this->context();
@@ -321,6 +333,7 @@ final class ConflictDetectionServiceTest extends TestCase
         $service->detectConflicts($account);
     }
 
+    /** @throws Exception */
     public function testNoVersionConflictLeavesTheSaveAlone(): void
     {
         $context = $this->context();
@@ -342,6 +355,7 @@ final class ConflictDetectionServiceTest extends TestCase
         $this->addToAssertionCount(1);
     }
 
+    /** @throws Exception */
     public function testAtomicStoreOptimisticLockingDegradesToNoConflict(): void
     {
         $seed = $this->context();

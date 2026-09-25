@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -37,12 +38,12 @@ final class Tome extends ManagedObject
  */
 final class SQLStoreMigratorEntityTest extends SQLMigrationTestCase
 {
-    private static function attribute(string $name, AttributeType $type, bool $optional = false): AttributeDescription
+    private static function attribute(string $name, AttributeType $type): AttributeDescription
     {
         $attribute = new AttributeDescription();
         $attribute->name = $name;
         $attribute->type = $type;
-        $attribute->isOptional = $optional;
+        $attribute->isOptional = false;
         return $attribute;
     }
 
@@ -72,6 +73,7 @@ final class SQLStoreMigratorEntityTest extends SQLMigrationTestCase
         return self::entity("Scribe", Scribe::class, [self::attribute("name", AttributeType::string)]);
     }
 
+    /** @throws Exception */
     public function testAddingANewEntityCreatesItsTable(): void
     {
         $this->bootstrap(self::model(self::authorEntity()));
@@ -90,6 +92,7 @@ final class SQLStoreMigratorEntityTest extends SQLMigrationTestCase
         $this->assertTrue($this->tableExists("Scribe"), "the pre-existing entity's table is untouched");
     }
 
+    /** @throws Exception */
     public function testRemovingAnEntityDropsItsTable(): void
     {
         // v1 has Scribe and Tome; v2 keeps only Scribe.
@@ -113,6 +116,7 @@ final class SQLStoreMigratorEntityTest extends SQLMigrationTestCase
         $this->assertSame("Le Guin", (string)$rows->first()->name, "the surviving entity's values are intact");
     }
 
+    /** @throws Exception */
     public function testUnchangedEntityIsCopiedWhileAnotherEntityTransforms(): void
     {
         // Scribe is identical across versions (copy), Tome gains a column (transform). The

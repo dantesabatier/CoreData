@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -52,6 +53,7 @@ final class StagedMigrationMappingModelTest extends SQLMigrationTestCase
 {
     private URL $bundleURL;
 
+    /** @throws Exception */
     #[Override]
     protected function setUp(): void
     {
@@ -60,6 +62,7 @@ final class StagedMigrationMappingModelTest extends SQLMigrationTestCase
         FileManager::default()->createDirectory($this->bundleURL, true);
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
@@ -67,9 +70,9 @@ final class StagedMigrationMappingModelTest extends SQLMigrationTestCase
         parent::tearDown();
     }
 
-    private function bundle(): Bundle
+    private function bundle(): void
     {
-        return Bundle::bundleWithURL($this->bundleURL);
+        Bundle::bundleWithURL($this->bundleURL);
     }
 
     private static function attribute(string $name, AttributeType $type): AttributeDescription
@@ -110,6 +113,7 @@ final class StagedMigrationMappingModelTest extends SQLMigrationTestCase
         return self::model([self::attribute("body", AttributeType::binaryData)]);
     }
 
+    /** @throws Exception */
     private function writeMappingModel(ManagedObjectModel $sourceModel, ManagedObjectModel $destinationModel): void
     {
         $entityMapping = new EntityMapping();
@@ -132,6 +136,7 @@ final class StagedMigrationMappingModelTest extends SQLMigrationTestCase
 
     /**
      * @param Dictionary<mixed> $options
+     * @throws Exception
      */
     private function openWithStages(ManagedObjectModel $destinationModel, Dictionary $options): void
     {
@@ -151,6 +156,7 @@ final class StagedMigrationMappingModelTest extends SQLMigrationTestCase
         ]);
     }
 
+    /** @throws Exception */
     public function testACustomStageUsesTheMappingModelAuthoredForThePair(): void
     {
         $sourceModel = self::sourceModel();
@@ -187,6 +193,8 @@ final class StagedMigrationMappingModelTest extends SQLMigrationTestCase
      *
      * The stage names the source and destination checksums, so the walk from the store's current
      * checksum has somewhere to go; a stage listing only one would have nothing to migrate to.
+     *
+     * @throws Exception
      */
     public function testALightweightStageMigratesThroughItsChecksums(): void
     {

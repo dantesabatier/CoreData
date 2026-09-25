@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
@@ -24,7 +25,6 @@ use Sabatier\Foundation\UUID;
 use const Sabatier\CoreData\PersistentStoreCoordinatorStoresDidChange;
 use const Sabatier\CoreData\PersistentStoreCoordinatorStoresWillChange;
 use const Sabatier\CoreData\PersistentStoreCoordinatorWillRemoveStore;
-use const Sabatier\CoreData\RemovedPersistentStoresKey;
 use const Sabatier\CoreData\StoreTypeKey;
 use const Sabatier\CoreData\StoreUUIDKey;
 
@@ -99,11 +99,13 @@ final class PersistentStoreCoordinatorTest extends TestCase
     /**
      * A coordinator with one XML store added, plus a context bound to it so the stack is the
      * shape a caller actually builds.
+     *
+     * @throws Exception
      */
-    private function stack(?URL $url = null): PersistentStoreCoordinator
+    private function stack(): PersistentStoreCoordinator
     {
         $coordinator = $this->coordinator();
-        $coordinator->addPersistentStoreWithType(PersistentStoreType::xml, null, $url ?? $this->storeURL);
+        $coordinator->addPersistentStoreWithType(PersistentStoreType::xml, null, $this->storeURL);
         $context = new ManagedObjectContext();
         $context->persistentStoreCoordinator = $coordinator;
         $this->contexts[] = $context;
@@ -121,6 +123,8 @@ final class PersistentStoreCoordinatorTest extends TestCase
     /**
      * Clearing the coordinator is what lets the stack be collected: assigning it registers the
      * context as a notification observer, which otherwise keeps both alive for the process.
+     *
+     * @throws Exception
      */
     #[Override]
     protected function tearDown(): void
@@ -134,6 +138,7 @@ final class PersistentStoreCoordinatorTest extends TestCase
 
     // --- Store registration and lookup ---
 
+    /** @throws Exception */
     public function testAddedStoreIsRegisteredWithTheCoordinator(): void
     {
         $coordinator = $this->stack();
@@ -144,6 +149,8 @@ final class PersistentStoreCoordinatorTest extends TestCase
     /**
      * persistentStore() finds a store by the URL it was added with — the lookup a caller uses
      * to reach a store it did not keep a reference to.
+     *
+     * @throws Exception
      */
     public function testPersistentStoreFindsAStoreByItsURL(): void
     {
@@ -157,6 +164,8 @@ final class PersistentStoreCoordinatorTest extends TestCase
 
     /**
      * A URL no store was added with yields null rather than the first store or an exception.
+     *
+     * @throws Exception
      */
     public function testPersistentStoreReturnsNullForAnUnknownURL(): void
     {
@@ -165,6 +174,7 @@ final class PersistentStoreCoordinatorTest extends TestCase
         $this->assertNull($coordinator->persistentStore(FileManager::default()->temporaryDirectory->appendingPathComponent("coredata-not-added.xml")));
     }
 
+    /** @throws Exception */
     public function testUrlReturnsTheStoreLocation(): void
     {
         $coordinator = $this->stack();
@@ -176,6 +186,8 @@ final class PersistentStoreCoordinatorTest extends TestCase
     /**
      * persistentStoreForIdentifier() is the lookup managedObjectID() depends on, and the
      * identifier is what a ManagedObjectID URI carries as its host.
+     *
+     * @throws Exception
      */
     public function testPersistentStoreForIdentifierFindsTheStore(): void
     {
@@ -185,6 +197,7 @@ final class PersistentStoreCoordinatorTest extends TestCase
         $this->assertSame($store, $coordinator->persistentStoreForIdentifier($store->identifier));
     }
 
+    /** @throws Exception */
     public function testPersistentStoreForIdentifierReturnsNullWhenUnknown(): void
     {
         $coordinator = $this->stack();
@@ -195,6 +208,8 @@ final class PersistentStoreCoordinatorTest extends TestCase
     /**
      * With a single store, every entity routes to it — the common case, and the fallback the
      * implementation ends on when no configuration claims the entity.
+     *
+     * @throws Exception
      */
     public function testPersistentStoreForObjectRoutesToTheOnlyStore(): void
     {
@@ -215,6 +230,8 @@ final class PersistentStoreCoordinatorTest extends TestCase
      * The round trip that matters for external references: a ManagedObjectID serialized to its
      * URI must come back as an equal ID. The URI is "x-coredata://{storeIdentifier}/{entity}/
      * {reference}", so this exercises the coordinator parsing all three parts back out.
+     *
+     * @throws Exception
      */
     public function testManagedObjectIDRoundTripsThroughItsURI(): void
     {
@@ -238,6 +255,8 @@ final class PersistentStoreCoordinatorTest extends TestCase
      * An entity name absent from the model yields null. The method returns null rather than
      * raising, which is exactly why it needs a test: a caller that skips the null check gets a
      * missing object with no error to explain it.
+     *
+     * @throws Exception
      */
     public function testManagedObjectIDReturnsNullForAnUnknownEntity(): void
     {
@@ -252,6 +271,8 @@ final class PersistentStoreCoordinatorTest extends TestCase
     /**
      * A URI naming a store this coordinator does not have also yields null, even when the
      * entity is one the model knows.
+     *
+     * @throws Exception
      */
     public function testManagedObjectIDReturnsNullForAnUnknownStore(): void
     {
@@ -267,6 +288,8 @@ final class PersistentStoreCoordinatorTest extends TestCase
     /**
      * A store's metadata carries the type and UUID the framework needs to recognise it later;
      * migration reads this to decide whether the cached model is compatible.
+     *
+     * @throws Exception
      */
     public function testStoreMetadataCarriesTypeAndUUID(): void
     {
@@ -282,6 +305,8 @@ final class PersistentStoreCoordinatorTest extends TestCase
     /**
      * setMetadata() replaces the dictionary and announces the change, since a coordinator's
      * observers cache per-store information keyed by what the metadata says.
+     *
+     * @throws Exception
      */
     public function testSetMetadataStoresTheValueAndAnnouncesTheChange(): void
     {
@@ -310,6 +335,8 @@ final class PersistentStoreCoordinatorTest extends TestCase
     /**
      * remove() unregisters the store and announces it. The notifications are the contract other
      * parts of the stack rely on to drop what they cached for that store.
+     *
+     * @throws Exception
      */
     public function testRemoveUnregistersTheStoreAndAnnouncesIt(): void
     {
@@ -347,6 +374,8 @@ final class PersistentStoreCoordinatorTest extends TestCase
      * Removing a store leaves the file alone — removal detaches the store from the coordinator,
      * it does not destroy the data. That distinction is the whole difference between remove()
      * and destroyPersistentStoreAtURL().
+     *
+     * @throws Exception
      */
     public function testRemoveDoesNotDeleteTheStoreFile(): void
     {
@@ -367,6 +396,8 @@ final class PersistentStoreCoordinatorTest extends TestCase
 
     /**
      * After removal, the store no longer answers a lookup by its URL.
+     *
+     * @throws Exception
      */
     public function testRemovedStoreIsNoLongerFoundByURL(): void
     {
@@ -382,6 +413,8 @@ final class PersistentStoreCoordinatorTest extends TestCase
     /**
      * destroyPersistentStoreAtURL() is the destructive counterpart: it removes the store's
      * backing file. Pinned because nothing else exercises it, and its blast radius is the data.
+     *
+     * @throws Exception
      */
     public function testDestroyPersistentStoreRemovesTheBackingFile(): void
     {
@@ -404,6 +437,8 @@ final class PersistentStoreCoordinatorTest extends TestCase
     /**
      * Destroying a store that was never created must not raise — the operation is the same
      * "make sure nothing is there" either way.
+     *
+     * @throws Exception
      */
     public function testDestroyPersistentStoreAtAnAbsentURLIsHarmless(): void
     {

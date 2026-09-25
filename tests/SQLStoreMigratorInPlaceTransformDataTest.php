@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -31,12 +32,12 @@ final class Reading extends ManagedObject
  */
 final class SQLStoreMigratorInPlaceTransformDataTest extends SQLMigrationTestCase
 {
-    private static function attribute(string $name, AttributeType $type, bool $optional = true): AttributeDescription
+    private static function attribute(string $name, AttributeType $type): AttributeDescription
     {
         $attribute = new AttributeDescription();
         $attribute->name = $name;
         $attribute->type = $type;
-        $attribute->isOptional = $optional;
+        $attribute->isOptional = true;
         return $attribute;
     }
 
@@ -55,6 +56,7 @@ final class SQLStoreMigratorInPlaceTransformDataTest extends SQLMigrationTestCas
         return $model;
     }
 
+    /** @throws Exception */
     public function testInPlaceTransformPreservesConvertedNumericValue(): void
     {
         // v1: value is integer32.

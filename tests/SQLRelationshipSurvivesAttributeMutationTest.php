@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -106,6 +107,7 @@ final class SQLRelationshipSurvivesAttributeMutationTest extends SQLMigrationTes
         return $model;
     }
 
+    /** @throws Exception */
     public function testMutatingAnAttributeKeepsTheToOneRelationship(): void
     {
         $context = $this->bootstrap(self::makeModel());
@@ -124,6 +126,7 @@ final class SQLRelationshipSurvivesAttributeMutationTest extends SQLMigrationTes
         $this->assertSame($owner, $entry->owner, "and it still points at the same object");
     }
 
+    /** @throws Exception */
     public function testMutatingAnAttributeKeepsTheToManyInverse(): void
     {
         $context = $this->bootstrap(self::makeModel());
@@ -144,6 +147,8 @@ final class SQLRelationshipSurvivesAttributeMutationTest extends SQLMigrationTes
     /**
      * The symptom as it first surfaced: a predicate that traverses the relationship stops
      * matching, while one over the object's own attribute still finds it.
+     *
+     * @throws Exception
      */
     public function testRelationshipIsQueryableAfterMutateAndSave(): void
     {
@@ -172,6 +177,7 @@ final class SQLRelationshipSurvivesAttributeMutationTest extends SQLMigrationTes
      * The SQL half of RelationshipSurvivesAttributeMutationTest's inverse-maintenance cases.
      *
      * @return array{0: SQLLedgerOwner, 1: SQLLedgerOwner, 2: SQLLedgerEntry}
+     * @throws Exception
      */
     private function loadedPairOfOwners(): array
     {
@@ -197,6 +203,7 @@ final class SQLRelationshipSurvivesAttributeMutationTest extends SQLMigrationTes
         return [$byName["first"], $byName["second"], $loadedEntry];
     }
 
+    /** @throws Exception */
     public function testReassigningAToOneMovesItBetweenTheInverses(): void
     {
         [$first, $second, $entry] = $this->loadedPairOfOwners();
@@ -208,6 +215,7 @@ final class SQLRelationshipSurvivesAttributeMutationTest extends SQLMigrationTes
         $this->assertSame(1, $second->entries?->count ?? -1, "and the owner it moved to holds it");
     }
 
+    /** @throws Exception */
     public function testNullingAToOneRemovesItFromTheInverse(): void
     {
         [$first, , $entry] = $this->loadedPairOfOwners();
@@ -221,6 +229,7 @@ final class SQLRelationshipSurvivesAttributeMutationTest extends SQLMigrationTes
      * Two owners and an entry, all inserted in this context and never saved.
      *
      * @return array{0: SQLLedgerOwner, 1: SQLLedgerOwner, 2: SQLLedgerEntry, 3: ManagedObjectContext}
+     * @throws Exception
      */
     private function unsavedPairOfOwners(): array
     {
@@ -234,6 +243,7 @@ final class SQLRelationshipSurvivesAttributeMutationTest extends SQLMigrationTes
         return [$first, $second, $entry, $context];
     }
 
+    /** @throws Exception */
     public function testAssigningAToOneOnAnUnsavedObjectPopulatesTheInverse(): void
     {
         [$first, , $entry] = $this->unsavedPairOfOwners();
@@ -243,9 +253,11 @@ final class SQLRelationshipSurvivesAttributeMutationTest extends SQLMigrationTes
         $this->assertTrue($first->entries?->containsElement($entry) ?? false, "the inverse holds the entry before any save");
     }
 
+    /** @throws Exception */
     public function testReassigningAToOneOnAnUnsavedObjectMovesItBetweenTheInverses(): void
     {
         [$first, $second, $entry] = $this->unsavedPairOfOwners();
+        /** @noinspection PhpFieldImmediatelyRewrittenInspection */
         $entry->owner = $first;
 
         $entry->owner = $second;
@@ -254,9 +266,11 @@ final class SQLRelationshipSurvivesAttributeMutationTest extends SQLMigrationTes
         $this->assertSame(1, $second->entries?->count ?? -1, "and the owner it moved to holds it");
     }
 
+    /** @throws Exception */
     public function testNullingAToOneOnAnUnsavedObjectRemovesItFromTheInverse(): void
     {
         [$first, , $entry] = $this->unsavedPairOfOwners();
+        /** @noinspection PhpFieldImmediatelyRewrittenInspection */
         $entry->owner = $first;
 
         $entry->owner = null;
@@ -264,10 +278,15 @@ final class SQLRelationshipSurvivesAttributeMutationTest extends SQLMigrationTes
         $this->assertSame(0, $first->entries?->count ?? -1, "clearing the to-one empties the inverse it was in");
     }
 
-    /** The link an unsaved assignment records must still be the one the store writes. */
+    /**
+     * The link an unsaved assignment records must still be the one the store writes.
+     *
+     * @throws Exception
+     */
     public function testAnUnsavedAssignmentPersistsTheRelationship(): void
     {
         [$first, $second, $entry, $context] = $this->unsavedPairOfOwners();
+        /** @noinspection PhpFieldImmediatelyRewrittenInspection */
         $entry->owner = $first;
         $entry->owner = $second;
         $context->save();

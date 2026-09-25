@@ -35,8 +35,8 @@ use Sabatier\Foundation\ArrayClass;
  *
  * Some fixtures here are not valid MariaDB on purpose — an unclosed parenthesis, a stray
  * closing one, a bracket-quoted identifier — because coping with malformed input is the
- * behavior under test: the formatter runs over whatever reaches the log. That is what the
- * file-level @noinspection covers; leave those statements broken.
+ * behavior under test: the formatter runs over whatever reaches the log. Those literals are
+ * marked @lang text so the IDE does not parse them as SQL; leave those statements broken.
  */
 final class SQLFormatterTest extends TestCase
 {
@@ -272,7 +272,7 @@ final class SQLFormatterTest extends TestCase
      */
     public function testUnclosedParenthesisWarnsWhenHighlighting(): void
     {
-        $sql = "SELECT a FROM (SELECT b FROM inner_table WHERE c = 1";
+        $sql = /** @lang text */ "SELECT a FROM (SELECT b FROM inner_table WHERE c = 1";
 
         $highlighted = self::formatted($sql, SQLFormatterStyle::highlighted | SQLFormatterStyle::prettyPrinted);
         $this->assertStringContainsString("WARNING: unclosed parentheses or section", self::plain($highlighted));
@@ -325,7 +325,7 @@ final class SQLFormatterTest extends TestCase
             "single-quoted string" => ["SELECT 'text' FROM t", "'text'", "quote"],
             "double-quoted string" => ["SELECT \"text\" FROM t", "\"text\"", "quote"],
             "backtick identifier" => ["SELECT `col name` FROM t", "`col name`", "whitespace|word|backtickQuote"],
-            "bracket identifier" => ["SELECT [col] FROM t", "[col]", "whitespace|word|backtickQuote"],
+            "bracket identifier" => [/** @lang text */ "SELECT [col] FROM t", "[col]", "whitespace|word|backtickQuote"],
             "integer" => ["SELECT 7 FROM t", "7", "number"],
             "decimal" => ["SELECT 3.14 FROM t", "3.14", "number"],
             "hexadecimal" => ["SELECT 0xFF FROM t", "0xFF", "number"],
@@ -403,7 +403,7 @@ final class SQLFormatterTest extends TestCase
     public function testUnaryMinusBindsToItsNumber(): void
     {
         $this->assertStringContainsString("b > -5", self::formatted("SELECT a FROM t WHERE b > -5", SQLFormatterStyle::prettyPrinted));
-        $this->assertStringContainsString("b - 5", self::formatted("SELECT a FROM t WHERE b - 5", SQLFormatterStyle::prettyPrinted));
+        $this->assertStringContainsString("b - 5", self::formatted(/** @lang text */ "SELECT a FROM t WHERE b - 5",SQLFormatterStyle::prettyPrinted));
     }
 
     /**
@@ -413,7 +413,7 @@ final class SQLFormatterTest extends TestCase
      */
     public function testUnbalancedClosingParenthesisIsClamped(): void
     {
-        $sql = "SELECT a FROM t)";
+        $sql = /** @lang text */ "SELECT a FROM t)";
 
         $this->assertSame("SELECT \n    a \nFROM \n    t\n)", self::formatted($sql, SQLFormatterStyle::prettyPrinted));
 
@@ -477,6 +477,7 @@ final class SQLFormatterTest extends TestCase
             self::formatted("SELECT column_number_$i FROM table_number_$i WHERE x = $i", SQLFormatterStyle::prettyPrinted);
         }
 
+        /** @noinspection PhpPipeOperatorCanBeUsedInspection */
         $this->assertLessThanOrEqual(5, count(self::tokenCache()));
     }
 

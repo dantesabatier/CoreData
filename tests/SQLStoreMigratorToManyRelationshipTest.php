@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -40,6 +41,7 @@ final class Crate extends ManagedObject
  */
 final class SQLStoreMigratorToManyRelationshipTest extends SQLMigrationTestCase
 {
+    /** @noinspection PhpSameParameterValueInspection */
     private static function attribute(string $name, AttributeType $type): AttributeDescription
     {
         $attribute = new AttributeDescription();
@@ -88,6 +90,7 @@ final class SQLStoreMigratorToManyRelationshipTest extends SQLMigrationTestCase
         return $model;
     }
 
+    /** @throws Exception */
     public function testAddingAToManyRelationshipCreatesTheForeignKeyOnTheDestinationTable(): void
     {
         $context = $this->bootstrap(self::model(related: false));

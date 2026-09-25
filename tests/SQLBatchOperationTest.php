@@ -387,6 +387,7 @@ final class SQLBatchOperationTest extends SQLMigrationTestCase
      * million objects.
      *
      * @throws Exception
+     * @noinspection PhpVariableIsUsedOnlyInClosureInspection
      */
     public function testBatchInsertAcceptsAManagedObjectHandler(): void
     {
@@ -400,6 +401,7 @@ final class SQLBatchOperationTest extends SQLMigrationTestCase
                 }
                 /** @var array{sku: string, qty: int} $row */
                 $row = $rows->popFirst();
+                /** @var BatchWidget $object */
                 $object->sku = $row["sku"];
                 $object->qty = $row["qty"];
                 return true;

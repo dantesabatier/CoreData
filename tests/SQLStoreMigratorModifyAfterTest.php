@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -52,6 +53,7 @@ final class SQLStoreMigratorModifyAfterTest extends SQLMigrationTestCase
         return $model;
     }
 
+    /** @throws Exception */
     public function testTypeChangeAfterANewlyAddedColumnMigratesCleanly(): void
     {
         // v1: just "amount" (integer32).

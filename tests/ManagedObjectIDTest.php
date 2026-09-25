@@ -39,6 +39,7 @@ final class ManagedObjectIDTest extends TestCase
         $entity->name = $name;
         $entity->properties = new ArrayClass([$attribute]);
 
+        /** @noinspection PhpObjectFieldsAreOnlyWrittenInspection */
         $model = new ManagedObjectModel();
         $model->entities = new ArrayClass([$entity]);
         return $entity;

@@ -73,6 +73,7 @@ final class XMLStoreMetadataTest extends TestCase
             ->appendingPathExtension("xml");
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {

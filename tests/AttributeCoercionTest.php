@@ -134,6 +134,7 @@ final class AttributeCoercionTest extends TestCase
     #[DataProvider("scalarTypes")]
     public function testAnOptionalAttributeKeepsNull(AttributeType $type): void
     {
+        /** @noinspection PhpRedundantOptionalArgumentInspection */
         $this->assertNull(self::coerced(null, self::attribute($type, isOptional: true)));
     }
 
@@ -150,6 +151,7 @@ final class AttributeCoercionTest extends TestCase
     #[DataProvider("scalarTypes")]
     public function testCoercingNullDirectlyRespectsTheOptionalFlag(AttributeType $type): void
     {
+        /** @noinspection PhpRedundantOptionalArgumentInspection */
         $this->assertNull(ManagedObject::coercedValue(null, $type, isOptional: true), "optional keeps null");
         $this->assertNotNull(ManagedObject::coercedValue(null, $type, isOptional: false), "required falls back to the type's empty value");
     }
@@ -182,7 +184,9 @@ final class AttributeCoercionTest extends TestCase
      */
     public function testAnEmptyStringOnAnOptionalScalarBecomesNull(): void
     {
+        /** @noinspection PhpRedundantOptionalArgumentInspection */
         $this->assertNull(self::coerced("", self::attribute(AttributeType::integer32, isOptional: true)));
+        /** @noinspection PhpRedundantOptionalArgumentInspection */
         $this->assertNull(self::coerced("", self::attribute(AttributeType::double, isOptional: true)));
     }
 
@@ -318,6 +322,7 @@ final class AttributeCoercionTest extends TestCase
      * An entity carrying one attribute of the given type, plus the keys every snapshot has.
      *
      * @throws Exception
+     * @noinspection PhpSameParameterValueInspection
      */
     private static function entityWithAttribute(AttributeType $type): EntityDescription
     {
@@ -329,6 +334,7 @@ final class AttributeCoercionTest extends TestCase
         $entity->name = "SanitizedRow";
         $entity->properties = new ArrayClass([$value]);
 
+        /** @noinspection PhpObjectFieldsAreOnlyWrittenInspection */
         $model = new ManagedObjectModel();
         $model->entities = new ArrayClass([$entity]);
         return $entity;
@@ -410,6 +416,7 @@ final class AttributeCoercionTest extends TestCase
         $entity->name = "CoercionRow";
         $entity->properties = new ArrayClass([$count]);
 
+        /** @noinspection PhpObjectFieldsAreOnlyWrittenInspection */
         $model = new ManagedObjectModel();
         $model->entities = new ArrayClass([$entity]);
 

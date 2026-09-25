@@ -172,7 +172,7 @@ final class ManagedObjectModelTest extends TestCase
             $typed = new AttributeDescription();
             $typed->name = "typed";
             $typed->type = $type;
-            $this->assertSame($class, $typed->attributeValueClassName, "attributeValueClassName maps {$type->name} to {$class}");
+            $this->assertSame($class, $typed->attributeValueClassName, "attributeValueClassName maps $type->name to $class");
         }
 
         $untyped = new AttributeDescription();

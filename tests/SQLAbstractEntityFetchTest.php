@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -103,6 +104,7 @@ final class SQLAbstractEntityFetchTest extends SQLMigrationTestCase
         return $model;
     }
 
+    /** @throws Exception */
     private function seed(): ManagedObjectContext
     {
         $context = $this->bootstrap(self::model());
@@ -131,6 +133,7 @@ final class SQLAbstractEntityFetchTest extends SQLMigrationTestCase
         return $fetched;
     }
 
+    /** @throws Exception */
     public function testAFetchOfAnAbstractEntityMaterializesTheConcreteSubentityClass(): void
     {
         $context = $this->seed();
@@ -150,6 +153,7 @@ final class SQLAbstractEntityFetchTest extends SQLMigrationTestCase
         $this->assertSame("string", $attribute->attributeType);
     }
 
+    /** @throws Exception */
     public function testAnAbstractFetchReturnsEachConcreteSubentityInItsOwnClass(): void
     {
         $context = $this->seed();

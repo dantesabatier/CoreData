@@ -115,6 +115,7 @@ final class ManagedObjectContextGraphTest extends TestCase
         $this->context->persistentStoreCoordinator = $coordinator;
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
@@ -166,7 +167,7 @@ final class ManagedObjectContextGraphTest extends TestCase
     {
         $manager = new UndoManager();
         $this->context->undoManager = $manager;
-        $note = $this->savedNote("original", 1);
+        $note = $this->savedNote("original");
 
         $this->context->processPendingChanges();
         $note->title = "edited";
@@ -195,7 +196,7 @@ final class ManagedObjectContextGraphTest extends TestCase
      */
     public function testRefreshTurnsTheObjectIntoAFaultAndKeepsTheTrackedEdit(): void
     {
-        $note = $this->savedNote("stored", 1);
+        $note = $this->savedNote("stored");
         $note->title = "pending";
 
         $this->assertSame("stored", $note->committedValues(null)["title"], "the committed value is the saved one");
@@ -219,7 +220,7 @@ final class ManagedObjectContextGraphTest extends TestCase
      */
     public function testRefreshWithMergeChangesKeepsPendingEdits(): void
     {
-        $note = $this->savedNote("stored", 1);
+        $note = $this->savedNote("stored");
         $note->title = "pending";
 
         $this->context->refresh($note, true);
@@ -236,6 +237,7 @@ final class ManagedObjectContextGraphTest extends TestCase
      */
     public function testRefreshAllObjectsRefreshesEveryRegisteredObject(): void
     {
+        /** @noinspection PhpRedundantOptionalArgumentInspection */
         $first = $this->savedNote("first", 1);
         $second = $this->savedNote("second", 2);
         $first->title = "edited first";
@@ -248,7 +250,9 @@ final class ManagedObjectContextGraphTest extends TestCase
 
         // Both objects must be faults again — that is what distinguishes this from doing nothing.
         // Checked before reading any property, since a read fires the fault.
+        /** @noinspection PhpConditionAlreadyCheckedInspection */
         $this->assertTrue($first->isFault, "every registered object was refreshed");
+        /** @noinspection PhpConditionAlreadyCheckedInspection */
         $this->assertTrue($second->isFault);
 
         // refreshAllObjects passes mergeChanges: true, so the tracked edits survive.

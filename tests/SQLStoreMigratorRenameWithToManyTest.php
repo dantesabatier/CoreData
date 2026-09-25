@@ -1,9 +1,12 @@
 <?php
 
+/** @noinspection PhpUndefinedFieldInspection */
+
 declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -54,6 +57,7 @@ final class Pallet extends ManagedObject
  */
 final class SQLStoreMigratorRenameWithToManyTest extends SQLMigrationTestCase
 {
+    /** @noinspection PhpSameParameterValueInspection */
     private static function attribute(string $name, AttributeType $type): AttributeDescription
     {
         $attribute = new AttributeDescription();
@@ -67,10 +71,7 @@ final class SQLStoreMigratorRenameWithToManyTest extends SQLMigrationTestCase
      * owner by its lowercased name — which is what makes the foreign-key column follow the
      * rename. $renamingIdentifier tags the entity as a rename of an earlier one.
      *
-     * @param string $name
      * @param class-string<ManagedObject> $class
-     * @param string $inverseName
-     * @param string|null $renamingIdentifier
      */
     private static function model(string $name, string $class, string $inverseName, ?string $renamingIdentifier = null): ManagedObjectModel
     {
@@ -107,6 +108,8 @@ final class SQLStoreMigratorRenameWithToManyTest extends SQLMigrationTestCase
     /**
      * Renaming the owner renames its table, and carries the foreign key on the other table with
      * it: the old column and its constraint are gone, the new ones exist, and the link survives.
+     *
+     * @throws Exception
      */
     public function testRenamingTheOwnerRenamesTheForeignKeyColumnOnTheOtherTable(): void
     {
@@ -134,6 +137,8 @@ final class SQLStoreMigratorRenameWithToManyTest extends SQLMigrationTestCase
     /**
      * And the rename moves the data rather than recreating an empty structure: the row on each
      * side survives and the pallet still points at the same owner row.
+     *
+     * @throws Exception
      */
     public function testTheRelationshipSurvivesTheRename(): void
     {

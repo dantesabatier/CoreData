@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\CompositeAttributeDescription;
@@ -67,6 +68,7 @@ final class SQLStoreMigratorCompositeDerivedTest extends SQLMigrationTestCase
         return $model;
     }
 
+    /** @throws Exception */
     public function testAddingADerivedAttributeCreatesAGeneratedColumnComputedOverExistingData(): void
     {
         // v1: Doc.title only.
@@ -107,6 +109,7 @@ final class SQLStoreMigratorCompositeDerivedTest extends SQLMigrationTestCase
         );
     }
 
+    /** @throws Exception */
     public function testAddingACompositeAttributeCreatesAColumnPerElement(): void
     {
         // v1: Place.name only.
@@ -150,6 +153,7 @@ final class SQLStoreMigratorCompositeDerivedTest extends SQLMigrationTestCase
     /**
      * Returns the EXTRA flag (e.g. "STORED GENERATED", "VIRTUAL GENERATED", "auto_increment")
      * of a column, or null if it is absent.
+     * @noinspection PhpSameParameterValueInspection
      */
     private function columnExtra(string $tableName, string $columnName): ?string
     {
@@ -157,7 +161,7 @@ final class SQLStoreMigratorCompositeDerivedTest extends SQLMigrationTestCase
             "SELECT EXTRA FROM INFORMATION_SCHEMA.COLUMNS
              WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?",
         );
-        $stmt->execute([static::DATABASE_NAME, $tableName, $columnName]);
+        $stmt->execute([self::DATABASE_NAME, $tableName, $columnName]);
         $extra = $stmt->fetchColumn();
         return $extra === false ? null : strtoupper((string)$extra);
     }

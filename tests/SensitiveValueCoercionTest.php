@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -67,6 +68,7 @@ final class SensitiveValueCoercionTest extends TestCase
         return $model;
     }
 
+    /** @throws Exception */
     #[Override]
     protected function setUp(): void
     {
@@ -80,6 +82,7 @@ final class SensitiveValueCoercionTest extends TestCase
         $this->context->persistentStoreCoordinator = $coordinator;
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {

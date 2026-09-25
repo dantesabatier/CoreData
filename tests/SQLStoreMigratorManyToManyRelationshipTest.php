@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -45,6 +46,7 @@ final class SQLStoreMigratorManyToManyRelationshipTest extends SQLMigrationTestC
     /** Descending tableName order: "Seminar" (S) precedes "Learner" (L). */
     private const string PIVOT_TABLE = "SeminarLearner";
 
+    /** @noinspection PhpSameParameterValueInspection */
     private static function attribute(string $name, AttributeType $type): AttributeDescription
     {
         $attribute = new AttributeDescription();
@@ -93,6 +95,7 @@ final class SQLStoreMigratorManyToManyRelationshipTest extends SQLMigrationTestC
         return $model;
     }
 
+    /** @throws Exception */
     public function testAddingAManyToManyRelationshipCreatesThePivotTable(): void
     {
         $context = $this->bootstrap(self::model(related: false));
@@ -119,6 +122,7 @@ final class SQLStoreMigratorManyToManyRelationshipTest extends SQLMigrationTestC
         $this->assertSame("Ada", (string)$rows->first()->name, "the pre-existing value is preserved");
     }
 
+    /** @throws Exception */
     public function testRemovingAManyToManyRelationshipDropsThePivotTable(): void
     {
         $this->bootstrap(self::model(related: true));

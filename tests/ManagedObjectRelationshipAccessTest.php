@@ -114,6 +114,7 @@ final class ManagedObjectRelationshipAccessTest extends TestCase
         $this->context->persistentStoreCoordinator = $coordinator;
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
@@ -148,7 +149,6 @@ final class ManagedObjectRelationshipAccessTest extends TestCase
         $this->assertSame(3, $objectIDs->count, "one identifier per player");
         /** @var ArrayClass<string> $names */
         $names = $objectIDs->map(function (ManagedObjectID $objectID): string {
-            $this->assertInstanceOf(ManagedObjectID::class, $objectID);
             return (string)$this->context->object($objectID)->valueForKey("name");
         });
         $this->assertSame(["a", "b", "c"], $names->sort()->array, "and each one names a player of this team");

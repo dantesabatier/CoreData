@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
@@ -110,6 +111,7 @@ final class ClearToManyRelationshipTest extends TestCase
         return $model;
     }
 
+    /** @throws Exception */
     private function makeContext(): ManagedObjectContext
     {
         $coordinator = new PersistentStoreCoordinator(self::makeModel());
@@ -122,6 +124,8 @@ final class ClearToManyRelationshipTest extends TestCase
     /**
      * A Post carrying one Tag, already saved, so the relationship starts non-empty and
      * persisted rather than merely pending.
+     *
+     * @throws Exception
      */
     private function makeSavedPostWithOneTag(ManagedObjectContext $context): Post
     {
@@ -143,12 +147,14 @@ final class ClearToManyRelationshipTest extends TestCase
             ->appendingPathExtension("xml");
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
         FileManager::default()->removeItem($this->storeURL);
     }
 
+    /** @throws Exception */
     public function testAssigningAnEmptySetMarksTheContextAsChanged(): void
     {
         $context = $this->makeContext();
@@ -157,10 +163,12 @@ final class ClearToManyRelationshipTest extends TestCase
 
         $post->setValueForKey(new Set(), "tags");
 
+        /** @noinspection PhpConditionAlreadyCheckedInspection */
         $this->assertTrue($context->hasChanges, "emptying a to-many relationship is a change");
         $this->assertSame(0, $post->tags->count, "the relationship is empty right after assignment");
     }
 
+    /** @throws Exception */
     public function testAssigningAnEmptySetPersistsAndSurvivesAReload(): void
     {
         $context = $this->makeContext();
@@ -178,6 +186,7 @@ final class ClearToManyRelationshipTest extends TestCase
         $this->assertSame(0, $reloaded->tags->count, "the relationship is still empty in a freshly-read store");
     }
 
+    /** @throws Exception */
     public function testRemovingTheLastObjectEmptiesTheRelationship(): void
     {
         $context = $this->makeContext();
@@ -193,6 +202,8 @@ final class ClearToManyRelationshipTest extends TestCase
     /**
      * The route a framework layer takes when it applies a request body. An empty ArrayClass is
      * exactly what json_decode('{"tags":[]}') produces once wrapped in a Dictionary.
+     *
+     * @throws Exception
      */
     public function testUpdateFromSnapshotWithAnEmptyArrayClassEmptiesTheRelationship(): void
     {
@@ -205,6 +216,7 @@ final class ClearToManyRelationshipTest extends TestCase
         $this->assertSame(0, $post->tags->count, "updateFromSnapshot applies an empty collection");
     }
 
+    /** @throws Exception */
     public function testUpdateFromSnapshotWithAnEmptyArrayClassPersists(): void
     {
         $context = $this->makeContext();
@@ -221,6 +233,8 @@ final class ClearToManyRelationshipTest extends TestCase
     /**
      * The decoded shape of a real request body, key included: {"title":"Hello","tags":[]}.
      * A layer that drops empty values would keep the title and silently lose the tags.
+     *
+     * @throws Exception
      */
     public function testUpdateFromSnapshotKeepsOtherKeysWhileEmptyingTheRelationship(): void
     {
@@ -237,6 +251,8 @@ final class ClearToManyRelationshipTest extends TestCase
 
     /**
      * Emptying one side must clear the inverse, otherwise the two sides disagree.
+     *
+     * @throws Exception
      */
     public function testEmptyingOneSideClearsTheInverse(): void
     {

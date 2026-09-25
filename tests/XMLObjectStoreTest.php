@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Sabatier\CoreData\Tests;
 
 use DOMDocument;
+use DOMElement;
+use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
@@ -67,7 +69,10 @@ final class XMLObjectStoreTest extends TestCase
 {
     private URL $storeURL;
 
-    /** A fresh model on every read: entity descriptions freeze once bound to a coordinator, so a memoized one could not open a second stack. */
+    /**
+     * A fresh model on every read: entity descriptions freeze once bound to a coordinator, so a memoized one could not open a second stack.
+     * @noinspection PhpPropertyOnlyWrittenInspection
+     */
     private ManagedObjectModel $model {
         get {
             $shelfName = new AttributeDescription();
@@ -111,6 +116,7 @@ final class XMLObjectStoreTest extends TestCase
         }
     }
 
+    /** @throws Exception */
     private function context(): ManagedObjectContext
     {
         $coordinator = new PersistentStoreCoordinator($this->model);
@@ -128,6 +134,7 @@ final class XMLObjectStoreTest extends TestCase
             ->appendingPathExtension("xml");
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
@@ -138,7 +145,7 @@ final class XMLObjectStoreTest extends TestCase
      * Loads the store file from disk and returns a DOMXPath-free helper: the list of <element>
      * nodes under <elements>.
      *
-     * @return list<\DOMElement>
+     * @return list<DOMElement>
      */
     private function elementNodes(): array
     {
@@ -151,6 +158,7 @@ final class XMLObjectStoreTest extends TestCase
         return $nodes;
     }
 
+    /** @throws Exception */
     public function testInsertWritesATypedElementToTheFile(): void
     {
         $context = $this->context();
@@ -172,6 +180,7 @@ final class XMLObjectStoreTest extends TestCase
         $this->assertSame("42", $byName["weight"], "integer attribute is written as its scalar text");
     }
 
+    /** @throws Exception */
     public function testTypedAttributesSurviveAFullRoundTrip(): void
     {
         $context = $this->context();
@@ -187,6 +196,7 @@ final class XMLObjectStoreTest extends TestCase
         $this->assertSame(128, $reloaded->weight, "integer attribute round-trips as an int, not a string");
     }
 
+    /** @throws Exception */
     public function testUpdatePersistsToTheFile(): void
     {
         $context = $this->context();
@@ -203,6 +213,7 @@ final class XMLObjectStoreTest extends TestCase
         $this->assertSame("after", (string)$reloaded->code, "an update is persisted and visible to a later stack");
     }
 
+    /** @throws Exception */
     public function testFetchedObjectCarriesAnOriginalSnapshot(): void
     {
         $context = $this->context();
@@ -217,6 +228,7 @@ final class XMLObjectStoreTest extends TestCase
         $this->assertSame("baseline", $reloaded->originalSnapshot["code"], "the baseline holds the stored attribute values");
     }
 
+    /** @throws Exception */
     public function testToManyRelationshipPersistsAndTraversesBothWays(): void
     {
         $context = $this->context();
@@ -233,7 +245,7 @@ final class XMLObjectStoreTest extends TestCase
         $readContext = $this->context();
         $reloadedShelf = $readContext->fetch(Shelf::fetchRequest())->first;
         $this->assertNotNull($reloadedShelf);
-        $codes = $reloadedShelf->crates->map(fn(Carton $c): string => (string)$c->code)->array;
+        $codes = $reloadedShelf->crates->map(fn(Carton $c): string => $c->code)->array;
         sort($codes);
         $this->assertSame(["c1", "c2"], $codes, "the to-many side is reconstructed from the stored references");
 
@@ -241,6 +253,7 @@ final class XMLObjectStoreTest extends TestCase
         $this->assertSame("A", (string)$reloadedCrate->shelf->name, "the inverse to-one side is reconstructed too");
     }
 
+    /** @throws Exception */
     public function testCascadeDeleteRemovesRelatedObjectsFromTheFile(): void
     {
         $context = $this->context();
@@ -264,6 +277,7 @@ final class XMLObjectStoreTest extends TestCase
         $this->assertCount(0, $readContext->fetch(Carton::fetchRequest()), "the cascaded crate is gone too");
     }
 
+    /** @throws Exception */
     public function testFetchLimitAndSortAreApplied(): void
     {
         $context = $this->context();
@@ -281,7 +295,7 @@ final class XMLObjectStoreTest extends TestCase
         $this->assertCount(2, $result, "fetchLimit caps the result count");
         $this->assertSame(
             ["apple", "banana"],
-            $result->map(fn(Carton $c): string => (string)$c->code)->array,
+            $result->map(fn(Carton $c): string => $c->code)->array,
             "results are ascending by code and limited to the first two",
         );
     }

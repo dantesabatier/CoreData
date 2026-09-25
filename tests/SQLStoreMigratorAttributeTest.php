@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -58,6 +59,7 @@ final class SQLStoreMigratorAttributeTest extends SQLMigrationTestCase
         return $attribute;
     }
 
+    /** @throws Exception */
     public function testAddingAnOptionalAttributeAddsAColumnAndPreservesData(): void
     {
         $context = $this->bootstrap(self::gadgetModel([
@@ -81,6 +83,7 @@ final class SQLStoreMigratorAttributeTest extends SQLMigrationTestCase
         $this->assertSame("alpha", (string)$rows->first()->name, "the pre-existing value is preserved");
     }
 
+    /** @throws Exception */
     public function testAddedRequiredAttributeColumnIsNotNullable(): void
     {
         $this->bootstrap(self::gadgetModel([
@@ -99,6 +102,7 @@ final class SQLStoreMigratorAttributeTest extends SQLMigrationTestCase
         );
     }
 
+    /** @throws Exception */
     public function testAddedOptionalAttributeColumnIsNullable(): void
     {
         $this->bootstrap(self::gadgetModel([
@@ -116,6 +120,7 @@ final class SQLStoreMigratorAttributeTest extends SQLMigrationTestCase
         );
     }
 
+    /** @throws Exception */
     public function testWideningAttributeTypeIsAppliedToTheColumn(): void
     {
         $context = $this->bootstrap(self::gadgetModel([

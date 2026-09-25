@@ -109,6 +109,7 @@ final class AtomicStoreOrderedRelationshipTest extends TestCase
             ->appendingPathExtension("xml");
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
@@ -175,7 +176,9 @@ final class AtomicStoreOrderedRelationshipTest extends TestCase
 
         $headings = [];
         foreach ($information as $objectID) {
-            $headings[] = (string)$context->object($objectID)->heading;
+            /** @var AtomicOrderedTrack $track */
+            $track = $context->object($objectID);
+            $headings[] = $track->heading;
         }
         return $headings;
     }

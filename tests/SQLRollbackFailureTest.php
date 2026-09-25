@@ -14,7 +14,6 @@ use Sabatier\CoreData\EntityDescription;
 use Sabatier\CoreData\FetchRequest;
 use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\ManagedObjectModel;
-use Sabatier\CoreData\SQLConnection;
 use Sabatier\CoreData\SQLCore;
 use Sabatier\CoreData\SQLStatement;
 use Sabatier\CoreData\SQLStoreRequestContext;
@@ -67,6 +66,7 @@ final class SQLRollbackFailureTest extends SQLMigrationTestCase
         return $model;
     }
 
+    /** @throws Exception */
     public function testTheOriginalFailureSurvivesAFailingRollback(): void
     {
         $context = $this->bootstrap(self::makeModel());

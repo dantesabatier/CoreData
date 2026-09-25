@@ -197,6 +197,7 @@ final class DeleteRuleConflictDetectorTest extends TestCase
             ->appendingPathExtension("xml");
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {

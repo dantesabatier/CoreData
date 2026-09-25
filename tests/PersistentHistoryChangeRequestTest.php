@@ -28,9 +28,9 @@ use Sabatier\Foundation\Number;
  */
 final class PersistentHistoryChangeRequestTest extends TestCase
 {
-    private static function token(int $transactionNumber = 7): PersistentHistoryToken
+    private static function token(): PersistentHistoryToken
     {
-        return new PersistentHistoryToken(new Dictionary(["store" => new Number($transactionNumber)]));
+        return new PersistentHistoryToken(new Dictionary(["store" => new Number(7)]));
     }
 
     /**

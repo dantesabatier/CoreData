@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
@@ -35,6 +36,7 @@ final class MappingModelDiscoveryTest extends TestCase
 {
     private URL $bundleURL;
 
+    /** @throws Exception */
     #[Override]
     protected function setUp(): void
     {
@@ -42,6 +44,7 @@ final class MappingModelDiscoveryTest extends TestCase
         FileManager::default()->createDirectory($this->bundleURL, true);
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
@@ -98,9 +101,11 @@ final class MappingModelDiscoveryTest extends TestCase
     }
 
     /**
-     * Writes a mapping model for a model pair into the bundle under $name, and returns it.
+     * Writes a mapping model for a model pair into the bundle under $name.
+     *
+     * @throws Exception
      */
-    private function writeMappingModel(string $name, ManagedObjectModel $sourceModel, ManagedObjectModel $destinationModel, string $destinationAttributeName): MappingModel
+    private function writeMappingModel(string $name, ManagedObjectModel $sourceModel, ManagedObjectModel $destinationModel, string $destinationAttributeName): void
     {
         $mapping = new EntityMapping();
         $mapping->sourceEntityName = "Note";
@@ -118,9 +123,9 @@ final class MappingModelDiscoveryTest extends TestCase
         $mappingModel->entityMappings = new ArrayClass([$mapping]);
 
         FileManager::default()->createFile($this->bundleURL->appendingPathComponent($name . "." . MappingModelFileExtension)->path, KeyedArchiver::archivedData($mappingModel));
-        return $mappingModel;
     }
 
+    /** @throws Exception */
     public function testTheMappingModelForTheRequestedPairIsFound(): void
     {
         $this->writeMappingModel("first", self::v1(), self::v2(), "text");
@@ -134,6 +139,8 @@ final class MappingModelDiscoveryTest extends TestCase
     /**
      * The file name carries no meaning: with two candidates in the bundle, the hashes are what pick
      * the one that maps the pair being migrated.
+     *
+     * @throws Exception
      */
     public function testTheCorrectMappingModelIsSelectedAmongSeveral(): void
     {
@@ -147,6 +154,7 @@ final class MappingModelDiscoveryTest extends TestCase
         $this->assertSame("pinned", $attributeMapping?->name, "the mapping model for the v2 -> v3 pair must be the one selected");
     }
 
+    /** @throws Exception */
     public function testNoMappingModelIsFoundForAnUnmappedPair(): void
     {
         $this->writeMappingModel("first", self::v1(), self::v2(), "text");
@@ -154,6 +162,7 @@ final class MappingModelDiscoveryTest extends TestCase
         $this->assertNull(MappingModel::mappingModel(new ArrayClass([$this->bundle()]), self::v1(), self::v3()));
     }
 
+    /** @throws Exception */
     public function testNoMappingModelIsFoundInAnEmptyBundle(): void
     {
         $this->assertNull(MappingModel::mappingModel(new ArrayClass([$this->bundle()]), self::v1(), self::v2()));

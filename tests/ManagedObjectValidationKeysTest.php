@@ -180,7 +180,7 @@ final class ManagedObjectValidationKeysTest extends SQLMigrationTestCase
 
         $widget->updateFromUndoSnapshot(new Dictionary(["serial" => "S-restored", "nickname" => "discard me"]), includingTransients: false);
 
-        $this->assertSame("S-restored", (string)$widget->serial, "the persisted attribute is restored from the snapshot");
+        $this->assertSame("S-restored", $widget->serial, "the persisted attribute is restored from the snapshot");
         $this->assertSame("keep me", (string)$widget->nickname, "the transient one is left as it stands, because the snapshot excluded transients");
     }
 

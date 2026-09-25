@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -90,6 +91,7 @@ final class SQLSelectPredicateKeyPathTest extends SQLMigrationTestCase
         return $model;
     }
 
+    /** @throws Exception */
     private function seed(): void
     {
         $context = $this->bootstrap(self::model());
@@ -119,6 +121,8 @@ final class SQLSelectPredicateKeyPathTest extends SQLMigrationTestCase
      * The crashing production shape: an ANY modifier over a to-many relationship's attribute.
      * Before the fix this raised InternalInconsistencyException during SQL generation; after it,
      * the fetch resolves to the one composer whose works include the matching title.
+     *
+     * @throws Exception
      */
     public function testAnyOverToManyRelationshipAttributeResolves(): void
     {
@@ -138,6 +142,8 @@ final class SQLSelectPredicateKeyPathTest extends SQLMigrationTestCase
 
     /**
      * A title matched by no work yields an empty result rather than a generation-time crash.
+     *
+     * @throws Exception
      */
     public function testAnyOverToManyRelationshipAttributeWithNoMatch(): void
     {
@@ -161,6 +167,8 @@ final class SQLSelectPredicateKeyPathTest extends SQLMigrationTestCase
      * point: the previous inlining escaped the value correctly, so this pins equivalence rather
      * than a fixed bug. The tests that actually discriminate the two shapes are in
      * SQLGeneratorTest, which asserts on the statement instead of the result.
+     *
+     * @throws Exception
      */
     public function testAnyOverToManyBindsAQuoteBearingConstant(): void
     {

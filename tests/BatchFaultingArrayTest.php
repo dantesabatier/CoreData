@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
@@ -63,6 +64,7 @@ final class BatchFaultingArrayTest extends TestCase
         return $model;
     }
 
+    /** @throws Exception */
     private function context(): ManagedObjectContext
     {
         $coordinator = new PersistentStoreCoordinator(self::model());
@@ -80,13 +82,18 @@ final class BatchFaultingArrayTest extends TestCase
             ->appendingPathExtension("xml");
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
         FileManager::default()->removeItem($this->storeURL);
     }
 
-    /** Seeds $count beads numbered 0..$count-1. */
+    /**
+     * Seeds $count beads numbered 0..$count-1.
+     *
+     * @throws Exception
+     */
     private function seed(int $count): void
     {
         $context = $this->context();
@@ -100,6 +107,8 @@ final class BatchFaultingArrayTest extends TestCase
     /**
      * A managed-object BatchFaultingArray over the seeded beads, batched by $batchSize and sorted
      * by n so iteration order is deterministic.
+     *
+     * @throws Exception
      */
     private function batchArray(int $batchSize, FetchRequestResultType $resultType = FetchRequestResultType::managedObjectResultType): BatchFaultingArray
     {
@@ -111,6 +120,7 @@ final class BatchFaultingArrayTest extends TestCase
         return new BatchFaultingArray($request, $this->context());
     }
 
+    /** @throws Exception */
     public function testCountIsTheTotalNotTheBatchSize(): void
     {
         $this->seed(7);
@@ -118,43 +128,51 @@ final class BatchFaultingArrayTest extends TestCase
         $this->assertSame(7, $batch->count, "count reports the full result size, independent of the batch size");
     }
 
+    /** @throws Exception */
     public function testIterationYieldsEveryRowAcrossBatchBoundaries(): void
     {
         // 7 rows over a batch size of 3 => pages of [0,1,2], [3,4,5], [6]. The final partial page
         // is where off-by-one bugs in the re-fetch trigger would drop or duplicate a row.
         $this->seed(7);
         $seen = [];
+        /** @var Bead $bead */
         foreach ($this->batchArray(3) as $bead) {
             $seen[] = $bead->n;
         }
         $this->assertSame([0, 1, 2, 3, 4, 5, 6], $seen, "every row is visited exactly once, in order, across batches");
     }
 
+    /** @throws Exception */
     public function testIterationWhenTotalIsAMultipleOfBatchSize(): void
     {
         // 6 rows / batch 3 => two full pages, no partial tail.
         $this->seed(6);
         $seen = [];
+        /** @var Bead $bead */
         foreach ($this->batchArray(3) as $bead) {
             $seen[] = $bead->n;
         }
         $this->assertSame([0, 1, 2, 3, 4, 5], $seen, "an exact multiple paginates without dropping the boundary row");
     }
 
+    /** @throws Exception */
     public function testBatchSizeLargerThanTotalIsASinglePage(): void
     {
         $this->seed(2);
         $seen = [];
+        /** @var Bead $bead */
         foreach ($this->batchArray(10) as $bead) {
             $seen[] = $bead->n;
         }
         $this->assertSame([0, 1], $seen, "a batch larger than the result set returns everything in one page");
     }
 
+    /** @throws Exception */
     public function testManagedObjectResultTypeMaterializesObjects(): void
     {
         $this->seed(3);
         $visited = 0;
+        /** @noinspection PhpRedundantOptionalArgumentInspection */
         foreach ($this->batchArray(2, FetchRequestResultType::managedObjectResultType) as $element) {
             $this->assertInstanceOf(ManagedObject::class, $element, "object result type yields materialized ManagedObjects");
             $visited++;
@@ -162,6 +180,7 @@ final class BatchFaultingArrayTest extends TestCase
         $this->assertSame(3, $visited, "the in-loop assertions actually ran for every row");
     }
 
+    /** @throws Exception */
     public function testManagedObjectIDResultTypeYieldsObjectIDs(): void
     {
         $this->seed(3);
@@ -173,6 +192,7 @@ final class BatchFaultingArrayTest extends TestCase
         $this->assertSame(3, $visited, "the in-loop assertions actually ran for every row");
     }
 
+    /** @throws Exception */
     public function testAppendIsRejected(): void
     {
         $this->seed(1);
@@ -181,6 +201,7 @@ final class BatchFaultingArrayTest extends TestCase
         $batch->append(new Bead($this->context()));
     }
 
+    /** @throws Exception */
     public function testOffsetSetIsRejected(): void
     {
         $this->seed(1);
@@ -189,6 +210,7 @@ final class BatchFaultingArrayTest extends TestCase
         $batch->offsetSet(0, new Bead($this->context()));
     }
 
+    /** @throws Exception */
     public function testRemoveAtIsRejected(): void
     {
         $this->seed(1);
@@ -197,6 +219,7 @@ final class BatchFaultingArrayTest extends TestCase
         $batch->removeAt(0);
     }
 
+    /** @throws Exception */
     public function testInsertAtIsRejected(): void
     {
         $this->seed(1);
@@ -205,6 +228,7 @@ final class BatchFaultingArrayTest extends TestCase
         $batch->insertAt(new Bead($this->context()), 0);
     }
 
+    /** @throws Exception */
     public function testSetArrayIsRejected(): void
     {
         $this->seed(1);
@@ -217,6 +241,8 @@ final class BatchFaultingArrayTest extends TestCase
      * offsetExists answers from the index range alone, without materializing anything — it is
      * what a foreach consults on every step, so a version that faulted the element in would
      * defeat the batching this class exists for.
+     *
+     * @throws Exception
      */
     public function testOffsetExistsCoversTheFetchedRangeOnly(): void
     {
@@ -237,6 +263,8 @@ final class BatchFaultingArrayTest extends TestCase
      * and the IDs arrive in rewind() and on each batch boundary in next(). So this pins
      * offsetGet against an array that has been iterated, which is how the framework reaches it.
      * See testOffsetGetBeforeIterationDivergesFromOffsetExists for the other side of that.
+     *
+     * @throws Exception
      */
     public function testOffsetGetMaterializesTheObject(): void
     {
@@ -257,6 +285,8 @@ final class BatchFaultingArrayTest extends TestCase
      * Nothing in the framework reaches offsetGet() without iterating first, so this is latent
      * rather than live — but `isset($batch[0]) ? $batch[0] : ...` is exactly the shape that would
      * find it, which is why it is recorded here instead of left undescribed.
+     *
+     * @throws Exception
      */
     public function testOffsetGetBeforeIterationDivergesFromOffsetExists(): void
     {

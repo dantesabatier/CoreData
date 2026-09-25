@@ -1,9 +1,12 @@
 <?php
 
+/** @noinspection PhpUndefinedFieldInspection, PhpPossiblePolymorphicInvocationInspection */
+
 declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use RuntimeException;
 use Sabatier\CoreData\AttributeDescription;
@@ -234,6 +237,7 @@ final class EntityMigrationPolicyTest extends SQLMigrationTestCase
      *
      * @param class-string<EntityMigrationPolicy> $policyClassName
      * @param list<PropertyMapping> $attributeMappings
+     * @throws Exception
      */
     private function migrate(string $policyClassName, array $attributeMappings): void
     {
@@ -255,6 +259,8 @@ final class EntityMigrationPolicyTest extends SQLMigrationTestCase
      * The base class carries a whole migration by itself: a policy that overrides nothing still
      * creates the destination instance and applies the mapping's attribute expressions. This is
      * what makes the five no-op hooks genuinely optional.
+     *
+     * @throws Exception
      */
     public function testAPolicyThatOverridesNothingStillMigratesTheData(): void
     {
@@ -270,6 +276,8 @@ final class EntityMigrationPolicyTest extends SQLMigrationTestCase
     /**
      * An attribute with no mapping is left alone rather than being cleared: the policy only
      * assigns the keys the mapping names.
+     *
+     * @throws Exception
      */
     public function testAnUnmappedAttributeIsNotAssigned(): void
     {
@@ -286,6 +294,8 @@ final class EntityMigrationPolicyTest extends SQLMigrationTestCase
      * A mapping whose expression names no source key at all still runs; the destination simply
      * receives whatever the expression evaluates to. A constant is the simplest such case, and it
      * is how a migration supplies a value the source cannot provide.
+     *
+     * @throws Exception
      */
     public function testAConstantExpressionSuppliesAValueTheSourceLacks(): void
     {
@@ -300,6 +310,8 @@ final class EntityMigrationPolicyTest extends SQLMigrationTestCase
     /**
      * The expression is evaluated against the source instance, so it can read any source
      * attribute — including one whose name differs from the destination key it feeds.
+     *
+     * @throws Exception
      */
     public function testAnExpressionCanFeedADifferentlyNamedDestinationKey(): void
     {
@@ -316,6 +328,8 @@ final class EntityMigrationPolicyTest extends SQLMigrationTestCase
      * The point of a custom policy: deriving a destination value the framework cannot infer. The
      * subclass defers to the inherited implementation for the mapped attributes, then computes
      * one of its own from two source attributes.
+     *
+     * @throws Exception
      */
     public function testASubclassCanDeriveAValueFromSeveralSourceAttributes(): void
     {
@@ -332,6 +346,8 @@ final class EntityMigrationPolicyTest extends SQLMigrationTestCase
      * An exception from a hook aborts the migration instead of being treated as a success. This
      * follows the Swift behavior of the policy API: the Boolean return is retained from the
      * Objective-C contract, while failures are reported by throwing.
+     *
+     * @throws Exception
      */
     public function testAnExceptionFromAHookAbortsTheMigration(): void
     {
@@ -345,7 +361,7 @@ final class EntityMigrationPolicyTest extends SQLMigrationTestCase
         $manager = new SQLInPlaceMigrationManager($sourceModel, self::destinationModel());
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage("migration refused by policy");
+        $this->expectExceptionMessageIsOrContains("migration refused by policy");
         $manager->migrateStore(
             $this->storeURL,
             PersistentStoreType::sql,
@@ -366,6 +382,8 @@ final class EntityMigrationPolicyTest extends SQLMigrationTestCase
      *
      * The two passes are separate for exactly this reason — the lines must already exist as
      * destination instances before the invoice can point at them.
+     *
+     * @throws Exception
      */
     public function testARelationshipIsReconnectedAcrossTheMigration(): void
     {
@@ -416,6 +434,8 @@ final class EntityMigrationPolicyTest extends SQLMigrationTestCase
      * A mapping with no relationship mappings reports that it did no relationship work. The
      * inherited createRelationships returns false in that case, which the manager treats as
      * "nothing to do" rather than as a failure — an entity with no relationships migrates fine.
+     *
+     * @throws Exception
      */
     public function testAMappingWithoutRelationshipMappingsStillMigrates(): void
     {
@@ -432,6 +452,8 @@ final class EntityMigrationPolicyTest extends SQLMigrationTestCase
      * A policy that cancels aborts the whole migration rather than letting it finish short. The
      * manager raises the error the policy handed it, which is how a caller learns why the store
      * was left alone.
+     *
+     * @throws Exception
      */
     public function testAPolicyCanCancelTheMigration(): void
     {
@@ -449,6 +471,8 @@ final class EntityMigrationPolicyTest extends SQLMigrationTestCase
      *
      * The cancellation has to be raised where the passes end, not only on the way into the next
      * mapping: a model with one entity mapping, as here, cancels on the last one there is.
+     *
+     * @throws Exception
      */
     public function testACancelledMigrationWritesNothing(): void
     {
@@ -476,6 +500,8 @@ final class EntityMigrationPolicyTest extends SQLMigrationTestCase
     /**
      * And resetting the manager clears the cancellation, so an instance that was stopped can be
      * used again instead of staying permanently poisoned.
+     *
+     * @throws Exception
      */
     public function testResettingClearsACancellation(): void
     {

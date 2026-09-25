@@ -1,9 +1,12 @@
 <?php
 
+/** @noinspection PhpUndefinedFieldInspection */
+
 declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -86,6 +89,7 @@ final class SQLStoreMigratorToManyTransitionTest extends SQLMigrationTestCase
         return $model;
     }
 
+    /** @throws Exception */
     public function testToOneToManyWithToOneInverseDropsTheObsoleteForeignKey(): void
     {
         // v1: child is to-one -> Parintore has a childID FK column.

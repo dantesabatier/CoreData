@@ -140,7 +140,6 @@ final class AtomicStoreFetchExpressionTest extends TestCase
         $abstractPart->name = "ExprAbstractPart";
         $abstractPart->managedObjectClassName = ExprAbstractPart::class;
         $abstractPart->isAbstract = true;
-        $abstractPart->properties = new ArrayClass([$code]);
 
         $parts = new RelationshipDescription();
         $parts->name = "parts";
@@ -195,6 +194,7 @@ final class AtomicStoreFetchExpressionTest extends TestCase
             ->appendingPathExtension("xml");
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {

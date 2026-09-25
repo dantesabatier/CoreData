@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -180,6 +181,7 @@ final class MigrationManagerPolicyPerMappingTest extends SQLMigrationTestCase
         return $mappingModel;
     }
 
+    /** @throws Exception */
     private function migrate(): void
     {
         $sourceModel = self::sourceModel();
@@ -203,6 +205,7 @@ final class MigrationManagerPolicyPerMappingTest extends SQLMigrationTestCase
         return RecordingMigrationPolicy::$calls[$policyClassName . "." . $hook] ?? [];
     }
 
+    /** @throws Exception */
     public function testEachPassUsesThePolicyOfTheMappingItIsProcessing(): void
     {
         $this->migrate();

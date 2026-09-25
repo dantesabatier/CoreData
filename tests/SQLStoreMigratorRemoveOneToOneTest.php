@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -84,6 +85,7 @@ final class SQLStoreMigratorRemoveOneToOneTest extends SQLMigrationTestCase
         return $model;
     }
 
+    /** @throws Exception */
     public function testRemovingAOneToOneTargetEntityDropsItsTable(): void
     {
         $context = $this->bootstrap(self::model(withPassport: true));

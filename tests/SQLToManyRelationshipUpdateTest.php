@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -102,6 +103,7 @@ final class SQLToManyRelationshipUpdateTest extends SQLMigrationTestCase
      * An SQLTenant holding the three named Permissions, saved to the database.
      *
      * @return array{0: SQLTenant, 1: Dictionary<SQLGrant>}
+     * @throws Exception
      */
     private function makeSavedAccount(ManagedObjectContext $context, string ...$names): array
     {
@@ -122,11 +124,11 @@ final class SQLToManyRelationshipUpdateTest extends SQLMigrationTestCase
     /**
      * @return list<string>
      */
-    private function permissionNames(ManagedObject $account): array
+    private function permissionNames(SQLTenant $account): array
     {
         $names = [];
         foreach ($account->permissions as $permission) {
-            $names[] = (string)$permission->name;
+            $names[] = $permission->name;
         }
         sort($names);
         return $names;
@@ -134,6 +136,7 @@ final class SQLToManyRelationshipUpdateTest extends SQLMigrationTestCase
 
     /**
      * @return list<string>
+     * @throws Exception
      */
     private function reloadedPermissionNames(): array
     {
@@ -142,6 +145,7 @@ final class SQLToManyRelationshipUpdateTest extends SQLMigrationTestCase
         return $this->permissionNames($account);
     }
 
+    /** @throws Exception */
     public function testEmptyingPersistsToTheCorrelationTable(): void
     {
         $context = $this->bootstrap(self::makeModel());
@@ -155,6 +159,7 @@ final class SQLToManyRelationshipUpdateTest extends SQLMigrationTestCase
         $this->assertSame([], $this->reloadedPermissionNames(), "the correlation row was deleted in the database");
     }
 
+    /** @throws Exception */
     public function testRemovingOneOfSeveralPersistsToTheCorrelationTable(): void
     {
         $context = $this->bootstrap(self::makeModel());
@@ -171,6 +176,8 @@ final class SQLToManyRelationshipUpdateTest extends SQLMigrationTestCase
     /**
      * The route Sabatier Service takes when it applies a PATCH body: the client sends back the
      * references that remain.
+     *
+     * @throws Exception
      */
     public function testUpdateFromSnapshotWithASubsetPersistsToTheCorrelationTable(): void
     {
@@ -190,6 +197,8 @@ final class SQLToManyRelationshipUpdateTest extends SQLMigrationTestCase
      * objectID, not as ManagedObject/ManagedObjectID instances, and the request carries a
      * serialization that includes the relationship. Removing one entry has to delete exactly its
      * correlation row and survive a re-fetch through the same context.
+     *
+     * @throws Exception
      */
     public function testUpdateFromSnapshotWithScalarRowsRemovesOnlyTheOmittedOne(): void
     {
@@ -203,7 +212,7 @@ final class SQLToManyRelationshipUpdateTest extends SQLMigrationTestCase
 
         $account->updateFromSnapshot(Dictionary::dictionaryWithArray([
             "objectID" => $account->objectID->referenceObject,
-            "name" => (string)$account->name,
+            "name" => $account->name,
             "permissions" => [
                 ["objectID" => $permissions["read"]->objectID->referenceObject],
                 ["objectID" => $permissions["admin"]->objectID->referenceObject],
@@ -223,6 +232,8 @@ final class SQLToManyRelationshipUpdateTest extends SQLMigrationTestCase
 
     /**
      * A snapshot that carries only the relationship must not blank out the attributes it omits.
+     *
+     * @throws Exception
      */
     public function testUpdateFromSnapshotWithOnlyARelationshipKeepsOtherAttributes(): void
     {
@@ -241,6 +252,7 @@ final class SQLToManyRelationshipUpdateTest extends SQLMigrationTestCase
         $this->assertSame("acme", (string)$reloaded->name, "an attribute absent from the snapshot is left alone");
     }
 
+    /** @throws Exception */
     public function testUpdateFromSnapshotWithAnEmptyArrayClassPersistsToTheCorrelationTable(): void
     {
         $context = $this->bootstrap(self::makeModel());
@@ -252,6 +264,7 @@ final class SQLToManyRelationshipUpdateTest extends SQLMigrationTestCase
         $this->assertSame([], $this->reloadedPermissionNames(), "every correlation row was deleted");
     }
 
+    /** @throws Exception */
     public function testRemovingOneAtATimeAcrossSavesIsCumulative(): void
     {
         $context = $this->bootstrap(self::makeModel());
@@ -269,6 +282,7 @@ final class SQLToManyRelationshipUpdateTest extends SQLMigrationTestCase
 
     // --- FaultingSetMutationMethods: the generated accessors application code actually calls ---
 
+    /** @throws Exception */
     public function testRemovePermissionsObjectPersistsToTheCorrelationTable(): void
     {
         $context = $this->bootstrap(self::makeModel());
@@ -281,6 +295,7 @@ final class SQLToManyRelationshipUpdateTest extends SQLMigrationTestCase
         $this->assertSame(["admin", "read"], $this->reloadedPermissionNames(), "and its correlation row was deleted");
     }
 
+    /** @throws Exception */
     public function testAddPermissionsObjectPersistsToTheCorrelationTable(): void
     {
         $context = $this->bootstrap(self::makeModel());
@@ -294,6 +309,7 @@ final class SQLToManyRelationshipUpdateTest extends SQLMigrationTestCase
         $this->assertSame(["audit", "read"], $this->reloadedPermissionNames(), "the added correlation row reached the database");
     }
 
+    /** @throws Exception */
     public function testRemovePermissionsWithASetPersistsToTheCorrelationTable(): void
     {
         $context = $this->bootstrap(self::makeModel());
@@ -306,6 +322,7 @@ final class SQLToManyRelationshipUpdateTest extends SQLMigrationTestCase
         $this->assertSame(["read"], $this->reloadedPermissionNames(), "both correlation rows were deleted");
     }
 
+    /** @throws Exception */
     public function testAddPermissionsWithASetPersistsToTheCorrelationTable(): void
     {
         $context = $this->bootstrap(self::makeModel());
@@ -321,6 +338,7 @@ final class SQLToManyRelationshipUpdateTest extends SQLMigrationTestCase
         $this->assertSame(["audit", "billing", "read"], $this->reloadedPermissionNames(), "both correlation rows were written");
     }
 
+    /** @throws Exception */
     public function testIntersectPermissionsPersistsToTheCorrelationTable(): void
     {
         $context = $this->bootstrap(self::makeModel());
@@ -333,6 +351,7 @@ final class SQLToManyRelationshipUpdateTest extends SQLMigrationTestCase
         $this->assertSame(["admin", "read"], $this->reloadedPermissionNames(), "the correlation table matches the intersection");
     }
 
+    /** @throws Exception */
     public function testSetPermissionsPersistsToTheCorrelationTable(): void
     {
         $context = $this->bootstrap(self::makeModel());
@@ -346,6 +365,8 @@ final class SQLToManyRelationshipUpdateTest extends SQLMigrationTestCase
 
     /**
      * The generated accessors have to accumulate across saves too, the same way setValueForKey does.
+     *
+     * @throws Exception
      */
     public function testRemovePermissionsObjectAcrossSavesIsCumulative(): void
     {
@@ -361,6 +382,7 @@ final class SQLToManyRelationshipUpdateTest extends SQLMigrationTestCase
         $this->assertSame(["read"], $this->reloadedPermissionNames(), "the second removal reached the database too");
     }
 
+    /** @throws Exception */
     public function testAssigningASetThatBothAddsAndRemovesPersists(): void
     {
         $context = $this->bootstrap(self::makeModel());

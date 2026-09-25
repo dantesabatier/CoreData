@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
@@ -37,6 +38,7 @@ final class ManagedObjectModelBundleTest extends TestCase
 {
     private URL $resources;
 
+    /** @throws Exception */
     #[Override]
     protected function setUp(): void
     {
@@ -81,11 +83,16 @@ final class ManagedObjectModelBundleTest extends TestCase
         return Bundle::bundleWithURL($this->resources->deletingLastPathComponent());
     }
 
+    /** @throws Exception */
     private function writeModel(string $relativePath, ManagedObjectModel $model): void
     {
         FileManager::default()->createFile($this->url($relativePath)->path, KeyedArchiver::archivedData($model));
     }
 
+    /**
+     * @throws Exception
+     * @noinspection PhpSameParameterValueInspection
+     */
     private function makeBundle(string $name): string
     {
         $bundle = $name . "." . ManagedObjectModelBundleFileExtension;
@@ -95,12 +102,14 @@ final class ManagedObjectModelBundleTest extends TestCase
 
     /**
      * @param Dictionary<mixed> $versionInfo
+     * @throws Exception
      */
     private function writeVersionInfo(string $bundle, Dictionary $versionInfo): void
     {
         FileManager::default()->createFile($this->url($bundle)->appendingPathComponent("VersionInfo.plist")->path, PropertyListSerialization::data($versionInfo));
     }
 
+    /** @throws Exception */
     public function testAModelFileOnItsOwnStillLoads(): void
     {
         $this->writeModel("Recipes." . ManagedObjectModelFileExtension, self::model("directions"));
@@ -110,6 +119,7 @@ final class ManagedObjectModelBundleTest extends TestCase
         $this->assertNotNull($model->entitiesByName["Recipe"]?->attributesByName["directions"]);
     }
 
+    /** @throws Exception */
     public function testTheBundleLoadsTheVersionItsInformationNames(): void
     {
         $bundle = $this->makeBundle("Recipes");
@@ -123,7 +133,11 @@ final class ManagedObjectModelBundleTest extends TestCase
         $this->assertNull($model->entitiesByName["Recipe"]?->attributesByName["directions"]);
     }
 
-    /** A bundle assembled by hand may carry no version information, the way an unvalidated bundle does elsewhere. */
+    /**
+     * A bundle assembled by hand may carry no version information, the way an unvalidated bundle does elsewhere.
+     *
+     * @throws Exception
+     */
     public function testABundleWithoutVersionInformationFallsBackToItsOwnName(): void
     {
         $bundle = $this->makeBundle("Recipes");
@@ -134,6 +148,7 @@ final class ManagedObjectModelBundleTest extends TestCase
         $this->assertNotNull($model->entitiesByName["Recipe"]?->attributesByName["directions"]);
     }
 
+    /** @throws Exception */
     public function testAVersionIsResolvedByItsChecksum(): void
     {
         $bundle = $this->makeBundle("Recipes");
@@ -158,6 +173,8 @@ final class ManagedObjectModelBundleTest extends TestCase
     /**
      * A reference describes one version of a model, and the checksum is what picks it. Before the
      * bundle existed there was nothing to pick from, so the checksum was carried and ignored.
+     *
+     * @throws Exception
      */
     public function testAReferenceResolvesTheVersionItsChecksumNames(): void
     {
@@ -180,7 +197,11 @@ final class ManagedObjectModelBundleTest extends TestCase
         $this->assertNull($reference->resolvedModel->entitiesByName["Recipe"]?->attributesByName["instructions"]);
     }
 
-    /** A model file on its own is the only version there is, so the checksum is not a selector. */
+    /**
+     * A model file on its own is the only version there is, so the checksum is not a selector.
+     *
+     * @throws Exception
+     */
     public function testAReferenceToAModelFileResolvesThatFile(): void
     {
         $model = self::model("directions");
@@ -191,6 +212,7 @@ final class ManagedObjectModelBundleTest extends TestCase
         $this->assertNotNull($reference->resolvedModel->entitiesByName["Recipe"]?->attributesByName["directions"]);
     }
 
+    /** @throws Exception */
     public function testThePackageListsTheVersionsItHolds(): void
     {
         $bundle = $this->makeBundle("Recipes");
@@ -202,6 +224,7 @@ final class ManagedObjectModelBundleTest extends TestCase
         $this->assertEqualsCanonicalizing(["Recipes", "Recipes 2"], $versions->array);
     }
 
+    /** @throws Exception */
     public function testThePackageNamesItsCurrentVersion(): void
     {
         $bundle = $this->makeBundle("Recipes");
@@ -212,7 +235,11 @@ final class ManagedObjectModelBundleTest extends TestCase
         $this->assertSame("Recipes 2", new ManagedObjectModelBundle($this->url($bundle))->currentVersion);
     }
 
-    /** A version the package does not hold is not its current version, however the version information names it. */
+    /**
+     * A version the package does not hold is not its current version, however the version information names it.
+     *
+     * @throws Exception
+     */
     public function testAVersionInformationNamingAMissingVersionHasNoCurrentVersion(): void
     {
         $bundle = $this->makeBundle("Recipes");
@@ -221,6 +248,7 @@ final class ManagedObjectModelBundleTest extends TestCase
         $this->assertNull(new ManagedObjectModelBundle($this->url($bundle))->currentVersion);
     }
 
+    /** @throws Exception */
     public function testTheChecksumsComeFromTheVersionInformation(): void
     {
         $bundle = $this->makeBundle("Recipes");
@@ -240,6 +268,8 @@ final class ManagedObjectModelBundleTest extends TestCase
     /**
      * A consumer that knows only the model's name gets the package, because that is the layout carrying
      * the version the store asks for. Locating by the model file's extension alone would walk straight past it.
+     *
+     * @throws Exception
      */
     public function testTheNamedModelResolvesToThePackage(): void
     {
@@ -251,7 +281,11 @@ final class ManagedObjectModelBundleTest extends TestCase
         $this->assertSame($this->url($bundle)->path, $url?->path);
     }
 
-    /** Every project today ships a lone model file, and it has to keep resolving. */
+    /**
+     * Every project today ships a lone model file, and it has to keep resolving.
+     *
+     * @throws Exception
+     */
     public function testTheNamedModelFallsBackToALoneModelFile(): void
     {
         $this->writeModel("Recipes." . ManagedObjectModelFileExtension, self::model("directions"));
@@ -265,6 +299,8 @@ final class ManagedObjectModelBundleTest extends TestCase
      * A lone model file beside a package of the same name wins. A project that ships the file must keep
      * loading exactly what it loaded before packages existed; a project that moved to a package no longer
      * ships the file, so the two only ever coexist by accident.
+     *
+     * @throws Exception
      */
     public function testALoneModelFileWinsOverAPackageOfTheSameName(): void
     {
@@ -285,6 +321,8 @@ final class ManagedObjectModelBundleTest extends TestCase
     /**
      * The whole point of locating by name: a container asked for a name ends up with the package's current
      * version, without any caller having to know which of the two layouts is on disk.
+     *
+     * @throws Exception
      */
     public function testTheNamedModelLoadsThePackagesCurrentVersion(): void
     {
@@ -299,6 +337,7 @@ final class ManagedObjectModelBundleTest extends TestCase
         $this->assertNull($model->entitiesByName["Recipe"]?->attributesByName["directions"]);
     }
 
+    /** @throws Exception */
     public function testAModelFileIsNotAPackage(): void
     {
         $this->writeModel("Recipes." . ManagedObjectModelFileExtension, self::model("directions"));
@@ -310,6 +349,7 @@ final class ManagedObjectModelBundleTest extends TestCase
         $this->assertSame(0, $bundle->modelVersions->count);
     }
 
+    /** @throws Exception */
     public function testABundleNamingAMissingVersionResolvesToNothing(): void
     {
         $bundle = $this->makeBundle("Recipes");

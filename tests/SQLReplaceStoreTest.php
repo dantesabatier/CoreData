@@ -127,6 +127,7 @@ final class SQLReplaceStoreTest extends SQLMigrationTestCase
         return new Dictionary([ManagedObjectModelURLOption => self::modelURLIn(self::$bundleURL->appendingPathComponent("Resources"), $name)]);
     }
 
+    /** @throws Exception */
     #[Override]
     protected function setUp(): void
     {
@@ -148,6 +149,7 @@ final class SQLReplaceStoreTest extends SQLMigrationTestCase
         parent::tearDown();
     }
 
+    /** @throws Exception */
     #[Override]
     public static function tearDownAfterClass(): void
     {
@@ -173,6 +175,7 @@ final class SQLReplaceStoreTest extends SQLMigrationTestCase
         return $context;
     }
 
+    /** @noinspection PhpSameParameterValueInspection */
     private function databaseExists(string $databaseName): bool
     {
         $statement = $this->pdo->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?");
@@ -207,7 +210,7 @@ final class SQLReplaceStoreTest extends SQLMigrationTestCase
 
         $this->assertSame(["S-1"], $this->serialsIn(self::SourceModelName), "precondition: the row lives in the source database");
         $this->bootstrap(self::model());
-        $this->assertSame([], $this->serialsIn(static::DATABASE_NAME), "precondition: the destination starts empty");
+        $this->assertSame([], $this->serialsIn(self::DATABASE_NAME), "precondition: the destination starts empty");
 
         $coordinator = new PersistentStoreCoordinator(self::model());
         $coordinator->replacePersistentStore(
@@ -218,7 +221,7 @@ final class SQLReplaceStoreTest extends SQLMigrationTestCase
             PersistentStoreType::sql,
         );
 
-        $this->assertSame(["S-1"], $this->serialsIn(static::DATABASE_NAME), "the source's rows moved into the destination");
+        $this->assertSame(["S-1"], $this->serialsIn(self::DATABASE_NAME), "the source's rows moved into the destination");
         $this->assertFalse($this->databaseExists(self::SourceModelName), "the source database is destroyed");
     }
 }

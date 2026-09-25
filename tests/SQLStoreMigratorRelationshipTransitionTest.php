@@ -1,9 +1,12 @@
 <?php
 
+/** @noinspection PhpUndefinedFieldInspection */
+
 declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -115,6 +118,7 @@ final class SQLStoreMigratorRelationshipTransitionTest extends SQLMigrationTestC
         );
     }
 
+    /** @throws Exception */
     public function testToOneBecomesManyToManyCreatesPivotTable(): void
     {
         // v1: owner is to-one -> Item has an ownerID FK column, no pivot table.
@@ -149,6 +153,8 @@ final class SQLStoreMigratorRelationshipTransitionTest extends SQLMigrationTestC
      * otherwise linger as dead schema. In processTransformedEntityMappings the source appears
      * both as SQLToOne (which creates the pivot) and as SQLForeignKey; the SQLForeignKey source,
      * matched to a non-foreign-key destination, is routed to removedColumns.
+     *
+     * @throws Exception
      */
     public function testToOneBecomesManyToManyDropsObsoleteForeignKeyColumn(): void
     {
@@ -164,6 +170,7 @@ final class SQLStoreMigratorRelationshipTransitionTest extends SQLMigrationTestC
         );
     }
 
+    /** @throws Exception */
     public function testManyToManyBecomesToOneCreatesForeignKeyAndDropsPivot(): void
     {
         // v1: owner is to-many -> many-to-many pivot table, no FK column on Item.

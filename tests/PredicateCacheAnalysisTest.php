@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\PredicateCacheAnalysis;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Predicates\ComparisonPredicate;
 use Sabatier\Foundation\Predicates\CompoundPredicate;
 use Sabatier\Foundation\Predicates\Expression;
-use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\Predicates\PredicateOperatorType;
 
 /**
@@ -78,7 +78,7 @@ final class PredicateCacheAnalysisTest extends TestCase
         yield "MATCHES" => [PredicateOperatorType::matches];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider("volatileOperatorProvider")]
+    #[DataProvider("volatileOperatorProvider")]
     public function testPatternOperatorsAreVolatileAndNotCacheable(PredicateOperatorType $operator): void
     {
         $analysis = new PredicateCacheAnalysis(

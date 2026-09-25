@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
@@ -79,6 +80,7 @@ final class OptionalToManyMutationTest extends TestCase
             ->appendingPathExtension("xml");
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
@@ -88,8 +90,10 @@ final class OptionalToManyMutationTest extends TestCase
     /**
      * Owner <->> Member, with the to-many left optional — the default, and the configuration
      * that produced the crash.
+     *
+     * @throws Exception
      */
-    private function makeContext(bool $optionalToMany = true): ManagedObjectContext
+    private function makeContext(): ManagedObjectContext
     {
         $ownerName = new AttributeDescription();
         $ownerName->name = "name";
@@ -101,7 +105,7 @@ final class OptionalToManyMutationTest extends TestCase
         $members->lazyDestinationEntityName = "OptionalToManyMember";
         $members->lazyInverseRelationshipName = "owner";
         $members->isToMany = true;
-        $members->isOptional = $optionalToMany;
+        $members->isOptional = true;
 
         $owner = new EntityDescription();
         $owner->name = "OptionalToManyOwner";
@@ -146,6 +150,7 @@ final class OptionalToManyMutationTest extends TestCase
         return [$owner, $member];
     }
 
+    /** @throws Exception */
     public function testAddObjectOnANullOptionalToManyMaterializesIt(): void
     {
         $context = $this->makeContext();
@@ -157,6 +162,7 @@ final class OptionalToManyMutationTest extends TestCase
         $this->assertSame($owner, $member->owner, "and the inverse was set");
     }
 
+    /** @throws Exception */
     public function testAddOnANullOptionalToManyMaterializesIt(): void
     {
         $context = $this->makeContext();
@@ -170,6 +176,8 @@ final class OptionalToManyMutationTest extends TestCase
     /**
      * Once the relationship exists — the ordinary case, after a fetch or an explicit set — the
      * mutators do their work.
+     *
+     * @throws Exception
      */
     public function testAddObjectOnAMaterialisedToManyAdds(): void
     {
@@ -183,6 +191,7 @@ final class OptionalToManyMutationTest extends TestCase
         $this->assertSame($owner, $member->owner, "and the inverse was set");
     }
 
+    /** @throws Exception */
     public function testRemoveObjectOnANullOptionalToManyDoesNothing(): void
     {
         $context = $this->makeContext();
@@ -193,6 +202,7 @@ final class OptionalToManyMutationTest extends TestCase
         $this->assertNull($owner->members, "a null relationship stays null");
     }
 
+    /** @throws Exception */
     public function testRemoveOnANullOptionalToManyDoesNothing(): void
     {
         $context = $this->makeContext();
@@ -203,6 +213,7 @@ final class OptionalToManyMutationTest extends TestCase
         $this->assertNull($owner->members, "a null relationship stays null");
     }
 
+    /** @throws Exception */
     public function testIntersectOnANullOptionalToManyReturnsNull(): void
     {
         $context = $this->makeContext();
@@ -215,6 +226,8 @@ final class OptionalToManyMutationTest extends TestCase
 
     /**
      * The mutators still have to behave once the relationship exists.
+     *
+     * @throws Exception
      */
     public function testRemoveObjectAfterAddLeavesTheRelationshipEmpty(): void
     {

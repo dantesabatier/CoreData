@@ -64,6 +64,7 @@ final class PersistentHistoryDeletionTest extends SQLMigrationTestCase
         return $model;
     }
 
+    /** @throws Exception */
     #[Override]
     protected function setUp(): void
     {
@@ -80,6 +81,7 @@ final class PersistentHistoryDeletionTest extends SQLMigrationTestCase
     protected function tearDown(): void
     {
         if ($this->historyContext) {
+            /** @noinspection PhpFieldImmediatelyRewrittenInspection */
             $this->historyContext->persistentStoreCoordinator = null;
         }
         $this->historyContext = null;

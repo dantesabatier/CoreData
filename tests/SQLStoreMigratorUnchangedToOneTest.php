@@ -1,9 +1,12 @@
 <?php
 
+/** @noinspection PhpUndefinedFieldInspection */
+
 declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -85,6 +88,7 @@ final class SQLStoreMigratorUnchangedToOneTest extends SQLMigrationTestCase
         return $model;
     }
 
+    /** @throws Exception */
     public function testUnchangedToOneKeepsItsForeignKeyColumnAcrossATransform(): void
     {
         // v1: pages is integer32.

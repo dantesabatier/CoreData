@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PDO;
 use PHPUnit\Framework\TestCase;
@@ -113,6 +114,7 @@ abstract class SQLMigrationTestCase extends TestCase
 
     /**
      * @param Dictionary<mixed>|null $options
+     * @throws Exception
      */
     private function openContext(ManagedObjectModel $model, ?Dictionary $options = null): ManagedObjectContext
     {
@@ -133,6 +135,8 @@ abstract class SQLMigrationTestCase extends TestCase
      * Builds the database from the source ("v1") model: creating the coordinator and adding
      * an SQL store auto-creates the schema and archives the model as the cached model. The
      * returned context is bound to that v1 stack so the caller can insert fixture data.
+     *
+     * @throws Exception
      */
     protected function bootstrap(ManagedObjectModel $sourceModel): ManagedObjectContext
     {
@@ -144,6 +148,8 @@ abstract class SQLMigrationTestCase extends TestCase
      * options, reproducing the production trigger: the coordinator sees the cached (v1) model
      * is incompatible with $destinationModel and runs the in-place SQL migration before
      * returning. The returned context is bound to the migrated (v2) stack.
+     *
+     * @throws Exception
      */
     protected function migrateTo(ManagedObjectModel $destinationModel): ManagedObjectContext
     {
@@ -160,6 +166,8 @@ abstract class SQLMigrationTestCase extends TestCase
      * against the pre-migration schema, so fetching through it can miss columns that were
      * renamed (or otherwise reshaped) during the migration. A fresh stack loads the current
      * schema and its data cleanly.
+     *
+     * @throws Exception
      */
     protected function freshContext(ManagedObjectModel $model): ManagedObjectContext
     {

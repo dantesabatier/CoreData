@@ -192,6 +192,7 @@ final class ManagedObjectContextTest extends TestCase
         return $model;
     }
 
+    /** @throws Exception */
     private function makeContext(): ManagedObjectContext
     {
         $coordinator = new PersistentStoreCoordinator(self::makeCompanyModel());
@@ -227,12 +228,14 @@ final class ManagedObjectContextTest extends TestCase
             ->appendingPathExtension("xml");
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
         FileManager::default()->removeItem($this->storeURL);
     }
 
+    /** @throws Exception */
     public function testCoordinatorMaterializesAnXMLObjectStore(): void
     {
         $context = $this->makeContext();
@@ -241,6 +244,7 @@ final class ManagedObjectContextTest extends TestCase
         $this->assertFalse($context->hasChanges, "a fresh context has no changes");
     }
 
+    /** @throws Exception */
     public function testInsertTracking(): void
     {
         $context = $this->makeContext();
@@ -254,14 +258,16 @@ final class ManagedObjectContextTest extends TestCase
         $this->assertSame("Employee", $alice->entity->name, "the object carries its entity description");
     }
 
+    /** @throws Exception */
     public function testUnassignedAttributeReportsItsModelDefaultValue(): void
     {
         $context = $this->makeContext();
         $bob = $this->insertEmployee($context, "Bob");
 
-        $this->assertSame(1000, (int)$bob->salary);
+        $this->assertSame(1000, $bob->salary);
     }
 
+    /** @throws Exception */
     public function testSavePersistsAndClearsTracking(): void
     {
         $context = $this->makeContext();
@@ -274,6 +280,7 @@ final class ManagedObjectContextTest extends TestCase
         $this->assertFalse($alice->objectID->isTemporaryID, "the saved object has a permanent ID");
     }
 
+    /** @throws Exception */
     public function testFetchHonorsThePredicate(): void
     {
         $context = $this->makeContext();
@@ -290,6 +297,7 @@ final class ManagedObjectContextTest extends TestCase
         $this->assertCount(0, $context->fetch(self::requestForName("Nobody")), "a predicate matching nothing returns an empty result");
     }
 
+    /** @throws Exception */
     public function testUpdateTracking(): void
     {
         $context = $this->makeContext();
@@ -308,11 +316,13 @@ final class ManagedObjectContextTest extends TestCase
 
         // The update must reach the store: a freshly-built stack reading the same file sees 2500, not the committed-at-insert 2000.
         $rereadContext = $this->makeContext();
+        /** @var Employee|null $reloaded */
         $reloaded = $rereadContext->fetch(self::requestForName("Alice"))->first();
         $this->assertNotNull($reloaded, "the updated object is visible to a freshly-built stack");
         $this->assertSame(2500, $reloaded->salary, "the updated value survives a reload through a fresh coordinator/context stack");
     }
 
+    /** @throws Exception */
     public function testTypedAttributesSurviveARoundTripThroughAFreshStack(): void
     {
         $context = $this->makeContext();
@@ -323,21 +333,24 @@ final class ManagedObjectContextTest extends TestCase
         $context->save();
 
         $rereadContext = $this->makeContext();
+        /** @var Employee|null $reloaded */
         $reloaded = $rereadContext->fetch(self::requestForName("Alice"))->first();
 
         $this->assertNotNull($reloaded, "the saved object is visible to a freshly-built stack");
-        $this->assertSame("Alice", (string)$reloaded->name, "the string attribute survives the round trip");
+        $this->assertSame("Alice", $reloaded->name, "the string attribute survives the round trip");
         $this->assertSame(2000, $reloaded->salary, "the integer attribute survives the round trip");
         $this->assertInstanceOf(Date::class, $reloaded->hired, "the date attribute is materialized as a Foundation Date");
         $this->assertEqualsWithDelta(1700000000.0, $reloaded->hired->timeIntervalSince1970, 1.0, "the date attribute keeps its instant");
         $this->assertInstanceOf(UUID::class, $reloaded->badge, "the uuid attribute is materialized as a Foundation UUID");
         $this->assertSame("E621E1F8-C36C-495A-93FC-0C247A3E6E5F", $reloaded->badge->uuidString, "the uuid attribute keeps its value");
 
+        /** @var Employee|null $rereadBob */
         $rereadBob = $rereadContext->fetch(self::requestForName("Bob"))->first();
         $this->assertNotNull($rereadBob);
         $this->assertSame(1000, $rereadBob->salary, "the default value was persisted for the unassigned attribute");
     }
 
+    /** @throws Exception */
     public function testNumericStringsAreCoercedIntoIntegerAttributes(): void
     {
         $context = $this->makeContext();
@@ -347,6 +360,7 @@ final class ManagedObjectContextTest extends TestCase
         $this->assertSame(3000, $alice->salary);
     }
 
+    /** @throws Exception */
     public function testRollbackDiscardsPendingInsertions(): void
     {
         $context = $this->makeContext();
@@ -368,6 +382,8 @@ final class ManagedObjectContextTest extends TestCase
      * held the old one), so the object reported the uncommitted value and a follow-up save would have
      * written it. rollback() must revert the attribute and clear change tracking so the follow-up save is
      * a no-op. See "rollback does not restore committed values".
+     *
+     * @throws Exception
      */
     public function testRollbackRestoresUpdatedObjectsToCommittedValues(): void
     {
@@ -390,11 +406,13 @@ final class ManagedObjectContextTest extends TestCase
         // A follow-up save must write nothing new: a freshly-built stack reading the same file still sees 2000.
         $this->assertTrue($context->save(), "a save after rollback reports success");
         $rereadContext = $this->makeContext();
+        /** @var Employee|null $reloaded */
         $reloaded = $rereadContext->fetch(self::requestForName("Alice"))->first();
         $this->assertNotNull($reloaded, "the object is still in the store");
         $this->assertSame(2000, $reloaded->salary, "the follow-up save wrote nothing new: the committed value stands");
     }
 
+    /** @throws Exception */
     public function testDeletePersistsAndClearsTracking(): void
     {
         $context = $this->makeContext();
@@ -411,6 +429,7 @@ final class ManagedObjectContextTest extends TestCase
         $this->assertCount(1, $context->fetch(Employee::fetchRequest()), "the deleted object is gone from the store");
     }
 
+    /** @throws Exception */
     public function testToManyRelationshipsPersistAndTraverseBothWays(): void
     {
         $context = $this->makeContext();
@@ -436,6 +455,8 @@ final class ManagedObjectContextTest extends TestCase
      * the XML store used to throw DOMException "Not Found Error" — the context and the
      * store both walked the cascade, so the store tried to removeChild an element that
      * had already been detached. See the "Cascade delete crashes the XML store" note.
+     *
+     * @throws Exception
      */
     public function testCascadeDeleteRemovesRelatedObjectsFromTheStore(): void
     {
@@ -499,6 +520,7 @@ final class ManagedObjectContextTest extends TestCase
         return $model;
     }
 
+    /** @throws Exception */
     private function makeCascadeContext(DeleteRule $departmentDeleteRule = DeleteRule::nullifyDeleteRule): ManagedObjectContext
     {
         $coordinator = new PersistentStoreCoordinator(self::makeCascadeModel($departmentDeleteRule));
@@ -549,6 +571,7 @@ final class ManagedObjectContextTest extends TestCase
         return $model;
     }
 
+    /** @throws Exception */
     private function makeTicketContext(): ManagedObjectContext
     {
         $coordinator = new PersistentStoreCoordinator(self::makeTicketModel());
@@ -564,6 +587,8 @@ final class ManagedObjectContextTest extends TestCase
      * value for a mandatory attribute wherever possible is the framework's job (in SQL this is
      * enforced at the DDL level). The coerced value is then subject to the other validation
      * rules (length, range, regex, uniqueness), but optionality alone does not fail the save.
+     *
+     * @throws Exception
      */
     public function testUnsetMandatoryAttributeIsFilledWithItsTypeDefault(): void
     {
@@ -571,12 +596,13 @@ final class ManagedObjectContextTest extends TestCase
         $ticket = new Ticket($context); // "code" (mandatory string, no default) left unset
 
         $this->assertTrue($context->save(), "the save succeeds; the framework supplies the mandatory value");
-        $this->assertSame("", (string)$ticket->code, "the mandatory string was filled with its type default");
+        $this->assertSame("", $ticket->code, "the mandatory string was filled with its type default");
 
         $rereadContext = $this->makeTicketContext();
+        /** @var Ticket|null $reloaded */
         $reloaded = $rereadContext->fetch(Ticket::fetchRequest())->first();
         $this->assertNotNull($reloaded, "the object reached the store");
-        $this->assertSame("", (string)$reloaded->code, "the filled default was persisted");
+        $this->assertSame("", $reloaded->code, "the filled default was persisted");
     }
 
     /**
@@ -585,12 +611,15 @@ final class ManagedObjectContextTest extends TestCase
      * because the attribute is mandatory, but because the range rule rejects the value. This is
      * the level the framework honors: supply the value, then validate it against length, range,
      * regex, and so on.
+     *
+     * @throws Exception
      */
     public function testAFilledValueMustStillSatisfyTheOtherValidationRules(): void
     {
         $context = $this->makeTicketContext();
         $ticket = new Ticket($context);
         $ticket->code = "ABC-9";
+        /** @noinspection PhpIntRangesMismatchInspection */
         $ticket->priority = 99;
 
         $this->expectException(InternalInconsistencyException::class);
@@ -600,6 +629,8 @@ final class ManagedObjectContextTest extends TestCase
     /**
      * Regression: a save that throws must not leave the context believing a save is still in
      * progress, or every later save() returns true without reaching the store.
+     *
+     * @throws Exception
      */
     public function testASaveRejectedByValidationDoesNotSwallowTheNextSave(): void
     {
@@ -607,6 +638,7 @@ final class ManagedObjectContextTest extends TestCase
         $ticket = new Ticket($context);
         $ticket->code = "ABC-7";
         /** @psalm-suppress InvalidPropertyAssignmentValue the out-of-range value is what makes validation reject the save */
+        /** @noinspection PhpIntRangesMismatchInspection */
         $ticket->priority = 99;
 
         try {
@@ -619,6 +651,7 @@ final class ManagedObjectContextTest extends TestCase
         $this->assertTrue($context->save(), "the corrected save reports success");
 
         $rereadContext = $this->makeTicketContext();
+        /** @var Ticket|null $reloaded */
         $reloaded = $rereadContext->fetch(Ticket::fetchRequest())->first();
         $this->assertNotNull($reloaded, "the corrected object reached the store");
         $this->assertSame(4, $reloaded->priority, "the corrected value was persisted");
@@ -627,6 +660,8 @@ final class ManagedObjectContextTest extends TestCase
     /**
      * Same regression through the will-save notification: an observer that denies the save by
      * throwing must leave the context able to save once the denial no longer applies.
+     *
+     * @throws Exception
      */
     public function testASaveDeniedByAWillSaveObserverDoesNotSwallowTheNextSave(): void
     {
@@ -652,9 +687,10 @@ final class ManagedObjectContextTest extends TestCase
         $this->assertTrue($context->save(), "the retried save reports success");
 
         $rereadContext = $this->makeTicketContext();
+        /** @var Ticket|null $reloaded */
         $reloaded = $rereadContext->fetch(Ticket::fetchRequest())->first();
         $this->assertNotNull($reloaded, "the retried save reached the store");
-        $this->assertSame("RETRIED", (string)$reloaded->code, "the retried value was persisted");
+        $this->assertSame("RETRIED", $reloaded->code, "the retried value was persisted");
     }
 
     /**
@@ -662,6 +698,8 @@ final class ManagedObjectContextTest extends TestCase
      * because the flag was still set while the notification was posted. Its changes stayed
      * pending while hasChanges read false, so a guarded save skipped them and they were lost.
      * The notification must also still carry the objects of the save that posted it.
+     *
+     * @throws Exception
      */
     public function testASaveMadeFromADidSaveObserverReachesTheStore(): void
     {
@@ -696,9 +734,10 @@ final class ManagedObjectContextTest extends TestCase
         $this->assertFalse($context->hasChanges, "nothing is left pending after the nested save");
 
         $rereadContext = $this->makeTicketContext();
+        /** @var Ticket|null $reloaded */
         $reloaded = $rereadContext->fetch(Ticket::fetchRequest())->first();
         $this->assertNotNull($reloaded, "the ticket reached the store");
-        $this->assertSame("outer", (string)$reloaded->note, "the outer save was persisted");
+        $this->assertSame("outer", $reloaded->note, "the outer save was persisted");
         $this->assertSame(2, $reloaded->priority, "the nested save was persisted");
     }
 
@@ -763,6 +802,7 @@ final class ManagedObjectContextTest extends TestCase
         $discarded = new Ticket($context);
         $discarded->code = "DISCARDED";
         /** @psalm-suppress InvalidPropertyAssignmentValue the out-of-range value is what makes validation reject the save */
+        /** @noinspection PhpIntRangesMismatchInspection */
         $discarded->priority = 99;
         try {
             $context->save();
@@ -876,6 +916,7 @@ final class ManagedObjectContextTest extends TestCase
         $this->assertCount(0, $context->deletedObjects, "nothing is left to delete");
     }
 
+    /** @throws Exception */
     public function testSaveSucceedsOnceTheRequiredAttributeIsSet(): void
     {
         $context = $this->makeTicketContext();
@@ -885,13 +926,16 @@ final class ManagedObjectContextTest extends TestCase
         $this->assertTrue($context->save(), "save succeeds once the mandatory attribute has a value");
 
         $rereadContext = $this->makeTicketContext();
+        /** @var Ticket|null $reloaded */
         $reloaded = $rereadContext->fetch(Ticket::fetchRequest())->first();
         $this->assertNotNull($reloaded, "the object reached the store");
-        $this->assertSame("ABC-1", (string)$reloaded->code, "the mandatory value round-trips");
+        $this->assertSame("ABC-1", $reloaded->code, "the mandatory value round-trips");
     }
 
     /**
      * A non-optional attribute with a defaultValue must not fail: the default supplies the value.
+     *
+     * @throws Exception
      */
     public function testSaveSucceedsWhenARequiredAttributeHasADefaultValue(): void
     {
@@ -906,6 +950,8 @@ final class ManagedObjectContextTest extends TestCase
     /**
      * Updating an unrelated attribute of an already-valid object keeps the save valid: the
      * mandatory "code" set on insert is untouched.
+     *
+     * @throws Exception
      */
     public function testUpdatingAnUnrelatedAttributeKeepsTheSaveValid(): void
     {
@@ -926,6 +972,8 @@ final class ManagedObjectContextTest extends TestCase
      * before persisting; that value — not the framework's earlier type default — must be the one
      * validated and stored. This only holds because validation runs after willSave, matching Core
      * Data's willSave -> validateFor{Insert,Update} -> persist cycle.
+     *
+     * @throws Exception
      */
     public function testWillSaveValueReachesValidationAndTheStore(): void
     {
@@ -933,12 +981,13 @@ final class ManagedObjectContextTest extends TestCase
         $autoTicket = new AutoTicket($context); // willSave() overwrites the filled "" with a real code
 
         $this->assertTrue($context->save(), "the save succeeds");
-        $this->assertSame("AUTO-1", (string)$autoTicket->code, "willSave's value replaced the framework's type default");
+        $this->assertSame("AUTO-1", $autoTicket->code, "willSave's value replaced the framework's type default");
 
         $rereadContext = $this->makeAutoTicketContext();
+        /** @var AutoTicket|null $reloaded */
         $reloaded = $rereadContext->fetch(AutoTicket::fetchRequest())->first();
         $this->assertNotNull($reloaded, "the object reached the store");
-        $this->assertSame("AUTO-1", (string)$reloaded->code, "the willSave-supplied value was persisted, not the type default");
+        $this->assertSame("AUTO-1", $reloaded->code, "the willSave-supplied value was persisted, not the type default");
     }
 
     private static function makeAutoTicketModel(): ManagedObjectModel
@@ -958,6 +1007,7 @@ final class ManagedObjectContextTest extends TestCase
         return $model;
     }
 
+    /** @throws Exception */
     private function makeAutoTicketContext(): ManagedObjectContext
     {
         $coordinator = new PersistentStoreCoordinator(self::makeAutoTicketModel());
@@ -994,6 +1044,7 @@ final class ManagedObjectContextTest extends TestCase
         return $model;
     }
 
+    /** @throws Exception */
     private function makePageContext(): ManagedObjectContext
     {
         $coordinator = new PersistentStoreCoordinator(self::makePageModel());
@@ -1006,11 +1057,11 @@ final class ManagedObjectContextTest extends TestCase
         return $context;
     }
 
-    private function insertPage(ManagedObjectContext $context, string $slug, string $title = "Untitled"): Page
+    private function insertPage(ManagedObjectContext $context, string $slug): Page
     {
         $page = new Page($context);
         $page->slug = $slug;
-        $page->title = $title;
+        $page->title = "Untitled";
         return $page;
     }
 
@@ -1021,6 +1072,8 @@ final class ManagedObjectContextTest extends TestCase
      * (ConflictDetectionService::detectConstraintConflicts) early-returned for freshly-inserted objects
      * because they carry no originalSnapshot, so the check never ran on inserts. Under the error merge
      * policy, saving a second object with a value already committed to the store must now fail.
+     *
+     * @throws Exception
      */
     public function testDuplicateUniqueValueAgainstAPersistedRowFails(): void
     {
@@ -1037,6 +1090,8 @@ final class ManagedObjectContextTest extends TestCase
      * The in-memory side of the same save: two brand-new objects sharing a unique value in a single
      * save() are both pending and neither is in the store yet, so a store-only check would miss them.
      * The constraint must be enforced against the pending peers too.
+     *
+     * @throws Exception
      */
     public function testDuplicateUniqueValueAmongPendingInsertsInOneSaveFails(): void
     {
@@ -1051,6 +1106,8 @@ final class ManagedObjectContextTest extends TestCase
     /**
      * The comparison is case-insensitive, matching the LIKE predicate the store check uses for string
      * attributes, so "Home" collides with "home".
+     *
+     * @throws Exception
      */
     public function testUniqueValueComparisonIsCaseInsensitive(): void
     {
@@ -1065,6 +1122,8 @@ final class ManagedObjectContextTest extends TestCase
 
     /**
      * Distinct values must save without complaint: the constraint only fires on an actual duplicate.
+     *
+     * @throws Exception
      */
     public function testDistinctUniqueValuesSaveFine(): void
     {
@@ -1082,6 +1141,8 @@ final class ManagedObjectContextTest extends TestCase
     /**
      * Updating an existing object to a slug already held by another persisted object also violates the
      * constraint — the check runs on updates as well as inserts.
+     *
+     * @throws Exception
      */
     public function testUpdatingToADuplicateUniqueValueFails(): void
     {

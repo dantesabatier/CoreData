@@ -1,9 +1,12 @@
 <?php
 
+/** @noinspection PhpUndefinedFieldInspection */
+
 declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -62,6 +65,7 @@ final class Consignment extends ManagedObject
  */
 final class SQLStoreMigratorRenameSubentityTest extends SQLMigrationTestCase
 {
+    /** @noinspection PhpSameParameterValueInspection */
     private static function attribute(string $name, AttributeType $type): AttributeDescription
     {
         $attribute = new AttributeDescription();
@@ -75,10 +79,7 @@ final class SQLStoreMigratorRenameSubentityTest extends SQLMigrationTestCase
      * "consignments" whose inverse to-one is $inverseName — the name the foreign-key column is
      * derived from. $renamingIdentifier tags the subentity as a rename of an earlier one.
      *
-     * @param string $name
      * @param class-string<ManagedObject> $class
-     * @param string $inverseName
-     * @param string|null $renamingIdentifier
      */
     private static function model(string $name, string $class, string $inverseName, ?string $renamingIdentifier = null): ManagedObjectModel
     {
@@ -127,6 +128,8 @@ final class SQLStoreMigratorRenameSubentityTest extends SQLMigrationTestCase
     /**
      * Renaming the subentity moves its to-many's foreign key column on the other table, and the
      * link survives: a drop+add would leave the new column empty.
+     *
+     * @throws Exception
      */
     public function testRenamingASubentityCarriesItsToManyForeignKey(): void
     {
@@ -153,6 +156,8 @@ final class SQLStoreMigratorRenameSubentityTest extends SQLMigrationTestCase
     /**
      * The subentity shares the superentity's table, so the rename must not create or rename one:
      * the row stays where it was, under the inherited attribute.
+     *
+     * @throws Exception
      */
     public function testTheSubentityKeepsSharingTheSuperentityTable(): void
     {

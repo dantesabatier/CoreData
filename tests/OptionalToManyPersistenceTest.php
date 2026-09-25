@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
@@ -69,6 +70,7 @@ final class OptionalToManyPersistenceTest extends TestCase
             ->appendingPathExtension("xml");
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
@@ -113,6 +115,7 @@ final class OptionalToManyPersistenceTest extends TestCase
         return $model;
     }
 
+    /** @throws Exception */
     private function makeContext(bool $optionalToMany): ManagedObjectContext
     {
         $coordinator = new PersistentStoreCoordinator(self::makeModel($optionalToMany));
@@ -122,6 +125,7 @@ final class OptionalToManyPersistenceTest extends TestCase
         return $context;
     }
 
+    /** @throws Exception */
     private function runLinkAndSave(bool $optionalToMany): void
     {
         $context = $this->makeContext($optionalToMany);
@@ -143,6 +147,7 @@ final class OptionalToManyPersistenceTest extends TestCase
         $this->assertSame(1, $fetchedParent->children?->count ?? 0, "the to-many survived the save");
     }
 
+    /** @throws Exception */
     public function testOptionalToManyPersistsTheLink(): void
     {
         $this->runLinkAndSave(true);
@@ -151,6 +156,8 @@ final class OptionalToManyPersistenceTest extends TestCase
     /**
      * The mandatory case took a different branch in valueForKey() and always worked; it is the
      * control that says the optional one is what changed.
+     *
+     * @throws Exception
      */
     public function testMandatoryToManyPersistsTheLink(): void
     {

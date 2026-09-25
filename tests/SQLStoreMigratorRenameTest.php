@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -38,6 +39,7 @@ final class Contraption extends ManagedObject
  */
 final class SQLStoreMigratorRenameTest extends SQLMigrationTestCase
 {
+    /** @noinspection PhpSameParameterValueInspection */
     private static function attribute(string $name, AttributeType $type, ?string $renamingIdentifier = null): AttributeDescription
     {
         $attribute = new AttributeDescription();
@@ -68,6 +70,7 @@ final class SQLStoreMigratorRenameTest extends SQLMigrationTestCase
         return $model;
     }
 
+    /** @throws Exception */
     public function testRenamingAnAttributeRenamesTheColumnAndCarriesData(): void
     {
         // v1: Gizmo.color
@@ -98,6 +101,7 @@ final class SQLStoreMigratorRenameTest extends SQLMigrationTestCase
         );
     }
 
+    /** @throws Exception */
     public function testRenamingAnEntityRenamesTheTableAndCarriesData(): void
     {
         // v1: entity "Gizmo"

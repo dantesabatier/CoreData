@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\DeleteRule;
@@ -47,6 +49,7 @@ final class Publisher extends ManagedObject
  */
 final class SQLStoreMigratorToOneRelationshipTest extends SQLMigrationTestCase
 {
+    /** @noinspection PhpSameParameterValueInspection */
     private static function attribute(string $name, AttributeType $type): AttributeDescription
     {
         $attribute = new AttributeDescription();
@@ -98,6 +101,7 @@ final class SQLStoreMigratorToOneRelationshipTest extends SQLMigrationTestCase
         return $model;
     }
 
+    /** @throws Exception */
     public function testAddingAToOneRelationshipCreatesTheForeignKeyColumn(): void
     {
         $context = $this->bootstrap(self::model(withPublisherRelationship: false));
@@ -119,6 +123,7 @@ final class SQLStoreMigratorToOneRelationshipTest extends SQLMigrationTestCase
         $this->assertSame("Draft", (string)$rows->first()->title, "the pre-existing value is preserved");
     }
 
+    /** @throws Exception */
     public function testAddingAToOneRelationshipCreatesTheForeignKeyConstraint(): void
     {
         $this->bootstrap(self::model(withPublisherRelationship: false));
@@ -149,8 +154,9 @@ final class SQLStoreMigratorToOneRelationshipTest extends SQLMigrationTestCase
 
     /**
      * @param list<string> $acceptableActions
+     * @throws Exception
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider("deleteRuleProvider")]
+    #[DataProvider("deleteRuleProvider")]
     public function testForeignKeyConstraintHonorsTheInverseDeleteRule(DeleteRule $rule, array $acceptableActions): void
     {
         $this->bootstrap(self::model(withPublisherRelationship: false));
@@ -166,6 +172,7 @@ final class SQLStoreMigratorToOneRelationshipTest extends SQLMigrationTestCase
 
     /**
      * Reads the ON DELETE action of a named foreign key from INFORMATION_SCHEMA.
+     * @noinspection PhpSameParameterValueInspection
      */
     private function deleteRuleFor(string $tableName, string $constraintName): ?string
     {
@@ -173,7 +180,7 @@ final class SQLStoreMigratorToOneRelationshipTest extends SQLMigrationTestCase
             "SELECT DELETE_RULE FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS
              WHERE CONSTRAINT_SCHEMA = ? AND TABLE_NAME = ? AND CONSTRAINT_NAME = ?",
         );
-        $stmt->execute([static::DATABASE_NAME, $tableName, $constraintName]);
+        $stmt->execute([self::DATABASE_NAME, $tableName, $constraintName]);
         $rule = $stmt->fetchColumn();
         return $rule === false ? null : (string)$rule;
     }

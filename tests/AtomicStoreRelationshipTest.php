@@ -155,6 +155,7 @@ final class AtomicStoreRelationshipTest extends TestCase
             ->appendingPathExtension("xml");
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
@@ -325,6 +326,7 @@ final class AtomicStoreRelationshipTest extends TestCase
         $book = $this->seed($context, "Original", ["One"]);
 
         $book->title = "Edited without merging";
+        /** @noinspection PhpRedundantOptionalArgumentInspection */
         $context->refresh($book, false);
         $this->assertNotSame("Original", $book->title, "mergeChanges false does not restore the stored value");
 
@@ -344,7 +346,7 @@ final class AtomicStoreRelationshipTest extends TestCase
         $context = $this->context();
         $book = $this->seed($context, "Original", ["One", "Two"]);
 
-        $context->refresh($book, false);
+        $context->refresh($book);
 
         $this->assertSame(2, $book->chapters->count, "the relationship re-resolves after the refault");
     }

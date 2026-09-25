@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
@@ -76,6 +77,8 @@ final class PersistentContainerTest extends TestCase
     /**
      * Clearing the coordinator is what lets a stack be collected: assigning it registers the
      * context as a notification observer, which otherwise keeps both alive for the process.
+     *
+     * @throws Exception
      */
     #[Override]
     protected function tearDown(): void
@@ -202,6 +205,8 @@ final class PersistentContainerTest extends TestCase
     /**
      * The completion handler runs once per store, which is what lets a caller with several stores
      * tell which one failed.
+     *
+     * @throws Exception
      */
     public function testTheCompletionHandlerRunsOncePerStore(): void
     {
@@ -217,7 +222,7 @@ final class PersistentContainerTest extends TestCase
         $container->persistentStoreDescriptions = new ArrayClass([$first, $second]);
 
         $seen = [];
-        $container->loadPersistentStores(function (PersistentStoreDescription $description, ?Error $error) use (&$seen): void {
+        $container->loadPersistentStores(function (PersistentStoreDescription $description, /** @noinspection PhpUnusedParameterInspection */ ?Error $error) use (&$seen): void {
             $seen[] = $description->url->absoluteString;
         });
 
@@ -230,6 +235,8 @@ final class PersistentContainerTest extends TestCase
     /**
      * The stack is usable after loading: an object saved through the view context reaches the
      * store and comes back on a fresh fetch.
+     *
+     * @throws Exception
      */
     public function testTheViewContextCanSaveAndFetchAfterLoading(): void
     {
@@ -306,6 +313,8 @@ final class PersistentContainerTest extends TestCase
     /**
      * Work done in a background task reaches the store, which is what makes the method useful for
      * a write that should not block the foreground.
+     *
+     * @throws Exception
      */
     public function testWorkDoneInABackgroundTaskIsPersisted(): void
     {
@@ -332,6 +341,8 @@ final class PersistentContainerTest extends TestCase
     /**
      * defaultDirectoryURL is where the container puts a file-backed store when the caller does not
      * say otherwise. It must be an existing directory, since the store is created inside it.
+     *
+     * @throws Exception
      */
     public function testDefaultDirectoryURLIsAnExistingDirectory(): void
     {

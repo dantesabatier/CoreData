@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
@@ -91,6 +92,7 @@ final class AtomicStoreFetchTest extends TestCase
         return $model;
     }
 
+    /** @throws Exception */
     private function context(): ManagedObjectContext
     {
         $coordinator = new PersistentStoreCoordinator(self::model());
@@ -100,6 +102,7 @@ final class AtomicStoreFetchTest extends TestCase
         return $context;
     }
 
+    /** @throws Exception */
     #[Override]
     protected function setUp(): void
     {
@@ -117,6 +120,7 @@ final class AtomicStoreFetchTest extends TestCase
         $context->save();
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
@@ -125,6 +129,7 @@ final class AtomicStoreFetchTest extends TestCase
 
     /**
      * @return list<string> the "code" of every row the request selects, in the order returned
+     * @throws Exception
      */
     private function codes(callable $configure): array
     {
@@ -142,6 +147,8 @@ final class AtomicStoreFetchTest extends TestCase
 
     /**
      * The default result type returns managed objects, ordered by the sort descriptors.
+     *
+     * @throws Exception
      */
     public function testManagedObjectResultTypeReturnsSortedObjects(): void
     {
@@ -155,6 +162,8 @@ final class AtomicStoreFetchTest extends TestCase
     /**
      * managedObjectIDResultType returns identities rather than objects — the cheap shape a
      * caller uses to check existence or to hand references to another context.
+     *
+     * @throws Exception
      */
     public function testObjectIDResultTypeReturnsObjectIDs(): void
     {
@@ -172,6 +181,8 @@ final class AtomicStoreFetchTest extends TestCase
     /**
      * countResultType reports the total and short-circuits before pagination — the count is of
      * everything the predicate matches, which is what makes it usable for "how many are there".
+     *
+     * @throws Exception
      */
     public function testCountResultTypeReturnsTheMatchingTotal(): void
     {
@@ -189,6 +200,8 @@ final class AtomicStoreFetchTest extends TestCase
     /**
      * A fetchLimit must not truncate a count: the count branch returns before the offset/limit
      * clamping, so the answer stays the full total.
+     *
+     * @throws Exception
      */
     public function testCountResultTypeIgnoresFetchLimit(): void
     {
@@ -202,6 +215,8 @@ final class AtomicStoreFetchTest extends TestCase
 
     /**
      * dictionaryResultType returns plain dictionaries instead of managed objects.
+     *
+     * @throws Exception
      */
     public function testDictionaryResultTypeReturnsDictionaries(): void
     {
@@ -220,6 +235,8 @@ final class AtomicStoreFetchTest extends TestCase
     /**
      * propertiesToFetch narrows a dictionary result to the requested keys; the object ID and
      * entity name are always retained, since a caller has to be able to identify the row.
+     *
+     * @throws Exception
      */
     public function testPropertiesToFetchProjectsOnlyTheRequestedKeys(): void
     {
@@ -242,6 +259,8 @@ final class AtomicStoreFetchTest extends TestCase
     /**
      * The offset is applied after sorting, so it skips the first rows of the ORDERED result and
      * not of the node cache's arbitrary order.
+     *
+     * @throws Exception
      */
     public function testFetchOffsetSkipsFromTheSortedResult(): void
     {
@@ -255,6 +274,8 @@ final class AtomicStoreFetchTest extends TestCase
 
     /**
      * Offset and limit compose as a window over the sorted result.
+     *
+     * @throws Exception
      */
     public function testFetchOffsetAndLimitSelectAWindow(): void
     {
@@ -271,6 +292,8 @@ final class AtomicStoreFetchTest extends TestCase
      * An offset past the end yields nothing. This is the clamp the implementation calls out:
      * dropFirst() raises a range error when asked to drop more than the collection holds, so
      * the offset is clamped to the count rather than passed through.
+     *
+     * @throws Exception
      */
     public function testFetchOffsetBeyondTheResultYieldsNothing(): void
     {
@@ -283,6 +306,8 @@ final class AtomicStoreFetchTest extends TestCase
 
     /**
      * A fetchLimit of 0 means "no limit", not "no rows".
+     *
+     * @throws Exception
      */
     public function testZeroFetchLimitMeansUnlimited(): void
     {
@@ -295,6 +320,8 @@ final class AtomicStoreFetchTest extends TestCase
 
     /**
      * Pagination is applied after filtering, so the limit counts matching rows.
+     *
+     * @throws Exception
      */
     public function testFetchLimitAppliesAfterThePredicate(): void
     {
@@ -312,6 +339,8 @@ final class AtomicStoreFetchTest extends TestCase
     /**
      * GROUP BY is only meaningful for a dictionary result, and asking for it with any other
      * result type is a programming error the store refuses rather than silently ignores.
+     *
+     * @throws Exception
      */
     public function testGroupByWithoutDictionaryResultTypeIsRejected(): void
     {
@@ -326,6 +355,8 @@ final class AtomicStoreFetchTest extends TestCase
     /**
      * A HAVING predicate filters whole groups. Only the "rent" group has a row under 150, so
      * that group survives and the others are dropped.
+     *
+     * @throws Exception
      */
     public function testHavingPredicateFiltersGroups(): void
     {
@@ -351,6 +382,8 @@ final class AtomicStoreFetchTest extends TestCase
      * parameter, a serialized payload). resolvePredicateObjectReferences rewrites the constant
      * into a real object ID so the comparison can succeed; without that rewriting a raw
      * reference would never match.
+     *
+     * @throws Exception
      */
     public function testPredicateOnObjectIDAcceptsARawReference(): void
     {
@@ -376,6 +409,8 @@ final class AtomicStoreFetchTest extends TestCase
     /**
      * The rewriting recurses into compound predicates, so an objectID comparison still resolves
      * when it is ANDed with an ordinary one.
+     *
+     * @throws Exception
      */
     public function testObjectIDReferenceResolvesInsideACompoundPredicate(): void
     {
@@ -401,6 +436,8 @@ final class AtomicStoreFetchTest extends TestCase
     /**
      * A reference that identifies no row matches nothing, rather than resolving to some other
      * object or raising.
+     *
+     * @throws Exception
      */
     public function testUnknownObjectIDReferenceMatchesNothing(): void
     {
@@ -417,6 +454,8 @@ final class AtomicStoreFetchTest extends TestCase
      * References are handed out monotonically and persisted in the store metadata, so a second
      * stack over the same file does not reuse a reference already taken. A collision here would
      * silently overwrite an existing row.
+     *
+     * @throws Exception
      */
     public function testReferencesDoNotRepeatAcrossStacks(): void
     {
@@ -443,6 +482,7 @@ final class AtomicStoreFetchTest extends TestCase
 
     /**
      * @return list<int|string> every stored row's reference object
+     * @throws Exception
      */
     private function referenceObjects(): array
     {

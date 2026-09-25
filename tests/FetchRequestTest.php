@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
@@ -97,6 +98,7 @@ final class FetchRequestTest extends TestCase
         $row->managedObjectClassName = Row::class;
         $row->properties = new ArrayClass([$n, $label, $fetchedProperty]);
 
+        /** @noinspection PhpObjectFieldsAreOnlyWrittenInspection */
         $model = new ManagedObjectModel();
         $model->entities = new ArrayClass([$row]);
 
@@ -106,6 +108,7 @@ final class FetchRequestTest extends TestCase
         return $request;
     }
 
+    /** @throws Exception */
     #[Override]
     protected function setUp(): void
     {
@@ -122,22 +125,25 @@ final class FetchRequestTest extends TestCase
         foreach ([5, 3, 1, 4, 2] as $value) {
             $row = new Row($this->context);
             $row->n = $value;
-            $row->label = "row{$value}";
+            $row->label = "row$value";
         }
         $this->context->save();
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
         FileManager::default()->removeItem($this->storeURL);
     }
 
+    /** @throws Exception */
     public function testFetchReturnsAllRows(): void
     {
         $this->assertCount(5, $this->context->fetch(Row::fetchRequest()));
     }
 
+    /** @throws Exception */
     public function testPredicateEqualityNarrowsTheResult(): void
     {
         $request = Row::fetchRequest();
@@ -148,6 +154,7 @@ final class FetchRequestTest extends TestCase
         $this->assertSame(3, $result->first()->n);
     }
 
+    /** @throws Exception */
     public function testComparisonPredicateFiltersARange(): void
     {
         $request = Row::fetchRequest();
@@ -158,6 +165,7 @@ final class FetchRequestTest extends TestCase
         $this->assertSame([4, 5], $values, "n > 3 matches exactly 4 and 5");
     }
 
+    /** @throws Exception */
     public function testPredicateMatchingNothingReturnsEmpty(): void
     {
         $request = Row::fetchRequest();
@@ -166,6 +174,7 @@ final class FetchRequestTest extends TestCase
         $this->assertCount(0, $this->context->fetch($request));
     }
 
+    /** @throws Exception */
     public function testSortAscendingOrdersLowToHigh(): void
     {
         $request = Row::fetchRequest();
@@ -174,6 +183,7 @@ final class FetchRequestTest extends TestCase
         $this->assertSame([1, 2, 3, 4, 5], self::order($this->context->fetch($request)), "an ascending sort descriptor orders the fetch low to high");
     }
 
+    /** @throws Exception */
     public function testSortDescendingOrdersHighToLow(): void
     {
         $request = Row::fetchRequest();
@@ -184,6 +194,8 @@ final class FetchRequestTest extends TestCase
 
     /**
      * Sorting is a permutation of the full result regardless of direction.
+     *
+     * @throws Exception
      */
     public function testSortIsAPermutationOfTheFullResult(): void
     {
@@ -195,6 +207,7 @@ final class FetchRequestTest extends TestCase
         $this->assertSame([1, 2, 3, 4, 5], $values, "every row is still present after sorting");
     }
 
+    /** @throws Exception */
     public function testFetchLimitCapsTheResultCount(): void
     {
         $request = Row::fetchRequest();
@@ -203,6 +216,7 @@ final class FetchRequestTest extends TestCase
         $this->assertCount(2, $this->context->fetch($request), "fetchLimit caps the number of rows returned");
     }
 
+    /** @throws Exception */
     public function testFetchLimitOfZeroMeansNoLimit(): void
     {
         $request = Row::fetchRequest();
@@ -211,6 +225,7 @@ final class FetchRequestTest extends TestCase
         $this->assertCount(5, $this->context->fetch($request), "a fetchLimit of 0 is treated as no limit");
     }
 
+    /** @throws Exception */
     public function testFetchLimitWithSortReturnsTheFirstRowsInOrder(): void
     {
         $request = Row::fetchRequest();
@@ -220,6 +235,7 @@ final class FetchRequestTest extends TestCase
         $this->assertSame([1, 2], self::order($this->context->fetch($request)), "the limit takes the first rows after sorting");
     }
 
+    /** @throws Exception */
     public function testFetchOffsetSkipsLeadingRows(): void
     {
         $request = Row::fetchRequest();
@@ -229,6 +245,7 @@ final class FetchRequestTest extends TestCase
         $this->assertSame([3, 4, 5], self::order($this->context->fetch($request)), "the offset skips the leading rows after sorting");
     }
 
+    /** @throws Exception */
     public function testFetchOffsetAndLimitSelectAWindow(): void
     {
         $request = Row::fetchRequest();
@@ -239,6 +256,7 @@ final class FetchRequestTest extends TestCase
         $this->assertSame([2, 3], self::order($this->context->fetch($request)), "offset then limit selects a subrange (offset applied first)");
     }
 
+    /** @throws Exception */
     public function testFetchOffsetPastTheEndReturnsEmpty(): void
     {
         $request = Row::fetchRequest();
@@ -247,6 +265,7 @@ final class FetchRequestTest extends TestCase
         $this->assertCount(0, $this->context->fetch($request), "an offset past the end returns no rows");
     }
 
+    /** @throws Exception */
     public function testCountMatchesFetchedRowCount(): void
     {
         $request = Row::fetchRequest();
@@ -259,6 +278,8 @@ final class FetchRequestTest extends TestCase
      * execute() resolves its own context from the operation queue rather than taking one, so it
      * works only inside a block the context is running — performBlockAndWait is what associates
      * the two. Inside that block it agrees with an explicit fetch on the same context.
+     *
+     * @throws Exception
      */
     public function testExecuteRunsAgainstTheContextOfTheCurrentQueue(): void
     {
@@ -279,6 +300,8 @@ final class FetchRequestTest extends TestCase
      * Outside such a block there is no context to resolve, and execute() says so rather than
      * silently reaching for some other context. This is the trap behind the project rule that a
      * bare `new FetchRequest("Entity")` dies in tests: it is this resolution failing.
+     *
+     * @throws Exception
      */
     public function testExecuteWithoutAnAssociatedContextRaises(): void
     {

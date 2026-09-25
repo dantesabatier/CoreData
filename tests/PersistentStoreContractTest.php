@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -15,6 +16,7 @@ use Sabatier\CoreData\FetchedPropertyDescription;
 use Sabatier\CoreData\IncrementalStore;
 use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\ManagedObjectContext;
+use Sabatier\CoreData\ManagedObjectID;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\PersistentStore;
 use Sabatier\CoreData\PersistentStoreAsynchronousResult;
@@ -24,6 +26,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\InternalInconsistencyException;
+use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
 
@@ -117,19 +120,19 @@ final class PersistentStoreContractTest extends TestCase
     public static function mustOverrideMethods(): array
     {
         return [
-            "execute" => [static fn(BareStore $store, EntityDescription $entity, ManagedObjectContext $context): mixed
+            "execute" => [static fn(BareStore $store, EntityDescription $entity, ManagedObjectContext $context): ArrayClass
                 => $store->execute(new FetchRequest("Thing"), $context)],
             "newValuesForObjectWithID" => [static fn(BareStore $store, EntityDescription $entity, ManagedObjectContext $context): mixed
                 => $store->newValuesForObjectWithID($store->objectID($entity, 1), $context)],
-            "newValueForRelationship" => [static fn(BareStore $store, EntityDescription $entity, ManagedObjectContext $context): mixed
+            "newValueForRelationship" => [static fn(BareStore $store, EntityDescription $entity, ManagedObjectContext $context): ArrayClass|ManagedObjectID|Nil
                 => $store->newValueForRelationship(new RelationshipDescription(), $store->objectID($entity, 1), $context)],
-            "newOrderedRelationshipInformationForRelationship" => [static fn(BareStore $store, EntityDescription $entity, ManagedObjectContext $context): mixed
+            "newOrderedRelationshipInformationForRelationship" => [static fn(BareStore $store, EntityDescription $entity, ManagedObjectContext $context): ArrayClass|Nil
                 => $store->newOrderedRelationshipInformationForRelationship(new RelationshipDescription(), $store->objectID($entity, 1), $context)],
-            "newValueForFetchedProperty" => [static fn(BareStore $store, EntityDescription $entity, ManagedObjectContext $context): mixed
+            "newValueForFetchedProperty" => [static fn(BareStore $store, EntityDescription $entity, ManagedObjectContext $context): ArrayClass
                 => $store->newValueForFetchedProperty(new FetchedPropertyDescription(), $store->objectID($entity, 1), $context)],
-            "newReferenceObject" => [static fn(BareStore $store, EntityDescription $entity, ManagedObjectContext $context): mixed
+            "newReferenceObject" => [static fn(BareStore $store, EntityDescription $entity, ManagedObjectContext $context): int|string
                 => $store->newReferenceObject(new ManagedObject($context))],
-            "load" => [static fn(BareStore $store, EntityDescription $entity, ManagedObjectContext $context): mixed
+            "load" => [static fn(BareStore $store, EntityDescription $entity, ManagedObjectContext $context): bool
                 => $store->load()],
         ];
     }
@@ -155,6 +158,8 @@ final class PersistentStoreContractTest extends TestCase
      * The two static metadata methods are required too, and they report the CALLED class rather
      * than the base — a diagnostic that names PersistentStore would send whoever hits it to the
      * wrong file.
+     *
+     * @throws Exception
      */
     public function testUnimplementedStaticMetadataNamesTheConcreteClass(): void
     {
@@ -163,6 +168,7 @@ final class PersistentStoreContractTest extends TestCase
         BareStore::metadataForPersistentStore($this->storeURL);
     }
 
+    /** @throws Exception */
     public function testUnimplementedSetMetadataAlsoFails(): void
     {
         $this->expectException(InternalInconsistencyException::class);
@@ -172,6 +178,8 @@ final class PersistentStoreContractTest extends TestCase
     /**
      * IncrementalStore narrows the contract: it adds a typed newValuesForObjectWithID that a
      * chunk-loading backend must implement, and it is equally unforgiving when left out.
+     *
+     * @throws Exception
      */
     public function testIncrementalStoreAlsoDemandsItsOwnNewValues(): void
     {
@@ -198,6 +206,8 @@ final class PersistentStoreContractTest extends TestCase
     /**
      * unload() succeeds by default: a store with nothing to release is still correctly unloaded,
      * and a false here would make the coordinator treat a clean teardown as a failure.
+     *
+     * @throws Exception
      */
     public function testUnloadSucceedsByDefault(): void
     {
@@ -238,6 +248,8 @@ final class PersistentStoreContractTest extends TestCase
      * Replacing a store moves the source file over the destination. The default is a plain move
      * because for a file-backed store that IS the replacement; a backend whose store is not one
      * file (the SQL one) overrides it.
+     *
+     * @throws Exception
      */
     public function testReplacingAStoreMovesTheSourceOverTheDestination(): void
     {
@@ -256,6 +268,8 @@ final class PersistentStoreContractTest extends TestCase
     /**
      * Destroying a store that was never created succeeds: the caller asked for the store to be
      * gone, and it is. Reporting failure would make a coordinator treat a clean slate as an error.
+     *
+     * @throws Exception
      */
     public function testDestroyingAStoreThatDoesNotExistSucceeds(): void
     {
@@ -264,6 +278,8 @@ final class PersistentStoreContractTest extends TestCase
 
     /**
      * And destroying one that does exist removes the file.
+     *
+     * @throws Exception
      */
     public function testDestroyingAStoreRemovesItsFile(): void
     {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -137,6 +138,7 @@ final class SQLSaveLockOrderTest extends SQLMigrationTestCase
      * wrote, in emission order.
      *
      * @return list<string>
+     * @throws Exception
      */
     private function updateOrder(ManagedObjectContext $context, bool $omegaFirst, string $suffix): array
     {
@@ -168,6 +170,7 @@ final class SQLSaveLockOrderTest extends SQLMigrationTestCase
      *
      * @param list<string> $order the names of the rows to dirty, in the order to touch them
      * @return list<string>
+     * @throws Exception
      */
     private function updatedKeysForAlphas(ManagedObjectContext $context, array $order, string $suffix): array
     {
@@ -182,7 +185,7 @@ final class SQLSaveLockOrderTest extends SQLMigrationTestCase
             $alpha->note = "$name-$suffix";
         }
 
-        $log = $this->sqlDuring(function () use ($context): void {
+        $log = $this->sqlDuring(/** @throws Exception */ function () use ($context): void {
             $context->save();
         });
 
@@ -204,6 +207,8 @@ final class SQLSaveLockOrderTest extends SQLMigrationTestCase
      *
      * Before the fix the two runs produced opposite orders, which is the precondition for the
      * production deadlock — two requests racing with mirrored lock sequences.
+     *
+     * @throws Exception
      */
     public function testUpdateOrderIsIndependentOfMutationOrder(): void
     {
@@ -231,6 +236,8 @@ final class SQLSaveLockOrderTest extends SQLMigrationTestCase
      * Two saves updating the same rows of one table in opposite orders deadlock exactly like
      * two saves updating two tables in opposite orders; the entity-name tie-break alone does
      * not reach this case, since here every object carries the same entity name.
+     *
+     * @throws Exception
      */
     public function testUpdateOrderWithinATableIsIndependentOfMutationOrder(): void
     {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
@@ -46,6 +47,8 @@ final class Reminder extends ManagedObject
 
 /** A subentity of Expense, so a fetch on the parent legitimately covers it. */
 /**
+ * @property string $category
+ * @property string $merchant
  * @property string $period
  */
 final class RecurringExpense extends ManagedObject
@@ -117,6 +120,7 @@ final class FetchedResultsControllerTest extends TestCase
         return $model;
     }
 
+    /** @throws Exception */
     private function context(): ManagedObjectContext
     {
         $coordinator = new PersistentStoreCoordinator(self::model());
@@ -127,6 +131,7 @@ final class FetchedResultsControllerTest extends TestCase
         return $context;
     }
 
+    /** @throws Exception */
     #[Override]
     protected function setUp(): void
     {
@@ -143,6 +148,7 @@ final class FetchedResultsControllerTest extends TestCase
         $context->save();
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
@@ -158,6 +164,7 @@ final class FetchedResultsControllerTest extends TestCase
      * documents one as required, and it is what makes the grouping deterministic.
      *
      * @return FetchedResultsController<Expense>
+     * @throws Exception
      */
     private function controller(?string $sectionNameKeyPath = null): FetchedResultsController
     {
@@ -183,6 +190,8 @@ final class FetchedResultsControllerTest extends TestCase
 
     /**
      * The controller does not fetch on construction, so nothing is available until asked.
+     *
+     * @throws Exception
      */
     public function testFetchedObjectsIsEmptyBeforePerformFetch(): void
     {
@@ -192,12 +201,14 @@ final class FetchedResultsControllerTest extends TestCase
         $this->assertTrue($controller->sections->isEmpty);
     }
 
+    /** @throws Exception */
     public function testPerformFetchLoadsTheObjectsInSortOrder(): void
     {
         $controller = $this->controller();
         $controller->performFetch();
 
         $merchants = [];
+        /** @var Expense $expense */
         foreach ($controller->fetchedObjects as $expense) {
             $merchants[] = $expense->merchant;
         }
@@ -209,6 +220,8 @@ final class FetchedResultsControllerTest extends TestCase
      * With no sectionNameKeyPath the controller reports one unnamed section holding everything.
      * This is also the only path that reports numberOfObjects correctly — it hands the
      * constructor an already-populated collection (see testGroupedSectionReportsZeroObjects).
+     *
+     * @throws Exception
      */
     public function testWithoutASectionKeyPathEverythingLandsInOneSection(): void
     {
@@ -224,6 +237,8 @@ final class FetchedResultsControllerTest extends TestCase
     /**
      * A sectionNameKeyPath groups the results by that key, in the order the sorted objects
      * introduce each value.
+     *
+     * @throws Exception
      */
     public function testSectionKeyPathGroupsTheResults(): void
     {
@@ -243,6 +258,8 @@ final class FetchedResultsControllerTest extends TestCase
 
     /**
      * Each section holds its own members, still in the fetch's sort order.
+     *
+     * @throws Exception
      */
     public function testSectionsHoldTheirOwnObjectsInSortOrder(): void
     {
@@ -264,6 +281,8 @@ final class FetchedResultsControllerTest extends TestCase
      * with an empty collection before appending to it — so every grouped section reported zero
      * while ->objects filled up. The ungrouped path was unaffected, which is why the flat case
      * looked correct.
+     *
+     * @throws Exception
      */
     public function testGroupedSectionCountsItsObjects(): void
     {
@@ -281,6 +300,8 @@ final class FetchedResultsControllerTest extends TestCase
     /**
      * The count follows the collection after the fact too: a refresh appends to a section's
      * objects, and the row count has to move with them.
+     *
+     * @throws Exception
      */
     public function testSectionCountFollowsARefresh(): void
     {
@@ -301,6 +322,8 @@ final class FetchedResultsControllerTest extends TestCase
     /**
      * performFetch is idempotent: running it twice must not double the results, which it would
      * if the controller appended to what it already held.
+     *
+     * @throws Exception
      */
     public function testPerformFetchTwiceDoesNotDuplicateResults(): void
     {
@@ -316,6 +339,8 @@ final class FetchedResultsControllerTest extends TestCase
 
     /**
      * object() resolves a position to the object living there.
+     *
+     * @throws Exception
      */
     public function testObjectAtIndexPathReturnsTheObjectInThatSection(): void
     {
@@ -333,6 +358,8 @@ final class FetchedResultsControllerTest extends TestCase
      * It used to test the row index for truthiness — `if ($row = $e->objects->indexOf($object))`
      * — and ArrayClass::indexOf returns 0 for a first element, so the first object of every
      * section was reported as not found. That is the row a list view scrolls to first.
+     *
+     * @throws Exception
      */
     public function testIndexPathFindsEveryRowIncludingTheFirst(): void
     {
@@ -355,6 +382,8 @@ final class FetchedResultsControllerTest extends TestCase
 
     /**
      * A position in a later section resolves to that section's number, not just to a row.
+     *
+     * @throws Exception
      */
     public function testIndexPathReportsTheSectionItFoundTheObjectIn(): void
     {
@@ -372,6 +401,8 @@ final class FetchedResultsControllerTest extends TestCase
 
     /**
      * An object the fetch never returned has no position.
+     *
+     * @throws Exception
      */
     public function testIndexPathOfAnUnfetchedObjectIsNull(): void
     {
@@ -389,6 +420,8 @@ final class FetchedResultsControllerTest extends TestCase
 
     /**
      * The default index title is the capitalized section name; an unnamed section has none.
+     *
+     * @throws Exception
      */
     public function testSectionIndexTitleCapitalizesTheName(): void
     {
@@ -402,6 +435,8 @@ final class FetchedResultsControllerTest extends TestCase
      * sectionIndexTitles is derived from the sections, so it is empty until a fetch runs — and
      * then reports empty strings, because buildSections never sets an index title on the
      * sections it creates and the mapping stringifies the resulting null.
+     *
+     * @throws Exception
      */
     public function testSectionIndexTitlesFollowTheSections(): void
     {
@@ -420,6 +455,8 @@ final class FetchedResultsControllerTest extends TestCase
     /**
      * section() resolves a title to its section number. Since buildSections leaves every index
      * title null, no title resolves and the lookup reports NotFound rather than guessing.
+     *
+     * @throws Exception
      */
     public function testSectionReportsNotFoundForATitleNoSectionCarries(): void
     {
@@ -441,6 +478,8 @@ final class FetchedResultsControllerTest extends TestCase
      * comparison was "Expense" === null, the affected set came out empty, and the method returned
      * before refreshing anything. FetchRequest's `entity` setter now populates `entityName`
      * alongside it, so both halves of the identity are present however the request was built.
+     *
+     * @throws Exception
      */
     public function testInsertingAnObjectRefreshesTheResultsAndNotifiesTheDelegate(): void
     {
@@ -507,6 +546,8 @@ final class FetchedResultsControllerTest extends TestCase
     /**
      * A refresh re-groups, so an insertion has to land in the right section and in sort order —
      * not merely be appended to the flat result set.
+     *
+     * @throws Exception
      */
     public function testInsertedObjectIsGroupedIntoItsSection(): void
     {
@@ -525,6 +566,8 @@ final class FetchedResultsControllerTest extends TestCase
 
     /**
      * An object whose section value is new becomes a section of its own.
+     *
+     * @throws Exception
      */
     public function testInsertedObjectWithANewSectionValueAddsASection(): void
     {
@@ -552,6 +595,8 @@ final class FetchedResultsControllerTest extends TestCase
      * both — and sorting the result by "merchant", which Reminder does not have, raised
      * UndefinedKeyException from inside the sort. The filter now runs where the objects are
      * added.
+     *
+     * @throws Exception
      */
     public function testAnUnrelatedEntityInTheSameBatchIsNotAdmitted(): void
     {
@@ -577,6 +622,8 @@ final class FetchedResultsControllerTest extends TestCase
      * A subentity does belong to a fetch on its parent, so it has to survive the same filter that
      * rejects an unrelated entity. This is what makes the check an isKindOf rather than a name
      * comparison, and it follows includesSubentities, which defaults to true.
+     *
+     * @throws Exception
      */
     public function testASubentityIsAdmittedIntoAParentEntityFetch(): void
     {
@@ -597,6 +644,8 @@ final class FetchedResultsControllerTest extends TestCase
 
     /**
      * With includesSubentities off, the fetch covers the parent entity alone.
+     *
+     * @throws Exception
      */
     public function testASubentityIsRejectedWhenSubentitiesAreExcluded(): void
     {
@@ -619,6 +668,8 @@ final class FetchedResultsControllerTest extends TestCase
 
     /**
      * An update changes no membership, so the result count holds steady across a refresh.
+     *
+     * @throws Exception
      */
     public function testUpdatingAnObjectLeavesMembershipUnchanged(): void
     {
@@ -636,6 +687,8 @@ final class FetchedResultsControllerTest extends TestCase
     /**
      * Without a delegate the controller still refreshes itself — the delegate is a notification
      * sink, not a precondition for tracking.
+     *
+     * @throws Exception
      */
     public function testRefreshHappensWithoutADelegate(): void
     {

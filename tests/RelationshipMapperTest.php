@@ -135,6 +135,7 @@ final class RelationshipMapperTest extends TestCase
         $this->context->persistentStoreCoordinator = $coordinator;
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {

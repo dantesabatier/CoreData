@@ -283,6 +283,7 @@ final class SQLBatchHistoryTest extends SQLMigrationTestCase
         $transactions = $this->transactions();
         $this->assertCount(3, $transactions);
         $numbers = array_map(fn(PersistentHistoryTransaction $transaction): int => $transaction->transactionNumber, $transactions);
+        /** @noinspection PhpPipeOperatorCanBeUsedInspection */
         $this->assertSame(array_values(array_unique($numbers)), $numbers, "each batch gets a transaction number of its own");
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -157,6 +158,8 @@ final class SharedObjectShapeTest extends SQLMigrationTestCase
     /**
      * The author of the post is also the author of its comment: one SOUser object, reached through
      * two branches whose shapes disagree.
+     *
+     * @throws Exception
      */
     private function seed(): ManagedObjectContext
     {
@@ -179,6 +182,7 @@ final class SharedObjectShapeTest extends SQLMigrationTestCase
         return $context;
     }
 
+    /** @throws Exception */
     public function testTwoBranchesAskingDifferentShapesOfTheSameObject(): void
     {
         $context = $this->seed();
@@ -199,6 +203,7 @@ final class SharedObjectShapeTest extends SQLMigrationTestCase
         $context->performBlockAndWait(function () use ($context, $shape, &$body): void {
             $request = new FetchRequest("SOPost");
             $request->serialization = $shape;
+            /** @noinspection PhpPipeOperatorCanBeUsedInspection */
             $body = json_decode(json_encode($context->fetch($request)->first->jsonSerialize()), true);
         });
         // One object carries one shape, so the shared user emits the union of what both branches asked for.
@@ -208,7 +213,11 @@ final class SharedObjectShapeTest extends SQLMigrationTestCase
         $this->assertArrayNotHasKey("nickname", $body["author"], "no branch asked for nickname");
     }
 
-    /** The union is emitted because both branches' columns were loaded: the shape drives the fetch too. */
+    /**
+     * The union is emitted because both branches' columns were loaded: the shape drives the fetch too.
+     *
+     * @throws Exception
+     */
     public function testBothBranchesColumnsAreLoaded(): void
     {
         $context = $this->seed();

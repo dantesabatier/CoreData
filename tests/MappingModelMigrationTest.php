@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Override;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -53,6 +54,7 @@ final class MappingModelMigrationTest extends SQLMigrationTestCase
             ->appendingPathExtension("map");
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
@@ -60,6 +62,7 @@ final class MappingModelMigrationTest extends SQLMigrationTestCase
         parent::tearDown();
     }
 
+    /** @noinspection PhpSameParameterValueInspection */
     private static function attribute(string $name, AttributeType $type, ?string $renamingIdentifier = null): AttributeDescription
     {
         $attribute = new AttributeDescription();
@@ -100,6 +103,8 @@ final class MappingModelMigrationTest extends SQLMigrationTestCase
     /**
      * Writes the mapping model to disk and reads it back, so the migration runs against a mapping
      * model that genuinely came from a file rather than the one built here.
+     *
+     * @throws Exception
      */
     private function mappingModelFromFile(ManagedObjectModel $sourceModel, ManagedObjectModel $destinationModel): MappingModel
     {
@@ -123,6 +128,7 @@ final class MappingModelMigrationTest extends SQLMigrationTestCase
         return new MappingModel($this->mappingURL);
     }
 
+    /** @throws Exception */
     public function testMigrationDrivenByAMappingModelFromAFile(): void
     {
         $sourceModel = self::sourceModel();

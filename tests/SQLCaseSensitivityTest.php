@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -62,6 +63,7 @@ final class SQLCaseSensitivityTest extends SQLMigrationTestCase
         return $model;
     }
 
+    /** @throws Exception */
     private function seed(): void
     {
         $context = $this->bootstrap(self::model());
@@ -74,6 +76,7 @@ final class SQLCaseSensitivityTest extends SQLMigrationTestCase
 
     /**
      * @return list<string> the title of every Track matching $predicate, fetched through the store
+     * @throws Exception
      */
     private function fetchTitles(string $predicate): array
     {
@@ -115,6 +118,7 @@ final class SQLCaseSensitivityTest extends SQLMigrationTestCase
      * layers could be wrong in the same direction.
      *
      * @return list<string>
+     * @throws Exception
      */
     private function assertLayersAgree(string $predicate): array
     {
@@ -127,6 +131,8 @@ final class SQLCaseSensitivityTest extends SQLMigrationTestCase
      * The compound (ci + BINARY) clause stays case-sensitive: only the exactly-cased prefix
      * matches. If the companion ci term leaked through without the BINARY refilter, "adagio"
      * and "ADAGIO" would come back too.
+     *
+     * @throws Exception
      */
     public function testBeginsWithIsCaseSensitiveByDefault(): void
     {
@@ -138,6 +144,8 @@ final class SQLCaseSensitivityTest extends SQLMigrationTestCase
      * A prefix cased like no other row still matches the one row that does carry that casing —
      * "AD" is the real prefix of "ADAGIO" — which is what distinguishes a case-sensitive prefix
      * search from the ci superset the optimizer scans.
+     *
+     * @throws Exception
      */
     public function testBeginsWithMatchesOnlyTheCorrectlyCasedRow(): void
     {
@@ -147,6 +155,8 @@ final class SQLCaseSensitivityTest extends SQLMigrationTestCase
 
     /**
      * The `[c]` option asks for case-insensitivity, and then every casing matches.
+     *
+     * @throws Exception
      */
     public function testBeginsWithCaseInsensitiveOptionMatchesEveryCasing(): void
     {
@@ -157,6 +167,8 @@ final class SQLCaseSensitivityTest extends SQLMigrationTestCase
     /**
      * CONTAINS is a bare `LIKE BINARY` (no companion term — a pattern with no leading anchor
      * cannot range-scan anyway) and is case-sensitive: no row contains "LLEG" in upper case.
+     *
+     * @throws Exception
      */
     public function testContainsIsCaseSensitiveByDefault(): void
     {
@@ -164,6 +176,7 @@ final class SQLCaseSensitivityTest extends SQLMigrationTestCase
         $this->assertSame([], $this->assertLayersAgree("title CONTAINS \"LLEG\""));
     }
 
+    /** @throws Exception */
     public function testContainsCaseInsensitiveOptionMatchesEveryCasing(): void
     {
         $this->seed();
@@ -172,6 +185,8 @@ final class SQLCaseSensitivityTest extends SQLMigrationTestCase
 
     /**
      * ENDSWITH, same contract: only the row whose suffix matches byte for byte.
+     *
+     * @throws Exception
      */
     public function testEndsWithIsCaseSensitiveByDefault(): void
     {
@@ -179,6 +194,7 @@ final class SQLCaseSensitivityTest extends SQLMigrationTestCase
         $this->assertSame(["ADAGIO"], $this->assertLayersAgree("title ENDSWITH \"GIO\""));
     }
 
+    /** @throws Exception */
     public function testEndsWithCaseInsensitiveOptionMatchesEveryCasing(): void
     {
         $this->seed();
@@ -190,6 +206,8 @@ final class SQLCaseSensitivityTest extends SQLMigrationTestCase
      *
      * A wildcard-free pattern is used because LIKE has no working wildcard in either layer; see
      * testLikeHasNoWildcardInEitherLayer.
+     *
+     * @throws Exception
      */
     public function testLikeIsCaseSensitiveByDefault(): void
     {
@@ -198,6 +216,7 @@ final class SQLCaseSensitivityTest extends SQLMigrationTestCase
         $this->assertSame([], $this->fetchTitles("title LIKE \"BOLERO\""));
     }
 
+    /** @throws Exception */
     public function testLikeCaseInsensitiveOptionIgnoresCase(): void
     {
         $this->seed();
@@ -223,6 +242,8 @@ final class SQLCaseSensitivityTest extends SQLMigrationTestCase
      * is that LIKE offers no pattern matching at all — it is an exact comparison with extra steps.
      * A caller who wants a wildcard search should use BEGINSWITH / CONTAINS / ENDSWITH, and one
      * who wants a regex should use MATCHES.
+     *
+     * @throws Exception
      */
     public function testLikeHasNoWildcardInEitherLayer(): void
     {
@@ -241,6 +262,8 @@ final class SQLCaseSensitivityTest extends SQLMigrationTestCase
      * The equivalence that licenses the companion-term optimisation on BEGINSWITH: for a needle
      * that is a whole title, the compound clause must agree with ENDSWITH on the same string,
      * which is a plain `LIKE BINARY` with no companion term.
+     *
+     * @throws Exception
      */
     public function testBeginsWithAgreesWithBinaryOnlyOperator(): void
     {

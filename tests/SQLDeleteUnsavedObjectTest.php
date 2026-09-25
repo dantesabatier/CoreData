@@ -90,6 +90,7 @@ final class SQLDeleteUnsavedObjectTest extends SQLMigrationTestCase
         $discarded = new SQLDiscardableTicket($context);
         $discarded->code = "DISCARDED";
         /** @psalm-suppress InvalidPropertyAssignmentValue the out-of-range value is what makes validation reject the save */
+        /** @noinspection PhpIntRangesMismatchInspection */
         $discarded->priority = 99;
         try {
             $context->save();

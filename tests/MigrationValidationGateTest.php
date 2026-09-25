@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
@@ -78,6 +79,7 @@ final class MigrationValidationGateTest extends TestCase
         return $entityMapping;
     }
 
+    /** @throws Exception */
     public function testAnInferredMappingModelPassesBothChecks(): void
     {
         $sourceModel = self::sourceModel();
@@ -88,6 +90,7 @@ final class MigrationValidationGateTest extends TestCase
         $this->assertTrue(MigrationManager::performSanityCheck($mappingModel, $sourceModel, $destinationModel));
     }
 
+    /** @throws Exception */
     public function testAMappingWithoutATypeCannotMigrate(): void
     {
         $mappingModel = self::mappingModel(self::entityMapping(EntityMappingType::undefinedEntityMappingType));
@@ -95,6 +98,7 @@ final class MigrationValidationGateTest extends TestCase
         $this->assertFalse(MigrationManager::canMigrateWithMappingModel($mappingModel));
     }
 
+    /** @throws Exception */
     public function testACustomMappingWithoutAPolicyCannotMigrate(): void
     {
         $mappingModel = self::mappingModel(self::entityMapping(EntityMappingType::customEntityMappingType));
@@ -102,6 +106,7 @@ final class MigrationValidationGateTest extends TestCase
         $this->assertFalse(MigrationManager::canMigrateWithMappingModel($mappingModel));
     }
 
+    /** @throws Exception */
     public function testACustomMappingWithAPolicyCanMigrate(): void
     {
         $entityMapping = self::entityMapping(EntityMappingType::customEntityMappingType);
@@ -110,6 +115,7 @@ final class MigrationValidationGateTest extends TestCase
         $this->assertTrue(MigrationManager::canMigrateWithMappingModel(self::mappingModel($entityMapping)));
     }
 
+    /** @throws Exception */
     public function testAVersionHashThatDisagreesWithTheModelFailsTheSanityCheck(): void
     {
         $sourceModel = self::sourceModel();
@@ -124,6 +130,8 @@ final class MigrationValidationGateTest extends TestCase
     /**
      * A hand-authored mapping model may leave the hashes unset, and may cover only some of the
      * entities in the models, so neither is treated as a disagreement.
+     *
+     * @throws Exception
      */
     public function testAnUnsetHashAndAnUnmentionedEntityPassTheSanityCheck(): void
     {

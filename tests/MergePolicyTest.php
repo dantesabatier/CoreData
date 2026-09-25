@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\MergeConflict;
@@ -59,6 +60,7 @@ final class MergePolicyTest extends TestCase
         return new MergeConflict($object, 2, 1, self::cached(), self::persisted());
     }
 
+    /** @throws Exception */
     public function testObjectTrumpPolicyAppliesTheObjectTrumpMerge(): void
     {
         $captured = null;
@@ -69,6 +71,7 @@ final class MergePolicyTest extends TestCase
         $this->assertSame("fromStore", $captured["storeOnly"], "object-trump still unions the store-only key");
     }
 
+    /** @throws Exception */
     public function testStoreTrumpPolicyAppliesTheStoreTrumpMerge(): void
     {
         $captured = null;
@@ -79,6 +82,7 @@ final class MergePolicyTest extends TestCase
         $this->assertSame("keepMe", $captured["objectOnly"], "store-trump still unions the object-only key");
     }
 
+    /** @throws Exception */
     public function testOverwritePolicyPushesTheCachedSnapshot(): void
     {
         $captured = null;
@@ -89,6 +93,7 @@ final class MergePolicyTest extends TestCase
         $this->assertNull($captured["storeOnly"], "overwrite ignores the store snapshot entirely");
     }
 
+    /** @throws Exception */
     public function testRollbackPolicyPushesThePersistedSnapshot(): void
     {
         $captured = null;
@@ -99,6 +104,7 @@ final class MergePolicyTest extends TestCase
         $this->assertNull($captured["objectOnly"], "rollback discards the in-memory snapshot entirely");
     }
 
+    /** @throws Exception */
     public function testErrorPolicyRaisesOnANonEmptyConflictList(): void
     {
         $captured = null;
@@ -106,6 +112,7 @@ final class MergePolicyTest extends TestCase
         MergePolicy::error()->resolveConflicts(new ArrayClass([$this->conflictCapturing($captured)]));
     }
 
+    /** @throws Exception */
     public function testErrorPolicyDoesNotResolveTheConflict(): void
     {
         $captured = null;
@@ -117,6 +124,7 @@ final class MergePolicyTest extends TestCase
         $this->assertNull($captured, "the error policy must not apply any merge before raising");
     }
 
+    /** @throws Exception */
     public function testAnEmptyConflictListIsANoOpEvenForTheErrorPolicy(): void
     {
         // tryResolveConflicts short-circuits to success on an empty list, so even the error

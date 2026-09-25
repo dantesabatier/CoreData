@@ -6,6 +6,7 @@ namespace Sabatier\CoreData\Tests;
 
 use DOMDocument;
 use DOMXPath;
+use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Sabatier\CoreData\AttributeDescription;
@@ -97,6 +98,7 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
             ->appendingPathExtension("xml");
     }
 
+    /** @throws Exception */
     #[Override]
     protected function tearDown(): void
     {
@@ -149,7 +151,11 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
         return $model;
     }
 
-    /** A fresh stack over the test's store file; a new model each time, as descriptions freeze once assigned. */
+    /**
+     * A fresh stack over the test's store file; a new model each time, as descriptions freeze once assigned.
+     *
+     * @throws Exception
+     */
     private function makeContext(): ManagedObjectContext
     {
         $coordinator = new PersistentStoreCoordinator(self::makeModel());
@@ -163,6 +169,7 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
      * An owner with one entry attached, saved.
      *
      * @return array{0: LedgerOwner, 1: LedgerEntry}
+     * @throws Exception
      */
     private function makeSavedPair(ManagedObjectContext $context): array
     {
@@ -188,6 +195,8 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
     /**
      * The to-many inverse must be populated by the save that establishes it — this fails
      * before any mutation, so it is the half of the defect that does not involve faulting.
+     *
+     * @throws Exception
      */
     public function testToManyInverseIsPopulatedAfterTheFirstSave(): void
     {
@@ -198,6 +207,7 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
         $this->assertSame((string)$entry->objectID->referenceObject, $this->relationshipReferences("LedgerOwner", "entries"), "the inverse reference reached the XML document");
     }
 
+    /** @throws Exception */
     public function testMutatingAnAttributeKeepsTheToOneRelationship(): void
     {
         $context = $this->makeContext();
@@ -210,6 +220,7 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
         $this->assertSame($owner, $entry->owner, "and it still points at the same object");
     }
 
+    /** @throws Exception */
     public function testMutatingAnAttributeKeepsTheToManyInverse(): void
     {
         $context = $this->makeContext();
@@ -225,6 +236,8 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
      * traverses the relationship stops matching, while one over the object's own attribute
      * still finds the object. Both are asserted so a regression cannot be mistaken for the
      * object having gone missing entirely.
+     *
+     * @throws Exception
      */
     public function testRelationshipPredicateStillMatchesAfterMutateAndSave(): void
     {
@@ -251,6 +264,8 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
 
     /**
      * The link must be on disk too, not merely repaired in the context that wrote it.
+     *
+     * @throws Exception
      */
     public function testRelationshipSurvivesReloadingTheStore(): void
     {
@@ -269,6 +284,7 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
         $this->assertNotNull($reloadedEntry->owner, "and it still knows its owner");
     }
 
+    /** @throws Exception */
     public function testUnrelatedSavePreservesButExplicitNullClearsTheToOneReference(): void
     {
         $context = $this->makeContext();
@@ -297,6 +313,7 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
      * which inverse to take the entry out of.
      *
      * @return array{0: LedgerOwner, 1: LedgerOwner, 2: LedgerEntry}
+     * @throws Exception
      */
     private function loadedPairOfOwners(ManagedObjectContext $seed): array
     {
@@ -321,6 +338,7 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
         return [$byName["first"], $byName["second"], $loadedEntry];
     }
 
+    /** @throws Exception */
     public function testReassigningAToOneMovesItBetweenTheInverses(): void
     {
         [$first, $second, $entry] = $this->loadedPairOfOwners($this->makeContext());
@@ -332,6 +350,7 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
         $this->assertSame(1, $second->entries?->count ?? -1, "and the owner it moved to holds it");
     }
 
+    /** @throws Exception */
     public function testNullingAToOneRemovesItFromTheInverse(): void
     {
         [$first, , $entry] = $this->loadedPairOfOwners($this->makeContext());
@@ -357,6 +376,7 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
         return [$first, $second, $entry];
     }
 
+    /** @throws Exception */
     public function testAssigningAToOneOnAnUnsavedObjectPopulatesTheInverse(): void
     {
         [$first, , $entry] = $this->unsavedPairOfOwners($this->makeContext());
@@ -366,9 +386,11 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
         $this->assertTrue($first->entries?->containsElement($entry) ?? false, "the inverse holds the entry before any save");
     }
 
+    /** @throws Exception */
     public function testReassigningAToOneOnAnUnsavedObjectMovesItBetweenTheInverses(): void
     {
         [$first, $second, $entry] = $this->unsavedPairOfOwners($this->makeContext());
+        /** @noinspection PhpFieldImmediatelyRewrittenInspection */
         $entry->owner = $first;
 
         $entry->owner = $second;
@@ -377,9 +399,11 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
         $this->assertSame(1, $second->entries?->count ?? -1, "and the owner it moved to holds it");
     }
 
+    /** @throws Exception */
     public function testNullingAToOneOnAnUnsavedObjectRemovesItFromTheInverse(): void
     {
         [$first, , $entry] = $this->unsavedPairOfOwners($this->makeContext());
+        /** @noinspection PhpFieldImmediatelyRewrittenInspection */
         $entry->owner = $first;
 
         $entry->owner = null;
@@ -387,11 +411,16 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
         $this->assertSame(0, $first->entries?->count ?? -1, "clearing the to-one empties the inverse it was in");
     }
 
-    /** The link an unsaved assignment records must still be the one the store writes. */
+    /**
+     * The link an unsaved assignment records must still be the one the store writes.
+     *
+     * @throws Exception
+     */
     public function testAnUnsavedAssignmentPersistsTheRelationship(): void
     {
         $context = $this->makeContext();
         [$first, $second, $entry] = $this->unsavedPairOfOwners($context);
+        /** @noinspection PhpFieldImmediatelyRewrittenInspection */
         $entry->owner = $first;
         $entry->owner = $second;
         $context->save();

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -112,6 +113,8 @@ final class SQLCoreRelationshipFaultGenerationTest extends SQLMigrationTestCase
     /**
      * Faulting a to-many relationship through a context pinned to a specific generation must
      * tag the cached relationship snapshot with that pinned token, not a freshly built one.
+     *
+     * @throws Exception
      */
     public function testRelationshipFaultHonorsThePinnedGenerationToken(): void
     {
@@ -167,6 +170,8 @@ final class SQLCoreRelationshipFaultGenerationTest extends SQLMigrationTestCase
     /**
      * The complementary behavior: with a compatible cached fault in place, a second fault
      * through the same pinned context is served from cache and returns the same object IDs.
+     *
+     * @throws Exception
      */
     public function testCachedRelationshipFaultIsReusedUnderACompatibleToken(): void
     {
@@ -208,6 +213,8 @@ final class SQLCoreRelationshipFaultGenerationTest extends SQLMigrationTestCase
      * context's pinned generation token when tagging its cached snapshot. This is the sibling of
      * testRelationshipFaultHonorsThePinnedGenerationToken for newValueForFetchedProperty(), which
      * had the identical "?->value" defect and was previously covered only indirectly.
+     *
+     * @throws Exception
      */
     public function testFetchedPropertyFaultHonorsThePinnedGenerationToken(): void
     {

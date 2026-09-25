@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -50,6 +51,7 @@ final class SQLConstantPredicateTest extends SQLMigrationTestCase
         return $model;
     }
 
+    /** @throws Exception */
     private function seededContext(): ManagedObjectContext
     {
         $context = $this->bootstrap(self::makeModel());
@@ -68,18 +70,21 @@ final class SQLConstantPredicateTest extends SQLMigrationTestCase
         return $request;
     }
 
+    /** @throws Exception */
     public function testFalsePredicateReturnsNoRows(): void
     {
         $context = $this->seededContext();
         $this->assertCount(0, $context->fetch(self::request(Predicate::value(false))), "FALSEPREDICATE matches nothing");
     }
 
+    /** @throws Exception */
     public function testTruePredicateReturnsEveryRow(): void
     {
         $context = $this->seededContext();
         $this->assertCount(5, $context->fetch(self::request(Predicate::value(true))), "TRUEPREDICATE matches every row");
     }
 
+    /** @throws Exception */
     public function testFalsePredicateAndFoldedIntoAConditionReturnsNoRows(): void
     {
         $context = $this->seededContext();
@@ -91,6 +96,7 @@ final class SQLConstantPredicateTest extends SQLMigrationTestCase
         $this->assertCount(0, $context->fetch(self::request($predicate)), "AND-folding FALSEPREDICATE narrows the result to nothing");
     }
 
+    /** @throws Exception */
     public function testTruePredicateAndFoldedIntoAConditionPreservesTheCondition(): void
     {
         $context = $this->seededContext();
@@ -102,6 +108,7 @@ final class SQLConstantPredicateTest extends SQLMigrationTestCase
         $this->assertCount(2, $context->fetch(self::request($predicate)), "AND-folding TRUEPREDICATE leaves the other condition in force");
     }
 
+    /** @throws Exception */
     public function testConstantPredicateParsedFromItsFormatStringReturnsNoRows(): void
     {
         $context = $this->seededContext();

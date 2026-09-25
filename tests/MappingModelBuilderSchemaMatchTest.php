@@ -187,6 +187,7 @@ final class MappingModelBuilderSchemaMatchTest extends TestCase
         $toGear->lazyInverseRelationshipName = "widget";
         $toGear->maxCount = 1;
 
+        /** @noinspection PhpRedundantOptionalArgumentInspection */
         $v1 = self::widgetModel([$toCog], destinationEntityName: "Cog");
         $v2 = self::widgetModel([$toGear], destinationEntityName: "Gear");
 

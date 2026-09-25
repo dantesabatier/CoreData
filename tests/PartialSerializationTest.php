@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\DerivedAttributeDescription;
@@ -84,6 +85,7 @@ final class PartialSerializationTest extends SQLMigrationTestCase
         return $model;
     }
 
+    /** @throws Exception */
     private function seed(): ManagedObjectContext
     {
         $context = $this->bootstrap(self::model());
@@ -100,7 +102,7 @@ final class PartialSerializationTest extends SQLMigrationTestCase
      *
      * @param array<string, AttributeType> $shape
      */
-    private function fetch(ManagedObjectContext $context, array $shape): ManagedObject
+    private function fetch(ManagedObjectContext $context, array $shape): Tally
     {
         $fetched = null;
         $context->performBlockAndWait(function () use ($context, $shape, &$fetched): void {
@@ -111,6 +113,7 @@ final class PartialSerializationTest extends SQLMigrationTestCase
         return $fetched;
     }
 
+    /** @throws Exception */
     public function testAWiderFetchRecoversTheAttributesANarrowerOneLeftBehind(): void
     {
         $context = $this->seed();
@@ -121,6 +124,7 @@ final class PartialSerializationTest extends SQLMigrationTestCase
         $this->assertEqualsWithDelta(2501.0, $tally->valueForKey("doubled"), 0.0001, "the wider fetch must keep the derived value it read from the store");
     }
 
+    /** @throws Exception */
     public function testANarrowerFetchDoesNotDiscardWhatIsAlreadyLoaded(): void
     {
         $context = $this->seed();
@@ -131,6 +135,7 @@ final class PartialSerializationTest extends SQLMigrationTestCase
         $this->assertEqualsWithDelta(2501.0, $tally->valueForKey("doubled"), 0.0001, "a narrower fetch must not blank an attribute already loaded");
     }
 
+    /** @throws Exception */
     public function testAStoredZeroIsNotMistakenForAMissingValue(): void
     {
         $context = $this->seed();

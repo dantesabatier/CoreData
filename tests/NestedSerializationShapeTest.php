@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sabatier\CoreData\Tests;
 
+use Exception;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -140,6 +141,7 @@ final class NestedSerializationShapeTest extends SQLMigrationTestCase
         ]);
     }
 
+    /** @throws Exception */
     private function seed(): ManagedObjectContext
     {
         $context = $this->bootstrap(self::model());
@@ -158,14 +160,19 @@ final class NestedSerializationShapeTest extends SQLMigrationTestCase
         return $context;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @return array<string, mixed>
+     * @throws Exception
+     */
     private function fetchAndSerialize(ManagedObjectContext $context): array
     {
         $request = new FetchRequest("NSOrder");
         $request->serialization = self::shape();
+        /** @noinspection PhpPipeOperatorCanBeUsedInspection */
         return json_decode(json_encode($context->fetch($request)->first->jsonSerialize()), true);
     }
 
+    /** @throws Exception */
     public function testANestedRelationshipInsideAToManyIsSerialized(): void
     {
         $context = $this->seed();
@@ -180,6 +187,8 @@ final class NestedSerializationShapeTest extends SQLMigrationTestCase
     /**
      * The update path: fetch with the shape, append a child, save, then fetch again to build the
      * response. The appended child must carry the nested relationship its siblings carry.
+     *
+     * @throws Exception
      */
     public function testAChildAddedDuringAnUpdateStillCarriesItsNestedRelationship(): void
     {

@@ -119,10 +119,10 @@ final class SQLAdapterTest extends TestCase
     }
 
     /** @throws Exception */
-    private function column(string $columnName, string $entityName = "AdapterPart"): SQLColumn
+    private function column(string $columnName): SQLColumn
     {
         /** @var SQLColumn $column */
-        $column = $this->entity($entityName)->propertiesByName[$columnName];
+        $column = $this->entity()->propertiesByName[$columnName];
         return $column;
     }
 
@@ -317,7 +317,7 @@ final class SQLAdapterTest extends TestCase
     {
         $statement = $this->adapter->newCreateTableStatement($this->entity());
 
-        $this->assertStringContainsString("CREATE TABLE IF NOT EXISTS `AdapterPart`", $statement->string);
+        $this->assertStringContainsString(/** @lang text */ "CREATE TABLE IF NOT EXISTS `AdapterPart`",$statement->string);
         $this->assertStringContainsString("PRIMARY KEY", $statement->string);
         $this->assertStringContainsString("ENGINE=", $statement->string);
         $this->assertStringContainsString("COLLATE=", $statement->string);
@@ -383,10 +383,10 @@ final class SQLAdapterTest extends TestCase
 
         $statement = $this->adapter->newCreateTableStatementForManyToMany($manyToMany);
 
-        $this->assertStringContainsString("CREATE TABLE IF NOT EXISTS `{$manyToMany->correlationTableName}`", $statement->string);
+        $this->assertStringContainsString("CREATE TABLE IF NOT EXISTS `$manyToMany->correlationTableName`", $statement->string);
         $this->assertStringContainsString("PRIMARY KEY", $statement->string);
-        $this->assertStringContainsString("`{$manyToMany->orderColumnName}`", $statement->string);
-        $this->assertStringContainsString("`{$manyToMany->inverseOrderColumnName}`", $statement->string);
+        $this->assertStringContainsString("`$manyToMany->orderColumnName`", $statement->string);
+        $this->assertStringContainsString("`$manyToMany->inverseOrderColumnName`", $statement->string);
     }
 
     /** @throws Exception */
@@ -395,7 +395,7 @@ final class SQLAdapterTest extends TestCase
         $manyToMany = $this->manyToMany();
 
         $this->assertStringContainsString(
-            "DROP TABLE IF EXISTS `{$manyToMany->correlationTableName}`",
+            "DROP TABLE IF EXISTS `$manyToMany->correlationTableName`",
             $this->adapter->newDropTableStatementForManyToMany($manyToMany)->string,
         );
     }
