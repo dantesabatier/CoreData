@@ -131,7 +131,7 @@ final class FaultingSet extends Set implements Materializable
         if ($this->count <= 1) {
             return $this;
         }
-        $by ??= fn(mixed $e0, mixed $e1): int => compare($e0, $e1);
+        $by ??= compare(...);
         $this->recursiveMergeSort(0, $this->indexBefore($this->endIndex), $by);
         return $this;
     }
