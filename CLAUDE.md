@@ -14,21 +14,21 @@ The sibling package `sabatier/foundation` (at `../Foundation`) must be present; 
 # Install dependencies
 composer install
 
-# QA tools are installed globally with Composer. Ensure Composer's global bin
-# directory is on PATH, or invoke the executables from that directory.
+# QA tools come from require-dev: always run the project's own vendor/bin.
+# The global Composer binaries do not load this project's autoload.
 
 # Static analysis — level 3 with Foundation plugin
-& "$env:APPDATA\Composer\vendor\bin\psalm.bat" --config=psalm.xml
+php vendor/bin/psalm --config=psalm.xml
 
 # Automated refactoring to modern PHP (readonly, property promotion, etc.)
 # Uses PHPStan as its inference engine, bundled in its own package — there is no phpstan.neon
-& "$env:APPDATA\Composer\vendor\bin\rector.bat" process
+php vendor/bin/rector process
 
 # Unit tests
-& "$env:APPDATA\Composer\vendor\bin\phpunit.bat"
+php vendor/bin/phpunit
 
 # A single suite or test
-& "$env:APPDATA\Composer\vendor\bin\phpunit.bat" --filter ManagedObjectContextTest
+php vendor/bin/phpunit --filter ManagedObjectContextTest
 ```
 
 Tests live in `tests/` as PHPUnit `TestCase` classes (namespace `Sabatier\CoreData\Tests`), configured by `phpunit.xml` (bootstrap `vendor/autoload.php`, warnings and notices fail the run). Persistence tests run against an `XMLObjectStore` on a per-test temp file — `MemoryObjectStore` has no `load()` implementation and cannot be added to a coordinator. Entities under test need a real `ManagedObject` subclass registered via `managedObjectClassName`; fetch through `MySubclass::fetchRequest()` (a bare `new FetchRequest("Entity")` resolves its context from the operation queue and dies in tests). When fixing a bug, add a regression test to the matching suite.
