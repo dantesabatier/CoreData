@@ -1095,7 +1095,7 @@ final class SQLGenerator
             return;
         }
         $subqueryValues = $rightExpression->constantValue ?? $rightExpression->collection;
-        assert($subqueryValues instanceof Sequence && !$subqueryValues->isEmpty, sprintf("invalid argument: the right expression of an IN operator must be an non-empty \"%s\", (%s)%s given", Sequence::class, typeof($subqueryValues), human_readable_value($subqueryValues)));
+        $subqueryValues instanceof Sequence && !$subqueryValues->isEmpty ?: fatal_error(sprintf("invalid argument: the right expression of an IN operator must be an non-empty \"%s\", (%s)%s given", Sequence::class, typeof($subqueryValues), human_readable_value($subqueryValues)));
         $clause .= "{$this->buildExpression($leftExpression)} IN (" . ArrayClass::repeating("?", $subqueryValues->count)->join(", ") . ")";
         $this->arguments->appendContentsOf($subqueryValues->map(fn(mixed $element): mixed => $element instanceof Expression ? $element->constantValue : $element));
     }
@@ -1105,7 +1105,7 @@ final class SQLGenerator
         $leftExpression = $predicate->leftExpression;
         $rightExpression = $predicate->rightExpression;
         $right = $rightExpression->constantValue ?? $rightExpression->collection;
-        assert($right instanceof ArrayClass && $right->count === 2, sprintf("invalid argument: the right expression of a BETWEEN operator must be a \"%s\" with exactly two elements, (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
+        $right instanceof ArrayClass && $right->count === 2 ?: fatal_error(sprintf("invalid argument: the right expression of a BETWEEN operator must be a \"%s\" with exactly two elements, (%s)%s given", ArrayClass::class, typeof($right), human_readable_value($right)));
         $clause .= "({$this->buildExpression($leftExpression)} BETWEEN ? AND ?)";
         $this->arguments->appendContentsOf($right->map(fn(mixed $element): mixed => $element instanceof Expression ? $element->constantValue : $element));
     }
@@ -1321,7 +1321,7 @@ final class SQLGenerator
         [$keyPathToCollection, $collectionOperator, $keyPathToProperty] = kvc_components((string)$expression);
         $keyPathToCollection && $collectionOperator ?: fatal_error("Invalid argument: invalid expression $expression");
         $relationship = $this->entity->propertiesByName[$keyPathToCollection] ?? fatal_error("Invalid argument: invalid key path \"$keyPathToCollection\" for entity $this->entity");
-        assert($relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany, sprintf("Invalid argument: invalid key path \"%s\" for entity %s", $keyPathToCollection, $this->entity));
+        $relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany ?: fatal_error("Invalid argument: invalid key path \"$keyPathToCollection\" for entity $this->entity");
         $hasProperty = (bool)$keyPathToProperty;
         $isCount = $collectionOperator === KeyValueOperator::countKeyValueOperator;
         $isCount !== $hasProperty ?: fatal_error("Invalid expression \"$expression\"");
