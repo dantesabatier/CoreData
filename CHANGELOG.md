@@ -7,6 +7,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-09-25
+
+### Fixed
+
+- A fetch against a SQL store whose predicate is malformed now fails with an
+  `InternalInconsistencyException` whether or not assertions are enabled: an `IN` whose right
+  side is empty or not a collection, a `BETWEEN` whose right side is not exactly two values, and
+  a collection operator (`@count`, `@sum`, …) applied to a key path that is not a to-many
+  relationship. These checks were `assert()` calls, so with `zend.assertions` disabled, as in
+  production, the fetch went on to build invalid SQL and failed later with a less useful error.
+
 ## [1.0.2] - 2026-09-24
 
 ### Fixed
