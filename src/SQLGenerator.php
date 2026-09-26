@@ -1320,6 +1320,7 @@ final class SQLGenerator
     {
         [$keyPathToCollection, $collectionOperator, $keyPathToProperty] = kvc_components((string)$expression);
         $keyPathToCollection && $collectionOperator ?: fatal_error("Invalid argument: invalid expression $expression");
+        /** @var SQLToMany|SQLManyToMany $relationship */
         $relationship = $this->entity->propertiesByName[$keyPathToCollection] ?? fatal_error("Invalid argument: invalid key path \"$keyPathToCollection\" for entity $this->entity");
         $relationship instanceof SQLToMany || $relationship instanceof SQLManyToMany ?: fatal_error("Invalid argument: invalid key path \"$keyPathToCollection\" for entity $this->entity");
         $hasProperty = (bool)$keyPathToProperty;
