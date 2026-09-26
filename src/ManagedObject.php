@@ -1303,15 +1303,15 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         }
     }
 
-    private function serializedRelationshipValue(RelationshipDescription $relationship): Set|Dictionary|null
+    private function serializedRelationship(RelationshipDescription $relationship): Set|Dictionary|null
     {
         $key = $relationship->name;
         $value = $this->valueForKey($key);
         if ($value instanceof ManagedObject) {
-            return $value->jsonSerialize();
+            return $this->serializedObject($value, $relationship);
         }
         if ($value instanceof Set) {
-            return $value->map(fn(ManagedObject $object): Dictionary => $object->jsonSerialize());
+            return $value->map(fn(ManagedObject $object): Dictionary => $this->serializedObject($object, $relationship));
         }
         if ($relationship->isToMany && !$relationship->isOptional) {
             return new Set();
@@ -1319,10 +1319,23 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         return null;
     }
 
-    #[Override]
-    public function jsonSerialize(): Dictionary
+    private function serializedObject(ManagedObject $object, RelationshipDescription $relationship): Dictionary
     {
-        return $this->serializationKeys->reduce(new Dictionary(),
+        $inverseRelationship = $relationship->inverseRelationship;
+        $destinationEntity = $inverseRelationship->destinationEntity;
+        if ($this->entity->isKindOf($destinationEntity)) {
+            return $object->serializedProperties($inverseRelationship->name);
+        }
+        return $object->jsonSerialize();
+    }
+
+    /**
+     * @param string|null $excludedKey
+     * @return Dictionary<mixed>
+     */
+    private function serializedProperties(?string $excludedKey = null): Dictionary
+    {
+        return $this->serializationKeys->filter(fn(string $key): bool => $key !== $excludedKey)->reduce(new Dictionary(),
             /**
              * @param Dictionary<mixed> $dictionary
              * @param string $key
@@ -1337,8 +1350,8 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                         }
                         $dictionary[$key] = $value;
                     } elseif ($property instanceof RelationshipDescription) {
-                        if (!($value = $this->serializedRelationshipValue($property))) {
-                            $value = $property->isOptional ? Nil::nil() : ($property->isToMany ? new Set() : fatal_error(sprintf("%s relationship \"%s\" is not optional", $this->debugDescription, $property->name)));
+                        if (!($value = $this->serializedRelationship($property))) {
+                            $value = $property->isOptional ? Nil::nil() : ($property->isToMany ? new Set() : fatal_error("$this->debugDescription relationship \"$property->name\" is not optional"));
                         }
                         $dictionary[$key] = $value;
                     } else {
@@ -1349,6 +1362,12 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                 }
                 return $dictionary;
             });
+    }
+
+    #[Override]
+    public function jsonSerialize(): Dictionary
+    {
+        return $this->serializedProperties();
     }
 
     /**
