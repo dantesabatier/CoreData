@@ -7,6 +7,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-09-28
+
+### Fixed
+
+- Serializing a managed object no longer recurses without end when the serialization shape names a relationship on both of its sides. The author emitted its books, each book emitted its author, and the two called each other until the process ran out of memory; a nested object now leaves out the relationship it was reached through.
+
 ## [1.0.3] - 2026-09-25
 
 ### Fixed
