@@ -1166,10 +1166,20 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     #[Override]
     public function validateValueForKey(mixed &$value, string $key): bool
     {
+        $property = $this->entity->propertiesByName[$key];
+        if (!$value instanceof SensitiveValue && $property instanceof AttributeDescription && match ($property->type) {
+                AttributeType::undefined, AttributeType::binaryData, AttributeType::objectID, AttributeType::compositeAttributeType => false,
+                default => true,
+            }) {
+            if (Nil::nil()->isEqual($value) && !$property->isOptional) {
+                $value = $property->defaultValue;
+            }
+            $value = self::coercedValue($value, $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional);
+        }
         if (!parent::validateValueForKey($value, $key)) {
             return false;
         }
-        if ($property = $this->entity->propertiesByName[$key]) {
+        if ($property instanceof PropertyDescription) {
             return self::coerceValue($value, $property);
         }
         if ($this->hasProperty($key)) {

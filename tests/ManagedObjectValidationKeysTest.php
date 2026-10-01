@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Sabatier\CoreData\Tests;
 
 use Exception;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\EntityDescription;
@@ -13,6 +14,8 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Nil;
+use Sabatier\Foundation\Number;
 use Sabatier\Foundation\Set;
 
 /**
@@ -37,6 +40,20 @@ final class ValidationOwner extends ManagedObject
  */
 final class ValidationPart extends ManagedObject
 {
+}
+
+/**
+ * @property float|null $amount
+ */
+final class ValidationHookedWidget extends ManagedObject
+{
+    public static mixed $seenAmount = "unset";
+
+    public function validateAmount(?float &$amount): bool
+    {
+        self::$seenAmount = $amount;
+        return true;
+    }
 }
 
 /**
@@ -202,4 +219,68 @@ final class ManagedObjectValidationKeysTest extends SQLMigrationTestCase
 
         $this->assertSame("restored", (string)$widget->nickname, "the transient is restored when the snapshot includes them");
     }
+
+    private static function hookedModel(): ManagedObjectModel
+    {
+        $amount = new AttributeDescription();
+        $amount->name = "amount";
+        $amount->type = AttributeType::float;
+        $amount->isOptional = true;
+
+        $widget = new EntityDescription();
+        $widget->name = "ValidationHookedWidget";
+        $widget->managedObjectClassName = ValidationHookedWidget::class;
+        $widget->properties = new ArrayClass([$amount]);
+
+        $model = new ManagedObjectModel();
+        $model->entities = new ArrayClass([$widget]);
+        return $model;
+    }
+
+    /** @return array<string, array{mixed}> */
+    public static function emptyValues(): array
+    {
+        return [
+            "Nil" => [Nil::nil()],
+            "null" => [null],
+        ];
+    }
+
+    /**
+     * @throws Exception
+     */
+    #[DataProvider("emptyValues")]
+    public function testAnOptionalHookReceivesNullForAnyEmptyValue(mixed $empty): void
+    {
+        $widget = new ValidationHookedWidget($this->bootstrap(self::hookedModel()));
+        ValidationHookedWidget::$seenAmount = "unset";
+        $widget->setValueForKey($empty, "amount");
+
+        $this->assertNull(ValidationHookedWidget::$seenAmount, "the ?float hook receives null, not Nil and not 0");
+        $this->assertNull($widget->amount);
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function testSetValuesForKeysReachesTheHookWithNull(): void
+    {
+        $widget = new ValidationHookedWidget($this->bootstrap(self::hookedModel()));
+        ValidationHookedWidget::$seenAmount = "unset";
+        $widget->setValuesForKeys(new Dictionary(["amount" => Nil::nil()]));
+
+        $this->assertNull(ValidationHookedWidget::$seenAmount);
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function testANumberIsUnwrappedBeforeTheHook(): void
+    {
+        $widget = new ValidationHookedWidget($this->bootstrap(self::hookedModel()));
+        $widget->setValueForKey(new Number(2.5), "amount");
+
+        $this->assertSame(2.5, ValidationHookedWidget::$seenAmount);
+    }
+
 }
