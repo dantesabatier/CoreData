@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.0.5] - 2026-10-01
+
 ### Fixed
 
 - A `validate<Key>()` hook declared with a nullable scalar type, such as `?float`, no longer fails with a `TypeError` when the attribute is cleared. The hook ran before the value was coerced, so it received the `Nil` that a `null` in a JSON body becomes, or a wrapped `Number`. Attribute values now go through the same conversion `resolveInitialAttributeValue()` applies before the hook runs: `Nil` and `null` on a non-optional attribute take its default, and `undefined`, `binaryData`, `objectID` and composite attributes are passed through untouched. The coercion after the hook is unchanged, so a hook that turns an integer into an enum case keeps working. A hook that expected the raw value of a `date`, `uuid` or `uri` attribute now receives the converted `Date`, `UUID` or `URL`.
