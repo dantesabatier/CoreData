@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- An equality or inequality against nil with the nil on the left (`nil == qty`, or a substitution variable that resolved to nil compared against a value) produced `NULL IS 'a'`, which SQL rejects as a syntax error. The operands now swap so the null lands on the right of `IS` / `IS NOT`.
+
 ## [1.0.6] - 2026-10-03
 
 ### Fixed

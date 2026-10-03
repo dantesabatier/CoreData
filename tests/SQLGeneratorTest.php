@@ -447,6 +447,38 @@ final class SQLGeneratorTest extends TestCase
     }
 
     /**
+     * A nil on the left of the comparison moves to the right. SQL rejects `NULL IS 'a'` as a
+     * syntax error, and a substitution variable that resolves to nil lands exactly there.
+     *
+     * @throws Exception
+     */
+    public function testNilOnTheLeftMovesToTheRightOfIs(): void
+    {
+        $request = $this->request();
+        $request->predicate = Predicate::format("nil == qty");
+
+        $statement = $this->statementFor($request);
+
+        $this->assertStringContainsString("GenPart.qty IS ?", $statement->string);
+    }
+
+    /**
+     * Two constants compare by binding both; a nil among them still goes second.
+     *
+     * @throws Exception
+     */
+    public function testNilConstantAgainstAConstantBindsTheNilLast(): void
+    {
+        $request = $this->request();
+        $request->predicate = Predicate::format("nil != %@", new ArrayClass(["A"]));
+
+        $statement = $this->statementFor($request);
+
+        $this->assertStringContainsString("? IS NOT ?", $statement->string);
+        $this->assertSame(["A", null], $statement->arguments->array, "the non-null value is bound first");
+    }
+
+    /**
      * AND and OR both nest their subclauses in parentheses. Without them, mixing the two
      * reassociates the predicate and silently changes which rows match.
      *
