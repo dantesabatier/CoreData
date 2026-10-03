@@ -7,6 +7,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.0.8] - 2026-10-03
+
+### Fixed
+
+- Serializing a graph is no longer slowed down by the reconciliation 1.0.6 added to to-many faults. Each fault read the context's registered objects through `registeredObjects`, which builds a `Set` and compares every object against every other, and a serialization fires one fault per to-many it reads: a report of 18 tasks took twice as long to serialize. The context now reads its own association table, whose values are already distinct.
+
 ## [1.0.7] - 2026-10-03
 
 ### Fixed
