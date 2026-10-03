@@ -1129,10 +1129,7 @@ final class SQLGenerator
         }
         $this->prepareClauseWithSimplePredicate($predicate, $clause, $operator);
     }
-
-    /**
-     * SQL only accepts `NULL` to the right of `IS`: `NULL IS 'a'` is a syntax error, whereas `'a' IS NULL` is not. Equality is symmetric, so a null on the left swaps sides — as it does when a substitution variable such as `$REMOTE_ADDRESS` resolves to nil.
-     */
+    
     private function nullOnTheRight(ComparisonPredicate $predicate): ComparisonPredicate
     {
         if (!$this->isNullExpression($predicate->leftExpression) || $this->isNullExpression($predicate->rightExpression)) {
