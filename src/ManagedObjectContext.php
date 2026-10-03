@@ -177,13 +177,12 @@ final class ManagedObjectContext extends ObjectClass
             $inverseRelationship = $relationship->inverseRelationship;
             if (!$inverseRelationship->isToMany) {
                 // The store answers with what is saved. A member inserted or reassigned in this context is only in memory, in the to-one it holds, and setValueForKey() leaves an unread inverse as a fault instead of adding it there.
-                $this->registeredObjects
-                    ->filter(fn(ManagedObject $object): bool => $object->entity->isKindOf($relationship->destinationEntity) && ($this->insertedObjects->containsElement($object) || $object->changedValuesForCurrentEvent()->offsetExists($inverseRelationship->name)))
-                    ->forEach(function (ManagedObject $object) use ($members, $inverseRelationship, $objectID): void {
-                        $owner = $object->primitiveValueForKey($inverseRelationship->name);
-                        $ownerID = $owner instanceof ManagedObject ? $owner->objectID : $owner;
-                        $ownerID instanceof ManagedObjectID && $ownerID->isEqual($objectID) ? $members->insert($object->objectID) : $members->remove($object->objectID);
-                    });
+                // Read from the association table rather than $registeredObjects: that getter builds a Set, which compares every object against every other, and a serialization fires this on each to-many it reads. The table is keyed by hash, so its values are already distinct.
+                $this->byHashAssociationTable->values->compactMap(fn(ManagedObject|WeakReference $object): ?ManagedObject => $object instanceof WeakReference ? $object->get() : $object)->filter(fn(ManagedObject $object): bool => $object->entity->isKindOf($relationship->destinationEntity) && ($this->insertedObjects->containsElement($object) || $object->changedValuesForCurrentEvent()->offsetExists($inverseRelationship->name)))->forEach(function (ManagedObject $object) use ($members, $inverseRelationship, $objectID): void {
+                    $owner = $object->primitiveValueForKey($inverseRelationship->name);
+                    $ownerID = $owner instanceof ManagedObject ? $owner->objectID : $owner;
+                    $ownerID instanceof ManagedObjectID && $ownerID->isEqual($objectID) ? $members->insert($object->objectID) : $members->remove($object->objectID);
+                });
             }
             $value = new FaultingSet($this->object($objectID), $relationship);
             $value->setSet($members);
