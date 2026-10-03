@@ -7,6 +7,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Assigning a to-one relationship no longer empties the to-many inverse of a destination whose inverse had not been read yet. The insertion side took that set through `mutableSetValueForKey`, which hands over the unresolved set without loading it, and unioned the new object into it; that cleared the set's fault flag, so the destination then read only the new object and the members already in the store were lost from the graph. Anything that summed over the relationship in `willSave()` saw them vanish: in Raya, creating a process reset its task's counters to zero. An unread inverse is now left as a fault, on the owner gained and on the owner left, and the context reconciles it when it fires: the members the store returns are joined with the objects inserted or reassigned in the context, read from the to-one each one holds in memory. Loading the inverse at assignment time instead would have read every member of every destination — a process assigned to its machine, shift and area loaded tens of thousands of processes it never used.
+- Reassigning or clearing a to-one relationship removes the object from the inverse of the owner it left. The removal ran against the owner being assigned, so the previous owner kept listing the object.
+
 ## [1.0.5] - 2026-10-01
 
 ### Fixed

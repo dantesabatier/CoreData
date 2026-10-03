@@ -279,6 +279,56 @@ final class SQLRelationshipSurvivesAttributeMutationTest extends SQLMigrationTes
     }
 
     /**
+     * An owner with two saved entries, read back through a fresh context that has not touched its entries yet.
+     *
+     * @return array{0: SQLLedgerOwner, 1: ManagedObjectContext}
+     * @throws Exception
+     */
+    private function ownerWithUnresolvedEntries(): array
+    {
+        $seed = $this->bootstrap(self::makeModel());
+        $owner = new SQLLedgerOwner($seed);
+        $owner->name = "owner";
+        foreach (["first", "second"] as $name) {
+            $entry = new SQLLedgerEntry($seed);
+            $entry->name = $name;
+            $entry->owner = $owner;
+        }
+        $seed->save();
+
+        $context = $this->freshContext(self::makeModel());
+        $loadedOwner = $context->fetch(SQLLedgerOwner::fetchRequest())->first;
+        $this->assertNotNull($loadedOwner);
+        $this->assertTrue($loadedOwner->hasFaultForRelationshipNamed("entries"), "precondition: the entries have not been read");
+        return [$loadedOwner, $context];
+    }
+
+    /**
+     * Assigning a new entry to an owner whose entries are still a fault adds it to the stored ones.
+     *
+     * The insertion side used to union the entry into the unresolved set, which cleared its fault
+     * flag: the owner then read one entry, the new one, and anything summing over the relationship
+     * in willSave() saw the stored entries vanish.
+     *
+     * @throws Exception
+     */
+    public function testAssigningAToOneAddsToAnUnresolvedInverseWithoutLosingItsMembers(): void
+    {
+        [$owner, $context] = $this->ownerWithUnresolvedEntries();
+        $entry = new SQLLedgerEntry($context);
+        $entry->name = "third";
+
+        $entry->owner = $owner;
+
+        $this->assertSame(3, $owner->entries?->count ?? -1, "reading the inverse finds the stored entries and the new one");
+        $this->assertTrue($owner->entries?->containsElement($entry) ?? false, "the new entry is among them");
+
+        $context->save();
+        $reloadedOwner = $this->freshContext(self::makeModel())->fetch(SQLLedgerOwner::fetchRequest())->first;
+        $this->assertSame(3, $reloadedOwner?->entries?->count ?? -1, "all three survive the round trip through the database");
+    }
+
+    /**
      * The link an unsaved assignment records must still be the one the store writes.
      *
      * @throws Exception

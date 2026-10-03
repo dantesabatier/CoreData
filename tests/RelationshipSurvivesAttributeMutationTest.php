@@ -412,6 +412,78 @@ final class RelationshipSurvivesAttributeMutationTest extends TestCase
     }
 
     /**
+     * An owner with two saved entries whose entries are an unresolved fault.
+     *
+     * An atomic store hands its to-many relationships over resolved when it hydrates a fetch, so the owner is refreshed: refaulting is how this store comes to hold an unread inverse.
+     *
+     * @return array{0: LedgerOwner, 1: ManagedObjectContext}
+     * @throws Exception
+     */
+    private function ownerWithUnresolvedEntries(): array
+    {
+        $seed = $this->makeContext();
+        $owner = new LedgerOwner($seed);
+        $owner->name = "owner";
+        foreach (["first", "second"] as $name) {
+            $entry = new LedgerEntry($seed);
+            $entry->name = $name;
+            $entry->owner = $owner;
+        }
+        $seed->save();
+
+        $context = $this->makeContext();
+        $loadedOwner = $context->fetch(LedgerOwner::fetchRequest())->first;
+        $this->assertNotNull($loadedOwner);
+        $context->refresh($loadedOwner);
+        $this->assertTrue($loadedOwner->hasFaultForRelationshipNamed("entries"), "precondition: the entries have not been read");
+        return [$loadedOwner, $context];
+    }
+
+    /**
+     * Assigning a new entry to an owner whose entries are still a fault adds it to the stored ones.
+     *
+     * The insertion side used to union the entry into the unresolved set, which cleared its fault
+     * flag: the owner then read one entry, the new one, and the save wrote that single reference
+     * over the two the document held.
+     *
+     * @throws Exception
+     */
+    public function testAssigningAToOneAddsToAnUnresolvedInverseWithoutLosingItsMembers(): void
+    {
+        [$owner, $context] = $this->ownerWithUnresolvedEntries();
+        $entry = new LedgerEntry($context);
+        $entry->name = "third";
+
+        $entry->owner = $owner;
+
+        $this->assertSame(3, $owner->entries?->count ?? -1, "reading the inverse finds the stored entries and the new one");
+        $this->assertTrue($owner->entries?->containsElement($entry) ?? false, "the new entry is among them");
+
+        $context->save();
+        $reloadedOwner = $this->makeContext()->fetch(LedgerOwner::fetchRequest())->first;
+        $this->assertSame(3, $reloadedOwner?->entries?->count ?? -1, "all three survive the round trip through the file");
+    }
+
+    /**
+     * Saving before the inverse is ever read must not write the unresolved set over the stored references.
+     *
+     * @throws Exception
+     */
+    public function testSavingWithAnUnreadInverseKeepsItsStoredMembers(): void
+    {
+        [$owner, $context] = $this->ownerWithUnresolvedEntries();
+        $entry = new LedgerEntry($context);
+        $entry->name = "third";
+        $entry->owner = $owner;
+
+        $context->save();
+
+        $this->assertSame(3, new Set(explode(" ", $this->relationshipReferences("LedgerOwner", "entries")))->count, "the document lists the two stored entries and the new one");
+        $reloadedOwner = $this->makeContext()->fetch(LedgerOwner::fetchRequest())->first;
+        $this->assertSame(3, $reloadedOwner?->entries?->count ?? -1, "and a fresh read finds all three");
+    }
+
+    /**
      * The link an unsaved assignment records must still be the one the store writes.
      *
      * @throws Exception

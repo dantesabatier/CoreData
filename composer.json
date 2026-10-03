@@ -29,7 +29,7 @@
     "ext-pdo": "*",
     "ext-pdo_mysql": "*",
     "ext-libxml": "*",
-    "sabatier/foundation": "^1.0"
+    "sabatier/foundation": "^1.1.2"
   },
   "require-dev": {
     "jetbrains/phpstorm-attributes": "^1.1",

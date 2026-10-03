@@ -173,8 +173,20 @@ final class ManagedObjectContext extends ObjectClass
         $newValue = $relationship->isOrdered ? $persistentStore->newOrderedRelationshipInformationForRelationship($relationship, $objectID, $this) : $persistentStore->newValueForRelationship($relationship, $objectID, $this);
         if ($relationship->isToMany) {
             $newValue instanceof ArrayClass ?: fatal_error(sprintf("invalid argument: expecting \"%s\", (%s)%s given", ArrayClass::class, typeof($newValue), human_readable_value($newValue)));
+            $members = new Set($newValue);
+            $inverseRelationship = $relationship->inverseRelationship;
+            if (!$inverseRelationship->isToMany) {
+                // The store answers with what is saved. A member inserted or reassigned in this context is only in memory, in the to-one it holds, and setValueForKey() leaves an unread inverse as a fault instead of adding it there.
+                $this->registeredObjects
+                    ->filter(fn(ManagedObject $object): bool => $object->entity->isKindOf($relationship->destinationEntity) && ($this->insertedObjects->containsElement($object) || $object->changedValuesForCurrentEvent()->offsetExists($inverseRelationship->name)))
+                    ->forEach(function (ManagedObject $object) use ($members, $inverseRelationship, $objectID): void {
+                        $owner = $object->primitiveValueForKey($inverseRelationship->name);
+                        $ownerID = $owner instanceof ManagedObject ? $owner->objectID : $owner;
+                        $ownerID instanceof ManagedObjectID && $ownerID->isEqual($objectID) ? $members->insert($object->objectID) : $members->remove($object->objectID);
+                    });
+            }
             $value = new FaultingSet($this->object($objectID), $relationship);
-            $value->setSet(new Set($newValue));
+            $value->setSet($members);
         } else {
             $value = $newValue;
             $value instanceof ManagedObjectID || $value instanceof Nil ?: $value

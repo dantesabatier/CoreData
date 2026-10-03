@@ -925,23 +925,28 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
                     $value = $this->managedObjectContext->object($value);
                 }
                 if ($inverseRelationship->isToMany) {
-                    // The other three cardinalities maintain their inverse here. An object with a row behind it needs $current resolved above for the old membership to be known, so the same four conditions gate it: otherwise the set is an unresolved fault and subtracting from it would record an emptiness that never existed. An object that has never been saved has no row to fault in, so its primitive value is already the whole truth and the maintenance is safe with only the suppression flags respected.
                     if ($changeKind !== KeyValueChange::setting && !$this->isSuppressingKVO && !$this->isSuppressingChangeNotifications && (!$this->isInserted || $this->isAwakeFromFetch)) {
-                        if ($current instanceof ManagedObject) {
-                            $inverse = $current->valueForKey($inverseRelationship->name);
-                            if ($inverse instanceof Set && $inverse->containsElement($this)) {
+                        // An unread inverse stays a fault, on the owner left as on the owner gained: inserting into it would leave it holding only the receiver, and reading it would load every member just to move one. The context reconciles the receiver when the fault fires, from the to-one it holds in memory.
+                        if ($current instanceof ManagedObjectID) {
+                            $current = $this->managedObjectContext->object($current);
+                        }
+                        if ($current instanceof ManagedObject && !($current->isInserted && $current->hasFaultForRelationshipNamed($inverseRelationship->name))) {
+                            /** @var FaultingSet $previous */
+                            $previous = $current->mutableSetValueForKey($inverseRelationship->name);
+                            if ($previous->containsElement($this)) {
                                 $members = new Set([$this]);
                                 $current->willChangeValueForKey($inverseRelationship->name, KeyValueChange::removal, $members);
-                                $inverse->remove($this);
+                                $previous->remove($this);
                                 $current->didChangeValueForKey($inverseRelationship->name, KeyValueChange::removal, $members);
                             }
                         }
-                        if ($value instanceof ManagedObject) {
+                        if ($value instanceof ManagedObject && !($value->isInserted && $value->hasFaultForRelationshipNamed($inverseRelationship->name))) {
+                            /** @var FaultingSet $inverse */
                             $inverse = $value->mutableSetValueForKey($inverseRelationship->name);
                             if (!$inverse->containsElement($this)) {
                                 $members = new Set([$this]);
                                 $value->willChangeValueForKey($inverseRelationship->name, KeyValueChange::insertion, $members);
-                                $inverse->formUnion($members);
+                                $inverse->insert($this);
                                 $value->didChangeValueForKey($inverseRelationship->name, KeyValueChange::insertion, $members);
                             }
                         }
