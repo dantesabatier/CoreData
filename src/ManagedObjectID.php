@@ -10,12 +10,10 @@
 namespace Sabatier\CoreData;
 
 use Override;
-use Sabatier\Foundation\CompareOptions;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
 use function Sabatier\Foundation\fatal_error;
-use function Sabatier\Foundation\string_is_equal;
 
 /**
  * A compact, universal identifier for a managed object.
@@ -110,13 +108,7 @@ final class ManagedObjectID extends ObjectClass implements FetchRequestResult
     #[Override]
     public function isEqual(mixed $other): bool
     {
-        if ($other instanceof ManagedObjectID) {
-            // Equivalent to comparing uriRepresentation() of both ("x-coredata://{store}/{entity}/{ref}"), but without building two URL objects per comparison. The URI compare is case-insensitive (URL::compare uses CompareOptions::caseInsensitive) and stringifies referenceObject, so we replicate both here. This is a hot path during deep-graph hydration (profiled: uriRepresentation dominated by isEqual's two URL builds).
-            return string_is_equal((string)$this->storeIdentifier, (string)$other->storeIdentifier, CompareOptions::caseInsensitive)
-                && string_is_equal($this->entityName, $other->entityName, CompareOptions::caseInsensitive)
-                && string_is_equal((string)$this->referenceObject, (string)$other->referenceObject, CompareOptions::caseInsensitive);
-        }
-        return false;
+        return $other instanceof ManagedObjectID && $this->storeIdentifier === $other->storeIdentifier && $this->entityName === $other->entityName && (string)$this->referenceObject === (string)$other->referenceObject;
     }
 
     #[Override]

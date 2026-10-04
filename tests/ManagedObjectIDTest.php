@@ -17,8 +17,10 @@ use Sabatier\Foundation\ArrayClass;
  *
  * Regression guards:
  *  - isEqual compares storeIdentifier/entityName/referenceObject directly instead of
- *    building two uriRepresentation() URLs; it must keep the URI compare's
- *    case-insensitive semantics and its int/string stringification;
+ *    building two uriRepresentation() URLs, and keeps its int/string stringification;
+ *  - isEqual compares those fields exactly. Every one of them is generated, never typed
+ *    by hand, and a case-insensitive collation made each comparison some 57 times
+ *    slower on a path every Set of object IDs walks;
  *  - an object ID with no persistent store is always temporary;
  *  - __serialize/__unserialize round-trips the identity triplet without needing the
  *    entity to be resolvable.
@@ -87,20 +89,17 @@ final class ManagedObjectIDTest extends TestCase
         $this->assertTrue($objectID->isEqual($objectID), "an ID is equal to itself");
     }
 
-    public function testIsEqualIsCaseInsensitiveLikeTheUriCompareItReplaced(): void
+    public function testIsEqualComparesExactly(): void
     {
-        // uriRepresentation() equality was case-insensitive (URL::compare uses
-        // CompareOptions::caseInsensitive); the field-wise fast path must preserve that.
         $entity = self::makeEntity("Person");
         $objectID = new ManagedObjectID($entity, "ABC-123");
-        $upper = new ManagedObjectID($entity, "abc-123");
 
-        $this->assertTrue($objectID->isEqual($upper));
+        $this->assertFalse($objectID->isEqual(new ManagedObjectID($entity, "abc-123")), "a reference differing only in case is another reference");
+        $this->assertFalse($objectID->isEqual(new ManagedObjectID(self::makeEntity("person"), "ABC-123")), "and so is an entity name");
     }
 
     public function testIsEqualStringifiesIntReferencesLikeTheUriCompareItReplaced(): void
     {
-        // URI building stringified the reference, so 42 == "42".
         $entity = self::makeEntity("Person");
 
         $this->assertTrue(new ManagedObjectID($entity, 42)->isEqual(new ManagedObjectID($entity, "42")));
