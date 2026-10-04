@@ -35,9 +35,7 @@ final class SQLStatement extends ObjectClass
      */
     public function __construct(#[Language("SQL")] public readonly string $string, public readonly ArrayClass $arguments = new ArrayClass())
     {
-        if (str_ends_with($this->string, ";")) {
-            fatal_error("Invalid sql statement: sql string must not end with a semicolon \";\"");
-        }
+        !str_ends_with($this->string, ";") ?: fatal_error("Invalid sql statement: sql string must not end with a semicolon \";\"");
         $numberOfArguments = $this->arguments->count;
         $numberOfPlaceholders = string_search($this->string, "?", SearchMethod::contains);
         $numberOfArguments === $numberOfPlaceholders ?: $this->arguments
