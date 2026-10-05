@@ -7,6 +7,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-10-05
+
+### Fixed
+
+- Reconciling an unread to-many with the objects pending in the context no longer adds a subentity to a concrete destination. The store answers a concrete entity with its own rows only, but the reconciliation accepted any kind of it: in Raya, a new task, which inherits from time frame and shares its inverse to the shift, joined the shift's time frames, and the shift took the open task as its last one, losing its end date and counting its hours up to the moment of the save. A concrete destination now takes only its own entity; an abstract one still takes its subentities.
+
 ## [1.1.1] - 2026-10-05
 
 ### Fixed
