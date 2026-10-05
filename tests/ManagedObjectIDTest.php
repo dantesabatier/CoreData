@@ -11,6 +11,7 @@ use Sabatier\CoreData\EntityDescription;
 use Sabatier\CoreData\ManagedObjectID;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Set;
 
 /**
  * Tests for src/ManagedObjectID.php.
@@ -22,6 +23,8 @@ use Sabatier\Foundation\ArrayClass;
  *    by hand, and a case-insensitive collation made each comparison some 57 times
  *    slower on a path every Set of object IDs walks;
  *  - an object ID with no persistent store is always temporary;
+ *  - equal object IDs share a hash value, and a Set holding an ID keeps finding it after
+ *    its reference is rewritten in place to reconcile it with an existing row;
  *  - __serialize/__unserialize round-trips the identity triplet without needing the
  *    entity to be resolvable.
  */
@@ -144,5 +147,27 @@ final class ManagedObjectIDTest extends TestCase
 
         $this->assertSame("ABC-123", new ManagedObjectID($entity, "ABC-123")->jsonSerialize());
         $this->assertSame(42, new ManagedObjectID($entity, 42)->jsonSerialize(), "jsonSerialize keeps the int type");
+    }
+
+    public function testEqualObjectIDsShareAHashValue(): void
+    {
+        $entity = self::makeEntity("Person");
+
+        $this->assertSame(new ManagedObjectID($entity, 42)->hashValue, new ManagedObjectID($entity, "42")->hashValue);
+        $this->assertNotSame(new ManagedObjectID($entity, 42)->hashValue, new ManagedObjectID($entity, 43)->hashValue);
+    }
+
+    public function testASetFindsAnObjectIDAfterItsReferenceIsRewritten(): void
+    {
+        $entity = self::makeEntity("Person");
+        $objectID = new ManagedObjectID($entity, "ABC-123");
+        $objectIDs = new Set([$objectID, new ManagedObjectID($entity, "XYZ-999")]);
+        $this->assertTrue($objectIDs->containsElement(new ManagedObjectID($entity, "ABC-123")));
+
+        $objectID->referenceObject = 7;
+
+        $this->assertTrue($objectIDs->containsElement(new ManagedObjectID($entity, 7)), "found under the reference it was reconciled with");
+        $this->assertFalse($objectIDs->containsElement(new ManagedObjectID($entity, "ABC-123")), "and no longer under the one it gave up");
+        $this->assertFalse($objectIDs->insert(new ManagedObjectID($entity, 7))["inserted"]);
     }
 }

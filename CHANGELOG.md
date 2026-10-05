@@ -7,6 +7,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- `ManagedObjectID` adopts Foundation's `Hashable`, so a `Set` of object IDs, and the one a to-many fault builds from the store's IDs, searches its index instead of comparing every member. Its reference object is rewritten in place when the object is reconciled with an existing row, and the set moves the ID to its new key when that happens.
+- Requires Foundation 1.2.0, which introduces `Hashable` and the `Set` index.
+
 ## [1.0.9] - 2026-10-05
 
 ### Changed
