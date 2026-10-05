@@ -11,6 +11,7 @@ use Sabatier\CoreData\EntityDescription;
 use Sabatier\CoreData\ManagedObjectID;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\ComparisonResult;
 
 /**
  * Tests for src/ManagedObjectID.php.
@@ -45,6 +46,16 @@ final class ManagedObjectIDTest extends TestCase
         $model = new ManagedObjectModel();
         $model->entities = new ArrayClass([$entity]);
         return $entity;
+    }
+
+    public function testCompareOrdersByEntityThenReference(): void
+    {
+        $person = self::makeEntity("Person");
+        $place = self::makeEntity("Place");
+
+        $this->assertSame(ComparisonResult::orderedAscending, new ManagedObjectID($person, 2)->compare(new ManagedObjectID($person, 10)), "references compare as numbers");
+        $this->assertSame(ComparisonResult::orderedSame, new ManagedObjectID($person, 7)->compare(new ManagedObjectID($person, 7)));
+        $this->assertSame(ComparisonResult::orderedAscending, new ManagedObjectID($person, 99)->compare(new ManagedObjectID($place, 1)), "the entity name decides before the reference");
     }
 
     public function testConstructionKeepsEntityAndReference(): void

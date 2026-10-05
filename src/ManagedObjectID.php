@@ -10,6 +10,7 @@
 namespace Sabatier\CoreData;
 
 use Override;
+use Sabatier\Foundation\ComparisonResult;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
@@ -109,6 +110,20 @@ final class ManagedObjectID extends ObjectClass implements FetchRequestResult
     public function isEqual(mixed $other): bool
     {
         return $other instanceof ManagedObjectID && $this->storeIdentifier === $other->storeIdentifier && $this->entityName === $other->entityName && (string)$this->referenceObject === (string)$other->referenceObject;
+    }
+
+    /**
+     * Returns a value that orders the receiver against another object ID, by entity name and then by reference.
+     * @param mixed $other The object ID to compare with the receiver.
+     * @return ComparisonResult orderedAscending if the receiver comes first, orderedDescending if it comes after, or orderedSame if both identify the same entity and reference.
+     */
+    #[Override]
+    public function compare(mixed $other): ComparisonResult
+    {
+        if ($other instanceof ManagedObjectID) {
+            return ComparisonResult::from(($this->entityName <=> $other->entityName) ?: ($this->referenceObject <=> $other->referenceObject));
+        }
+        return ComparisonResult::orderedDescending;
     }
 
     #[Override]
