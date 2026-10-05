@@ -7,6 +7,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-10-05
+
+### Added
+
+- `ManagedObjectID::compare()` orders object IDs by entity name and then by reference, so they can be sorted without comparing the objects themselves.
+
+### Removed
+
+- The changes of 1.0.9 to 1.1.2 are reverted: re-keying repointed object IDs, `Hashable` on `ManagedObjectID`, retaining objects with unprocessed changes, and keeping subentities out of a concrete destination. Re-keying made the context observe every object ID with a closure that captured it, so comparing two object IDs with `<=>` or `==` walked the whole graph and stopped with "Nesting level too deep"; the rest depended on that observation. This release behaves as 1.0.8.
+
 ## [1.1.2] - 2026-10-05
 
 ### Fixed
