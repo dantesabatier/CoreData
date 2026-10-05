@@ -97,6 +97,10 @@ final class ManagedObjectContext extends ObjectClass
     private Dictionary $referenceObservations {
         get => $this->referenceObservations ??= new Dictionary();
     }
+    /** @var Dictionary<ManagedObject> */
+    private Dictionary $objectsWithUnprocessedChanges {
+        get => $this->objectsWithUnprocessedChanges ??= new Dictionary();
+    }
     /** @var Set<ManagedObject> $registeredObjects The set of objects registered with the context. */
     public Set $registeredObjects {
         get => new Set($this->byHashAssociationTable->values->compactMap(fn(ManagedObject|WeakReference $object): ?ManagedObject => $object instanceof WeakReference ? $object->get() : $object));
@@ -553,6 +557,7 @@ final class ManagedObjectContext extends ObjectClass
         $this->unprocessedInserts->remove($node);
         $this->unprocessedDeletes->remove($node);
         $this->unprocessedChanges->remove($node);
+        $this->objectsWithUnprocessedChanges->removeValueForKey((string)$object->hash);
         $this->unregister($object);
     }
 
@@ -674,6 +679,7 @@ final class ManagedObjectContext extends ObjectClass
         $this->unprocessedChanges->removeAll();
         $this->unprocessedInserts->removeAll();
         $this->unprocessedDeletes->removeAll();
+        $this->objectsWithUnprocessedChanges->removeAll();
     }
 
     /**
@@ -925,6 +931,7 @@ final class ManagedObjectContext extends ObjectClass
                 $this->unprocessedChanges->update($node);
                 break;
         }
+        $this->objectsWithUnprocessedChanges[(string)$object->hash] = $object;
     }
 
     /**
@@ -1200,12 +1207,11 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function reset(): void
     {
-        $registeredObjects = $this->registeredObjects;
-        if ($registeredObjects->isEmpty) {
-            $this->resetState();
-            return;
-        }
-        $this->unregisterObjects($registeredObjects);
+        $this->unregisterObjects($this->registeredObjects);
+        $this->referenceObservations->forEach(fn(KeyValueObservation $observation) => $observation->invalidate());
+        $this->referenceObservations->removeAll();
+        $this->byHashAssociationTable->removeAll();
+        $this->resetAllChanges();
         $this->resetState();
     }
 
