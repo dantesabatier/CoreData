@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-05
+
 ### Fixed
 
 - With `retainsRegisteredObjects` off, an attribute change made to an object that was released before the save is saved. The context recorded the change by object ID alone and rebuilt the object from the store when it processed it, so the change was silently lost. An object with unprocessed changes is now retained until they are processed, as the property documents.
