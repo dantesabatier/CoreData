@@ -7,6 +7,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.1.4] - 2026-10-05
+
+### Fixed
+
+- Reconciling an unread to-many with the objects pending in the context no longer adds a subentity to a concrete destination. The store answers a concrete entity with its own rows only, but the reconciliation accepted any kind of it, so a subentity sharing the inverse joined the to-many as one more member. A concrete destination now takes only its own entity; an abstract one still takes its subentities. This fix first shipped in 1.1.2 and was removed by the revert in 1.1.3, which it did not depend on.
+
 ## [1.1.3] - 2026-10-05
 
 ### Added
@@ -15,7 +21,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Removed
 
-- The changes of 1.0.9 to 1.1.2 are reverted: re-keying repointed object IDs, `Hashable` on `ManagedObjectID`, retaining objects with unprocessed changes, and keeping subentities out of a concrete destination. Re-keying made the context observe every object ID with a closure that captured it, so comparing two object IDs with `<=>` or `==` walked the whole graph and stopped with "Nesting level too deep"; the rest depended on that observation. This release behaves as 1.0.8.
+- The changes of 1.0.9 to 1.1.2 are reverted: re-keying repointed object IDs, `Hashable` on `ManagedObjectID`, retaining objects with unprocessed changes, and keeping subentities out of a concrete destination. Re-keying made the context observe every object ID with a closure that captured it, so comparing two object IDs with `<=>` or `==` walked the whole graph and stopped with "Nesting level too deep". This release behaves as 1.0.8.
 
 ## [1.1.2] - 2026-10-05
 
