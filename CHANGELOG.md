@@ -11,6 +11,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - `ManagedObjectID::isEqual()` compares the store identifier, the entity name and the reference object exactly instead of through a case-insensitive collation. They are generated, never typed by hand, and the collation made each comparison some 57 times slower, on the path every `Set`, `containsElement()` and `indexOf()` over object IDs walks, including the one a to-many fault builds from the store's IDs. Two IDs whose components differ only in case are no longer equal.
 
+### Fixed
+
+- An object ID repointed at an existing row — an insert that collides on a unique index during a save, or an `objectID` assigned through key-value coding — is now found under the reference it adopted. The context and the store indexed it by the reference it had before, so the context answered a second instance for the row and kept the object after `reset()`, and the store answered the repointed ID for the reference it gave up: a different row later stored under that reference was read back as the adopted one. Both now observe the reference and move the ID to its new key.
+
 ## [1.0.8] - 2026-10-03
 
 ### Fixed

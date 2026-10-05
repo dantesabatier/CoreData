@@ -37,6 +37,11 @@ final class ManagedObjectID extends ObjectClass implements FetchRequestResult
     /** @internal */
     public string|int $referenceObject {
         get => $this->referenceObject ??= new UUID()->uuidString;
+        set {
+            $this->willChangeValueForKey(__PROPERTY__);
+            $this->referenceObject = $value;
+            $this->didChangeValueForKey(__PROPERTY__);
+        }
     }
     /** @internal */
     private(set) string $entityName {

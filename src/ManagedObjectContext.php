@@ -15,6 +15,7 @@ use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\KeyValueChange;
+use Sabatier\Foundation\KeyValueObservation;
 use Sabatier\Foundation\KeyValueObservedChange;
 use Sabatier\Foundation\KeyValueObservingOptions;
 use Sabatier\Foundation\Nil;
@@ -91,6 +92,10 @@ final class ManagedObjectContext extends ObjectClass
     /** @var Dictionary<ManagedObject|WeakReference<ManagedObject>> */
     private Dictionary $byHashAssociationTable {
         get => $this->byHashAssociationTable ??= new Dictionary();
+    }
+    /** @var Dictionary<KeyValueObservation> */
+    private Dictionary $referenceObservations {
+        get => $this->referenceObservations ??= new Dictionary();
     }
     /** @var Set<ManagedObject> $registeredObjects The set of objects registered with the context. */
     public Set $registeredObjects {
@@ -434,7 +439,20 @@ final class ManagedObjectContext extends ObjectClass
     {
         if ($this->registeredObject($object->objectID) === null) {
             $key = (string)$object->objectID;
-            $this->byHashAssociationTable[$key] = $this->retainsRegisteredObjects ? $object : WeakReference::create($object);
+            $entry = $this->retainsRegisteredObjects ? $object : WeakReference::create($object);
+            $this->byHashAssociationTable[$key] = $entry;
+            $context = WeakReference::create($this);
+            $this->referenceObservations[(string)$object->hash]?->invalidate();
+            $this->referenceObservations[(string)$object->hash] = $object->objectID->observe("referenceObject", KeyValueObservingOptions::prior, static function (ManagedObjectID $objectID, KeyValueObservedChange $change) use ($context, $entry): void {
+                if (!($table = $context->get()?->byHashAssociationTable)) {
+                    return;
+                }
+                if ($change->isPrior) {
+                    $table->removeValueForKey((string)$objectID);
+                } else {
+                    $table[(string)$objectID] = $entry;
+                }
+            });
             $properties = $object::$contextShouldIgnoreUnmodeledPropertyChanges ? $object->persistentProperties : $object->allProperties;
             /** @var PropertyDescription $property */
             foreach ($properties as $property) {
@@ -449,6 +467,8 @@ final class ManagedObjectContext extends ObjectClass
     {
         if ($this->registeredObject($object->objectID) !== null) {
             $this->byHashAssociationTable->removeValueForKey((string)$object->objectID);
+            $this->referenceObservations[(string)$object->hash]?->invalidate();
+            $this->referenceObservations->removeValueForKey((string)$object->hash);
             $properties = $object::$contextShouldIgnoreUnmodeledPropertyChanges ? $object->persistentProperties : $object->allProperties;
             foreach ($properties as $property) {
                 if (!$property instanceof FetchedPropertyDescription) {
