@@ -6,8 +6,6 @@ use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\FileManager;
-use Sabatier\Foundation\KeyValueObservedChange;
-use Sabatier\Foundation\KeyValueObservingOptions;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
@@ -157,13 +155,6 @@ abstract class PersistentStore extends ObjectClass
         if (!($objectID = $table[$key])) {
             $objectID = new ManagedObjectID($entity, $referenceObject);
             $objectID->persistentStore = $this;
-            $objectID->observe("referenceObject", KeyValueObservingOptions::prior, function (ManagedObjectID $objectID, KeyValueObservedChange $change) use ($table): void {
-                if ($change->isPrior) {
-                    $table->removeValueForKey((string)$objectID->referenceObject);
-                } else {
-                    $table[(string)$objectID->referenceObject] = $objectID;
-                }
-            });
             $table[$key] = $objectID;
             $this->cacheEntities[$entity->name] = $table;
         }

@@ -15,7 +15,6 @@ use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\KeyValueChange;
-use Sabatier\Foundation\KeyValueObservation;
 use Sabatier\Foundation\KeyValueObservedChange;
 use Sabatier\Foundation\KeyValueObservingOptions;
 use Sabatier\Foundation\Nil;
@@ -92,14 +91,6 @@ final class ManagedObjectContext extends ObjectClass
     /** @var Dictionary<ManagedObject|WeakReference<ManagedObject>> */
     private Dictionary $byHashAssociationTable {
         get => $this->byHashAssociationTable ??= new Dictionary();
-    }
-    /** @var Dictionary<KeyValueObservation> */
-    private Dictionary $referenceObservations {
-        get => $this->referenceObservations ??= new Dictionary();
-    }
-    /** @var Dictionary<ManagedObject> */
-    private Dictionary $objectsWithUnprocessedChanges {
-        get => $this->objectsWithUnprocessedChanges ??= new Dictionary();
     }
     /** @var Set<ManagedObject> $registeredObjects The set of objects registered with the context. */
     public Set $registeredObjects {
@@ -185,10 +176,9 @@ final class ManagedObjectContext extends ObjectClass
             $members = new Set($newValue);
             $inverseRelationship = $relationship->inverseRelationship;
             if (!$inverseRelationship->isToMany) {
-                $destinationEntity = $relationship->destinationEntity;
                 // The store answers with what is saved. A member inserted or reassigned in this context is only in memory, in the to-one it holds, and setValueForKey() leaves an unread inverse as a fault instead of adding it there.
                 // Read from the association table rather than $registeredObjects: that getter builds a Set, which compares every object against every other, and a serialization fires this on each to-many it reads. The table is keyed by hash, so its values are already distinct.
-                $this->byHashAssociationTable->values->compactMap(fn(ManagedObject|WeakReference $object): ?ManagedObject => $object instanceof WeakReference ? $object->get() : $object)->filter(fn(ManagedObject $object): bool => ($destinationEntity->isAbstract ? $object->entity->isKindOf($destinationEntity) : $object->entity->isEqual($destinationEntity)) && ($this->insertedObjects->containsElement($object) || $object->changedValuesForCurrentEvent()->offsetExists($inverseRelationship->name)))->forEach(function (ManagedObject $object) use ($members, $inverseRelationship, $objectID): void {
+                $this->byHashAssociationTable->values->compactMap(fn(ManagedObject|WeakReference $object): ?ManagedObject => $object instanceof WeakReference ? $object->get() : $object)->filter(fn(ManagedObject $object): bool => $object->entity->isKindOf($relationship->destinationEntity) && ($this->insertedObjects->containsElement($object) || $object->changedValuesForCurrentEvent()->offsetExists($inverseRelationship->name)))->forEach(function (ManagedObject $object) use ($members, $inverseRelationship, $objectID): void {
                     $owner = $object->primitiveValueForKey($inverseRelationship->name);
                     $ownerID = $owner instanceof ManagedObject ? $owner->objectID : $owner;
                     $ownerID instanceof ManagedObjectID && $ownerID->isEqual($objectID) ? $members->insert($object->objectID) : $members->remove($object->objectID);
@@ -444,20 +434,7 @@ final class ManagedObjectContext extends ObjectClass
     {
         if ($this->registeredObject($object->objectID) === null) {
             $key = (string)$object->objectID;
-            $entry = $this->retainsRegisteredObjects ? $object : WeakReference::create($object);
-            $this->byHashAssociationTable[$key] = $entry;
-            $context = WeakReference::create($this);
-            $this->referenceObservations[(string)$object->hash]?->invalidate();
-            $this->referenceObservations[(string)$object->hash] = $object->objectID->observe("referenceObject", KeyValueObservingOptions::prior, static function (ManagedObjectID $objectID, KeyValueObservedChange $change) use ($context, $entry): void {
-                if (!($table = $context->get()?->byHashAssociationTable)) {
-                    return;
-                }
-                if ($change->isPrior) {
-                    $table->removeValueForKey((string)$objectID);
-                } else {
-                    $table[(string)$objectID] = $entry;
-                }
-            });
+            $this->byHashAssociationTable[$key] = $this->retainsRegisteredObjects ? $object : WeakReference::create($object);
             $properties = $object::$contextShouldIgnoreUnmodeledPropertyChanges ? $object->persistentProperties : $object->allProperties;
             /** @var PropertyDescription $property */
             foreach ($properties as $property) {
@@ -472,8 +449,6 @@ final class ManagedObjectContext extends ObjectClass
     {
         if ($this->registeredObject($object->objectID) !== null) {
             $this->byHashAssociationTable->removeValueForKey((string)$object->objectID);
-            $this->referenceObservations[(string)$object->hash]?->invalidate();
-            $this->referenceObservations->removeValueForKey((string)$object->hash);
             $properties = $object::$contextShouldIgnoreUnmodeledPropertyChanges ? $object->persistentProperties : $object->allProperties;
             foreach ($properties as $property) {
                 if (!$property instanceof FetchedPropertyDescription) {
@@ -558,7 +533,6 @@ final class ManagedObjectContext extends ObjectClass
         $this->unprocessedInserts->remove($node);
         $this->unprocessedDeletes->remove($node);
         $this->unprocessedChanges->remove($node);
-        $this->objectsWithUnprocessedChanges->removeValueForKey((string)$object->hash);
         $this->unregister($object);
     }
 
@@ -680,7 +654,6 @@ final class ManagedObjectContext extends ObjectClass
         $this->unprocessedChanges->removeAll();
         $this->unprocessedInserts->removeAll();
         $this->unprocessedDeletes->removeAll();
-        $this->objectsWithUnprocessedChanges->removeAll();
     }
 
     /**
@@ -932,7 +905,6 @@ final class ManagedObjectContext extends ObjectClass
                 $this->unprocessedChanges->update($node);
                 break;
         }
-        $this->objectsWithUnprocessedChanges[(string)$object->hash] = $object;
     }
 
     /**
@@ -1208,11 +1180,12 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function reset(): void
     {
-        $this->unregisterObjects($this->registeredObjects);
-        $this->referenceObservations->forEach(fn(KeyValueObservation $observation) => $observation->invalidate());
-        $this->referenceObservations->removeAll();
-        $this->byHashAssociationTable->removeAll();
-        $this->resetAllChanges();
+        $registeredObjects = $this->registeredObjects;
+        if ($registeredObjects->isEmpty) {
+            $this->resetState();
+            return;
+        }
+        $this->unregisterObjects($registeredObjects);
         $this->resetState();
     }
 
