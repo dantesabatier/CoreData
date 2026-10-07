@@ -214,6 +214,20 @@ final class FaultingSetTest extends TestCase
         $this->assertNull($set->indexOf($this->player(99)->objectID), "a non-member ID has no index");
     }
 
+    /**
+     * containsElement() searches the IDs the set stores. Searching by object instead materialized every member to compare it, registering an object for each one, so a lookup on a to-many cost a context round trip per member.
+     */
+    public function testContainsElementDoesNotMaterializeTheMembers(): void
+    {
+        $store = $this->context->persistentStoreCoordinator?->persistentStores->first ?? self::fail("the context has no store");
+        $memberID = $store->objectID($this->player(1)->entity, 12345);
+        $set = new FaultingSet($this->team, $this->roster);
+        $set->setSet(new Set([$memberID]));
+
+        $this->assertFalse($set->containsElement($this->player(2)));
+        $this->assertNull($this->context->registeredObject($memberID), "the member was not faulted into the context");
+    }
+
     public function testRemoveAcceptsBothManagedObjectAndObjectID(): void
     {
         $a = $this->player(1);

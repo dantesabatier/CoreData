@@ -7,6 +7,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- `ManagedObjectID` adopts Foundation's `Hashable`, with the entity name and the reference object as its hash value, so a `Set` of object IDs searches its index instead of comparing every member. The reference object announces its changes, and a set holding an ID moves it to its new key when the ID is reconciled with an existing row.
+- `ManagedObject` and `IncrementalStoreNode` adopt `Hashable` through their object ID, so the context's sets of inserted, updated and changed objects, and of pending changes, search their index instead of comparing every member. Replacing an object's ID announces the change, and a set holding the object moves it to its new key. An ID reconciled in place with an existing row is not followed yet: a set of objects or of pending changes keeps it under the reference it gave up.
+- A to-many relationship answers `containsElement()`, `indexOf()` and `member()` by looking up the object's ID among the IDs it stores. It used to fault every member into the context to compare it with the object; on a relationship of a few hundred members that was seven to twenty times slower.
+- Inserting and saving 2,000 objects took 336 seconds, recording each change by searching every change already pending; it now takes 11.
+- Requires Foundation 1.2.1, whose `Set` locates an indexed member without comparing it with every element.
+
 ## [1.1.4] - 2026-10-05
 
 ### Fixed

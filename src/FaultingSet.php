@@ -30,8 +30,8 @@ final class FaultingSet extends Set implements Materializable
     #[Override]
     public function indexOf(mixed $element): ?int
     {
-        if ($element instanceof ManagedObjectID) {
-            $element = $this->source->managedObjectContext->object($element);
+        if ($element instanceof ManagedObject) {
+            $element = $element->objectID;
         }
         return parent::indexOf($element);
     }
@@ -75,19 +75,20 @@ final class FaultingSet extends Set implements Materializable
     #[Override]
     public function containsElement(mixed $element): bool
     {
-        if ($element instanceof ManagedObjectID) {
-            $element = $this->source->managedObjectContext->object($element);
+        if ($element instanceof ManagedObject) {
+            $element = $element->objectID;
         }
         return parent::containsElement($element);
     }
 
     #[Override]
-    public function member(mixed $element)
+    public function member(mixed $element): ?ManagedObject
     {
-        if ($element instanceof ManagedObjectID) {
-            $element = $this->source->managedObjectContext->object($element);
+        if ($element instanceof ManagedObject) {
+            $element = $element->objectID;
         }
-        return parent::member($element);
+        $member = parent::member($element);
+        return $member === null ? null : $this->materialize($member);
     }
 
     #[Override]

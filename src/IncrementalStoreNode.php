@@ -12,13 +12,20 @@ namespace Sabatier\CoreData;
 
 use Override;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Hashable;
 use Sabatier\Foundation\ObjectClass;
 
 /**
  * A concrete class used to represent basic nodes in a Core Data incremental store.
  */
-final class IncrementalStoreNode extends ObjectClass
+final class IncrementalStoreNode extends ObjectClass implements Hashable
 {
+    /** @var string The hash value of the object ID, which equal nodes share. */
+    #[Override]
+    public string $hashValue {
+        get => $this->objectID->hashValue;
+    }
+
     /**
      * Returns an object initialized with the given values.
      * @param ManagedObjectID $objectID The object ID that identifies the data stored by the receiver.

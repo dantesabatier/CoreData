@@ -11,7 +11,9 @@ namespace Sabatier\CoreData;
 
 use Override;
 use Sabatier\Foundation\ComparisonResult;
+use Sabatier\Foundation\Hashable;
 use Sabatier\Foundation\ObjectClass;
+use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
 use function Sabatier\Foundation\fatal_error;
@@ -23,7 +25,7 @@ use function Sabatier\Foundation\fatal_error;
  * Object IDs can be transformed into a URI representation which can be archived and recreated later to refer back to a given object (using {@see PersistentStoreCoordinator::managedObjectID()}) (PersistentStoreCoordinator) and {@see ManagedObjectContext::object()} (ManagedObjectContext). For example, the last selected group in an application could be stored in the user defaults through the group object's ID. You can also use object ID URI representations to store “weak” relationships across persistent stores (where no hard join is possible).
  * @psalm-suppress MissingConstructor
  */
-final class ManagedObjectID extends ObjectClass implements FetchRequestResult
+final class ManagedObjectID extends ObjectClass implements FetchRequestResult, Hashable
 {
     /** @var PersistentStore|null The persistent store that fetched the object for the object ID. */
     public ?PersistentStore $persistentStore = null;
@@ -38,6 +40,11 @@ final class ManagedObjectID extends ObjectClass implements FetchRequestResult
     /** @internal */
     public string|int $referenceObject {
         get => $this->referenceObject ??= new UUID()->uuidString;
+        set {
+            $this->willChangeValueForKey(__PROPERTY__);
+            $this->referenceObject = $value;
+            $this->didChangeValueForKey(__PROPERTY__);
+        }
     }
     /** @internal */
     private(set) string $entityName {
@@ -66,6 +73,11 @@ final class ManagedObjectID extends ObjectClass implements FetchRequestResult
     public string $canonicalDescription {
         get => sprintf("<%s: %s> %s", $this->storeIdentifier, $this->entity->name, $this->referenceObject);
     }
+    /** @var string The entity name and the reference object, which equal object IDs share. */
+    #[Override]
+    public string $hashValue {
+        get => "$this->entityName/$this->referenceObject";
+    }
 
     /**
      * @param EntityDescription $entity The entity description associated with the object ID.
@@ -75,6 +87,15 @@ final class ManagedObjectID extends ObjectClass implements FetchRequestResult
     {
         $this->entity = $entity;
         $this->referenceObject = $referenceObject;
+    }
+
+    /**
+     * Returns the keys whose changes change the hash value: the reference object is rewritten in place when the object is reconciled with an existing row.
+     * @return Set<string>
+     */
+    public static function keyPathsForValuesAffectingHashValue(): Set
+    {
+        return new Set(["referenceObject"]);
     }
 
     public function __serialize(): array

@@ -10,6 +10,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Error;
+use Sabatier\Foundation\Hashable;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\KeyValueChange;
 use Sabatier\Foundation\Nil;
@@ -35,7 +36,7 @@ use const Sabatier\Foundation\SecureUnarchiveFromDataTransformerName;
 /**
  * A base class that implements the behavior required of a Core Data model object.
  */
-class ManagedObject extends ObjectClass implements FetchRequestResult
+class ManagedObject extends ObjectClass implements FetchRequestResult, Hashable
 {
     use FaultingSetMutationMethods;
 
@@ -46,6 +47,17 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
     /** @var ManagedObjectID The object ID of the managed object. If the receiver is a fault, accessing this rela$relationship does not cause it to fire. If the receiver has not yet been saved, the object ID is a temporary value that will change when the object is saved. */
     public ManagedObjectID $objectID {
         get => $this->objectID ??= new ManagedObjectID($this->entity, new UUID()->uuidString);
+        set {
+            // Announced through the parent, which isSuppressingKVO does not silence: a set holding the object must move it to its new key even while the object hides its changes.
+            parent::willChangeValueForKey(ManagedObjectObjectIDKey);
+            $this->objectID = $value;
+            parent::didChangeValueForKey(ManagedObjectObjectIDKey);
+        }
+    }
+    /** @var string The hash value of the object ID, which equal managed objects share. */
+    #[Override]
+    public string $hashValue {
+        get => $this->objectID->hashValue;
     }
     /** @var int Object version used for optimistic locking. The default value is 1. */
     public int $version = 1;
@@ -659,6 +671,15 @@ class ManagedObject extends ObjectClass implements FetchRequestResult
         $fetchRequest = new FetchRequest();
         $fetchRequest->entity = self::entity();
         return $fetchRequest;
+    }
+
+    /**
+     * Returns the keys whose changes change the hash value: the object ID is replaced when the object obtains a permanent ID.
+     * @return Set<string>
+     */
+    public static function keyPathsForValuesAffectingHashValue(): Set
+    {
+        return new Set([ManagedObjectObjectIDKey]);
     }
 
     /**

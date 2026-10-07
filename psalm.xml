@@ -54,11 +54,6 @@
                 <file name="src/PersistentContainer.php"/>
             </errorLevel>
         </ClassMustBeFinal>
-        <DocblockTypeContradiction>
-            <errorLevel type="suppress">
-                <file name="src/FaultingSet.php"/>
-            </errorLevel>
-        </DocblockTypeContradiction>
         <RedundantConditionGivenDocblockType>
             <errorLevel type="suppress">
                 <file name="src/FaultingSet.php"/>
