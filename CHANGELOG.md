@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-07
+
 ### Changed
 
 - `ManagedObjectID` adopts Foundation's `Hashable`, with the entity name and the reference object as its hash value, so a `Set` of object IDs searches its index instead of comparing every member. The reference object announces its changes, and a set holding an ID moves it to its new key when the ID is reconciled with an existing row.
