@@ -7,6 +7,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-10-08
+
+### Fixed
+
+- A composite attribute set on a new object reaches its columns. The INSERT skipped composites outright while the UPDATE expanded them into their element columns, so the row kept the columns' database defaults until the object was saved a second time.
+- A composite listed in a nested serialization is read through its elements' columns. The SQL asked for a column named after the composite, which has none, and failed with "Unknown column"; inside a to-many, the row reader also looked up the composite's owner by the parent's key and dropped its values.
+
 ## [1.2.0] - 2026-10-07
 
 ### Changed
