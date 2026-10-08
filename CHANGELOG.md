@@ -7,6 +7,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-10-08
+
+### Changed
+
+- A table's columns run in a fixed order: the primary key, the entity name and the version, then the plain attributes, the composites' elements, the derived attributes, and the foreign keys last. A derived attribute computes from the plain and composite attributes, so those columns are declared before it. A migration repositions the columns of every entity it transforms; an entity that does not migrate keeps its current order.
+
+### Fixed
+
+- A composite's element columns take the composite's place in the table. They used to be appended behind the foreign keys, both when a table was created and when a migration added the composite.
+- A migration that changes a derived attribute's expression while adding columns no longer fails with "Unknown column". The changed derived attribute was recreated before the new columns existed; it is now recreated with the other derived attributes once they do.
+
 ## [1.2.1] - 2026-10-08
 
 ### Fixed
