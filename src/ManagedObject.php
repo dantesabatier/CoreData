@@ -961,14 +961,20 @@ class ManagedObject extends ObjectClass implements FetchRequestResult, Hashable
                                 $current->didChangeValueForKey($inverseRelationship->name, KeyValueChange::removal, $members);
                             }
                         }
-                        if ($value instanceof ManagedObject && !($value->isInserted && $value->hasFaultForRelationshipNamed($inverseRelationship->name))) {
-                            /** @var FaultingSet $inverse */
-                            $inverse = $value->mutableSetValueForKey($inverseRelationship->name);
-                            if (!$inverse->containsElement($this)) {
-                                $members = new Set([$this]);
+                        if ($value instanceof ManagedObject) {
+                            $members = new Set([$this]);
+                            if ($value->isInserted && $value->hasFaultForRelationshipNamed($inverseRelationship->name)) {
+                                // The fault is left alone, but the insertion is still announced: it is how the context learns that the receiver is new and has to be saved.
                                 $value->willChangeValueForKey($inverseRelationship->name, KeyValueChange::insertion, $members);
-                                $inverse->insert($this);
                                 $value->didChangeValueForKey($inverseRelationship->name, KeyValueChange::insertion, $members);
+                            } else {
+                                /** @var FaultingSet $inverse */
+                                $inverse = $value->mutableSetValueForKey($inverseRelationship->name);
+                                if (!$inverse->containsElement($this)) {
+                                    $value->willChangeValueForKey($inverseRelationship->name, KeyValueChange::insertion, $members);
+                                    $inverse->insert($this);
+                                    $value->didChangeValueForKey($inverseRelationship->name, KeyValueChange::insertion, $members);
+                                }
                             }
                         }
                     }
