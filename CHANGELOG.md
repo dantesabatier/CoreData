@@ -7,6 +7,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.3] - 2026-10-08
+
+### Fixed
+
+- A new object linked to a saved one whose inverse has not been read is saved. Leaving the unread inverse as a fault also skipped the announcement of the insertion, which is how the context learns the new object has to be saved, so several new objects added through the same owner kept only the first. The fault is still left alone; only the announcement is restored.
+
 ## [1.2.2] - 2026-10-08
 
 ### Changed
