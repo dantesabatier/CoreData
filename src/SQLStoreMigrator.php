@@ -263,12 +263,8 @@ final class SQLStoreMigrator
                             } else {
                                 $this->removedColumns->insert($source);
                             }
-                        } elseif (($source->sqlType !== $destination->sqlType || $source->isOptional !== $destination->isOptional || $source->isUnique !== $destination->isUnique || $source->minValue !== $destination->minValue || $source->maxValue !== $destination->maxValue || $source->defaultValue !== $destination->defaultValue || ($source->isDerivedAttribute !== $destination->isDerivedAttribute) || ($source->isDerivedAttribute && $destination->isDerivedAttribute && (string)$source->derivationExpression !== (string)$destination->derivationExpression))) {
-                            if ($destination->isDerivedAttribute && ($statement = $this->adapter->newCreateColumnStatement($destination, $destinationEntity->columnAfter($destination)))) {
-                                $this->connection->execute($statement);
-                            }
-                            // A plain attribute whose type/constraints changed is NOT modified here: the final modify loop below re-applies every destination attribute's type and position after all columns exist. Emitting the modify now with "AFTER <columnAfter($destination)>" could reference a column that has not been created yet (a new attribute declared before this one), which MariaDB rejects with "Unknown column".
                         }
+                        // A changed attribute is not altered here. Every derived column was dropped above and the loop over the destination properties recreates it once the columns it reads exist; the final modify loop re-applies every column's type and position. Creating or modifying it now with "AFTER <columnAfter($destination)>" could reference a column this same migration has not created yet, which MariaDB rejects with "Unknown column".
                         if (!$source->isTransient && $destination->isTransient) {
                             $this->removedColumns->insert($source);
                         }
@@ -343,8 +339,8 @@ final class SQLStoreMigrator
                     $this->createIndexStatements->formUnion($destinationIndex->createTableStatements);
                 }
             }
-            foreach ($properties as $property) {
-                if ($property instanceof SQLAttribute && !$property->isCompositeAttribute && ($statement = $this->adapter->newModifyColumnStatement($property, $destinationEntity->columnAfter($property)))) {
+            foreach ($destinationEntity->columnsToCreate as $column) {
+                if (($column instanceof SQLAttribute || $column instanceof SQLEntityKey || $column instanceof SQLOptLockKey) && ($statement = $this->adapter->newModifyColumnStatement($column, $destinationEntity->columnAfter($column)))) {
                     $this->connection->execute($statement);
                 }
             }

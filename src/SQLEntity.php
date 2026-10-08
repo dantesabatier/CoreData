@@ -230,10 +230,13 @@ final class SQLEntity extends StoreMapping
             if (isset($this->columnsToCreate)) {
                 return $this->columnsToCreate;
             }
-            $columns = $this->properties->filter(fn(SQLProperty $property): bool => !$property->isTransient && !$property instanceof SQLRelationship && ((!$property instanceof SQLAttribute || (($property->isDerivedAttribute ? !$property->isRuntimeOnly : !$property->isCompositeAttribute)))))->appendingContentsOf($this->byMappingByCompositeNameAssociationTable->values->flatMap(fn(Dictionary $dictionary
-            ): ArrayClass => $dictionary->values));
-            $this->columnsToCreate = $columns;
-            return $this->columnsToCreate;
+            // A composite has no column of its own: its elements' columns take its place in the table.
+            return $this->columnsToCreate = $this->properties->flatMap(fn(SQLProperty $property): ArrayClass => match (true) {
+                $property->isTransient, $property instanceof SQLRelationship => new ArrayClass(),
+                $property instanceof SQLAttribute && $property->isCompositeAttribute => $this->byMappingByCompositeNameAssociationTable[$property->name]?->values ?? new ArrayClass(),
+                $property instanceof SQLAttribute && $property->isDerivedAttribute && $property->isRuntimeOnly => new ArrayClass(),
+                default => new ArrayClass([$property]),
+            });
         }
     }
     /** @var Dictionary<Dictionary<SQLAttribute>> */
@@ -291,22 +294,28 @@ final class SQLEntity extends StoreMapping
 
     public function doPostModelGenerationCleanup(): void
     {
-        $by = fn(SQLProperty $e0, SQLProperty $e1): int => $e0->propertyType->value <=> $e1->propertyType->value;
+        // A derived attribute computes from the plain and composite attributes, so those columns are declared before it; the keys open the table and the foreign keys close it.
+        $rank = fn(SQLProperty $property): int => match (true) {
+            $property instanceof SQLPrimaryKey => -3,
+            $property instanceof SQLEntityKey => -2,
+            $property instanceof SQLOptLockKey => -1,
+            default => match ($property->propertyType) {
+                PropertyDescriptionType::attribute => 0,
+                PropertyDescriptionType::compositeAttribute => 1,
+                PropertyDescriptionType::derivedAttribute => 2,
+                default => $property->propertyType->value,
+            },
+        };
+        $by = fn(SQLProperty $e0, SQLProperty $e1): int => $rank($e0) <=> $rank($e1);
         $this->propertiesByName->sort($by);
         $this->properties->sort($by);
     }
 
     public function columnAfter(SQLColumn $column): SQLColumn
     {
-        /** @var ArrayClass<SQLProperty> $properties */
-        $properties = $this->persistentProperties;
-        $index = $properties->indexBefore($properties->indexOf($column) ?? $properties->endIndex);
-        if ($index >= $properties->startIndex) {
-            $property = $properties[$index];
-            assert($property instanceof SQLColumn);
-            return $property;
-        }
-        return $this->entityKey;
+        $columns = $this->columnsToCreate;
+        $index = $columns->indexBefore($columns->indexOf($column) ?? $columns->endIndex);
+        return $index >= $columns->startIndex ? $columns[$index] : $this->entityKey;
     }
 
     public function isKindOfSQLEntity(SQLEntity $entity): bool

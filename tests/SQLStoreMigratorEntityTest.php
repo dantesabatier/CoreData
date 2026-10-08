@@ -139,7 +139,7 @@ final class SQLStoreMigratorEntityTest extends SQLMigrationTestCase
 
         $this->assertTrue($this->tableExists("Scribe"), "the copied entity's table survives");
         $this->assertSame(
-            ["objectID", "version", "entityName", "name"],
+            ["objectID", "entityName", "version", "name"],
             $this->columnNames("Scribe"),
             "the copied entity's schema is unchanged",
         );

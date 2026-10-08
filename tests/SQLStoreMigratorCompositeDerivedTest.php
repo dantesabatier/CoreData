@@ -68,6 +68,50 @@ final class SQLStoreMigratorCompositeDerivedTest extends SQLMigrationTestCase
         return $model;
     }
 
+    private static function derived(string $name, string $function, string $keyPath): DerivedAttributeDescription
+    {
+        $derived = new DerivedAttributeDescription();
+        $derived->name = $name;
+        $derived->type = AttributeType::string;
+        $derived->isOptional = true;
+        $derived->derivationExpression = Expression::expressionForFunction($function, new ArrayClass([Expression::expressionForKeyPath($keyPath)]));
+        return $derived;
+    }
+
+    private static function coordinate(): CompositeAttributeDescription
+    {
+        $coordinate = new CompositeAttributeDescription();
+        $coordinate->name = "coordinate";
+        $coordinate->type = AttributeType::compositeAttributeType;
+        $coordinate->elements = new ArrayClass([
+            self::attribute("latitude", AttributeType::double, optional: true),
+            self::attribute("longitude", AttributeType::double, optional: true),
+        ]);
+        return $coordinate;
+    }
+
+    /** @throws Exception */
+    public function testChangingADerivedAttributeWhileAddingAComposite(): void
+    {
+        // Every derived column is dropped up front and recreated once the columns it may read exist. A derived attribute whose expression changed must not be recreated before the composite added in the same migration, which now sits ahead of it in the table.
+        $context = $this->bootstrap(self::model("Doc", Doc::class, [
+            self::attribute("title", AttributeType::string),
+            self::derived("shownTitle", "uppercase:", "title"),
+        ]));
+        $doc = new Doc($context);
+        $doc->title = "Hello";
+        $context->save();
+
+        $this->migrateTo(self::model("Doc", Doc::class, [
+            self::attribute("title", AttributeType::string),
+            self::coordinate(),
+            self::derived("shownTitle", "lowercase:", "title"),
+        ]));
+
+        $this->assertSame(["objectID", "entityName", "version", "title", "latitude", "longitude", "shownTitle"], $this->columnNames("Doc"));
+        $this->assertSame(["hello"], $this->columnValues("Doc", "shownTitle"), "the changed derivation is recomputed over the existing row");
+    }
+
     /** @throws Exception */
     public function testAddingADerivedAttributeCreatesAGeneratedColumnComputedOverExistingData(): void
     {
