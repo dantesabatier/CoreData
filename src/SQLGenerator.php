@@ -721,10 +721,15 @@ final class SQLGenerator
                         $this->tableReference = $backupTableReference;
                         return "$result AS {$joinedTableAlias}_$property->columnName";
                     }
+                    if ($property->isCompositeAttribute) {
+                        return null;
+                    }
                     return "$joinedTableAlias.$property->columnName AS {$joinedTableAlias}_$property->columnName";
                 }
                 return null;
             });
+            // A composite has no column of its own: it is read through its elements' columns, aliased as columnsToFetch aliases them, so the row reader can nest them back under the composite.
+            $columnNames->appendContentsOf($serializationKeys->flatMap(fn(string $key): ArrayClass => $currentEntity->byMappingByCompositeNameAssociationTable[$key]?->values?->map(fn(SQLAttribute $attribute): string => "$joinedTableAlias.$attribute->columnName AS {$joinedTableAlias}_$attribute->columnName") ?? new ArrayClass()));
         }
         return $columnNames;
     }
@@ -1861,12 +1866,16 @@ final class SQLGenerator
             foreach ($entity->properties as $property) {
                 if ($property instanceof SQLPrimaryKey || $property instanceof SQLEntityKey || $property instanceof SQLOptLockKey) {
                     $columnNames->insert($property->name);
-                } elseif ($property instanceof SQLAttribute && !$property->isDerivedAttribute && !$property->isCompositeAttribute) {
+                } elseif ($property instanceof SQLAttribute && !$property->isDerivedAttribute) {
                     if (!($exist = $insertedObject->changedValuesForCurrentEvent()->offsetExists($property->name)) && !$property->isOptional) {
                         $exist = $insertedObject->changedValues()->offsetExists($property->name);
                     }
                     if ($exist) {
-                        $columnNames->insert($property->columnName);
+                        if ($property->isCompositeAttribute) {
+                            $columnNames->formUnion($entity->byMappingByCompositeNameAssociationTable[$property->name]?->values?->map(fn(SQLAttribute $attribute): string => $attribute->columnName) ?? []);
+                        } else {
+                            $columnNames->insert($property->columnName);
+                        }
                     }
                 } elseif ($property instanceof SQLToOne) {
                     $columnNames->insert($property->foreignKey->columnName);
@@ -1883,7 +1892,7 @@ final class SQLGenerator
         }
         foreach ($insertedObjects as $insertedObject) {
             foreach ($columnNames as $columnName) {
-                $property = $entity->propertiesByName[$columnName];
+                $property = $entity->propertiesByName[$columnName] ?? $entity->compositeAttributeNameToSQLProperty[$columnName];
                 if ($property instanceof SQLPrimaryKey) {
                     $arguments->append($insertedObject->objectID->referenceObject);
                 } elseif ($property instanceof SQLEntityKey) {
@@ -1891,7 +1900,7 @@ final class SQLGenerator
                 } elseif ($property instanceof SQLOptLockKey) {
                     $arguments->append($insertedObject->version);
                 } elseif ($property instanceof SQLAttribute) {
-                    $arguments->append($this->coercedValue($insertedObject, $property->attributeDescription));
+                    $arguments->append($property->isCompositeAttribute ? $insertedObject->valueForKeyPath("$property->name.$columnName") : $this->coercedValue($insertedObject, $property->attributeDescription));
                 } elseif ($property instanceof SQLForeignKey) {
                     $value = $insertedObject->primitiveValueForKey($property->name);
                     if ($value instanceof ManagedObject) {

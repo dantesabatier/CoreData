@@ -11,8 +11,10 @@ use Sabatier\CoreData\CompositeAttributeDescription;
 use Sabatier\CoreData\EntityDescription;
 use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\ManagedObjectModel;
+use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Set;
 
 /**
  * @property string $name
@@ -26,6 +28,14 @@ final class Marker extends ManagedObject
  * @property int $x
  */
 final class Waypoint extends ManagedObject
+{
+}
+
+/**
+ * @property string $name
+ * @property Set<Marker> $markers
+ */
+final class Trail extends ManagedObject
 {
 }
 
@@ -51,10 +61,9 @@ final class Waypoint extends ManagedObject
  * pass means the value genuinely came back out of the database and not from an object the
  * context still had registered.
  *
- * Note on fixture shape: a composite is assigned after the owning object's first save. Setting
- * one in the same change event as the insert lets the snapshot that initializes the new object
- * overwrite it with the elements' defaults — a property of object initialization, unrelated to
- * the read path under test here.
+ * Most fixtures assign the composite after the owning object's first save so that the value
+ * travels through the UPDATE; testACompositeAssignedBeforeTheFirstSaveReachesItsColumns covers
+ * the INSERT.
  */
 final class SQLCompositeAttributeFetchTest extends SQLMigrationTestCase
 {
@@ -69,6 +78,13 @@ final class SQLCompositeAttributeFetchTest extends SQLMigrationTestCase
 
     /** A Marker with a name and a position{x, y} composite of doubles. */
     private static function markerModel(): ManagedObjectModel
+    {
+        $model = new ManagedObjectModel();
+        $model->entities = new ArrayClass([self::markerEntity()]);
+        return $model;
+    }
+
+    private static function markerEntity(?RelationshipDescription $trail = null): EntityDescription
     {
         $position = new CompositeAttributeDescription();
         $position->name = "position";
@@ -85,10 +101,81 @@ final class SQLCompositeAttributeFetchTest extends SQLMigrationTestCase
             self::attribute("name", AttributeType::string),
             $position,
         ]);
+        if ($trail) {
+            $entity->properties = $entity->properties->appending($trail);
+        }
+        return $entity;
+    }
+
+    /** A Trail with a to-many of Markers, so a composite can be read through a relationship. */
+    private static function trailModel(): ManagedObjectModel
+    {
+        $markers = new RelationshipDescription();
+        $markers->name = "markers";
+        $markers->lazyDestinationEntityName = "Marker";
+        $markers->lazyInverseRelationshipName = "trail";
+        $markers->isToMany = true;
+        $markers->isOptional = true;
+
+        $trail = new RelationshipDescription();
+        $trail->name = "trail";
+        $trail->lazyDestinationEntityName = "Trail";
+        $trail->lazyInverseRelationshipName = "markers";
+        $trail->isOptional = true;
+
+        $entity = new EntityDescription();
+        $entity->name = "Trail";
+        $entity->managedObjectClassName = Trail::class;
+        $entity->properties = new ArrayClass([self::attribute("name", AttributeType::string), $markers]);
 
         $model = new ManagedObjectModel();
-        $model->entities = new ArrayClass([$entity]);
+        $model->entities = new ArrayClass([self::markerEntity($trail), $entity]);
         return $model;
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function testACompositeListedInANestedSerializationIsReadThroughItsElements(): void
+    {
+        // Regression guard: a nested serialization turned every listed key into "<alias>.<column>", and a composite has no column of its own, so listing one under a relationship failed with "Unknown column '<alias>.position'". It must expand into its elements' columns, as the root entity and an unserialized relationship already did.
+        $context = $this->bootstrap(self::trailModel());
+        $ridge = new Trail($context);
+        $ridge->name = "Ridge";
+        $expected = ["Start" => [1.0, 2.0], "Summit" => [3.0, 4.0]];
+        foreach ($expected as $name => [$x, $y]) {
+            $marker = new Marker($context);
+            $marker->name = $name;
+            $marker->position = Dictionary::dictionaryWithArray(["x" => $x, "y" => $y]);
+            $marker->setValueForKey($ridge, "trail");
+        }
+        $context->save();
+
+        $shape = Dictionary::dictionaryWithArray([
+            "name" => AttributeType::string,
+            "markers" => [
+                "name" => AttributeType::string,
+                "position" => AttributeType::compositeAttributeType,
+            ],
+        ]);
+        $request = Trail::fetchRequest();
+        $request->serialization = $shape;
+        $fetched = $this->freshContext(self::trailModel())->fetch($request)->first;
+        $this->assertInstanceOf(Trail::class, $fetched);
+        $this->assertCount(2, $fetched->markers);
+        foreach ($fetched->markers as $marker) {
+            [$x, $y] = $expected[$marker->name];
+            $this->assertEqualsWithDelta($x, $marker->position["x"], 0.0001, "$marker->name keeps its own x");
+            $this->assertEqualsWithDelta($y, $marker->position["y"], 0.0001, "$marker->name keeps its own y");
+        }
+        // The serialized graph is what a responder emits, so the composite must reach it too.
+        foreach ($fetched->serialized($shape)->markers as $marker) {
+            [$x, $y] = $expected[$marker->name];
+            $position = $marker->jsonSerialize()["position"];
+            $this->assertInstanceOf(Dictionary::class, $position, "$marker->name carries the composite in its serialized properties");
+            $this->assertEqualsWithDelta($x, $position["x"], 0.0001);
+            $this->assertEqualsWithDelta($y, $position["y"], 0.0001);
+        }
     }
 
     /**
@@ -181,6 +268,27 @@ final class SQLCompositeAttributeFetchTest extends SQLMigrationTestCase
             $this->assertEqualsWithDelta($x, $marker->position["x"], 0.0001, "$marker->name keeps its own x");
             $this->assertEqualsWithDelta($y, $marker->position["y"], 0.0001, "$marker->name keeps its own y");
         }
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function testACompositeAssignedBeforeTheFirstSaveReachesItsColumns(): void
+    {
+        // Regression guard: the INSERT skipped composites outright, while the UPDATE expanded them into their element columns. A composite set on a new object was therefore never written, and the row kept the columns' database defaults.
+        $context = $this->bootstrap(self::markerModel());
+        $marker = new Marker($context);
+        $marker->name = "Born placed";
+        $marker->position = Dictionary::dictionaryWithArray(["x" => 12.0, "y" => 34.0]);
+        $context->save();
+
+        $this->assertSame(["12"], $this->columnValues("Marker", "x"), "the x element reaches its column on insert");
+        $this->assertSame(["34"], $this->columnValues("Marker", "y"), "the y element reaches its column on insert");
+
+        $fetched = $this->freshContext(self::markerModel())->fetch(Marker::fetchRequest())->first;
+        $this->assertInstanceOf(Marker::class, $fetched);
+        $this->assertEqualsWithDelta(12.0, $fetched->position["x"], 0.0001);
+        $this->assertEqualsWithDelta(34.0, $fetched->position["y"], 0.0001);
     }
 
     /**

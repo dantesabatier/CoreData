@@ -94,15 +94,17 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
                         $isNavigational = ($isRelationship || $isCompositeAttribute);
                         if ($isNavigational) {
                             if ($cursor instanceof ArrayClass) {
+                                // A relationship's column lives one alias below the element that owns it, so its owner is the parent alias' row; a composite's element columns live on the owning element's own alias.
+                                $ownerID = $isCompositeAttribute ? $childrenID : $parentID;
                                 $cursorKey = $cursor->hash;
-                                $element = $toManyIndex[$cursorKey][(string)$parentID] ?? null;
+                                $element = $toManyIndex[$cursorKey][(string)$ownerID] ?? null;
                                 if (!$element) {
-                                    $element = $this->cloneFromIndex($snapshotIndex, $cursorEntity->entityDescription->name, $parentID);
+                                    $element = $this->cloneFromIndex($snapshotIndex, $cursorEntity->entityDescription->name, $ownerID);
                                     if ($element !== null) {
                                         $cursor->append($element);
-                                        $toManyIndex[$cursorKey][(string)$parentID] = $element;
+                                        $toManyIndex[$cursorKey][(string)$ownerID] = $element;
                                     } else {
-                                        $element = new Dictionary([$primaryKeyName => $parentID]);
+                                        $element = new Dictionary([$primaryKeyName => $ownerID]);
                                     }
                                 }
                                 $cursor = &$element;
