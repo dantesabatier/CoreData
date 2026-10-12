@@ -600,6 +600,42 @@ final class SQLGeneratorTest extends TestCase
         }
     }
 
+    /**
+     * A predicate selects the root objects; it does not filter the relationships they are hydrated with. When it walks a to-many the serialization also prefetches, both resolve to the same join alias, so a WHERE in the outer query would prune the prefetched rows and every selected object would come back with only the related objects that matched. Without a page the predicate still has to select the root keys apart, as it does for a page, leaving the prefetch join unfiltered.
+     *
+     * @throws Exception
+     */
+    public function testUnpaginatedPredicateOverASerializedToManySelectsTheRootKeysApart(): void
+    {
+        $request = $this->request("GenSupplier");
+        $request->predicate = Predicate::format("parts.sku == %@", new ArrayClass(["A-1"]));
+        $request->serialization = new Dictionary(["name" => true, "parts" => new Dictionary(["sku" => true])]);
+
+        $statement = $this->statementFor($request);
+
+        $this->assertMatchesRegularExpression("/WHERE GenSupplier\.objectID IN \(SELECT .*WHERE \S+_parts\.sku = \?/s", $statement->string, "the comparison selects the root keys inside the key subquery");
+        $this->assertStringNotContainsString("GenSupplier_parts.sku = ?", $statement->string, "the prefetch join stays unfiltered");
+        $this->assertStringNotContainsString("LIMIT", $statement->string);
+        $this->assertSame(1, $statement->arguments->count);
+    }
+
+    /**
+     * The counterpart: a predicate that walks a to-many the serialization does not prefetch has no join to prune, so it stays in the outer WHERE.
+     *
+     * @throws Exception
+     */
+    public function testUnpaginatedPredicateOverAnUnserializedToManyStaysInTheOuterQuery(): void
+    {
+        $request = $this->request("GenSupplier");
+        $request->predicate = Predicate::format("parts.sku == %@", new ArrayClass(["A-1"]));
+
+        $statement = $this->statementFor($request);
+
+        $this->assertStringContainsString("WHERE GenSupplier_parts.sku = ?", $statement->string);
+        $this->assertStringNotContainsString("IN (SELECT", $statement->string);
+        $this->assertSame(1, $statement->arguments->count);
+    }
+
     // --- Identifier quoting ---
 
     /**

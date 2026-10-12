@@ -564,14 +564,15 @@ final class SQLGenerator
 
     private function requiresPaginationSubquery(FetchRequest $request): bool
     {
-        if (!$request->fetchLimit && !$request->fetchOffset) {
-            return false;
-        }
         if ($request->resultType === FetchRequestResultType::countResultType) {
             return false;
         }
         if (!($request->propertiesToGroupBy ?? new ArrayClass())->isEmpty) {
             return false;
+        }
+        // Without a page there are no rows to miscount, but a predicate that walks a to-many shares its join aliases with the serialization's prefetch, and filtering in the same query would prune the to-many each selected object is hydrated with. The predicate then selects the root keys apart, exactly as it does for a page.
+        if (!$request->fetchLimit && !$request->fetchOffset) {
+            return $request->needsDistinct && $this->queryHasRowMultiplyingJoin($request);
         }
         return $request->needsDistinct || $this->queryHasRowMultiplyingJoin($request);
     }
