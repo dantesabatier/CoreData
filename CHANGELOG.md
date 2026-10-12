@@ -7,6 +7,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.5] - 2026-10-13
+
+### Fixed
+
+- A page returns the same graph as an unpaginated fetch. The page is resolved as a key subquery so that the limit counts objects rather than rows, but the predicate went only into that subquery, so a serialized to-many walked by the predicate came back whole instead of pruned to the matching objects. The predicate now also applies to the query that hydrates the graph.
+- Unpaginated fetches prune a serialized to-many walked by the predicate again, reverting the change in 1.2.4.
+
 ## [1.2.4] - 2026-10-12
 
 ### Fixed
