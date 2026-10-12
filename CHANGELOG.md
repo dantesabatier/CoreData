@@ -7,6 +7,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.4] - 2026-10-12
+
+### Fixed
+
+- A fetch without a limit or offset whose predicate walks a to-many relationship the serialization also includes returns that relationship complete. The predicate and the prefetch shared a join alias, so filtering in the same query pruned the relationship to the related objects that matched; the predicate now selects the root keys apart, as it already did for a page.
+
 ## [1.2.3] - 2026-10-08
 
 ### Fixed
