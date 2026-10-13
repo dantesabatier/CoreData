@@ -238,7 +238,8 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
      */
     private function registerSnapshot(Dictionary $snapshot): void
     {
-        if ($snapshot[ManagedObjectObjectIDKey] && $snapshot[ManagedObjectEntityNameKey] && $snapshot[ManagedObjectVersionKey]) {
+        // The version is checked for presence, not truth: a row written before versions were tracked holds 0, and its snapshot is as complete as any other.
+        if ($snapshot[ManagedObjectObjectIDKey] && $snapshot[ManagedObjectEntityNameKey] && $snapshot[ManagedObjectVersionKey] !== null) {
             $snapshot[ManagedObjectIsInsertedKey] = true;
             $snapshot[ManagedObjectIsFaultKey] = false;
             $snapshot[ManagedObjectFaultingStateKey] = ManagedObjectFaultingStateStable;
