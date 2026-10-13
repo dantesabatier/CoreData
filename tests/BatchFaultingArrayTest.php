@@ -20,14 +20,18 @@ use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\PersistentStoreCoordinator;
 use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\FileManager;
 use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
+use const Sabatier\CoreData\ManagedObjectEntityNameKey;
+use const Sabatier\CoreData\ManagedObjectObjectIDKey;
 
 /**
  * @property int $n
+ * @property string|null $label
  */
 final class Bead extends ManagedObject
 {
@@ -54,10 +58,15 @@ final class BatchFaultingArrayTest extends TestCase
         $n->name = "n";
         $n->type = AttributeType::integer32;
 
+        $label = new AttributeDescription();
+        $label->name = "label";
+        $label->type = AttributeType::string;
+        $label->isOptional = true;
+
         $bead = new EntityDescription();
         $bead->name = "Bead";
         $bead->managedObjectClassName = Bead::class;
-        $bead->properties = new ArrayClass([$n]);
+        $bead->properties = new ArrayClass([$n, $label]);
 
         $model = new ManagedObjectModel();
         $model->entities = new ArrayClass([$bead]);
@@ -100,6 +109,7 @@ final class BatchFaultingArrayTest extends TestCase
         for ($i = 0; $i < $count; $i++) {
             $bead = new Bead($context);
             $bead->n = $i;
+            $bead->label = "bead $i";
         }
         $context->save();
     }
@@ -228,6 +238,25 @@ final class BatchFaultingArrayTest extends TestCase
         $batch = $this->batchArray(2, fetchOffset: 5);
         $this->assertSame(0, $batch->count, "nothing remains past the end");
         $this->assertSame([], self::numbers($batch), "and nothing is yielded");
+    }
+
+    /**
+     * Every batch is serialized as the request asks, the same as an unbatched fetch. Batches used to page object
+     * IDs and fault each one in, which skipped the request's serialization, so a batched object came back with
+     * its default keys instead of the requested shape.
+     *
+     * @throws Exception
+     */
+    public function testEveryBatchKeepsTheRequestedSerialization(): void
+    {
+        $this->seed(5);
+        /** @var FetchRequest<ManagedObject> $request */
+        $request = Bead::fetchRequest();
+        $request->sortDescriptors = new ArrayClass([new SortDescriptor("n", true)]);
+        $request->fetchBatchSize = 2;
+        $request->serialization = new Dictionary(["n" => AttributeType::integer32]);
+        $keys = new BatchFaultingArray($request, $this->context())->map(fn(Bead $bead): array => $bead->jsonSerialize()->keys->array)->array;
+        $this->assertSame(array_fill(0, 5, [ManagedObjectObjectIDKey, ManagedObjectEntityNameKey, "n"]), $keys, "every object, across batches, carries only the requested keys");
     }
 
     /** @throws Exception */

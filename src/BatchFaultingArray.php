@@ -31,9 +31,9 @@ final class BatchFaultingArray extends ArrayClass implements Materializable
         get => max(($this->cursor - 1) * $this->fetchLimit, 0);
     }
     private int $cursor = 0;
-    /** @var ArrayClass<ManagedObjectID> */
-    private ArrayClass $objectIDs;
-    /** FetchRequest<ManagedObjectID> */
+    /** @var ArrayClass<ManagedObject|ManagedObjectID> */
+    private ArrayClass $batch;
+    /** @var FetchRequest<ManagedObject|ManagedObjectID> */
     private readonly FetchRequest $request;
     private readonly FetchRequestResultType $resultType;
     private readonly ManagedObjectContext $context;
@@ -41,17 +41,17 @@ final class BatchFaultingArray extends ArrayClass implements Materializable
     public function __construct(FetchRequest $fetchRequest, ManagedObjectContext $context)
     {
         parent::__construct();
-        /** @var FetchRequest<ManagedObjectID> $request */
+        // Each batch is an ordinary fetch of the request's own result type: a batch of objects is then hydrated and serialized in one statement, as an unbatched fetch is, rather than faulted in one object at a time.
+        /** @var FetchRequest<ManagedObject|ManagedObjectID> $request */
         $request = clone($fetchRequest, [
             "fetchBatchSize" => 0,
-            "resultType" => FetchRequestResultType::managedObjectIDResultType,
         ]);
         $this->request = $request;
         $this->resultType = $fetchRequest->resultType;
         $this->fetchLimit = $fetchRequest->fetchBatchSize;
         $this->startOffset = $fetchRequest->fetchOffset;
         $this->context = $context;
-        $this->objectIDs = new ArrayClass();
+        $this->batch = new ArrayClass();
         $debugDefault = SQLCore::$debugLevel;
         if ($debugDefault->value && ($sqlCore = $context->persistentStoreCoordinator?->persistentStores->first) && $sqlCore instanceof SQLCore && ($statement = new SQLGenerator(new SQLFetchRequestContext($this->request, $context, $sqlCore))->statement)) {
             error_log(sprintf("CoreData: sql: \n%s", $statement->formatted(SQLStatementFormatterStyle::defaultFormatterStyle())));
@@ -94,7 +94,7 @@ final class BatchFaultingArray extends ArrayClass implements Materializable
         invalid_mutation();
     }
 
-    private function arrayFromObjectIDs(): ArrayClass
+    private function nextBatch(): ArrayClass
     {
         $this->context->reset();
         // The last batch is cut at the end of the window; past it there is nothing to fetch, and a limit of zero would mean no limit at all.
@@ -127,23 +127,23 @@ final class BatchFaultingArray extends ArrayClass implements Materializable
     #[Override]
     public function current(): ManagedObjectID|ManagedObject
     {
-        return $this->materialize($this->objectIDs->current());
+        return $this->materialize($this->batch->current());
     }
 
     #[Override]
     public function next(): void
     {
         parent::next();
-        $this->objectIDs->next();
+        $this->batch->next();
         if ($this->key() === $this->fetchOffset) {
-            $this->objectIDs = $this->arrayFromObjectIDs();
+            $this->batch = $this->nextBatch();
         }
     }
 
     #[Override]
     public function valid(): bool
     {
-        return $this->objectIDs->valid();
+        return $this->batch->valid();
     }
 
     #[Override]
@@ -151,7 +151,7 @@ final class BatchFaultingArray extends ArrayClass implements Materializable
     {
         parent::rewind();
         $this->cursor = 1;
-        $this->objectIDs = $this->arrayFromObjectIDs();
+        $this->batch = $this->nextBatch();
     }
 
     #[Override]
@@ -163,7 +163,7 @@ final class BatchFaultingArray extends ArrayClass implements Materializable
     #[Override]
     public function offsetGet(mixed $offset): ManagedObjectID|ManagedObject
     {
-        return $this->materialize($this->objectIDs->offsetGet($offset));
+        return $this->materialize($this->batch->offsetGet($offset));
     }
 
     #[Override]
