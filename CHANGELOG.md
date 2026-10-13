@@ -7,6 +7,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.6] - 2026-10-13
+
+### Fixed
+
+- A batched fetch honors its `fetchLimit` and `fetchOffset`. The batches replaced the limit with the batch size and paged from the first row, and the count ignored both, so a fetch for 30 rows in batches of 10 counted and walked the whole table. The count is now the requested window and the batches page within it.
+
 ## [1.2.5] - 2026-10-13
 
 ### Fixed
