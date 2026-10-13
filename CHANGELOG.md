@@ -7,6 +7,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.7] - 2026-10-13
+
+### Fixed
+
+- A fetched row whose version is 0 is materialized as a stable object. The fetch judged a snapshot complete by the truthiness of its version, so rows written before versions were tracked came back as faults: reading one refetched it and reset its relationships, which then faulted in with every attribute and leaked those fields into the serialization of every row sharing the related object.
+- A batched fetch serializes each batch as the request asks. Batches paged object IDs and faulted each object in on its own, so against the XML store a batched object carried its default keys instead of the requested shape.
+
 ## [1.2.6] - 2026-10-13
 
 ### Fixed
