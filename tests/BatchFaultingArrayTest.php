@@ -110,14 +110,26 @@ final class BatchFaultingArrayTest extends TestCase
      *
      * @throws Exception
      */
-    private function batchArray(int $batchSize, FetchRequestResultType $resultType = FetchRequestResultType::managedObjectResultType): BatchFaultingArray
+    private function batchArray(int $batchSize, FetchRequestResultType $resultType = FetchRequestResultType::managedObjectResultType, int $fetchLimit = 0, int $fetchOffset = 0): BatchFaultingArray
     {
         /** @var FetchRequest<ManagedObject> $request */
         $request = Bead::fetchRequest();
         $request->sortDescriptors = new ArrayClass([new SortDescriptor("n", true)]);
         $request->fetchBatchSize = $batchSize;
         $request->resultType = $resultType;
+        $request->fetchLimit = $fetchLimit;
+        $request->fetchOffset = $fetchOffset;
         return new BatchFaultingArray($request, $this->context());
+    }
+
+    /**
+     * The n of every bead the array yields, in iteration order.
+     *
+     * @return list<int>
+     */
+    private static function numbers(BatchFaultingArray $batch): array
+    {
+        return $batch->map(fn(Bead $bead): int => $bead->n)->array;
     }
 
     /** @throws Exception */
@@ -165,6 +177,57 @@ final class BatchFaultingArrayTest extends TestCase
             $seen[] = $bead->n;
         }
         $this->assertSame([0, 1], $seen, "a batch larger than the result set returns everything in one page");
+    }
+
+    /**
+     * The batch size only decides how the result is paged, never how big it is: a fetchLimit
+     * smaller than the table bounds both the count and the iteration. Paging used to overwrite
+     * the limit with the batch size, so a request for 5 rows walked the whole table.
+     *
+     * @throws Exception
+     */
+    public function testFetchLimitBoundsCountAndIteration(): void
+    {
+        $this->seed(7);
+        $batch = $this->batchArray(3, fetchLimit: 5);
+        $this->assertSame(5, $batch->count, "count is the limit, not the table size");
+        $this->assertSame([0, 1, 2, 3, 4], self::numbers($batch), "iteration stops at the limit, mid-batch");
+    }
+
+    /** @throws Exception */
+    public function testFetchOffsetIsWhereTheFirstBatchStarts(): void
+    {
+        $this->seed(7);
+        $batch = $this->batchArray(3, fetchOffset: 2);
+        $this->assertSame(5, $batch->count, "count is what remains past the offset");
+        $this->assertSame([2, 3, 4, 5, 6], self::numbers($batch), "batches page from the offset, not from the first row");
+    }
+
+    /** @throws Exception */
+    public function testFetchOffsetAndLimitTogetherSelectAWindow(): void
+    {
+        $this->seed(10);
+        $batch = $this->batchArray(3, fetchLimit: 5, fetchOffset: 2);
+        $this->assertSame(5, $batch->count, "count is the window size");
+        $this->assertSame([2, 3, 4, 5, 6], self::numbers($batch), "the window is paged in batches without leaving it");
+    }
+
+    /** @throws Exception */
+    public function testFetchLimitLargerThanWhatRemainsIsBoundedByTheTable(): void
+    {
+        $this->seed(7);
+        $batch = $this->batchArray(3, fetchLimit: 10, fetchOffset: 4);
+        $this->assertSame(3, $batch->count, "a limit past the end counts only the rows that exist");
+        $this->assertSame([4, 5, 6], self::numbers($batch), "and iteration ends with the table");
+    }
+
+    /** @throws Exception */
+    public function testFetchOffsetPastTheEndIsEmpty(): void
+    {
+        $this->seed(3);
+        $batch = $this->batchArray(2, fetchOffset: 5);
+        $this->assertSame(0, $batch->count, "nothing remains past the end");
+        $this->assertSame([], self::numbers($batch), "and nothing is yielded");
     }
 
     /** @throws Exception */

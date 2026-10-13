@@ -25,6 +25,7 @@ final class BatchFaultingArray extends ArrayClass implements Materializable
         get => iterator_to_array($this);
     }
     private int $fetchLimit;
+    private readonly int $startOffset;
     /** @noinspection PhpPropertyOnlyWrittenInspection */
     private int $fetchOffset {
         get => max(($this->cursor - 1) * $this->fetchLimit, 0);
@@ -48,20 +49,25 @@ final class BatchFaultingArray extends ArrayClass implements Materializable
         $this->request = $request;
         $this->resultType = $fetchRequest->resultType;
         $this->fetchLimit = $fetchRequest->fetchBatchSize;
+        $this->startOffset = $fetchRequest->fetchOffset;
         $this->context = $context;
         $this->objectIDs = new ArrayClass();
         $debugDefault = SQLCore::$debugLevel;
         if ($debugDefault->value && ($sqlCore = $context->persistentStoreCoordinator?->persistentStores->first) && $sqlCore instanceof SQLCore && ($statement = new SQLGenerator(new SQLFetchRequestContext($this->request, $context, $sqlCore))->statement)) {
             error_log(sprintf("CoreData: sql: \n%s", $statement->formatted(SQLStatementFormatterStyle::defaultFormatterStyle())));
         }
+        // A count is a single row, so the window is applied here and not in the statement: there a limit trims nothing and an offset skips the only row.
         /** @var FetchRequest<Number> $request */
         $request = clone($request, [
             "resultType" => FetchRequestResultType::countResultType,
+            "fetchLimit" => 0,
+            "fetchOffset" => 0,
         ]);
         SQLCore::$debugLevel = SQLDebugLevel::none;
         /** @noinspection PhpUnhandledExceptionInspection */
-        $this->length = $context->count($request);
+        $remaining = max($context->count($request) - $this->startOffset, 0);
         SQLCore::$debugLevel = $debugDefault;
+        $this->length = $fetchRequest->fetchLimit ? min($remaining, $fetchRequest->fetchLimit) : $remaining;
     }
 
     #[Override]
@@ -91,9 +97,15 @@ final class BatchFaultingArray extends ArrayClass implements Materializable
     private function arrayFromObjectIDs(): ArrayClass
     {
         $this->context->reset();
+        // The last batch is cut at the end of the window; past it there is nothing to fetch, and a limit of zero would mean no limit at all.
+        $batchSize = min($this->fetchLimit, $this->length - $this->fetchOffset);
+        if ($batchSize <= 0) {
+            $this->cursor += 1;
+            return new ArrayClass();
+        }
         $request = $this->request;
-        $request->fetchOffset = $this->fetchOffset;
-        $request->fetchLimit = $this->fetchLimit;
+        $request->fetchOffset = $this->startOffset + $this->fetchOffset;
+        $request->fetchLimit = $batchSize;
         $debugDefault = SQLCore::$debugLevel;
         SQLCore::$debugLevel = SQLDebugLevel::none;
         /** @noinspection PhpUnhandledExceptionInspection */
