@@ -7,6 +7,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.8] - 2026-10-14
+
+### Fixed
+
+- A page filtered by a collection operator, such as `productions.@count > 0`, no longer fails with an unknown column. The page's key subquery renames the root table, and the operator's correlated subquery referred to the table by its bare name.
+
 ## [1.2.7] - 2026-10-13
 
 ### Fixed
