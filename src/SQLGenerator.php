@@ -968,7 +968,8 @@ final class SQLGenerator
     {
         $compatibility = new DerivationSchemaCompatibility($expression);
         if ($compatibility->usesKeyValueOperator) {
-            return $this->buildDerivedKeyPathExpression($expression, isDeterministic: $isDeterministic);
+            // Correlated with the table as this query names it: inside a page's key subquery the root is renamed, and its bare name resolves against nothing.
+            return $this->buildDerivedKeyPathExpression($expression, $this->tableReference, $isDeterministic);
         }
         $tableName = $this->tableReference;
         $keyPath = $tableName;

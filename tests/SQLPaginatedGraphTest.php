@@ -172,6 +172,29 @@ final class SQLPaginatedGraphTest extends SQLMigrationTestCase
      *
      * @throws Exception
      */
+    /**
+     * A page resolves its keys in a subquery that renames the root table, so a collection operator in the predicate,
+     * which becomes a correlated subquery, has to correlate with that alias. It correlated with the table's own name,
+     * which only exists in the outer query, and the page failed with an unknown column.
+     *
+     * @throws Exception
+     */
+    public function testAPageFiltersByACollectionOperator(): void
+    {
+        $this->seed();
+        $names = function (int $limit): array {
+            $request = GraphShelf::fetchRequest();
+            $request->predicate = Predicate::format("volumes.@count > 1");
+            $request->serialization = new Dictionary(["name" => true]);
+            $request->sortDescriptors = new ArrayClass([new SortDescriptor("name", true)]);
+            $request->fetchLimit = $limit;
+            return $this->freshContext(self::model())->fetch($request)->map(fn(GraphShelf $shelf): string => $shelf->name)->array;
+        };
+
+        $this->assertSame(["A", "B"], $names(0));
+        $this->assertSame(["A"], $names(1));
+    }
+
     public function testAPageCoveringTheWholeResultMatchesTheUnpaginatedFetch(): void
     {
         $this->seed();
