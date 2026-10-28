@@ -1795,8 +1795,12 @@ final class SQLGenerator
         $clauses = new Set();
         $expressions = $this->keyPathExpressionsForFetchRequestSerialization()->union($this->keyPathExpressionsForFetchRequestPredicate());
         foreach ($expressions as $expression) {
-            $properties = $this->propertiesFromKeyPathExpression($expression, fn(SQLProperty $property): bool => $property instanceof SQLForeignKey || $property instanceof SQLToMany);
-            $last = $properties->last;
+            $properties = $this->propertiesFromKeyPathExpression($expression);
+            $index = $properties->lastIndex(fn(SQLProperty $property): bool => $property instanceof SQLForeignKey || $property instanceof SQLToMany);
+            if ($index === null) {
+                continue;
+            }
+            $last = $properties[$index];
             $toMany = match (true) {
                 $last instanceof SQLForeignKey => $last->toOneRelationship->inverseRelationship,
                 $last instanceof SQLToMany => $last,
@@ -1810,10 +1814,8 @@ final class SQLGenerator
             if (!$orderKeyProperty instanceof SQLProperty || $orderKeyProperty->isTransient) {
                 continue;
             }
-            $alias = $this->tableReference;
-            foreach (explode(".", $expression->description) as $component) {
-                $alias .= "_$component";
-            }
+            // The alias stops at the ordered relationship: past it, a to-one such as "tracks.album" joins another table that does not carry the order column.
+            $alias = $this->tableReference . "_" . new ArrayClass(explode(".", $expression->description))->prefix($index + 1)->join("_");
             if (!$this->joinedAliasesMap[$alias]) {
                 continue;
             }

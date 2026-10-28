@@ -13,6 +13,7 @@ use Sabatier\CoreData\ManagedObjectContext;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\Set;
 
 /**
@@ -233,5 +234,34 @@ final class SQLOrderedRelationshipTest extends SQLMigrationTestCase
             });
 
         $this->assertSame(["First" => 3, "Second" => 1], $counts, "each album sees only its own tracks");
+    }
+
+    /**
+     * A serialization that goes through the ordered to-many and on into a to-one of its members
+     * ("tracks.album") still orders by the members' table. The ORDER BY alias is the one of the
+     * ordered relationship, not the one at the end of the key path: "OrderedAlbum_tracks", not
+     * "OrderedAlbum_tracks_album", which is the album table joined again and has no "title" column.
+     *
+     * @throws Exception
+     */
+    public function testASerializationPastTheOrderedRelationshipOrdersByItsMembers(): void
+    {
+        $context = $this->bootstrap(self::model());
+        $this->album($context, "Kind of Blue", ["So What", "Freddie Freeloader", "Blue in Green"]);
+
+        $request = OrderedAlbum::fetchRequest();
+        $request->serialization = Dictionary::dictionaryWithArray([
+            "name" => AttributeType::string,
+            "tracks" => Dictionary::dictionaryWithArray([
+                "title" => AttributeType::string,
+                "album" => Dictionary::dictionaryWithArray([
+                    "name" => AttributeType::string,
+                ]),
+            ]),
+        ]);
+        /** @var OrderedAlbum $album */
+        $album = $this->freshContext(self::model())->fetch($request)->first;
+
+        $this->assertSame(["Blue in Green", "Freddie Freeloader", "So What"], self::titles($album), "the tracks come back ordered by their first attribute");
     }
 }
