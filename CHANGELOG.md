@@ -7,6 +7,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.9] - 2026-10-28
+
+### Fixed
+
+- A fetch whose serialization goes past an ordered to-many into a to-one of its members, such as `tracks.album`, no longer fails with an unknown column in `ORDER BY`. The order clause named the table at the end of the key path instead of the ordered relationship's, and when that table had a column of the same name it silently ordered by it.
+
 ## [1.2.8] - 2026-10-14
 
 ### Fixed
