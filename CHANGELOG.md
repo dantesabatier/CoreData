@@ -7,6 +7,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.10] - 2026-10-29
+
+### Fixed
+
+- A discarded context is released. Each context registered a block with the default notification center that captured it strongly and was never removed, so the singleton kept every context alive until the process ended, together with its coordinator, model and objects; a long process or a test suite that builds several stacks grew without bound.
+
 ## [1.2.9] - 2026-10-28
 
 ### Fixed
