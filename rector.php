@@ -5,8 +5,7 @@ declare(strict_types=1);
 use Rector\CodeQuality\Rector\Class_\ConvertStaticToSelfRector;
 use Rector\CodeQuality\Rector\ClassMethod\ExplicitReturnNullRector;
 use Rector\CodeQuality\Rector\ClassMethod\LocallyCalledStaticMethodToNonStaticRector;
-use Rector\CodeQuality\Rector\Identical\FlipTypeControlToUseExclusiveTypeRector;
-use Rector\CodeQuality\Rector\If_\ObjectExplicitBoolCompareRector;
+use Rector\CodeQuality\Rector\If_\ExplicitNullableObjectInstanceRector;
 use Rector\CodeQuality\Rector\Isset_\IssetOnPropertyObjectToPropertyExistsRector;
 use Rector\Config\RectorConfig;
 use Rector\DeadCode\Rector\ClassMethod\RemoveEmptyClassMethodRector;
@@ -36,13 +35,13 @@ try {
         ])->withPhpSets()->withSkip([
             SensitiveConstantNameRector::class,
             ClassPropertyAssignToConstructorPromotionRector::class,
-            FlipTypeControlToUseExclusiveTypeRector::class,
             LocallyCalledStaticMethodToNonStaticRector::class,
             RemoveUnusedPrivateMethodRector::class,
             RemoveUnusedPrivateMethodParameterRector::class,
             RemoveUselessReturnTagRector::class,
             RemoveUselessParamTagRector::class,
             ExplicitReturnNullRector::class,
+            ExplicitNullableObjectInstanceRector::class,
             RemoveAlwaysTrueIfConditionRector::class => [
                 __DIR__ . "/src/SQLGenerator.php",
                 __DIR__ . "/src/SQLAdapter.php"
@@ -73,7 +72,6 @@ try {
                 __DIR__ . "/tests/SQLStoreMigratorCompositeDerivedTest.php",
                 __DIR__ . "/tests/SQLStoreMigratorToOneRelationshipTest.php",
             ],
-            ObjectExplicitBoolCompareRector::class
         ])->withPreparedSets(deadCode: true, codeQuality: true, earlyReturn: true);
 } catch (InvalidConfigurationException $e) {
     error_log($e->getMessage());
