@@ -31,6 +31,7 @@ use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
+use WeakReference;
 use const Sabatier\CoreData\UpdatedObjectsKey;
 
 /**
@@ -256,6 +257,40 @@ final class ManagedObjectContextTest extends TestCase
         $this->assertTrue($alice->changedValues()->offsetExists("name"), "the assigned attribute shows up in changedValues");
         $this->assertSame($context, $alice->managedObjectContext, "the object is bound to its context");
         $this->assertSame("Employee", $alice->entity->name, "the object carries its entity description");
+    }
+
+    /** @throws Exception */
+    public function testADiscardedContextIsReleasedWithItsCoordinator(): void
+    {
+        $context = $this->makeContext();
+        $this->insertEmployee($context, "Alice", 2000);
+        $coordinator = $context->persistentStoreCoordinator;
+        $this->assertNotNull($coordinator);
+        $releasedContext = WeakReference::create($context);
+        $releasedCoordinator = WeakReference::create($coordinator);
+
+        unset($context, $coordinator);
+        gc_collect_cycles();
+
+        $this->assertNull($releasedContext->get(), "the notification center does not keep the context alive");
+        $this->assertNull($releasedCoordinator->get(), "nor the coordinator it observes, with its model");
+    }
+
+    /** @throws Exception */
+    public function testRemovingTheStoreUnregistersItsObjects(): void
+    {
+        $context = $this->makeContext();
+        $this->insertEmployee($context, "Alice", 2000);
+        $this->assertTrue($context->save());
+        $this->assertCount(1, $context->registeredObjects);
+
+        $coordinator = $context->persistentStoreCoordinator;
+        $this->assertNotNull($coordinator);
+        $store = $coordinator->persistentStores->first();
+        $this->assertNotNull($store);
+        $coordinator->remove($store);
+
+        $this->assertCount(0, $context->registeredObjects, "the context still hears the coordinator through its weak reference");
     }
 
     /** @throws Exception */

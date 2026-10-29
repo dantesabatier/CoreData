@@ -56,13 +56,19 @@ final class ManagedObjectContext extends ObjectClass
                 $this->storeRemovalObserver = null;
             }
             if ($value) {
-                $this->storeRemovalObserver = NotificationCenter::default()->addObserverForName(PersistentStoreCoordinatorWillRemoveStore, $value, function (Notification $notification): void {
+                // The notification center is a singleton: a block that retained the context would keep it, its model and its objects alive until the process ends. Hence a static block reaching the context through a weak reference, like a [weak self].
+                $context = WeakReference::create($this);
+                $this->storeRemovalObserver = NotificationCenter::default()->addObserverForName(PersistentStoreCoordinatorWillRemoveStore, $value, static function (Notification $notification) use ($context): void {
+                    $self = $context->get();
+                    if ($self === null) {
+                        return;
+                    }
                     /** @var Dictionary<mixed> $userInfo */
                     $userInfo = $notification->userInfo;
                     /** @var ArrayClass<PersistentStore> $stores */
                     $stores = $userInfo[RemovedPersistentStoresKey];
                     foreach ($stores as $store) {
-                        $this->unregisterObjects($this->registeredObjects->filter(fn(ManagedObject $object): bool => $store->identifier === $object->objectID->persistentStore?->identifier));
+                        $self->unregisterObjects($self->registeredObjects->filter(fn(ManagedObject $object): bool => $store->identifier === $object->objectID->persistentStore?->identifier));
                     }
                 });
             }
@@ -158,6 +164,14 @@ final class ManagedObjectContext extends ObjectClass
      */
     public function __construct(public readonly ManagedObjectContextConcurrencyType $concurrencyType = ManagedObjectContextConcurrencyType::mainQueueConcurrencyType)
     {
+    }
+
+    public function __destruct()
+    {
+        // The notification center entry retains the coordinator it observes; outliving the context, it would never let the coordinator and its model go.
+        if ($this->storeRemovalObserver) {
+            NotificationCenter::default()->removeObserver($this->storeRemovalObserver);
+        }
     }
 
     /**
