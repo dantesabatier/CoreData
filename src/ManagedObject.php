@@ -951,7 +951,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult, Hashable
                         if ($current instanceof ManagedObjectID) {
                             $current = $this->managedObjectContext->object($current);
                         }
-                        if ($current instanceof ManagedObject && !($current->isInserted && $current->hasFaultForRelationshipNamed($inverseRelationship->name))) {
+                        if ($current instanceof ManagedObject && (!$current->isInserted || !$current->hasFaultForRelationshipNamed($inverseRelationship->name))) {
                             /** @var FaultingSet $previous */
                             $previous = $current->mutableSetValueForKey($inverseRelationship->name);
                             if ($previous->containsElement($this)) {
