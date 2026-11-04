@@ -361,8 +361,13 @@ final class XMLObjectStore extends AtomicStore
             case AttributeType::date:
             case AttributeType::string:
             case AttributeType::objectID:
-            case AttributeType::transformable:
                 ManagedObject::coerceValue($value, $attribute);
+                if (empty($value)) {
+                    $value = null;
+                }
+                break;
+            case AttributeType::transformable:
+                ManagedObject::coerceValue($value, $attribute, true);
                 if (empty($value)) {
                     $value = null;
                 }

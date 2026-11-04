@@ -36,7 +36,7 @@ class AttributeDescription extends PropertyDescription
         get {
             $defaultValue = $this->defaultValue;
             if ($defaultValue !== null) {
-                ManagedObject::coerceValue($defaultValue, $this);
+                ManagedObject::coerceValue($defaultValue, $this, transformsValue: false);
             }
             return $defaultValue;
         }

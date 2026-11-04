@@ -405,7 +405,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult, Hashable
     {
         return match ($attribute->type) {
             AttributeType::undefined, AttributeType::binaryData, AttributeType::objectID, AttributeType::compositeAttributeType => null,
-            default => self::coercedValue($value, $attribute->type, $attribute->attributeValueClassName, $attribute->valueTransformerName, $attribute->isOptional),
+            default => self::coercedValue($value, $attribute->type, $attribute->attributeValueClassName, $attribute->valueTransformerName, $attribute->isOptional, transformsValue: false),
         };
     }
 
@@ -779,7 +779,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult, Hashable
             $this->didAccessValueForKey($key);
             if ($property instanceof DerivedAttributeDescription && !isset($this->resolvingKeys[$key]) && !$this->isSuppressingKVO && $this->isPropertyForKeyFault($key) && $this->isInserted) {
                 $this->resolvingKeys[$key] = true;
-                $value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional);
+                $value = self::coercedValue($property->derivationExpression?->expressionValue($this), $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional, transformsValue: false);
                 $this->setPrimitiveValueForKey($value, $key);
                 unset($this->resolvingKeys[$key]);
             }
@@ -1054,7 +1054,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult, Hashable
     /**
      * @internal
      */
-    public static function coercedValue(mixed $value, AttributeType $type, ?string $attributeValueClassName = null, ?string $valueTransformerName = null, bool $isOptional = true, bool $write = false): mixed
+    public static function coercedValue(mixed $value, AttributeType $type, ?string $attributeValueClassName = null, ?string $valueTransformerName = null, bool $isOptional = true, bool $write = false, bool $transformsValue = true): mixed
     {
         if ($value instanceof Value) {
             $value = $value->value;
@@ -1112,9 +1112,12 @@ class ManagedObject extends ObjectClass implements FetchRequestResult, Hashable
                         |> fatal_error(...),
                 default => fatal_error(sprintf("Invalid argument: invalid value %s(%s) for type %s", human_readable_value($value), typeof($value), human_readable_value($type)))
             },
-            AttributeType::transformable, AttributeType::objectID => (function () use ($value, $attributeValueClassName, $isOptional, $write, $valueTransformerName): mixed {
+            AttributeType::transformable, AttributeType::objectID => (function () use ($value, $attributeValueClassName, $isOptional, $write, $valueTransformerName, $transformsValue): mixed {
                 if ($value === null && !$isOptional && $attributeValueClassName !== null && class_exists($attributeValueClassName) && $attributeValueClassName !== ManagedObjectID::class) {
                     $value = new $attributeValueClassName();
+                }
+                if (!$transformsValue) {
+                    return $value;
                 }
                 if ($transformer = ValueTransformer::valueTransformerForName($valueTransformerName ?? SecureUnarchiveFromDataTransformerName)) {
                     return $write ? $transformer->transformedValue($value) : $transformer->reverseTransformedValue($value);
@@ -1130,7 +1133,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult, Hashable
     /**
      * @internal
      */
-    public static function coerceValue(mixed &$value, PropertyDescription $property, bool $write = false): bool
+    public static function coerceValue(mixed &$value, PropertyDescription $property, bool $write = false, bool $transformsValue = true): bool
     {
         if ($value instanceof Value) {
             $value = $value->value;
@@ -1142,17 +1145,17 @@ class ManagedObject extends ObjectClass implements FetchRequestResult, Hashable
             $isOptional = $property->isOptional;
             if ($value === null) {
                 if (!$isOptional) {
-                    $value = self::coercedValue($property->defaultValue, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $write);
+                    $value = self::coercedValue($property->defaultValue, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $write, $transformsValue);
                 }
             } else {
                 $value = match ($type) {
-                    AttributeType::string, AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float, AttributeType::boolean => $isOptional && $value === "" ? null : self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $write),
-                    default => self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $write),
+                    AttributeType::string, AttributeType::integer16, AttributeType::integer32, AttributeType::integer64, AttributeType::decimal, AttributeType::double, AttributeType::float, AttributeType::boolean => $isOptional && $value === "" ? null : self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $write, $transformsValue),
+                    default => self::coercedValue($value, $type, $attributeValueClassName, $valueTransformerName, $isOptional, $write, $transformsValue),
                 };
                 if ($property instanceof CompositeAttributeDescription && $value instanceof Dictionary && $value->isEmpty) {
                     foreach ($property->elements as $element) {
                         $elementValue = $element->defaultValue;
-                        self::coerceValue($elementValue, $element, $write);
+                        self::coerceValue($elementValue, $element, $write, $transformsValue);
                         $value[$element->name] = $elementValue;
                     }
                 }
@@ -1206,13 +1209,13 @@ class ManagedObject extends ObjectClass implements FetchRequestResult, Hashable
             if (Nil::nil()->isEqual($value) && !$property->isOptional) {
                 $value = $property->defaultValue;
             }
-            $value = self::coercedValue($value, $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional);
+            $value = self::coercedValue($value, $property->type, $property->attributeValueClassName, $property->valueTransformerName, $property->isOptional, transformsValue: false);
         }
         if (!parent::validateValueForKey($value, $key)) {
             return false;
         }
         if ($property instanceof PropertyDescription) {
-            return self::coerceValue($value, $property);
+            return self::coerceValue($value, $property, transformsValue: false);
         }
         if ($this->hasProperty($key)) {
             if ($key === ManagedObjectObjectIDKey && (is_int($value) || is_string($value))) {

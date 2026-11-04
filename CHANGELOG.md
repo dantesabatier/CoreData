@@ -7,6 +7,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- A transformable attribute is transformed once at each boundary with the store, by its own value transformer: encoded when it is written and decoded when it is read. A dictionary fetch decoded it with the default transformer instead of the attribute's `valueTransformerName`, so an attribute with a transformer of its own came back in its stored form; it now comes back as an object fetch returns it.
+- Assigning a value to a transformable attribute no longer runs its transformer. `validateValueForKey()`, the default value of an `AttributeDescription`, a non-optional attribute's fallback and a derived attribute reverse-transformed a value that was already in memory, which only worked because the default transformer lets a decoded value through; a transformer that rejects a value it did not encode, such as one that decrypts, failed on every assignment. A transformer's `reverseTransformedValue()` no longer needs to accept decoded values. Assigning a string that happens to be an archived value no longer unarchives it.
+- The XML store encodes a transformable attribute when it writes the file. It ran the transformer in the reading direction, so a value was written as it was held in memory.
+- `ManagedObject::coercedValue()` and `coerceValue()` take an optional `transformsValue`, `true` by default, which the in-memory coercions pass as `false`.
+
 ## [1.2.10] - 2026-10-29
 
 ### Fixed
