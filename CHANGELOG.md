@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.11] - 2026-11-04
+
 ### Fixed
 
 - A transformable attribute is transformed once at each boundary with the store, by its own value transformer: encoded when it is written and decoded when it is read. A dictionary fetch decoded it with the default transformer instead of the attribute's `valueTransformerName`, so an attribute with a transformer of its own came back in its stored form; it now comes back as an object fetch returns it.
