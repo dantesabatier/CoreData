@@ -245,6 +245,7 @@ final class SQLGenerator
             $usesPaginationSubquery = !$this->isSubquery && $this->requiresPaginationSubquery($request);
             $this->prepareSelectStatementWithFetchRequest($request);
             $this->prepareJoinStatementsForPredicateAndRelationships();
+            $selectArgumentCount = $this->arguments->count;
             if ($usesPaginationSubquery) {
                 $this->appendPaginationKeyConstraintToSQL($request);
                 // The key subquery picks the page; the predicate is applied again here because the outer query is the one that hydrates the graph, and it has to prune the related rows exactly as an unpaginated fetch does.
@@ -260,7 +261,7 @@ final class SQLGenerator
                     $this->preparePredicate($predicate, $this->whereClause);
                 }
             }
-            $this->appendFromClauseToSQL();
+            $this->appendFromClauseToSQL($selectArgumentCount);
             $this->appendSQL($this->selectList);
             $this->appendSQL($this->joinClause);
             $this->appendSQL($this->whereClause);
@@ -317,8 +318,14 @@ final class SQLGenerator
         $this->endSQL();
     }
 
+    /**
+     * A query that selects from a subquery adds no discriminator: the subquery already narrowed its rows to the entity, and the derived table it produces carries only the columns it selected.
+     */
     private function applyDiscriminatorPredicate(EntityDescription $entity, ?Predicate $predicate): ?Predicate
     {
+        if ($this->fromSubquery) {
+            return $predicate;
+        }
         /** @var  EntityDescription $rootEntity */
         $rootEntity = $entity->isRootEntity ? $entity : $entity->rootEntity;
         $subentities = $entity->managedObjectModel->flatten($rootEntity->subentities);
@@ -346,12 +353,15 @@ final class SQLGenerator
         $this->string .= $sql;
     }
 
-    private function appendFromClauseToSQL(): void
+    /**
+     * The clause is written after the join and where clauses have bound their arguments, but it precedes them in the statement, so the subquery's arguments are inserted where its placeholders fall.
+     */
+    private function appendFromClauseToSQL(int $argumentIndex): void
     {
         $this->selectList .= " FROM ";
         if ($fromSubquery = $this->fromSubquery) {
             $this->selectList .= "($fromSubquery->string)";
-            $this->arguments->appendContentsOf($fromSubquery->arguments);
+            $this->arguments->insertContentsOf($fromSubquery->arguments, $argumentIndex);
         } else {
             $this->selectList .= "`{$this->entity->tableName}`";
         }
@@ -1288,10 +1298,19 @@ final class SQLGenerator
     {
         $expressions = new ArrayClass([$predicate->leftExpression, $predicate->rightExpression]);
         $leftExpression = $expressions->first(fn(Expression $expression): bool => $this->isKeyPathExpression($expression)) ?? fatal_error("Select predicate must contain a key path expression");
-        $relationship = $this->resolveRelationshipFromKeyPath($leftExpression) ?? fatal_error("Unable to resolve relationship from key path \"$leftExpression->description\"");
         $rightExpression = ($leftExpression === $predicate->leftExpression) ? $predicate->rightExpression : $predicate->leftExpression;
         $keyPathComponents = components_from_key_path($leftExpression->description);
-        $propertyName = $keyPathComponents->remainderPath ?? $keyPathComponents->key;
+        $relationship = $this->entity->propertiesByName[$keyPathComponents->key];
+        $remainderPath = $keyPathComponents->remainderPath;
+        if ($relationship instanceof SQLToOne && $remainderPath !== null) {
+            $innerPredicate = new ComparisonPredicate(Expression::expressionForKeyPath($remainderPath), $rightExpression, $predicate->predicateOperatorType, $predicate->comparisonPredicateModifier, $predicate->options);
+            $clause .= $this->buildToOneSubquery($relationship, $innerPredicate);
+            return;
+        }
+        if (!$relationship instanceof SQLToMany && !$relationship instanceof SQLManyToMany) {
+            fatal_error("Unable to resolve relationship from key path \"$leftExpression->description\"");
+        }
+        $propertyName = $remainderPath ?? $keyPathComponents->key;
         $innerPredicate = new ComparisonPredicate(Expression::expressionForKeyPath($propertyName), $rightExpression, $predicate->predicateOperatorType);
         $clause .= match ($predicate->comparisonPredicateModifier) {
             ComparisonPredicateModifier::any => $this->buildAnySubquery($relationship, $innerPredicate),
@@ -1320,19 +1339,13 @@ final class SQLGenerator
         return "$keyPath = " . $this->buildCorrelatedSubqueryString($this->createSubQueryGenerator($relationship, null, $this->entity->primaryKey->columnName, $alias, $innerPredicate), $relationship, $this->entity->tableName, $alias, true);
     }
 
-    private function resolveRelationshipFromKeyPath(Expression $expression): SQLToMany|SQLManyToMany|null
+    private function buildToOneSubquery(SQLToOne $relationship, ComparisonPredicate $innerPredicate): string
     {
-        $entity = $this->entity;
-        $relationship = null;
-        // A parsed key path expression such as `orders.number` stores only the trailing key ("number") in ->keyPath; the leading components live in ->operand. ->description reconstructs the full dotted path, which is what we must walk to reach the to-many relationship it traverses.
-        foreach (explode(".", $expression->description) as $key) {
-            $property = $entity->propertiesByName[$key];
-            if ($property instanceof SQLToMany || $property instanceof SQLManyToMany) {
-                $entity = $property->destinationEntity;
-                $relationship = $property;
-            }
-        }
-        return $relationship;
+        $alias = $this->aliasGenerator->generateTableAlias();
+        $generator = $this->createSubQueryGenerator($relationship, null, $relationship->destinationEntity->primaryKey->columnName, $alias, $innerPredicate);
+        $statement = $generator->statement ?? fatal_error("Unable to build the subquery for \"$relationship->name\"");
+        $this->arguments->appendContentsOf($statement->arguments);
+        return "$this->tableReference.{$relationship->foreignKey->columnName} IN ($statement->string)";
     }
 
     /**
@@ -1377,6 +1390,7 @@ final class SQLGenerator
         $newContext = new SQLFetchRequestContext($fetchRequest, $requestContext->context, $requestContext->sqlCore);
         $generator = new SQLGenerator($newContext);
         $generator->isSubquery = true;
+        $generator->aliasGenerator = new SQLAliasGenerator($this->aliasGenerator->nestingLevel + 1);
         $generator->tableAlias = $tableAlias;
         $generator->autoDistinct = false;
         $generator->raisesForNotApplicableKeys = false;
@@ -1395,7 +1409,7 @@ final class SQLGenerator
         $requestContext = $this->requestContext;
         $managedObjectModel = $requestContext->sqlCore->persistentStoreCoordinator->managedObjectModel;
         /** @var EntityDescription $entityForFetchRequest */
-        $entityForFetchRequest = $managedObjectModel->entitiesByName[$this->entity->entityDescription->name];
+        $entityForFetchRequest = $managedObjectModel->entitiesByName[$request->entity?->name ?? $this->entity->entityDescription->name];
         $innerRequest = new FetchRequest();
         $innerRequest->entity = $entityForFetchRequest;
         $innerRequest->predicate = $request->predicate;
@@ -1427,7 +1441,7 @@ final class SQLGenerator
         $requestContext = $this->requestContext;
         $managedObjectModel = $requestContext->sqlCore->persistentStoreCoordinator->managedObjectModel;
         /** @var EntityDescription $entityForFetchRequest */
-        $entityForFetchRequest = $managedObjectModel->entitiesByName[$this->entity->entityDescription->name];
+        $entityForFetchRequest = $managedObjectModel->entitiesByName[$request->entity?->name ?? $this->entity->entityDescription->name];
         $wrappingRequest = new FetchRequest();
         $wrappingRequest->entity = $entityForFetchRequest;
         $wrappingRequest->includesPropertyValues = false;
@@ -1671,7 +1685,7 @@ final class SQLGenerator
         return "IF($predicate, $true, $false)";
     }
 
-    private function buildConstantExpression(/** @noinspection PhpUnusedParameterInspection */ Expression $expression, ?bool &$isDeterministic = true): string
+    private function buildConstantExpression(Expression $expression, /** @noinspection PhpUnusedParameterInspection */ ?bool &$isDeterministic = true): string
     {
         $value = $expression->constantValue;
         if ($value instanceof ArrayClass) {

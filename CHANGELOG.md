@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- A paged fetch of an entity that has subentities no longer fails with an unknown `entityName` column. The page's key subquery is wrapped in a derived table that selects only the primary key, and the wrapper added the entity discriminator again on that table; the discriminator is applied once, inside the subquery. The wrapper's discriminator was also bound ahead of the subquery's own arguments, which shifted every one of them by a place, so had the column existed the page would have been chosen by the wrong values. A query that selects from a subquery now binds that subquery's arguments where its placeholders fall. A paged fetch of a subentity also chose its page among the rows of its root entity, because the page's subqueries were built for the entity of the table rather than the one requested: a page of `Task` held `TimeFrame` rows. They are built for the requested entity.
+
 ## [1.2.11] - 2026-11-04
 
 ### Fixed

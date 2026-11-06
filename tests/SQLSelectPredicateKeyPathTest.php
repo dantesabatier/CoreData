@@ -32,8 +32,23 @@ final class Composer extends ManagedObject
 /**
  * @property Composer $composer
  * @property string $title
+ * @property Set<Movement> $movements
+ * @method void addMovementsObject(Movement $object)
+ * @method void removeMovementsObject(Movement $object)
+ * @method void addMovements(Set<Movement> $objects)
+ * @method void removeMovements(Set<Movement> $objects)
+ * @method Set<Movement> intersectMovements(Set<Movement> $objects)
+ * @method void setMovements(Set<Movement> $objects)
  */
 final class Symphony extends ManagedObject
+{
+}
+
+/**
+ * @property Symphony $symphony
+ * @property string $name
+ */
+final class Movement extends ManagedObject
 {
 }
 
@@ -76,6 +91,22 @@ final class SQLSelectPredicateKeyPathTest extends SQLMigrationTestCase
         $composer->lazyInverseRelationshipName = "works";
         $composer->maxCount = 1;
 
+        $movements = new RelationshipDescription();
+        $movements->name = "movements";
+        $movements->lazyDestinationEntityName = "Movement";
+        $movements->lazyInverseRelationshipName = "symphony";
+        $movements->isToMany = true;
+
+        $symphony = new RelationshipDescription();
+        $symphony->name = "symphony";
+        $symphony->lazyDestinationEntityName = "Symphony";
+        $symphony->lazyInverseRelationshipName = "movements";
+        $symphony->maxCount = 1;
+
+        $movementName = new AttributeDescription();
+        $movementName->name = "name";
+        $movementName->type = AttributeType::string;
+
         $composerEntity = new EntityDescription();
         $composerEntity->name = "Composer";
         $composerEntity->managedObjectClassName = Composer::class;
@@ -84,10 +115,15 @@ final class SQLSelectPredicateKeyPathTest extends SQLMigrationTestCase
         $symphonyEntity = new EntityDescription();
         $symphonyEntity->name = "Symphony";
         $symphonyEntity->managedObjectClassName = Symphony::class;
-        $symphonyEntity->properties = new ArrayClass([$title, $composer]);
+        $symphonyEntity->properties = new ArrayClass([$title, $composer, $movements]);
+
+        $movementEntity = new EntityDescription();
+        $movementEntity->name = "Movement";
+        $movementEntity->managedObjectClassName = Movement::class;
+        $movementEntity->properties = new ArrayClass([$movementName, $symphony]);
 
         $model = new ManagedObjectModel();
-        $model->entities = new ArrayClass([$composerEntity, $symphonyEntity]);
+        $model->entities = new ArrayClass([$composerEntity, $symphonyEntity, $movementEntity]);
         return $model;
     }
 
@@ -101,12 +137,21 @@ final class SQLSelectPredicateKeyPathTest extends SQLMigrationTestCase
         $eroica = new Symphony($context);
         $eroica->title = "Eroica";
         $eroica->setValueForKey($beethoven, "composer");
+        $funeralMarch = new Movement($context);
+        $funeralMarch->name = "Marcia funebre";
+        $funeralMarch->setValueForKey($eroica, "symphony");
+        $pastoral = new Symphony($context);
+        $pastoral->title = "Pastoral";
+        $pastoral->setValueForKey($beethoven, "composer");
 
         $mahler = new Composer($context);
         $mahler->name = "Mahler";
         $resurrection = new Symphony($context);
         $resurrection->title = "Resurrection";
         $resurrection->setValueForKey($mahler, "composer");
+        $urlicht = new Movement($context);
+        $urlicht->name = "Urlicht";
+        $urlicht->setValueForKey($resurrection, "symphony");
 
         $strauss = new Composer($context);
         $strauss->name = "Strauss";
@@ -184,5 +229,33 @@ final class SQLSelectPredicateKeyPathTest extends SQLMigrationTestCase
         $composer = $results->first;
         $this->assertNotNull($composer);
         $this->assertSame("Strauss", $composer->name);
+    }
+
+    /** @throws Exception */
+    public function testAnyThroughToOneThenToManyResolves(): void
+    {
+        $this->seed();
+
+        $readContext = $this->freshContext(self::model());
+        $request = Symphony::fetchRequest();
+        $request->predicate = Predicate::format("ANY composer.works.title == \"Eroica\"");
+
+        $titles = new Set($readContext->fetch($request)->map(fn(Symphony $symphony): string => $symphony->title)->array);
+
+        $this->assertEquals(new Set(["Eroica", "Pastoral"]), $titles);
+    }
+
+    /** @throws Exception */
+    public function testAnyThroughToManyThenToManyResolves(): void
+    {
+        $this->seed();
+
+        $readContext = $this->freshContext(self::model());
+        $request = Composer::fetchRequest();
+        $request->predicate = Predicate::format("ANY works.movements.name == \"Urlicht\"");
+
+        $names = new Set($readContext->fetch($request)->map(fn(Composer $composer): string => $composer->name)->array);
+
+        $this->assertEquals(new Set(["Mahler"]), $names);
     }
 }
