@@ -20,11 +20,15 @@ use Sabatier\CoreData\PersistentStoreCoordinator;
 use Sabatier\CoreData\PersistentStoreType;
 use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\FileManager;
+use Sabatier\Foundation\FileProtectionType;
+use Sabatier\Foundation\InternalInconsistencyException;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\SortDescriptor;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
+use const Sabatier\CoreData\PersistentStoreFileProtectionKey;
 
 /**
  * @property Set<Carton> $crates
@@ -71,7 +75,6 @@ final class XMLObjectStoreTest extends TestCase
 
     /**
      * A fresh model on every read: entity descriptions freeze once bound to a coordinator, so a memoized one could not open a second stack.
-     * @noinspection PhpPropertyOnlyWrittenInspection
      */
     private ManagedObjectModel $model {
         get {
@@ -178,6 +181,14 @@ final class XMLObjectStoreTest extends TestCase
         }
         $this->assertSame("C-1", $byName["code"], "string attribute is written verbatim");
         $this->assertSame("42", $byName["weight"], "integer attribute is written as its scalar text");
+    }
+
+    /** @throws Exception */
+    public function testCompleteFileProtectionIsRefused(): void
+    {
+        $this->expectException(InternalInconsistencyException::class);
+        $this->expectExceptionMessageMatches("/does not support/");
+        new PersistentStoreCoordinator($this->model)->addPersistentStoreWithType(PersistentStoreType::xml, null, $this->storeURL, new Dictionary([PersistentStoreFileProtectionKey => FileProtectionType::complete]));
     }
 
     /** @throws Exception */

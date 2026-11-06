@@ -37,6 +37,8 @@ const UpdatedObjectIDsKey = "UpdatedObjectIDsKey";
 
 /** @var string A key that indicates a persistent store posts a remote change notification for every `write` to the store, including writes by other processes. */
 const PersistentStoreRemoteChangeNotificationPostOptionKey = "PersistentStoreRemoteChangeNotificationPostOption";
+/** @var string An option key whose value is a `FileProtectionType` constant, the protection level of a persistent store's data at rest. */
+const PersistentStoreFileProtectionKey = "PersistentStoreFileProtectionKey";
 
 // Persistent Store Coordinator Constants
 

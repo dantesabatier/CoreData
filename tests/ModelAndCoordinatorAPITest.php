@@ -27,6 +27,7 @@ use Sabatier\Foundation\Predicates\Expression;
 use Sabatier\Foundation\Predicates\PredicateOperatorType;
 use Sabatier\Foundation\URL;
 use Sabatier\Foundation\UUID;
+use Throwable;
 use const Sabatier\CoreData\StoreModelVersionHashesKey;
 
 /**
@@ -448,7 +449,7 @@ final class ModelAndCoordinatorAPITest extends TestCase
      * contract the two names offer callers rather than in the scheduling. What both genuinely
      * promise is that the block is executed, and that is what is asserted.
      *
-     * @throws Exception
+     * @throws Throwable
      */
     public function testBothBlockEntryPointsRunTheirBlock(): void
     {

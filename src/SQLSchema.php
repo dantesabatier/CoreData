@@ -15,6 +15,10 @@ use function Sabatier\Foundation\fatal_error;
 /** @internal */
 final class SQLSchema
 {
+    public string $tableOptions {
+        get => "ENGINE=$this->engine DEFAULT CHARSET=$this->charset COLLATE=$this->collation";
+    }
+
     public function __construct(public string $name, public string $host, public SQLCredential $credential, public string $engine = "InnoDB", public string $charset = "utf8", public string $collation = "utf8_general_ci", public string $socket = "/tmp/mysql.sock")
     {
     }

@@ -116,7 +116,7 @@ abstract class SQLMigrationTestCase extends TestCase
      * @param Dictionary<mixed>|null $options
      * @throws Exception
      */
-    private function openContext(ManagedObjectModel $model, ?Dictionary $options = null): ManagedObjectContext
+    protected function openContext(ManagedObjectModel $model, ?Dictionary $options = null): ManagedObjectContext
     {
         $coordinator = new PersistentStoreCoordinator($model);
         $coordinator->addPersistentStoreWithType(PersistentStoreType::sql, null, $this->storeURL, $options);

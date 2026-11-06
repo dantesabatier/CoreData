@@ -19,6 +19,7 @@ use ReflectionProperty;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\FileProtectionType;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\NotificationCenter;
 use Sabatier\Foundation\Number;
@@ -54,6 +55,16 @@ final class SQLCore extends IncrementalStore
     }
     private(set) SQLConnection $queryGenerationTrackingConnection {
         get => $this->queryGenerationTrackingConnection ??= new SQLConnection($this->adapter);
+    }
+    #[Override]
+    public bool $isFileProtectionMigrationNeeded {
+        get => $this->schemaValidationConnection->isFileProtectionMigrationNeeded;
+    }
+    public string $encryptionTableOption {
+        get => "ENCRYPTED=" . ($this->fileProtection === FileProtectionType::complete ? "YES" : "NO");
+    }
+    public string $tableOptions {
+        get => "{$this->schemaValidationConnection->schema->tableOptions} $this->encryptionTableOption";
     }
     /** @var Dictionary<int> */
     private Dictionary $maxPrimaryKeys {

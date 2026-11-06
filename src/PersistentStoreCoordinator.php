@@ -121,7 +121,7 @@ final class PersistentStoreCoordinator extends ObjectClass
      * @return Dictionary<mixed>
      * @throws Exception
      */
-    public static function metadataForPersistentStore(/** @noinspection PhpUnusedParameterInspection */ PersistentStoreType $storeType, URL $storeURL, ?Dictionary $options = null): Dictionary
+    public static function metadataForPersistentStore(PersistentStoreType $storeType, URL $storeURL, /** @noinspection PhpUnusedParameterInspection */ ?Dictionary $options = null): Dictionary
     {
         /** @var class-string<PersistentStore> $persistentStoreClass */
         $persistentStoreClass = self::registeredStoreTypes()[$storeType->value];
@@ -199,7 +199,7 @@ final class PersistentStoreCoordinator extends ObjectClass
         $this->persistentStores->append($persistentStore);
         $persistentStore->didAdd($this);
         NotificationCenter::default()->postNotificationName(PersistentStoreCoordinatorStoresDidChange, $this, $userInfo);
-        if ($options && $options[MigratePersistentStoresAutomaticallyOption] && !$this->managedObjectModel->isConfigurationCompatibleWithStoreMetadata($configuration, $this->metadata($persistentStore))) {
+        if ($options && $options[MigratePersistentStoresAutomaticallyOption] && (!$this->managedObjectModel->isConfigurationCompatibleWithStoreMetadata($configuration, $this->metadata($persistentStore)) || $persistentStore->isFileProtectionMigrationNeeded)) {
             /** @var StagedMigrationManager|null $stagedManager */
             $stagedManager = $options[PersistentStoreStagedMigrationManagerOptionKey];
             if ($stagedManager instanceof StagedMigrationManager) {
@@ -417,6 +417,7 @@ final class PersistentStoreCoordinator extends ObjectClass
     /**
      * Asynchronously performs the block on the coordinator's queue.
      * @param Closure(): void $block
+     * @throws Throwable
      */
     public function performBlock(Closure $block): void
     {
@@ -426,6 +427,7 @@ final class PersistentStoreCoordinator extends ObjectClass
     /**
      * Synchronously performs the block on the coordinator's queue.
      * @param Closure(): void $block
+     * @throws Throwable
      */
     public function performBlockAndWait(Closure $block): void
     {

@@ -6,11 +6,13 @@ use Exception;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\FileManager;
+use Sabatier\Foundation\FileProtectionType;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Number;
 use Sabatier\Foundation\ObjectClass;
 use Sabatier\Foundation\URL;
 use function Sabatier\Foundation\fatal_error;
+use function Sabatier\Foundation\human_readable_value;
 use function Sabatier\Foundation\request_concrete_implementation;
 
 /**
@@ -47,6 +49,14 @@ abstract class PersistentStore extends ObjectClass
     public FaultHandler $faultHandler {
         get => $this->faultHandler ??= new FaultHandler($this);
     }
+    /** @internal */
+    private(set) ?float $timeout = null;
+    /** @internal */
+    private(set) string $fileProtection = FileProtectionType::none;
+    /** @internal */
+    public bool $isFileProtectionMigrationNeeded {
+        get => false;
+    }
     /** @var Dictionary<Dictionary<ManagedObjectID>> */
     private Dictionary $cacheEntities {
         get => $this->cacheEntities ??= new Dictionary();
@@ -69,6 +79,14 @@ abstract class PersistentStore extends ObjectClass
         set {
             $this->options = $value;
             $this->isReadOnly = (bool)$value?->valueForKey(ReadOnlyPersistentStoreOption);
+            $this->timeout = is_numeric($timeout = $value?->valueForKey(PersistentStoreTimeoutOption)) ? (float)$timeout : null;
+            $this->fileProtection = match ($protection = $value?->valueForKey(PersistentStoreFileProtectionKey) ?? FileProtectionType::none) {
+                FileProtectionType::complete, FileProtectionType::none => $protection,
+                default => $protection
+                        |> human_readable_value(...)
+                        |> (fn(string $x): string => sprintf("Invalid store option: %s %s, expecting \"%s\" or \"%s\"", PersistentStoreFileProtectionKey, $x, FileProtectionType::complete, FileProtectionType::none))
+                        |> fatal_error(...),
+            };
         }
     })
     {
@@ -80,7 +98,7 @@ abstract class PersistentStore extends ObjectClass
      * @return ManagedObjectModel|null
      * @internal
      */
-    public static function cachedModelForPersistentStoreWithURL(/** @noinspection PhpUnusedParameterInspection */ URL $url, ?Dictionary $options = null): ?ManagedObjectModel
+    public static function cachedModelForPersistentStoreWithURL(/** @noinspection PhpUnusedParameterInspection */ URL $url, /** @noinspection PhpUnusedParameterInspection */ ?Dictionary $options = null): ?ManagedObjectModel
     {
         return null;
     }

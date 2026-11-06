@@ -19,6 +19,7 @@ use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Bundle;
 use Sabatier\Foundation\Date;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\FileProtectionType;
 use Sabatier\Foundation\KeyedArchiver;
 use Sabatier\Foundation\KeyedUnarchiver;
 use Sabatier\Foundation\Nil;
@@ -41,6 +42,9 @@ final class SQLConnection
     }
     public ?SQLCore $sqlCore {
         get => $this->adapter?->sqlCore;
+    }
+    private string $tableOptions {
+        get => $this->tableOptions ??= $this->sqlCore?->tableOptions ?? $this->schema->tableOptions;
     }
     private SQLModel $model {
         get => $this->model ??= $this->sqlCore?->model ?? fatal_error("invalid argument: model cannot be null");
@@ -68,6 +72,26 @@ final class SQLConnection
     /** @var Set<string> */
     private(set) Set $allSchemaTableNames {
         get => $this->allSchemaTableNames ??= new Set($this->rootTableNames)->union($this->correlationTableNames)->union($this->hasPersistentHistoryTables ? $this->persistentHistoryTableNames : []);
+    }
+    /** @var Set<string> */
+    private(set) Set $ownedTableNames {
+        get => $this->ownedTableNames ??= $this->allSchemaTableNames->union(["ManagedObjectModel", "PersistentStoreMetadata"]);
+    }
+    private(set) bool $isFileProtectionMigrationNeeded {
+        /**
+         * @throws Exception
+         */
+        get {
+            if (isset($this->isFileProtectionMigrationNeeded)) {
+                return $this->isFileProtectionMigrationNeeded;
+            }
+            if (!($sqlCore = $this->sqlCore)) {
+                return $this->isFileProtectionMigrationNeeded = false;
+            }
+            $tableNames = new ArrayClass($this->ownedTableNames)->map(fn(string $tableName): string => "'$tableName'")->join(", ");
+            $encryptionScheme = $sqlCore->fileProtection === FileProtectionType::complete ? "= 0" : "<> 0";
+            return $this->isFileProtectionMigrationNeeded = (bool)$this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables t LEFT JOIN information_schema.INNODB_TABLESPACES_ENCRYPTION e ON e.NAME = CONCAT(t.table_schema, '/', t.table_name) WHERE t.table_schema = '{$this->schema->name}' AND t.table_name IN ($tableNames) AND COALESCE(e.ENCRYPTION_SCHEME, 0) $encryptionScheme"))->fetchColumn();
+        }
     }
     private(set) bool $hasMetadataTable {
         /**
@@ -173,7 +197,7 @@ final class SQLConnection
     {
         if ($this->mysql === null) {
             $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, Mysql::ATTR_USE_BUFFERED_QUERY => true];
-            if ($timeout = $this->sqlCore?->options?->valueForKey(PersistentStoreTimeoutOption)) {
+            if ($timeout = $this->sqlCore?->timeout) {
                 $options[PDO::ATTR_TIMEOUT] = $timeout;
             }
             $this->mysql = Mysql::connect("mysql:host={$this->schema->host};charset={$this->schema->charset};unix_socket={$this->schema->socket};", $this->schema->credential->user, $this->schema->credential->password, $options);
@@ -194,11 +218,21 @@ final class SQLConnection
         if (SQLCore::$debugLevel->value) {
             error_log(sprintf("CoreData: annotation: Connecting to %s database \"%s\"", SQLStoreType, $schemaName));
         }
-        if ($this->createSchemaIfNeeded()) {
-            return true;
+        if ($this->sqlCore?->fileProtection === FileProtectionType::complete) {
+            $this->enforceKeyManagementPlugin();
         }
-        $this->mysql()->exec("USE `$schemaName`");
+        if (!$this->createSchemaIfNeeded()) {
+            $this->mysql()->exec("USE `$schemaName`");
+        }
         return true;
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function enforceKeyManagementPlugin(): void
+    {
+        $this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.plugins WHERE plugin_type = 'ENCRYPTION' AND plugin_status = 'ACTIVE'"))->fetchColumn() ?: fatal_error(sprintf("Cannot open a store whose %s is \"%s\": the database server has no active key management plugin to encrypt its tables with", PersistentStoreFileProtectionKey, FileProtectionType::complete));
     }
 
     /**
@@ -603,7 +637,7 @@ final class SQLConnection
     private function createCachedModelTable(): void
     {
         if (!$this->hasCachedModelTable) {
-            $this->execute(new SQLStatement("CREATE TABLE IF NOT EXISTS `ManagedObjectModel` (`modelID` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT, `data` LONGBLOB NOT NULL, PRIMARY KEY (`modelID`)) ENGINE={$this->schema->engine} DEFAULT CHARSET={$this->schema->charset} COLLATE={$this->schema->collation}"));
+            $this->execute(new SQLStatement("CREATE TABLE IF NOT EXISTS `ManagedObjectModel` (`modelID` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT, `data` LONGBLOB NOT NULL, PRIMARY KEY (`modelID`)) $this->tableOptions"));
             $this->hasCachedModelTable = true;
         }
     }
@@ -614,7 +648,7 @@ final class SQLConnection
     private function createMetadata(): void
     {
         if (!$this->hasMetadataTable) {
-            $this->execute(new SQLStatement("CREATE TABLE IF NOT EXISTS `PersistentStoreMetadata` (`metadataID` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT, `data` LONGBLOB NOT NULL, PRIMARY KEY (`metadataID`)) ENGINE={$this->schema->engine} DEFAULT CHARSET={$this->schema->charset} COLLATE={$this->schema->collation}"));
+            $this->execute(new SQLStatement("CREATE TABLE IF NOT EXISTS `PersistentStoreMetadata` (`metadataID` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT, `data` LONGBLOB NOT NULL, PRIMARY KEY (`metadataID`)) $this->tableOptions"));
             $this->hasMetadataTable = true;
         }
     }

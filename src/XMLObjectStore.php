@@ -19,6 +19,7 @@ use Override;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\FileManager;
+use Sabatier\Foundation\FileProtectionType;
 use Sabatier\Foundation\Nil;
 use Sabatier\Foundation\Set;
 use Sabatier\Foundation\URL;
@@ -290,7 +291,7 @@ final class XMLObjectStore extends AtomicStore
         return $this->managedObjectIDs($value, $relationship)->map(fn(ManagedObjectID $objectID): string|int => $objectID->referenceObject)->join(" ");
     }
 
-    private function managedObjectIDs(/** @noinspection PhpUnusedParameterInspection */ Set|ManagedObject|ManagedObjectID|Nil|null $value, ?RelationshipDescription $relationship = null): Set
+    private function managedObjectIDs(Set|ManagedObject|ManagedObjectID|Nil|null $value, /** @noinspection PhpUnusedParameterInspection */ ?RelationshipDescription $relationship = null): Set
     {
         /** @var Set<ManagedObjectID> $managedObjectIDs */
         $managedObjectIDs = new Set();
@@ -547,6 +548,7 @@ final class XMLObjectStore extends AtomicStore
     #[Override]
     public function load(): bool
     {
+        $this->fileProtection !== FileProtectionType::complete ?: fatal_error(sprintf("The XML store does not support %s \"%s\"", PersistentStoreFileProtectionKey, FileProtectionType::complete));
         $document = $this->document;
         $this->metadata = self::loadMetadataFromDocument($document);
         $this->identifier = $this->metadata[StoreUUIDKey];

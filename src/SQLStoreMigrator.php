@@ -393,6 +393,19 @@ final class SQLStoreMigrator
         $this->removeUnusedRelationships();
         $this->removeUnusedColumns();
         $this->removeUnusedEntities();
+        $this->applyFileProtection();
+    }
+
+    /**
+     * Every table the store owns is altered, not only the ones out of line: an alter that changes nothing costs no rebuild, and a migration cut short is finished by the next one.
+     *
+     * @throws Exception
+     */
+    private function applyFileProtection(): void
+    {
+        foreach ($this->connection->ownedTableNames as $tableName) {
+            $this->connection->execute($this->adapter->newAlterTableEncryptionStatement($tableName));
+        }
     }
 
     /**

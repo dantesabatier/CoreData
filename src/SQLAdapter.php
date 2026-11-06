@@ -315,12 +315,17 @@ final readonly class SQLAdapter
     public function newCreateTableStatementForManyToMany(SQLManyToMany $manyToMany): SQLStatement
     {
         $columnNames = new ArrayClass([$manyToMany->orderColumnName, $manyToMany->inverseOrderColumnName]);
-        return new SQLStatement("CREATE TABLE IF NOT EXISTS `$manyToMany->correlationTableName` ({$columnNames->map(fn (string $columnName): string => "`$columnName` {$manyToMany->columnSQLType->value}(11) UNSIGNED")->join(", ")}, CONSTRAINT PRIMARY KEY ({$columnNames->map(fn(string $columnName): string => "`$columnName`")->join(", ")}) USING BTREE) ENGINE={$this->sqlCore->schemaValidationConnection->schema->engine} DEFAULT CHARSET={$this->sqlCore->schemaValidationConnection->schema->charset} COLLATE={$this->sqlCore->schemaValidationConnection->schema->collation}");
+        return new SQLStatement("CREATE TABLE IF NOT EXISTS `$manyToMany->correlationTableName` ({$columnNames->map(fn (string $columnName): string => "`$columnName` {$manyToMany->columnSQLType->value}(11) UNSIGNED")->join(", ")}, CONSTRAINT PRIMARY KEY ({$columnNames->map(fn(string $columnName): string => "`$columnName`")->join(", ")}) USING BTREE) {$this->sqlCore->tableOptions}");
     }
 
     public function newCreateTableStatement(SQLEntity $entity): SQLStatement
     {
-        return new SQLStatement("CREATE TABLE IF NOT EXISTS `$entity->tableName` ({$entity->columnsToCreate->compactMap($this->typeStringForColumn(...))->join(", ")}, CONSTRAINT PK_{$entity->primaryKey->columnName} PRIMARY KEY (`{$entity->primaryKey->columnName}`) USING BTREE) ENGINE={$this->sqlCore->schemaValidationConnection->schema->engine} DEFAULT CHARSET={$this->sqlCore->schemaValidationConnection->schema->charset} COLLATE={$this->sqlCore->schemaValidationConnection->schema->collation}");
+        return new SQLStatement("CREATE TABLE IF NOT EXISTS `$entity->tableName` ({$entity->columnsToCreate->compactMap($this->typeStringForColumn(...))->join(", ")}, CONSTRAINT PK_{$entity->primaryKey->columnName} PRIMARY KEY (`{$entity->primaryKey->columnName}`) USING BTREE) {$this->sqlCore->tableOptions}");
+    }
+
+    public function newAlterTableEncryptionStatement(string $tableName): SQLStatement
+    {
+        return new SQLStatement("ALTER TABLE IF EXISTS `$tableName` {$this->sqlCore->encryptionTableOption}");
     }
 
     public function newDropDatabaseStatement(string $databaseName): SQLStatement

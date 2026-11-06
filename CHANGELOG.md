@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `PersistentStoreFileProtectionKey` sets the protection level of a store's data at rest, a `FileProtectionType` constant; `none` when it is absent, and any other value is refused when the store is created. The SQL store declares it on every table it owns — the entities', the many-to-many and history tables, `ManagedObjectModel` and `PersistentStoreMetadata` — as `ENCRYPTED=YES` with `complete`, which MariaDB encrypts with the server's key management plugin, and `ENCRYPTED=NO` with `none`. A table that does not match the option makes the store migrate, as an incompatible model does when `MigratePersistentStoresAutomaticallyOption` is set: the migration alters every table the store owns to the option, so changing it migrates an existing store in either direction, and only a table whose level changes is rebuilt. Opening with `complete` fails if the server has no active key management plugin. The XML store refuses `complete`. Table encryption does not cover the redo log, the binary log or temporary files, which the server encrypts through its own configuration.
+
 ## [1.2.12] - 2026-11-06
 
 ### Fixed
