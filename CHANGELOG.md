@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.14] - 2026-11-06
+
 ### Fixed
 
 - The SQL store honours `includesSubentities`. A fetch of a concrete entity with subentities returned only its own rows; it now includes its subentities' rows, and only its own with `includesSubentities` set to `false`. A fetch of an abstract entity returned every row of its root's table, a sibling hierarchy's included; it now returns its own subentities' rows, and none with `includesSubentities` set to `false`. A batch update honours its own `includesSubentities` the same way.
