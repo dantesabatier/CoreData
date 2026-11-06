@@ -9,11 +9,18 @@ use Override;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
 use Sabatier\CoreData\BatchDeleteRequest;
+use Sabatier\CoreData\BatchDeleteRequestResultType;
+use Sabatier\CoreData\BatchDeleteResult;
+use Sabatier\CoreData\BatchUpdateRequest;
+use Sabatier\CoreData\BatchUpdateRequestResultType;
+use Sabatier\CoreData\BatchUpdateResult;
 use Sabatier\CoreData\EntityDescription;
 use Sabatier\CoreData\FetchRequest;
 use Sabatier\CoreData\ManagedObject;
+use Sabatier\CoreData\ManagedObjectID;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\Foundation\ArrayClass;
+use Sabatier\Foundation\Dictionary;
 
 /**
  * @property string $name
@@ -113,15 +120,26 @@ final class SQLSubentityFetchTest extends SQLMigrationTestCase
         return $names;
     }
 
-    /** @throws Exception */
-    private function batchDelete(string $entityName, bool $includesSubentities = true): void
+    /**
+     * @return list<string>
+     * @throws Exception
+     */
+    private function batchDelete(string $entityName, bool $includesSubentities = true): array
     {
         $context = $this->freshContext(self::model());
-        $context->performBlockAndWait(function () use ($context, $entityName, $includesSubentities): void {
+        $entityNames = [];
+        $context->performBlockAndWait(function () use ($context, $entityName, $includesSubentities, &$entityNames): void {
             $request = new FetchRequest($entityName);
             $request->includesSubentities = $includesSubentities;
-            $context->execute(new BatchDeleteRequest($request));
+            $batchDeleteRequest = new BatchDeleteRequest($request);
+            $batchDeleteRequest->resultType = BatchDeleteRequestResultType::objectIDs;
+            /** @var BatchDeleteResult $result */
+            $result = $context->execute($batchDeleteRequest);
+            /** @var ArrayClass<ManagedObjectID> $objectIDs */
+            $objectIDs = $result->result;
+            $entityNames = $objectIDs->map(fn(ManagedObjectID $objectID): string => $objectID->entity->name)->sort()->array;
         });
+        return $entityNames;
     }
 
     /** @throws Exception */
@@ -168,5 +186,30 @@ final class SQLSubentityFetchTest extends SQLMigrationTestCase
         $this->batchDelete("Polygon", false);
 
         $this->assertSame(["circle", "square"], $this->names("Shape"));
+    }
+
+    /** @throws Exception */
+    public function testABatchDeleteReportsEachRowWithItsOwnEntity(): void
+    {
+        $this->assertSame(["Polygon", "Square"], $this->batchDelete("Polygon"));
+    }
+
+    /** @throws Exception */
+    public function testABatchUpdateReportsEachRowWithItsOwnEntity(): void
+    {
+        $context = $this->freshContext(self::model());
+        $entityNames = [];
+        $context->performBlockAndWait(function () use ($context, &$entityNames): void {
+            $request = new BatchUpdateRequest(EntityDescription::entity("Polygon", $context));
+            $request->propertiesToUpdate = new Dictionary(["name" => "updated"]);
+            $request->resultType = BatchUpdateRequestResultType::objectIDs;
+            /** @var BatchUpdateResult $result */
+            $result = $context->execute($request);
+            /** @var ArrayClass<ManagedObjectID> $objectIDs */
+            $objectIDs = $result->result;
+            $entityNames = $objectIDs->map(fn(ManagedObjectID $objectID): string => $objectID->entity->name)->sort()->array;
+        });
+
+        $this->assertSame(["Polygon", "Square"], $entityNames);
     }
 }

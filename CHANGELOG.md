@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- The objectIDs a batch delete or a batch update reports, and records in persistent history, name each row's own entity. They were built with the entity of the request's table, so in a hierarchy every affected row was reported as its root entity, abstract or not.
+
 ## [1.2.14] - 2026-11-06
 
 ### Fixed
