@@ -255,7 +255,7 @@ final class SQLGenerator
                     $this->whereClause .= ")";
                 }
             } else {
-                $predicate = $this->applyDiscriminatorPredicate($entity, $request->predicate);
+                $predicate = $this->applyDiscriminatorPredicate($entity, $request->predicate, $request->includesSubentities);
                 if ($predicate) {
                     $this->appendWhereClauseToSQL();
                     $this->preparePredicate($predicate, $this->whereClause);
@@ -300,7 +300,7 @@ final class SQLGenerator
             $this->prepareJoinStatementsForPredicateAndRelationships();
             $this->appendSQL($this->joinClause);
             $this->appendSetStatementForBatchUpdateRequest($request);
-            if ($predicate = $this->applyDiscriminatorPredicate($request->entity, $request->predicate)) {
+            if ($predicate = $this->applyDiscriminatorPredicate($request->entity, $request->predicate, $request->includesSubentities)) {
                 $this->appendWhereClauseToSQL();
                 $this->preparePredicate($predicate, $this->whereClause);
                 $this->appendSQL($this->whereClause);
@@ -309,7 +309,8 @@ final class SQLGenerator
             $this->prepareStatementForBatchDeleteRequest($request);
             $this->prepareJoinStatementsForPredicateAndRelationships();
             $this->appendSQL($this->joinClause);
-            if ($predicate = $request->fetchRequest->predicate) {
+            $fetchRequest = $request->fetchRequest;
+            if ($predicate = $this->applyDiscriminatorPredicate($fetchRequest->entity ?? $this->entity->entityDescription, $fetchRequest->predicate, $fetchRequest->includesSubentities)) {
                 $this->appendWhereClauseToSQL();
                 $this->preparePredicate($predicate, $this->whereClause);
                 $this->appendSQL($this->whereClause);
@@ -321,23 +322,27 @@ final class SQLGenerator
     /**
      * A query that selects from a subquery adds no discriminator: the subquery already narrowed its rows to the entity, and the derived table it produces carries only the columns it selected.
      */
-    private function applyDiscriminatorPredicate(EntityDescription $entity, ?Predicate $predicate): ?Predicate
+    private function applyDiscriminatorPredicate(EntityDescription $entity, ?Predicate $predicate, bool $includesSubentities): ?Predicate
     {
         if ($this->fromSubquery) {
             return $predicate;
         }
-        /** @var  EntityDescription $rootEntity */
+        $model = $entity->managedObjectModel;
+        /** @var EntityDescription $rootEntity */
         $rootEntity = $entity->isRootEntity ? $entity : $entity->rootEntity;
-        $subentities = $entity->managedObjectModel->flatten($rootEntity->subentities);
-        if (!$entity->isAbstract && !$subentities->isEmpty) {
-            $mandatory = new ComparisonPredicate(Expression::expressionForKeyPath($this->entity->entityKey->columnName), Expression::expressionForConstantValue($entity->name));
-            if ($predicate) {
-                $predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory]));
-            } else {
-                $predicate = $mandatory;
-            }
+        $isConcrete = fn(EntityDescription $description): bool => !$description->isAbstract;
+        $entities = new ArrayClass([$entity]);
+        $names = ($includesSubentities ? $model->flatten($entities) : $entities)->filter($isConcrete)->map(fn(EntityDescription $description): string => $description->name);
+        if ($names->count === $model->flatten(new ArrayClass([$rootEntity]))->filter($isConcrete)->count) {
+            return $predicate;
         }
-        return $predicate;
+        $entityKey = Expression::expressionForKeyPath($this->entity->entityKey->columnName);
+        $mandatory = match ($names->count) {
+            0 => FalsePredicate::default(),
+            1 => new ComparisonPredicate($entityKey, Expression::expressionForConstantValue($names->first)),
+            default => new ComparisonPredicate($entityKey, Expression::expressionForConstantValue($names), PredicateOperatorType::in),
+        };
+        return $predicate ? CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory])) : $mandatory;
     }
 
     private function endSQL(): void
