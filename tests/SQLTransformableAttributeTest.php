@@ -18,6 +18,8 @@ use Sabatier\CoreData\ManagedObjectID;
 use Sabatier\CoreData\ManagedObjectModel;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\InternalInconsistencyException;
+use Sabatier\Foundation\Predicates\Predicate;
 use Sabatier\Foundation\ValueTransformer;
 
 final class StrictNoteTransformer extends ValueTransformer
@@ -260,5 +262,48 @@ final class SQLTransformableAttributeTest extends SQLMigrationTestCase
         /** @var Dictionary<mixed>|null $row */
         $row = $this->freshContext(self::model())->fetch($request)->first;
         $this->assertTrue(new Dictionary(["priority" => 2])->isEqual($row?->valueForKey("extras")));
+    }
+
+    /**
+     * @return ArrayClass<string|null>
+     * @throws Exception
+     */
+    private function titlesMatching(Predicate $predicate): ArrayClass
+    {
+        $context = $this->seed();
+        $empty = new Memo($context);
+        $empty->title = "empty";
+        $context->save();
+        $request = Memo::fetchRequest();
+        $request->predicate = $predicate;
+        return $this->freshContext(self::model())->fetch($request)->map(fn(Memo $memo): ?string => $memo->title);
+    }
+
+    /** @throws Exception */
+    public function testATransformableComparesEqualToNil(): void
+    {
+        $this->assertSame(["empty"], $this->titlesMatching(Predicate::format("note == nil"))->array);
+    }
+
+    /** @throws Exception */
+    public function testATransformableComparesNotEqualToNil(): void
+    {
+        $this->assertSame(["draft"], $this->titlesMatching(Predicate::format("note != nil"))->array);
+    }
+
+    /** @throws Exception */
+    public function testATransformableRefusesEqualityAgainstAValue(): void
+    {
+        $this->expectException(InternalInconsistencyException::class);
+        $this->expectExceptionMessageMatches("/\"Memo\.note\" is transformable/");
+        $this->titlesMatching(Predicate::format("note == %@", new ArrayClass([self::Note])));
+    }
+
+    /** @throws Exception */
+    public function testATransformableRefusesAnyOtherOperator(): void
+    {
+        $this->expectException(InternalInconsistencyException::class);
+        $this->expectExceptionMessageMatches("/\"Memo\.extras\" is transformable/");
+        $this->titlesMatching(Predicate::format("extras CONTAINS %@", new ArrayClass(["priority"])));
     }
 }

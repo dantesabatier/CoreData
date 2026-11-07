@@ -1026,6 +1026,7 @@ final class SQLGenerator
 
     private function buildClauseWithSimplePredicate(ComparisonPredicate $predicate, string &$clause): void
     {
+        $this->validateTransformableComparison($predicate);
         if ($predicate->predicateOperatorType == PredicateOperatorType::lessThan) {
             $this->prepareClauseWithSimplePredicate($predicate, $clause, PredicateOperatorSymbol::lessThan);
         } elseif ($predicate->predicateOperatorType == PredicateOperatorType::lessThanOrEqualTo) {
@@ -1052,6 +1053,20 @@ final class SQLGenerator
             $this->prepareIn($predicate, $clause);
         } elseif ($predicate->predicateOperatorType == PredicateOperatorType::between) {
             $this->prepareBetween($predicate, $clause);
+        }
+    }
+
+    private function validateTransformableComparison(ComparisonPredicate $predicate): void
+    {
+        $comparesWithNil = ($predicate->predicateOperatorType === PredicateOperatorType::equalTo || $predicate->predicateOperatorType === PredicateOperatorType::notEqualTo) && ($this->isNullExpression($predicate->leftExpression) || $this->isNullExpression($predicate->rightExpression));
+        if ($comparesWithNil) {
+            return;
+        }
+        $isTransformable = fn(SQLProperty $property): bool => $property instanceof SQLAttribute && $property->attributeDescription->type === AttributeType::transformable;
+        foreach ([$predicate->leftExpression, $predicate->rightExpression] as $expression) {
+            if ($attribute = $this->propertiesFromKeyPathExpression($expression, $isTransformable)->first) {
+                fatal_error("Unsupported predicate for SQL generation: \"{$attribute->entity->entityDescription->name}.$attribute->name\" is transformable and can only be compared against nil; filter it in memory");
+            }
         }
     }
 
