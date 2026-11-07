@@ -446,4 +446,32 @@ final class SQLAdapterTest extends TestCase
 
         $this->assertStringContainsString("AdapterPart", $statement->string);
     }
+
+    // --- Maintenance ---
+
+    /**
+     * Refreshing statistics names every table it is given, each quoted, so the server analyzes
+     * exactly the tables the caller selected rather than the whole schema.
+     *
+     * @throws Exception
+     */
+    public function testAnalyzingTablesNamesEveryTable(): void
+    {
+        $statement = $this->adapter->newAnalyzeTablesStatement(new Set(["AdapterPart", "AdapterTag"]));
+
+        $this->assertStringContainsString("ANALYZE TABLE", $statement?->string ?? "");
+        $this->assertStringContainsString("`AdapterPart`", $statement?->string ?? "");
+        $this->assertStringContainsString("`AdapterTag`", $statement?->string ?? "");
+    }
+
+    /**
+     * Analyzing no tables is not an empty ANALYZE — which is a syntax error — but no statement at
+     * all, so the caller skips the step.
+     *
+     * @throws Exception
+     */
+    public function testAnalyzingNoTablesYieldsNoStatement(): void
+    {
+        $this->assertNull($this->adapter->newAnalyzeTablesStatement(new Set()));
+    }
 }

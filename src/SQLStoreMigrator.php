@@ -467,6 +467,7 @@ final class SQLStoreMigrator
     public function disconnect(): void
     {
         $this->connection->saveCachedModel($this->destinationModel);
+        $this->connection->analyzeAllTables();
         $this->connection->disconnect();
     }
 }

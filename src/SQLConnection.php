@@ -12,8 +12,8 @@ namespace Sabatier\CoreData;
 use BackedEnum;
 use Exception;
 use PDO;
-use PDOException;
 use Pdo\Mysql;
+use PDOException;
 use PDOStatement;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Bundle;
@@ -808,6 +808,25 @@ final class SQLConnection
     private function moveTables(string $sourceDatabaseName, string $destinationDatabaseName, Set $tableNames): void
     {
         if (!$tableNames->isEmpty && ($statement = $this->adapter?->newRenameTablesStatement($sourceDatabaseName, $destinationDatabaseName, $tableNames))) {
+            $this->execute($statement);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function analyzeAllTables(): void
+    {
+        $this->analyzeTables($this->ownedTableNames);
+    }
+
+    /**
+     * @param Set<string> $tableNames
+     * @throws Exception
+     */
+    public function analyzeTables(Set $tableNames): void
+    {
+        if ($statement = $this->adapter?->newAnalyzeTablesStatement($tableNames)) {
             $this->execute($statement);
         }
     }

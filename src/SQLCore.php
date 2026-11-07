@@ -312,6 +312,7 @@ final class SQLCore extends IncrementalStore
                             }
                             return $snapshots;
                         }));
+                    $this->queryGenerationTrackingConnection->analyzeTables(new Set([$requestContext->sqlEntityForInsertRequest->tableName]));
                 }
             } elseif ($requestContext instanceof SQLBatchUpdateRequestContext && $requestContext->request->resultType === BatchUpdateRequestResultType::objectIDs) {
                 /** @var ArrayClass<ManagedObjectID> $updatedObjectIDs */

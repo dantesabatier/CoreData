@@ -328,6 +328,18 @@ final readonly class SQLAdapter
         return new SQLStatement("ALTER TABLE IF EXISTS `$tableName` {$this->sqlCore->encryptionTableOption}");
     }
 
+    /**
+     * @param Set<string> $tableNames
+     * @return SQLStatement|null
+     */
+    public function newAnalyzeTablesStatement(Set $tableNames): ?SQLStatement
+    {
+        if ($tableNames->isEmpty) {
+            return null;
+        }
+        return new SQLStatement("ANALYZE TABLE {$tableNames->map(fn(string $tableName): string => "`$tableName`")->join(", ")}");
+    }
+
     public function newDropDatabaseStatement(string $databaseName): SQLStatement
     {
         return new SQLStatement("DROP DATABASE IF EXISTS `$databaseName`");
