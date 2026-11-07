@@ -81,17 +81,7 @@ final class SQLConnection
         /**
          * @throws Exception
          */
-        get {
-            if (isset($this->isFileProtectionMigrationNeeded)) {
-                return $this->isFileProtectionMigrationNeeded;
-            }
-            if (!($sqlCore = $this->sqlCore)) {
-                return $this->isFileProtectionMigrationNeeded = false;
-            }
-            $tableNames = new ArrayClass($this->ownedTableNames)->map(fn(string $tableName): string => "'$tableName'")->join(", ");
-            $encryptionScheme = $sqlCore->fileProtection === FileProtectionType::complete ? "= 0" : "<> 0";
-            return $this->isFileProtectionMigrationNeeded = (bool)$this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables t LEFT JOIN information_schema.INNODB_TABLESPACES_ENCRYPTION e ON e.NAME = CONCAT(t.table_schema, '/', t.table_name) WHERE t.table_schema = '{$this->schema->name}' AND t.table_name IN ($tableNames) AND COALESCE(e.ENCRYPTION_SCHEME, 0) $encryptionScheme"))->fetchColumn();
-        }
+        get => $this->isFileProtectionMigrationNeeded ??= $this->sqlCore !== null && $this->execute(new SQLStatement("SELECT COUNT(*) FROM information_schema.tables t LEFT JOIN information_schema.INNODB_TABLESPACES_ENCRYPTION e ON e.NAME = CONCAT(t.table_schema, '/', t.table_name) WHERE t.table_schema = '{$this->schema->name}' AND t.table_name IN ({$this->ownedTableNames->map(fn(string $tableName): string => "'$tableName'")->join(", ")}) AND COALESCE(e.ENCRYPTION_SCHEME, 0) " . ($this->sqlCore->fileProtection === FileProtectionType::complete ? "= 0" : "<> 0")))->fetchColumn();
     }
     private(set) bool $hasMetadataTable {
         /**

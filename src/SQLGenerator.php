@@ -694,7 +694,7 @@ final class SQLGenerator
         if ($destinationPath === "" || !($names = $this->discriminatedEntityNames($destinationEntity->entityDescription, true)) || $names->isEmpty) {
             return;
         }
-        $this->joinClause .= " AND $destinationPath.{$destinationEntity->entityKey->columnName} IN (" . implode(", ", $names->map(fn(string $name): string => "'$name'")->array) . ")";
+        $this->joinClause .= " AND $destinationPath.{$destinationEntity->entityKey->columnName} IN ({$names->map(fn(string $name): string => "'$name'")->join(", ")})";
     }
 
     /**
@@ -1055,8 +1055,7 @@ final class SQLGenerator
 
     private function validateTransformableComparison(ComparisonPredicate $predicate): void
     {
-        $comparesWithNil = ($predicate->predicateOperatorType === PredicateOperatorType::equalTo || $predicate->predicateOperatorType === PredicateOperatorType::notEqualTo) && ($this->isNullExpression($predicate->leftExpression) || $this->isNullExpression($predicate->rightExpression));
-        if ($comparesWithNil) {
+        if (($predicate->predicateOperatorType === PredicateOperatorType::equalTo || $predicate->predicateOperatorType === PredicateOperatorType::notEqualTo) && ($this->isNullExpression($predicate->leftExpression) || $this->isNullExpression($predicate->rightExpression))) {
             return;
         }
         $isTransformable = fn(SQLProperty $property): bool => $property instanceof SQLAttribute && $property->attributeDescription->type === AttributeType::transformable;
@@ -1358,9 +1357,7 @@ final class SQLGenerator
 
     private function buildToOneSubquery(SQLToOne $relationship, ComparisonPredicate $innerPredicate): string
     {
-        $alias = $this->aliasGenerator->generateTableAlias();
-        $generator = $this->createSubQueryGenerator($relationship, null, $relationship->destinationEntity->primaryKey->columnName, $alias, $innerPredicate);
-        $statement = $generator->statement ?? fatal_error("Unable to build the subquery for \"$relationship->name\"");
+        $statement = $this->createSubQueryGenerator($relationship, null, $relationship->destinationEntity->primaryKey->columnName, $this->aliasGenerator->generateTableAlias(), $innerPredicate)->statement ?? fatal_error("Unable to build the subquery for \"$relationship->name\"");
         $this->arguments->appendContentsOf($statement->arguments);
         return "$this->tableReference.{$relationship->foreignKey->columnName} IN ($statement->string)";
     }

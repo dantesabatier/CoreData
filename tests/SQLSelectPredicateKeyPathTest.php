@@ -240,7 +240,7 @@ final class SQLSelectPredicateKeyPathTest extends SQLMigrationTestCase
         $request = Symphony::fetchRequest();
         $request->predicate = Predicate::format("ANY composer.works.title == \"Eroica\"");
 
-        $titles = new Set($readContext->fetch($request)->map(fn(Symphony $symphony): string => $symphony->title)->array);
+        $titles = new Set($readContext->fetch($request)->map(fn(Symphony $symphony): string => $symphony->title));
 
         $this->assertEquals(new Set(["Eroica", "Pastoral"]), $titles);
     }
@@ -254,7 +254,7 @@ final class SQLSelectPredicateKeyPathTest extends SQLMigrationTestCase
         $request = Composer::fetchRequest();
         $request->predicate = Predicate::format("ANY works.movements.name == \"Urlicht\"");
 
-        $names = new Set($readContext->fetch($request)->map(fn(Composer $composer): string => $composer->name)->array);
+        $names = new Set($readContext->fetch($request)->map(fn(Composer $composer): string => $composer->name));
 
         $this->assertEquals(new Set(["Mahler"]), $names);
     }
