@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.17] - 2026-11-06
+
 ### Fixed
 
 - A join to a concrete entity with subentities includes its subentities' rows. The SQL store discriminated the joined table by the destination entity alone, so a predicate or a serialization through a relationship whose object is of a subentity found nothing. It now discriminates by the destination and its concrete subentities, the same selection a fetch of that entity makes, and not at all when they cover the whole table.
