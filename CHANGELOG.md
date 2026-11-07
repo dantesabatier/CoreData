@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.18] - 2026-11-07
+
 ### Changed
 
 - The SQL store refreshes a table's optimizer statistics after a batch insert that reports the inserted objectIDs, and refreshes every table it owns at the end of a migration. The `ANALYZE TABLE` runs once the rows are in place, so the next fetch plans on current statistics instead of those the server had before the bulk write.
