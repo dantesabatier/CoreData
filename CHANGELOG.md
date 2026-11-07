@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.16] - 2026-11-06
+
 ### Changed
 
 - The SQL store refuses a predicate that compares a transformable attribute with anything but `nil`. The attribute is stored as its encoded value, so such a comparison was either sent to the server as a raw value matched against the encoded bytes, finding nothing, or failed in PDO for an object or a collection. It now fails naming the attribute; `== nil` and `!= nil` are unchanged. Filter on the decoded value in memory.
