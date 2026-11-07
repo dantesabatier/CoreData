@@ -19,8 +19,10 @@ use Sabatier\CoreData\FetchRequest;
 use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\ManagedObjectID;
 use Sabatier\CoreData\ManagedObjectModel;
+use Sabatier\CoreData\RelationshipDescription;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Predicates\Predicate;
 
 /**
  * @property string $name
@@ -45,6 +47,14 @@ final class SubentityCircle extends SubentityRounded
 {
 }
 
+/**
+ * @property string $title
+ * @property SubentityPolygon|null $polygon
+ */
+final class SubentityDrawing extends ManagedObject
+{
+}
+
 final class SQLSubentityFetchTest extends SQLMigrationTestCase
 {
     private static function model(): ManagedObjectModel
@@ -63,6 +73,13 @@ final class SQLSubentityFetchTest extends SQLMigrationTestCase
         $polygon->name = "Polygon";
         $polygon->managedObjectClassName = SubentityPolygon::class;
         $polygon->superentity = $shape;
+
+        $drawings = new RelationshipDescription();
+        $drawings->name = "drawings";
+        $drawings->lazyDestinationEntityName = "Drawing";
+        $drawings->lazyInverseRelationshipName = "polygon";
+        $drawings->isToMany = true;
+        $polygon->properties = new ArrayClass([$drawings]);
 
         $square = new EntityDescription();
         $square->name = "Square";
@@ -84,8 +101,22 @@ final class SQLSubentityFetchTest extends SQLMigrationTestCase
 
         $shape->subentities = new ArrayClass([$polygon, $rounded]);
 
+        $title = new AttributeDescription();
+        $title->name = "title";
+        $title->type = AttributeType::string;
+
+        $drawingPolygon = new RelationshipDescription();
+        $drawingPolygon->name = "polygon";
+        $drawingPolygon->lazyDestinationEntityName = "Polygon";
+        $drawingPolygon->lazyInverseRelationshipName = "drawings";
+
+        $drawing = new EntityDescription();
+        $drawing->name = "Drawing";
+        $drawing->managedObjectClassName = SubentityDrawing::class;
+        $drawing->properties = new ArrayClass([$title, $drawingPolygon]);
+
         $model = new ManagedObjectModel();
-        $model->entities = new ArrayClass([$shape]);
+        $model->entities = new ArrayClass([$shape, $drawing]);
         return $model;
     }
 
@@ -101,6 +132,9 @@ final class SQLSubentityFetchTest extends SQLMigrationTestCase
         $square->name = "square";
         $circle = new SubentityCircle($context);
         $circle->name = "circle";
+        $sketch = new SubentityDrawing($context);
+        $sketch->title = "sketch";
+        $sketch->polygon = $square;
         $context->save();
     }
 
@@ -211,5 +245,19 @@ final class SQLSubentityFetchTest extends SQLMigrationTestCase
         });
 
         $this->assertSame(["Polygon", "Square"], $entityNames);
+    }
+
+    /** @throws Exception */
+    public function testAJoinToAConcreteEntityIncludesItsSubentities(): void
+    {
+        $context = $this->freshContext(self::model());
+        $titles = [];
+        $context->performBlockAndWait(function () use ($context, &$titles): void {
+            $request = new FetchRequest("Drawing");
+            $request->predicate = Predicate::format("polygon.name == %@", new ArrayClass(["square"]));
+            $titles = $context->fetch($request)->map(fn(SubentityDrawing $drawing): string => $drawing->title)->array;
+        });
+
+        $this->assertSame(["sketch"], $titles);
     }
 }

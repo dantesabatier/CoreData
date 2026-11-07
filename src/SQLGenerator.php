@@ -324,16 +324,7 @@ final class SQLGenerator
      */
     private function applyDiscriminatorPredicate(EntityDescription $entity, ?Predicate $predicate, bool $includesSubentities): ?Predicate
     {
-        if ($this->fromSubquery) {
-            return $predicate;
-        }
-        $model = $entity->managedObjectModel;
-        /** @var EntityDescription $rootEntity */
-        $rootEntity = $entity->isRootEntity ? $entity : $entity->rootEntity;
-        $isConcrete = fn(EntityDescription $description): bool => !$description->isAbstract;
-        $entities = new ArrayClass([$entity]);
-        $names = ($includesSubentities ? $model->flatten($entities) : $entities)->filter($isConcrete)->map(fn(EntityDescription $description): string => $description->name);
-        if ($names->count === $model->flatten(new ArrayClass([$rootEntity]))->filter($isConcrete)->count) {
+        if ($this->fromSubquery || !($names = $this->discriminatedEntityNames($entity, $includesSubentities))) {
             return $predicate;
         }
         $entityKey = Expression::expressionForKeyPath($this->entity->entityKey->columnName);
@@ -343,6 +334,19 @@ final class SQLGenerator
             default => new ComparisonPredicate($entityKey, Expression::expressionForConstantValue($names), PredicateOperatorType::in),
         };
         return $predicate ? CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([$predicate, $mandatory])) : $mandatory;
+    }
+
+    /** @return ArrayClass<string>|null */
+    private function discriminatedEntityNames(EntityDescription $entity, bool $includesSubentities): ?ArrayClass
+    {
+        $model = $entity->managedObjectModel;
+        /** @var EntityDescription $rootEntity */
+        $rootEntity = $entity->isRootEntity ? $entity : $entity->rootEntity;
+        $isConcrete = fn(EntityDescription $description): bool => !$description->isAbstract;
+        $entities = new ArrayClass([$entity]);
+        /** @var ArrayClass<string> $names */
+        $names = ($includesSubentities ? $model->flatten($entities) : $entities)->filter($isConcrete)->map(fn(EntityDescription $description): string => $description->name);
+        return $names->count === $model->flatten(new ArrayClass([$rootEntity]))->filter($isConcrete)->count ? null : $names;
     }
 
     private function endSQL(): void
@@ -687,17 +691,10 @@ final class SQLGenerator
 
     private function appendJoinDestinationEntity(SQLEntity $destinationEntity, string $destinationPath): void
     {
-        if ($destinationEntity->isAbstract || $destinationPath === "") {
+        if ($destinationPath === "" || !($names = $this->discriminatedEntityNames($destinationEntity->entityDescription, true)) || $names->isEmpty) {
             return;
         }
-        /** @var EntityDescription $rootEntity */
-        $rootEntity = $destinationEntity->isRootEntity ? $destinationEntity->entityDescription : $destinationEntity->rootEntity?->entityDescription;
-        $subentities = $destinationEntity->entityDescription->managedObjectModel->flatten($rootEntity->subentities);
-        if ($subentities->count <= 1) {
-            return;
-        }
-        $this->joinClause .= " AND ";
-        $this->joinClause .= "$destinationPath.{$destinationEntity->entityKey->columnName} = '{$destinationEntity->entityDescription->name}'";
+        $this->joinClause .= " AND $destinationPath.{$destinationEntity->entityKey->columnName} IN (" . implode(", ", $names->map(fn(string $name): string => "'$name'")->array) . ")";
     }
 
     /**
