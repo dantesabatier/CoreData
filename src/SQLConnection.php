@@ -751,7 +751,7 @@ final class SQLConnection
      * @param ArrayClass<SQLEntity> $entities
      * @throws Exception
      */
-    public function applyConstraints(ArrayClass $entities): void
+    private function applyConstraints(ArrayClass $entities): void
     {
 
         foreach ($entities as $entity) {
