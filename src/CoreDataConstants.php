@@ -28,6 +28,8 @@ const InvalidatedObjectIDsKey = "InvalidatedObjectIDsKey";
 const PersistentHistoryTokenKey = "PersistentHistoryTokenKey";
 /** @var string A user info key to identify the store URL in persistent store remote change notifications. */
 const PersistentStoreURLKey = "PersistentStoreURLKey";
+/** @var float The default connection timeout, in seconds, for a persistent store. */
+const PersistentStoreDefaultTimeout = 8.0;
 /** @var string A user info key to identify refreshed object identifiers in notifications after saving a managed object context. */
 const RefreshedObjectIDsKey = "RefreshedObjectIDsKey";
 /** @var string A user info key to identify updated object identifiers in notifications after saving a managed object context. */

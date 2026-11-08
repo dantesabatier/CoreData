@@ -32,7 +32,7 @@ final class PersistentStoreDescription extends ObjectClass
     public bool $shouldAddStoreAsynchronously = false;
     /** @var float The connection timeout for the associated store. This is a convenience method for setting the {@see PersistentStoreTimeoutOption} on the associated store. */
     public float $timeout {
-        get => $this->options[PersistentStoreTimeoutOption] ??= 8.0;
+        get => $this->options[PersistentStoreTimeoutOption] ??= PersistentStoreDefaultTimeout;
         set => $this->options[PersistentStoreTimeoutOption] = $value;
     }
     /** @var bool A flag that indicates whether this store will be read-only. This is a convenience method for setting the {@see ReadOnlyPersistentStoreOption} on the associated store. */
