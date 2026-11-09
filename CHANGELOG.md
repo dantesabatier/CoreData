@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.19] - 2026-11-09
+
 ### Added
 
 - `PersistentStoreDefaultTimeout`, the connection timeout in seconds (8) a persistent store uses when its options name none. `PersistentStoreDescription` takes its default from it.
