@@ -89,9 +89,9 @@ abstract class PersistentStore extends ObjectClass
     public function __construct(public readonly PersistentStoreCoordinator $persistentStoreCoordinator, public readonly string $configurationName, public URL $url, private(set) ?Dictionary $options = null {
         set {
             $this->options = $value;
-            $this->stalenessInterval = (int)($value?->valueForKey(PersistentStoreCacheStalenessIntervalOption) ?? SecondsPerHourTimeInterval);
+            $this->stalenessInterval = $value?->valueForKey(PersistentStoreCacheStalenessIntervalOption) ?? SecondsPerHourTimeInterval;
             $this->isReadOnly = (bool)$value?->valueForKey(ReadOnlyPersistentStoreOption);
-            $this->timeout = (float)($value?->valueForKey(PersistentStoreTimeoutOption) ?? PersistentStoreDefaultTimeout);
+            $this->timeout = $value?->valueForKey(PersistentStoreTimeoutOption) ?? PersistentStoreDefaultTimeout;
             $this->fileProtection = $value?->valueForKey(PersistentStoreFileProtectionKey) ?? FileProtectionType::none;
         }
     })
