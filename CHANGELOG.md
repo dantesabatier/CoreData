@@ -7,6 +7,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `PersistentStoreDefaultTimeout`, the connection timeout in seconds (8) a persistent store uses when its options name none. `PersistentStoreDescription` takes its default from it.
+- `PersistentStore::$timeout` and `PersistentStore::$fileProtection` are public. Assigning `fileProtection` is validated the same way the option is: a value other than `FileProtectionType::complete` or `FileProtectionType::none` is refused.
+
+### Changed
+
+- A store added to a coordinator with options that name no `PersistentStoreTimeoutOption` uses `PersistentStoreDefaultTimeout` instead of leaving the timeout to the database driver. A store created from a `PersistentStoreDescription` already used it.
+
 ## [1.2.18] - 2026-11-07
 
 ### Changed

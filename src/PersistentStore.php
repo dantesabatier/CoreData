@@ -3,6 +3,7 @@
 namespace Sabatier\CoreData;
 
 use Exception;
+use JetBrains\PhpStorm\ExpectedValues;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
 use Sabatier\Foundation\FileManager;
@@ -36,33 +37,43 @@ abstract class PersistentStore extends ObjectClass
         get => $this->identifier ??= $this->options?->valueForKey(PersistentStoreIDOption) ?? md5($this->url->absoluteString);
     }
     /** @var int The time interval, in seconds, for which cached snapshots and relationships remain valid. */
-    public int $stalenessInterval {
-        get => $this->stalenessInterval ??= (int)($this->options?->valueForKey(PersistentStoreCacheStalenessIntervalOption) ?? SecondsPerHourTimeInterval);
+    public int $stalenessInterval = SecondsPerHourTimeInterval;
+    /** @var bool A Boolean value that indicates whether the persistent store is read-only. */
+    public bool $isReadOnly = false;
+    /** @var float The connection timeout in seconds. */
+    public float $timeout = PersistentStoreDefaultTimeout;
+    /** @var string The data protection level of the store. */
+    #[ExpectedValues(valuesFromClass: FileProtectionType::class)]
+    public string $fileProtection {
+        set {
+            $this->fileProtection = match ($value) {
+                FileProtectionType::complete, FileProtectionType::none => $value,
+                default => $value
+                        |> human_readable_value(...)
+                        |> (fn(string $x): string => sprintf("Invalid store option: %s %s, expecting \"%s\" or \"%s\"", PersistentStoreFileProtectionKey, $x, FileProtectionType::complete, FileProtectionType::none))
+                        |> fatal_error(...),
+            };
+        }
+    }
+    /** @var bool A Boolean value that indicates whether the persistent store requires migration to match the configured file protection level. */
+    public bool $isFileProtectionMigrationNeeded {
+        get => false;
     }
     /** @var Dictionary<mixed> The metadata for the persistent store. The dictionary must include the store type. */
     public Dictionary $metadata {
         get => $this->metadata ??= new Dictionary([StoreTypeKey => $this->type, StoreUUIDKey => $this->identifier]);
     }
-    /** @var bool A Boolean value that indicates whether the persistent store is read-only. */
-    public bool $isReadOnly = false;
     /** @internal */
-    public FaultHandler $faultHandler {
-        get => $this->faultHandler ??= new FaultHandler($this);
+    private(set) PersistentStoreCache $rowCache {
+        get => $this->rowCache ??= new static::$rowCacheClass();
     }
     /** @internal */
-    private(set) ?float $timeout = null;
-    /** @internal */
-    private(set) string $fileProtection = FileProtectionType::none;
-    /** @internal */
-    public bool $isFileProtectionMigrationNeeded {
-        get => false;
+    private(set) FaultHandler $faultHandler {
+        get => $this->faultHandler ??= new FaultHandler($this);
     }
     /** @var Dictionary<Dictionary<ManagedObjectID>> */
     private Dictionary $cacheEntities {
         get => $this->cacheEntities ??= new Dictionary();
-    }
-    public PersistentStoreCache $rowCache {
-        get => $this->rowCache ??= new (static::$rowCacheClass)();
     }
 
     /**
@@ -78,15 +89,10 @@ abstract class PersistentStore extends ObjectClass
     public function __construct(public readonly PersistentStoreCoordinator $persistentStoreCoordinator, public readonly string $configurationName, public URL $url, private(set) ?Dictionary $options = null {
         set {
             $this->options = $value;
+            $this->stalenessInterval = (int)($value?->valueForKey(PersistentStoreCacheStalenessIntervalOption) ?? SecondsPerHourTimeInterval);
             $this->isReadOnly = (bool)$value?->valueForKey(ReadOnlyPersistentStoreOption);
-            $this->timeout = is_numeric($timeout = $value?->valueForKey(PersistentStoreTimeoutOption)) ? (float)$timeout : null;
-            $this->fileProtection = match ($protection = $value?->valueForKey(PersistentStoreFileProtectionKey) ?? FileProtectionType::none) {
-                FileProtectionType::complete, FileProtectionType::none => $protection,
-                default => $protection
-                        |> human_readable_value(...)
-                        |> (fn(string $x): string => sprintf("Invalid store option: %s %s, expecting \"%s\" or \"%s\"", PersistentStoreFileProtectionKey, $x, FileProtectionType::complete, FileProtectionType::none))
-                        |> fatal_error(...),
-            };
+            $this->timeout = (float)($value?->valueForKey(PersistentStoreTimeoutOption) ?? PersistentStoreDefaultTimeout);
+            $this->fileProtection = $value?->valueForKey(PersistentStoreFileProtectionKey) ?? FileProtectionType::none;
         }
     })
     {
