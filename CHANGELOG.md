@@ -7,6 +7,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.20] - 2026-11-11
+
+### Security
+
+- A dictionary fetch request no longer returns sensitive attributes. The serialization it builds from `propertiesToFetch`, or from the entity's attributes, leaves out every attribute marked `isSensitive`, including those of a relationship or fetched property it expands. A serialization that is given is kept as is.
+
 ## [1.2.19] - 2026-11-09
 
 ### Added
