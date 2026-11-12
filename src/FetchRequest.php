@@ -73,7 +73,7 @@ final class FetchRequest extends PersistentStoreRequest
     /** @var Dictionary<mixed> Declarative serialization shape used to control which properties are fetched from the persistent store.
      * This nested dictionary determines the exact structure to retrieve, and is later applied to the fetched objects to configure their serializationRule and serializationKeys, ensuring their serialized representation matches the requested shape. */
     public Dictionary $serialization {
-        get => $this->serialization ??= ($this->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $this->entity->propertiesByName[$property]) ?? $this->entity?->attributesByName?->filter(fn(AttributeDescription $attr): bool => $this->isSerializableAttribute($attr))->values)?->reduce(new Dictionary(),
+        get => $this->serialization ??= ($this->propertiesToFetch?->compactMap(fn(PropertyDescription|string $property): ?PropertyDescription => $property instanceof PropertyDescription ? $property : $this->entity->propertiesByName[$property]) ?? $this->entity?->attributesByName?->filter(fn(AttributeDescription $attr) => $this->isSerializableAttribute($attr))->values)?->reduce(new Dictionary(),
             /**
              * @param Dictionary<mixed> $result
              * @param PropertyDescription $property
@@ -81,9 +81,7 @@ final class FetchRequest extends PersistentStoreRequest
              */
             function (Dictionary $result, PropertyDescription $property): Dictionary {
                 if ($property instanceof AttributeDescription) {
-                    if (!$this->withholdsAttribute($property)) {
-                        $result[$property->name] = $property->type;
-                    }
+                    $result[$property->name] = $property->type;
                 } elseif ($property instanceof RelationshipDescription) {
                     $result[$property->name] = $this->serializeRelationship($property);
                 } elseif ($property instanceof FetchedPropertyDescription) {
@@ -225,12 +223,7 @@ final class FetchRequest extends PersistentStoreRequest
 
     private function isSerializableAttribute(AttributeDescription $attribute): bool
     {
-        return !$attribute->isTransient && !$attribute instanceof CompositeAttributeDescription && !$this->withholdsAttribute($attribute);
-    }
-
-    private function withholdsAttribute(AttributeDescription $attribute): bool
-    {
-        return $this->resultType === FetchRequestResultType::dictionaryResultType && $attribute->isSensitive;
+        return !$attribute->isTransient && !$attribute instanceof CompositeAttributeDescription;
     }
 
     /**

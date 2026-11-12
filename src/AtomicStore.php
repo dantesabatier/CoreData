@@ -263,7 +263,7 @@ abstract class AtomicStore extends PersistentStore
     /**
      * @throws Exception
      */
-    private function executeSaveChangesRequest(/** @noinspection PhpUnusedParameterInspection */ SaveChangesRequest $request, ManagedObjectContext $context): ArrayClass
+    private function executeSaveChangesRequest(SaveChangesRequest $request, /** @noinspection PhpUnusedParameterInspection */ ManagedObjectContext $context): ArrayClass
     {
         if ($this->isReadOnly) {
             fatal_error("Cannot modify a read only persistent store");

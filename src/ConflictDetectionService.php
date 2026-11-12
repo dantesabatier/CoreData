@@ -138,14 +138,15 @@ final readonly class ConflictDetectionService
     ): FetchRequest
     {
         /** @var FetchRequest<Dictionary<mixed>> $fetchRequest */
-        $fetchRequest = $object::fetchRequest();
+        $fetchRequest = new FetchRequest();
+        $fetchRequest->entity = $object->entity;
         $fetchRequest->predicate = CompoundPredicate::andPredicateWithSubpredicates(new ArrayClass([new ComparisonPredicate(Expression::expressionForKeyPath($key), Expression::expressionForConstantValue($value), match ($object->entity->attributesByName[$key]?->type) {
             AttributeType::string => PredicateOperatorType::like,
             default => PredicateOperatorType::equalTo,
         }
         ), new ComparisonPredicate(Expression::expressionForKeyPath(ManagedObjectObjectIDKey), Expression::expressionForConstantValue($object->objectID->referenceObject), PredicateOperatorType::notEqualTo)]));
-        $fetchRequest->propertiesToFetch = $attributeKeys;
         $fetchRequest->resultType = FetchRequestResultType::dictionaryResultType;
+        $fetchRequest->propertiesToFetch = $attributeKeys;
         if ($store = $object->objectID->persistentStore) {
             $fetchRequest->affectedStores = new ArrayClass([$store]);
         }

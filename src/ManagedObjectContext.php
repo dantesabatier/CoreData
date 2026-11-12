@@ -808,8 +808,9 @@ final class ManagedObjectContext extends ObjectClass
      * @param Set<ManagedObject> $updates
      * @param RelationshipDescription $relationship
      * @param ManagedObject $object
+     * @noinspection PhpUnusedParameterInspection
      */
-    private function processPendingUpdates(/** @noinspection PhpUnusedParameterInspection */ Set $updates, RelationshipDescription $relationship, ManagedObject $object): void
+    private function processPendingUpdates(Set $updates, RelationshipDescription $relationship, ManagedObject $object): void
     {
         $this->updatedObjects->formUnion($updates->filter(fn(ManagedObject $managedObject): bool => !$managedObject->isDeleted));
     }

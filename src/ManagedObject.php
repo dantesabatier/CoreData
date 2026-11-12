@@ -217,7 +217,6 @@ class ManagedObject extends ObjectClass implements FetchRequestResult, Hashable
      * only fetched). Distinct from {@see $originalSnapshot}, which optimistic-locking conflict detection
      * owns and must keep pointing at the version last read from the store.
      * @var Dictionary<mixed>|null
-     * @internal
      */
     private ?Dictionary $committedSnapshot = null;
     /**
@@ -1052,9 +1051,10 @@ class ManagedObject extends ObjectClass implements FetchRequestResult, Hashable
     }
 
     /**
+     * @param bool $isSensitive Whether the coerced value is returned masked in a {@see SensitiveValue}; the caller decides, since only it knows whether the value leaves the framework.
      * @internal
      */
-    public static function coercedValue(mixed $value, AttributeType $type, ?string $attributeValueClassName = null, ?string $valueTransformerName = null, bool $isOptional = true, bool $write = false, bool $transformsValue = true): mixed
+    public static function coercedValue(mixed $value, AttributeType $type, ?string $attributeValueClassName = null, ?string $valueTransformerName = null, bool $isOptional = true, bool $write = false, bool $transformsValue = true, bool $isSensitive = false): mixed
     {
         if ($value instanceof Value) {
             $value = $value->value;
@@ -1086,7 +1086,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult, Hashable
             $isOptional = true;
         }
         /** @noinspection PhpVoidFunctionResultUsedInspection */
-        return match ($type) {
+        $coercedResult = match ($type) {
             AttributeType::integer16, AttributeType::integer32, AttributeType::integer64 => $optionalValue("int"),
             AttributeType::decimal, AttributeType::double, AttributeType::float => $optionalValue("float"),
             AttributeType::string => $optionalValue("string"),
@@ -1128,6 +1128,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult, Hashable
             AttributeType::undefined => fatal_error("Invalid argument: cannot use an attribute type of \"Undefined\""),
             default => $value
         };
+        return $isSensitive ? new SensitiveValue($coercedResult) : $coercedResult;
     }
 
     /**

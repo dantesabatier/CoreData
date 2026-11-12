@@ -8,19 +8,24 @@ use Exception;
 use Override;
 use Sabatier\CoreData\AttributeDescription;
 use Sabatier\CoreData\AttributeType;
+use Sabatier\CoreData\DefaultRowCache;
 use Sabatier\CoreData\EntityDescription;
-use Sabatier\CoreData\FetchRequest;
+use Sabatier\CoreData\ExpressionDescription;
 use Sabatier\CoreData\FetchRequestResultType;
 use Sabatier\CoreData\ManagedObject;
 use Sabatier\CoreData\ManagedObjectContext;
 use Sabatier\CoreData\ManagedObjectID;
 use Sabatier\CoreData\ManagedObjectModel;
+use Sabatier\CoreData\MergePolicy;
 use Sabatier\CoreData\NullRowCache;
 use Sabatier\CoreData\PersistentStore;
+use Sabatier\CoreData\PersistentStoreCache;
+use Sabatier\CoreData\PersistentStoreSnapshotProvider;
 use Sabatier\CoreData\RelationshipDescription;
-use Sabatier\CoreData\RowCache;
 use Sabatier\Foundation\ArrayClass;
 use Sabatier\Foundation\Dictionary;
+use Sabatier\Foundation\Predicates\Expression;
+use Sabatier\Foundation\SensitiveValue;
 use Sabatier\Foundation\Set;
 
 /**
@@ -40,9 +45,16 @@ final class SDNote extends ManagedObject
 {
 }
 
+/**
+ * A dictionary result hands an isSensitive attribute back masked in a SensitiveValue, at every
+ * nesting level, while the framework's own dictionary reads — faults and optimistic-locking
+ * snapshots — keep reading it in clear, since they feed it back into objects.
+ *
+ * The row cache is disabled so that every fault really goes back to the store.
+ */
 final class SensitiveDictionaryTest extends SQLMigrationTestCase
 {
-    /** @var class-string<RowCache> */
+    /** @var class-string<PersistentStoreCache> */
     private string $rowCacheClass;
 
     private static function model(): ManagedObjectModel
@@ -122,87 +134,139 @@ final class SensitiveDictionaryTest extends SQLMigrationTestCase
      * @return Dictionary<mixed>
      * @throws Exception
      */
-    private function dictionary(ManagedObjectContext $context, string $entityName, ArrayClass $propertiesToFetch, ?Dictionary $serialization = null): Dictionary
+    private function dictionary(ManagedObjectContext $context, string $entityClass, ArrayClass $propertiesToFetch): Dictionary
     {
+        /** @var class-string<ManagedObject> $entityClass */
+        $request = $entityClass::fetchRequest();
+        $request->resultType = FetchRequestResultType::dictionaryResultType;
+        $request->propertiesToFetch = $propertiesToFetch;
         /** @var Dictionary<mixed> $row */
-        $row = $this->first($context, function () use ($entityName, $propertiesToFetch, $serialization): FetchRequest {
-            $request = new FetchRequest($entityName);
-            $request->resultType = FetchRequestResultType::dictionaryResultType;
-            $request->propertiesToFetch = $propertiesToFetch;
-            if ($serialization) {
-                $request->serialization = $serialization;
-            }
-            return $request;
-        });
+        $row = $context->fetch($request)->first;
         return $row;
     }
 
-    /**
-     * @param callable(): FetchRequest $request
-     * @throws Exception
-     */
-    private function first(ManagedObjectContext $context, callable $request): mixed
+    /** @throws Exception */
+    private function account(ManagedObjectContext $context): SDAccount
     {
-        $result = null;
-        $context->performBlockAndWait(function () use ($context, $request, &$result): void {
-            $result = $context->fetch($request())->first;
-        });
-        return $result;
+        /** @var SDAccount $account */
+        $account = $context->fetch(SDAccount::fetchRequest())->first;
+        return $account;
     }
 
     /** @throws Exception */
-    public function testADictionaryLeavesOutASensitiveAttributeAskedForByName(): void
+    public function testADictionaryMasksASensitiveAttribute(): void
     {
-        $row = $this->dictionary($this->seed(), "SDAccount", new ArrayClass(["login", "secret"]));
+        $row = $this->dictionary($this->seed(), SDAccount::class, new ArrayClass(["login", "secret"]));
 
         $this->assertSame("ana", $row["login"]);
-        $this->assertFalse($row->offsetExists("secret"));
+        $this->assertInstanceOf(SensitiveValue::class, $row["secret"]);
+        $this->assertStringNotContainsString("ana-hash", (string)json_encode($row));
     }
 
     /** @throws Exception */
-    public function testADictionaryLeavesOutASensitiveAttributeOfARelationship(): void
+    public function testADictionaryMasksASensitiveAttributeOfARelationship(): void
     {
-        $row = $this->dictionary($this->seed(), "SDNote", new ArrayClass(["text", "account"]));
+        $row = $this->dictionary($this->seed(), SDNote::class, new ArrayClass(["text", "account"]));
         /** @var Dictionary<mixed> $account */
         $account = $row["account"];
 
         $this->assertSame("ana", $account["login"]);
-        $this->assertFalse($account->offsetExists("secret"));
-    }
-
-    /** @throws Exception */
-    public function testAGivenSerializationIsKeptAsIs(): void
-    {
-        $row = $this->dictionary($this->seed(), "SDAccount", new ArrayClass(["secret"]), Dictionary::dictionaryWithArray(["secret" => AttributeType::string]));
-
-        $this->assertSame("ana-hash", $row["secret"]);
+        $this->assertInstanceOf(SensitiveValue::class, $account["secret"]);
+        $this->assertStringNotContainsString("ana-hash", (string)json_encode($row));
     }
 
     /** @throws Exception */
     public function testAnObjectStillLoadsItsSensitiveAttribute(): void
     {
-        $context = $this->seed();
-        $secret = null;
-        $context->performBlockAndWait(function () use ($context, &$secret): void {
-            /** @var SDAccount $account */
-            $account = $context->fetch(new FetchRequest("SDAccount"))->first;
-            $secret = $account->secret;
-        });
-
-        $this->assertSame("ana-hash", $secret);
+        $this->assertSame("ana-hash", $this->account($this->seed())->secret);
     }
 
     /** @throws Exception */
     public function testARelatedObjectStillLoadsItsSensitiveAttribute(): void
     {
-        $context = $this->seed();
-        $secret = null;
-        $context->performBlockAndWait(function () use ($context, &$secret): void {
-            /** @var SDNote $note */
-            $note = $context->fetch(new FetchRequest("SDNote"))->first;
-            $secret = $note->account?->secret;
-        });
+        /** @var SDNote $note */
+        $note = $this->seed()->fetch(SDNote::fetchRequest())->first;
 
-        $this->assertSame("ana-hash", $secret);
+        $this->assertSame("ana-hash", $note->account?->secret);
+    }
+
+    /**
+     * Fetching bare identifiers leaves nothing to fill the object with, so reading it fires a fault
+     * that goes back to the store through a dictionary read of its own.
+     * @throws Exception
+     */
+    public function testAFiredFaultLoadsItsSensitiveAttribute(): void
+    {
+        $context = $this->seed();
+        $request = SDAccount::fetchRequest();
+        $request->resultType = FetchRequestResultType::managedObjectIDResultType;
+        $request->includesPropertyValues = false;
+        /** @var ManagedObjectID $objectID */
+        $objectID = $context->fetch($request)->first;
+        /** @var SDAccount $account */
+        $account = $context->object($objectID);
+
+        $this->assertSame("ana-hash", $account->secret);
+    }
+
+    /**
+     * The optimistic-locking snapshot is a dictionary read, and the store-trump merge writes its
+     * values back into the object: a masked value there would reach coercion, which refuses it.
+     * @throws Exception
+     */
+    public function testAStoreTrumpMergeAppliesTheStoredSensitiveValue(): void
+    {
+        $this->seed();
+        $winner = $this->freshContext(self::model());
+        $loser = $this->freshContext(self::model());
+        $loser->mergePolicy = MergePolicy::mergeByPropertyStoreTrump();
+        $stale = $this->account($loser);
+        $stale->secret;
+
+        $this->account($winner)->secret = "new-hash";
+        $winner->save();
+        $stale->login = "ana-renamed";
+        $loser->save();
+
+        $this->assertSame("new-hash", $stale->secret);
+    }
+
+    /**
+     * The deny delete rule reads the stored row together with a count over a to-many; the count only
+     * exists in a dictionary, the row's sensitive attribute has to stay in clear.
+     * @throws Exception
+     */
+    public function testASnapshotWithExpressionsKeepsTheRowInClearAndAddsTheExpression(): void
+    {
+        $context = $this->seed();
+        $account = $this->account($context);
+        $count = new ExpressionDescription();
+        $count->entity = $account->entity;
+        $count->name = "computedValue";
+        $count->expression = Expression::expressionWithFormat("%K", new ArrayClass(["notes.@count"]));
+        $count->resultType = AttributeType::integer32;
+
+        $snapshot = new PersistentStoreSnapshotProvider($context)->snapshotWithExpressions($account, new ArrayClass(["login", "secret"]), new ArrayClass([$count]));
+
+        $this->assertNotNull($snapshot);
+        $this->assertSame("ana-hash", $snapshot["secret"]);
+        $this->assertSame(1, $snapshot["computedValue"]);
+    }
+
+    /**
+     * A cached snapshot that covers only part of the row sends the rest through a batch fault.
+     * @throws Exception
+     */
+    public function testABatchFaultLoadsItsSensitiveAttribute(): void
+    {
+        PersistentStore::$rowCacheClass = DefaultRowCache::class;
+        $context = $this->seed();
+        $partial = SDAccount::fetchRequest();
+        $partial->propertiesToFetch = new ArrayClass(["login"]);
+        $context->fetch($partial);
+        $sibling = new ManagedObjectContext();
+        $sibling->persistentStoreCoordinator = $context->persistentStoreCoordinator;
+
+        $this->assertSame("ana-hash", $this->account($sibling)->secret);
     }
 }

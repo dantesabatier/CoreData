@@ -31,6 +31,10 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
         get => $this->fetchStatement ??= $this->generator->statement ?? fatal_error("Unable to generate SQL fetch statement");
     }
     private(set) float $duration = 0;
+    /** @var bool Whether the snapshots leave the framework as a dictionary result: object results hydrate from these same snapshots and need the values in clear, and so do the subclasses that read for the framework itself. */
+    protected bool $masksSensitiveValues {
+        get => $this->request->resultType === FetchRequestResultType::dictionaryResultType;
+    }
     private(set) PDOStatement $queryStatement {
         /** @noinspection PhpUnhandledExceptionInspection */
         get => $this->queryStatement ??= $this->connection->execute($this->fetchStatement);
@@ -228,7 +232,7 @@ class SQLFetchRequestContext extends SQLStoreRequestContext
             return ManagedObject::coercedValue($value, $description->resultType, isOptional: $description->isOptional);
         }
         if ($description instanceof AttributeDescription) {
-            return ManagedObject::coercedValue($value, $description->type, $description->attributeValueClassName, $description->valueTransformerName, $description->isOptional);
+            return ManagedObject::coercedValue($value, $description->type, $description->attributeValueClassName, $description->valueTransformerName, $description->isOptional, isSensitive: $description->isSensitive && $this->masksSensitiveValues);
         }
         return $value;
     }

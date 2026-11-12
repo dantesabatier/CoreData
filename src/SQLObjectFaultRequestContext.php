@@ -11,6 +11,11 @@ use function Sabatier\Foundation\fatal_error;
 /** @internal */
 final class SQLObjectFaultRequestContext extends SQLFetchRequestContext
 {
+    #[Override]
+    protected bool $masksSensitiveValues {
+        get => false;
+    }
+
     public function __construct(private readonly ManagedObjectID $objectID, ManagedObjectContext $context, SQLCore $sqlCore)
     {
         /** @var SQLEntity $entity */
