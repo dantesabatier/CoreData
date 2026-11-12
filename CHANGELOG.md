@@ -7,6 +7,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.21] - 2026-11-12
+
+### Security
+
+- A dictionary fetch request returns every attribute marked `isSensitive` again, masked in a `SensitiveValue` at every nesting level, relationships included; JSON shows only the mask. This replaces 1.2.20, which left those attributes out and with them broke the faults: an object filled by a fault read its sensitive attributes as `null`. Object results, faults and the optimistic-locking snapshot keep reading them in clear.
+
+### Fixed
+
+- `PersistentStore::$rowCacheClass` is declared `class-string<PersistentStoreCache>`, so `NullRowCache` can be assigned to it.
+
 ## [1.2.20] - 2026-11-11
 
 ### Security
