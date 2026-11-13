@@ -877,7 +877,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult, Hashable
                 $removedObjects = new Set($change->filter(fn(ManagedObject $object): bool => !$value->containsElement($object)));
                 /** @var Set<ManagedObject> $addedObjects */
                 $addedObjects = new Set($value->filter(fn(ManagedObject $object): bool => !$change->containsElement($object)));
-                // The context turns a removal's payload into the correlation-table DELETEs, so it has to carry the objects that left rather than the ones that remain.
+                // The context turns a removal's payload into the correlation-table deletes, so it has to carry the objects that left rather than the ones that remain.
                 $notifiedChange = null;
                 if ($removedObjects->isEmpty && $addedObjects->isEmpty) {
                     $changeKind = KeyValueChange::setting;
@@ -1067,6 +1067,7 @@ class ManagedObject extends ObjectClass implements FetchRequestResult, Hashable
             "bool" => (function () use ($value, $write): bool|int {
                 $value ??= false;
                 if (!is_numeric($value)) {
+                    /** @noinspection PhpCastIsUnnecessaryInspection */
                     $value = (bool)$value;
                 }
                 return $write ? new Number($value)->intValue : new Number($value)->boolValue;
